@@ -14,7 +14,16 @@ namespace Fabric.Identity.API
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
-                new IdentityResources.Profile()
+                new IdentityResources.Profile(),
+                new IdentityResources.Email()
+            };
+        }
+
+        public static IEnumerable<ApiResource> GetApiResources()
+        {
+            return new List<ApiResource>
+            {
+                new ApiResource("patientapi", "Patient API")
             };
         }
 
@@ -26,7 +35,12 @@ namespace Fabric.Identity.API
                 {
                     ClientId = "fabric-mvcsample",
                     ClientName = "Sample Fabric MVC Client",
-                    AllowedGrantTypes = GrantTypes.Implicit,
+                    AllowedGrantTypes = GrantTypes.HybridAndClientCredentials,
+
+                    ClientSecrets =
+                    {
+                        new Secret("secret".Sha256())
+                    },
 
                     RedirectUris = { "http://localhost:5002/signin-oidc"},
                     PostLogoutRedirectUris = { "http://localhost:5002/signout-callback-oidc"},
@@ -34,8 +48,11 @@ namespace Fabric.Identity.API
                     AllowedScopes =
                     {
                         IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile
-                    }
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.Email,
+                        "patientapi"
+                    },
+                    AllowOfflineAccess = true
                 }
             };
         }

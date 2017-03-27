@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using IdentityServer4.Quickstart.UI;
+using IdentityServer4.Services;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Fabric.Identity.API
@@ -16,11 +17,12 @@ namespace Fabric.Identity.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            var builder = services
+            services
                 .AddIdentityServer()
                 .AddTemporarySigningCredential()
                 .AddInMemoryIdentityResources(Config.GetIdentityResources())
                 .AddInMemoryClients(Config.GetClients())
+                .AddInMemoryApiResources(Config.GetApiResources())
                 .AddTestUsers(TestUsers.Users);
 
             services.AddMvc();
@@ -39,14 +41,21 @@ namespace Fabric.Identity.API
 
             app.UseIdentityServer();
 
-            app.UseGoogleAuthentication(new GoogleOptions
-            {
-                AuthenticationScheme = "Google",
-                DisplayName = "Google",
-                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+            //app.UseGoogleAuthentication(new GoogleOptions
+            //{
+            //    AuthenticationScheme = "Google",
+            //    DisplayName = "Google",
+            //    SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
 
-                ClientId = "841027957317-fqrl9qj4jt3suk0r2gp2paf0qol98q4g.apps.googleusercontent.com",
-                ClientSecret = "jHMPzSvucn3q_WCkusD9ggRA"
+            //    ClientId = "841027957317-fqrl9qj4jt3suk0r2gp2paf0qol98q4g.apps.googleusercontent.com",
+            //    ClientSecret = "jHMPzSvucn3q_WCkusD9ggRA"
+            //});
+
+            app.UseCookieAuthentication(new CookieAuthenticationOptions
+            {
+                AuthenticationScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+                AutomaticAuthenticate = false,
+                AutomaticChallenge = false
             });
 
             app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
