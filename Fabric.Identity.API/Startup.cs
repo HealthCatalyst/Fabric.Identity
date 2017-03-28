@@ -41,23 +41,6 @@ namespace Fabric.Identity.API
 
             app.UseIdentityServer();
 
-            //app.UseGoogleAuthentication(new GoogleOptions
-            //{
-            //    AuthenticationScheme = "Google",
-            //    DisplayName = "Google",
-            //    SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
-
-            //    ClientId = "841027957317-fqrl9qj4jt3suk0r2gp2paf0qol98q4g.apps.googleusercontent.com",
-            //    ClientSecret = "jHMPzSvucn3q_WCkusD9ggRA"
-            //});
-
-            app.UseCookieAuthentication(new CookieAuthenticationOptions
-            {
-                AuthenticationScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
-                AutomaticAuthenticate = false,
-                AutomaticChallenge = false
-            });
-
             app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
             {
                 SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
