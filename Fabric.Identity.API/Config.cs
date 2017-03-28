@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Models;
 
@@ -23,7 +24,12 @@ namespace Fabric.Identity.API
         {
             return new List<ApiResource>
             {
-                new ApiResource("patientapi", "Patient API")
+                new ApiResource
+                {
+                    Name = "patientapi",
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email},
+                    Scopes = { new Scope("patientapi", "Patient API") }
+                }
             };
         }
 
