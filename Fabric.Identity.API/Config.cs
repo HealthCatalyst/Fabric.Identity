@@ -12,11 +12,14 @@ namespace Fabric.Identity.API
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
+            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new [] { JwtClaimTypes.Email, JwtClaimTypes.Address, "location", "allowedresource"});
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
-                new IdentityResources.Email()
+                new IdentityResources.Email(),
+                new IdentityResources.Address(),
+                fabricProfile
             };
         }
 
@@ -27,7 +30,7 @@ namespace Fabric.Identity.API
                 new ApiResource
                 {
                     Name = "patientapi",
-                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email},
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "allowedresource"},
                     Scopes = { new Scope("patientapi", "Patient API") }
                 }
             };
@@ -55,8 +58,8 @@ namespace Fabric.Identity.API
                     {
                         IdentityServerConstants.StandardScopes.OpenId,
                         IdentityServerConstants.StandardScopes.Profile,
-                        IdentityServerConstants.StandardScopes.Email,
-                        "patientapi"
+                        "fabric.profile",
+                        "patientapi",
                     },
                     AllowOfflineAccess = true
                 }
