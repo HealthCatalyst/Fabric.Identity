@@ -12,7 +12,7 @@ namespace Fabric.Identity.API
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
-            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new [] { JwtClaimTypes.Email, JwtClaimTypes.Address, "location", "allowedresource"});
+            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { JwtClaimTypes.Email, JwtClaimTypes.Address, "location", "allowedresource" });
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
@@ -53,6 +53,26 @@ namespace Fabric.Identity.API
 
                     RedirectUris = { "http://localhost:5002/signin-oidc"},
                     PostLogoutRedirectUris = { "http://localhost:5002/signout-callback-oidc"},
+
+                    AllowedScopes =
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "fabric.profile",
+                        "patientapi",
+                    },
+                    AllowOfflineAccess = true
+                },
+                new Client
+                {
+                    ClientId = "fabric-angularsample",
+                    ClientName = "Sample Fabric Angular Client",
+                    AllowedGrantTypes = GrantTypes.Implicit,
+                    AllowAccessTokensViaBrowser = true,
+
+                    RedirectUris = { "http://localhost:4200/oidc-callback"},
+                    PostLogoutRedirectUris = { "http://localhost:4200" },
+                    AllowedCorsOrigins = { "http://localhost:4200" },
 
                     AllowedScopes =
                     {

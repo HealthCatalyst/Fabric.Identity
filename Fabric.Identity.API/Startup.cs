@@ -38,7 +38,6 @@ namespace Fabric.Identity.API
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseIdentityServer();
 
             app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
