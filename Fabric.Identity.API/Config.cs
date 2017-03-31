@@ -61,7 +61,8 @@ namespace Fabric.Identity.API
                         "fabric.profile",
                         "patientapi",
                     },
-                    AllowOfflineAccess = true
+                    AllowOfflineAccess = true,
+                    RequireConsent = false
                 },
                 new Client
                 {
@@ -81,7 +82,8 @@ namespace Fabric.Identity.API
                         "fabric.profile",
                         "patientapi",
                     },
-                    AllowOfflineAccess = true
+                    AllowOfflineAccess = true,
+                    RequireConsent = false
                 }
             };
         }
