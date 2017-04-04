@@ -12,7 +12,7 @@ namespace Fabric.Identity.API
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
-            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { JwtClaimTypes.Email, JwtClaimTypes.Address, "location", "allowedresource" });
+            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { "location", "allowedresource" });
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
@@ -44,7 +44,7 @@ namespace Fabric.Identity.API
                 {
                     ClientId = "fabric-mvcsample",
                     ClientName = "Sample Fabric MVC Client",
-                    AllowedGrantTypes = GrantTypes.HybridAndClientCredentials,
+                    AllowedGrantTypes = GrantTypes.Hybrid,
 
                     ClientSecrets =
                     {
