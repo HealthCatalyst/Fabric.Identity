@@ -1,34 +1,57 @@
 ﻿@model LoggedOutViewModel
-
-@{ 
+@{
     // set this so the layout rendering sees an anonymous user
     ViewData["signed-out"] = true;
 }
-
-<div class="page-header logged-out">
-    <h1>
-        Logout
-        <small>You are now logged out</small>
-    </h1>
-
-    @if (Model.PostLogoutRedirectUri != null)
-    {
-        <div>
-            Click <a class="PostLogoutRedirectUri" href="@Model.PostLogoutRedirectUri">here</a> to return to the
-            <span>@Model.ClientName</span> application.
-        </div>
-    }
-
-    @if (Model.SignOutIframeUrl != null)
-    {
-        <iframe width="0" height="0" class="signout" src="@Model.SignOutIframeUrl"></iframe>
-    }
-</div>
-
-@section scripts
+<div id="PageOne" class="container">
+    <div class="row row-centered login">
+        <div id="logincontainer" class="col-xs-4 col-centered radiused">
+            <div class="logo item">
+                <img src="~/images/HC_logo.svg" alt="Health Catalyst Logo">
+            </div>
+            <div class="page-header logged-out">
+                <h1>
+                    <small>You are now logged out</small>
+                </h1>
+                @if (Model.PostLogoutRedirectUri != null)
+                {
+                    <div>
+                        Click <a class="PostLogoutRedirectUri" href="@Model.PostLogoutRedirectUri">here</a> to return to the
+                        <span>@Model.ClientName</span> application.
+                    </div>
+                }
+                @if (Model.SignOutIframeUrl != null)
+                {
+                    <iframe width="0" height="0" class="signout" src="@Model.SignOutIframeUrl"></iframe>
+                }
+            </div>
+            @section scripts
 {
-    @if (Model.AutomaticRedirectAfterSignOut)
-    {
-        <script src="~/js/signout-redirect.js"></script>
-    }
-}
+                @if (Model.AutomaticRedirectAfterSignOut)
+                {
+                    <script src="~/js/signout-redirect.js"></script>
+                }
+            }
+        </div>
+    </div>
+    <br><br><br>
+    <div class="footerWrapper" align="center">
+        <div class="footerBottom" align="center">
+            <div>
+                <a href="#">Customer Community</a>
+            </div>
+            <div>
+                <a href="#"> Terms of Use </a>
+            </div>
+            <div>
+                <a href="#">Privacy</a>
+            </div>
+            <div>
+                <a href="#">Legal &amp; Trademark Notices</a>
+            </div>
+            <div>
+                <a href="www.healthcatalyst.com">HealthCatalyst.com</a>
+            </div>
+        </div>
+    </div>
+</div>
