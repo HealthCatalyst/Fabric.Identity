@@ -1,4 +1,6 @@
-﻿using IdentityServer4;
+﻿using Fabric.Identity.API.Configuration;
+using Fabric.Platform.Logging;
+using IdentityServer4;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -6,19 +8,37 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace Fabric.Identity.API
 {
     public class Startup
     {
+        private readonly IConfiguration _config;
+        public Startup(IHostingEnvironment env)
+        {
+            var builder = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .SetBasePath(env.ContentRootPath);
+
+            _config = builder.Build();
+        }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services
-                .AddIdentityServer()
+                .AddIdentityServer(options =>
+                {
+                    options.Events.RaiseSuccessEvents = true;
+                    options.Events.RaiseFailureEvents = true;
+                    options.Events.RaiseErrorEvents = true;
+                })
                 .AddTemporarySigningCredential()
                 .AddInMemoryIdentityResources(Config.GetIdentityResources())
                 .AddInMemoryClients(Config.GetClients())
@@ -31,13 +51,20 @@ namespace Fabric.Identity.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            loggerFactory.AddConsole(LogLevel.Trace);
-            loggerFactory.AddDebug(LogLevel.Trace);
+            var appConfig = new AppConfiguration();
+            ConfigurationBinder.Bind(_config, appConfig);
 
+            var levelSwitch = new LoggingLevelSwitch();
+            var logger = LogFactory.CreateLogger(levelSwitch, appConfig.ElasticSearchSettings, "identityservice");
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                levelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
+
+            loggerFactory.AddSerilog(logger);
+
             app.UseIdentityServer();
 
             app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
