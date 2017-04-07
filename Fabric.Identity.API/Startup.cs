@@ -1,4 +1,5 @@
-﻿using Fabric.Identity.API.Configuration;
+﻿using System.Threading.Tasks;
+using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Platform.Logging;
 using IdentityServer4;
@@ -88,6 +89,8 @@ namespace Fabric.Identity.API
             });
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();
+            app.UseOwin()
+                .UseFabricMonitoring(() => Task.FromResult(true), levelSwitch);
         }
     }
 }
