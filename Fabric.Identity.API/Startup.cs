@@ -1,4 +1,5 @@
 ﻿using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.EventSinks;
 using Fabric.Platform.Logging;
 using IdentityServer4;
 using Microsoft.AspNetCore.Builder;
@@ -19,6 +20,7 @@ namespace Fabric.Identity.API
     public class Startup
     {
         private readonly IConfiguration _config;
+        private IAppConfiguration _appConfig;
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -31,7 +33,12 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            _appConfig = new AppConfiguration();
+            ConfigurationBinder.Bind(_config, _appConfig);
+
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IEventSink, ElasticSearchEventSink>();
+            services.AddSingleton(_appConfig);
             services
                 .AddIdentityServer(options =>
                 {
@@ -51,11 +58,9 @@ namespace Fabric.Identity.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            var appConfig = new AppConfiguration();
-            ConfigurationBinder.Bind(_config, appConfig);
 
             var levelSwitch = new LoggingLevelSwitch();
-            var logger = LogFactory.CreateLogger(levelSwitch, appConfig.ElasticSearchSettings, "identityservice");
+            var logger = LogFactory.CreateLogger(levelSwitch, _appConfig.ElasticSearchSettings, "identityservice");
             
             if (env.IsDevelopment())
             {
