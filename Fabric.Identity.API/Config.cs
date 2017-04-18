@@ -84,6 +84,26 @@ namespace Fabric.Identity.API
                     },
                     AllowOfflineAccess = true,
                     RequireConsent = false
+                },
+                new Client
+                {
+                    ClientId ="fabric-sampleapi-client",
+                    ClientName = "Sample API Client",
+                    AllowedGrantTypes = GrantTypes.ClientCredentials,
+
+                    ClientSecrets =
+                    {
+                        new Secret("secret".Sha256())
+                    },
+
+                    AllowedScopes =
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        "fabric.profile",
+                        "patientapi",
+                    },
+                     RequireConsent = false
                 }
             };
         }
