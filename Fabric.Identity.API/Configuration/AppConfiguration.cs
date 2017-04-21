@@ -9,5 +9,6 @@ namespace Fabric.Identity.API.Configuration
     public class AppConfiguration : IAppConfiguration
     {
         public ElasticSearchSettings ElasticSearchSettings { get; set; }
+        public HostingOptions HostingOptions { get; set; }
     }
 }
