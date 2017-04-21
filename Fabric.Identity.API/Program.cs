@@ -16,6 +16,7 @@ namespace Fabric.Identity.API
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
                 .UseApplicationInsights()
+                .UseIISIntegration()
                 .UseUrls("http://localhost:5001")
                 .Build();
 
