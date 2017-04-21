@@ -9,13 +9,7 @@ namespace Fabric.Identity.API
     {
         public static void Main(string[] args)
         {
-            var config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .Build();
-
-            var appConfig = new AppConfiguration();
-            ConfigurationBinder.Bind(config, appConfig);
+            var appConfig = new Configuration.ConfigurationProvider().GetAppConfiguration(Directory.GetCurrentDirectory());
 
             var host = new WebHostBuilder()
                 .UseKestrel()

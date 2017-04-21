@@ -20,22 +20,15 @@ namespace Fabric.Identity.API
 {
     public class Startup
     {
-        private readonly IConfiguration _config;
         private IAppConfiguration _appConfig;
         public Startup(IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .SetBasePath(env.ContentRootPath);
-
-            _config = builder.Build();
+            _appConfig = new Configuration.ConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
         }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            _appConfig = new AppConfiguration();
-            ConfigurationBinder.Bind(_config, _appConfig);
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IEventSink, ElasticSearchEventSink>();
