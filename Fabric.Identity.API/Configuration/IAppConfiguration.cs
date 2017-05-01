@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Fabric.Platform.Shared.Configuration;
+﻿using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.API.Configuration
 {
@@ -10,5 +6,6 @@ namespace Fabric.Identity.API.Configuration
     {
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }
+        CouchDbSettings CouchDbSettings { get; }
     }
 }
