@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
-using IdentityServer4.Stores;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Core;
@@ -54,10 +53,10 @@ namespace Fabric.Identity.API
                 })
                 .AddTemporarySigningCredential()
                 .AddInMemoryIdentityResources(Config.GetIdentityResources())
-                .AddInMemoryApiResources(Config.GetApiResources())
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyService>()
-                .Services.AddTransient<IClientStore, CouchDbClientStore>();
+                .AddResourceStore<CouchDbResourcesStore>()
+                .AddClientStore<CouchDbClientStore>();
 
             services.AddMvc();
           
@@ -73,8 +72,10 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
-            var couchDbStore = new CouchDbClientStore(new CouchDbAccessService(_couchDbSettings, _logger));
-            couchDbStore.AddClients();
+            var couchDbClientStore = new CouchDbClientStore(new CouchDbAccessService(_couchDbSettings, _logger));
+            couchDbClientStore.AddClients();
+            var couchDbResourceStore = new CouchDbResourcesStore(new CouchDbAccessService(_couchDbSettings, _logger));
+            couchDbResourceStore.AddResources();
 
             loggerFactory.AddSerilog(_logger);
 
@@ -103,9 +104,18 @@ namespace Fabric.Identity.API
 
     public class CorsPolicyService : ICorsPolicyService
     {
+        private readonly IDocumentDbService _documentDbService;
+
+        public CorsPolicyService(IDocumentDbService documentDbService)
+        {
+            _documentDbService = documentDbService;
+        }
+
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            return Task.FromResult(true);
+            return _documentDbService.DoesDocumentExist("client", origin);
         }
     }
+
+    
 }

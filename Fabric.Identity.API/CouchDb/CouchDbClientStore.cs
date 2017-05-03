@@ -23,85 +23,10 @@ namespace Fabric.Identity.API.CouchDb
         //This is temporary
         public void AddClients()
         {
-            var clientList = new List<Client>
+            foreach (var client in Config.GetClients())
             {
-                new Client
-                {
-                    ClientId = "fabric-mvcsample",
-                    ClientName = "Sample Fabric MVC Client",
-                    AllowedGrantTypes = GrantTypes.Hybrid,
-
-                    ClientSecrets =
-                    {
-                        new Secret("secret".Sha256())
-                    },
-
-                    RedirectUris = {"http://localhost:5002/signin-oidc"},
-                    PostLogoutRedirectUris = {"http://localhost:5002/signout-callback-oidc"},
-
-                    AllowedScopes =
-                    {
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        "fabric.profile",
-                        "patientapi",
-                    },
-                    AllowOfflineAccess = true,
-                    RequireConsent = false
-                },
-                new Client
-                {
-                    ClientId = "fabric-angularsample",
-                    ClientName = "Sample Fabric Angular Client",
-                    AllowedGrantTypes = GrantTypes.Implicit,
-                    AllowAccessTokensViaBrowser = true,
-
-                    RedirectUris = {"http://localhost:4200/oidc-callback.html"},
-                    PostLogoutRedirectUris = {"http://localhost:4200"},
-                    AllowedCorsOrigins = {"http://localhost:4200"},
-
-                    AllowedScopes =
-                    {
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        "fabric.profile",
-                        "patientapi",
-                    },
-                    AllowOfflineAccess = true,
-                    RequireConsent = false
-                },
-                new Client
-                {
-                    ClientId = "fabric-sampleapi-client",
-                    ClientName = "Sample API Client",
-                    AllowedGrantTypes = GrantTypes.ClientCredentials,
-
-                    ClientSecrets =
-                    {
-                        new Secret("secret".Sha256())
-                    },
-
-                    AllowedScopes =
-                    {
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        "fabric.profile",
-                        "patientapi",
-                    },
-                    RequireConsent = false
-                }
-            };
-
-            foreach (var client in clientList)
-            {
-                AddToCouchDb(client);
-
+                _documentDbService.AddDocument(client.ClientId, client);
             }
-        }
-
-        private void AddToCouchDb(Client client)
-        {
-            _documentDbService.AddDocument(client.ClientId, client);
         }
     }
 }
