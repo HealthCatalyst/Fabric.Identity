@@ -59,23 +59,19 @@ namespace Fabric.Identity.API
                 .AddClientStore<CouchDbClientStore>();
 
             services.AddMvc();
-          
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
-            var couchDbClientStore = new CouchDbClientStore(new CouchDbAccessService(_couchDbSettings, _logger));
-            couchDbClientStore.AddClients();
-            var couchDbResourceStore = new CouchDbResourcesStore(new CouchDbAccessService(_couchDbSettings, _logger));
-            couchDbResourceStore.AddResources();
+            var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger));
+            couchDbBootStrapper.AddIdentityServiceArtifacts();
 
             loggerFactory.AddSerilog(_logger);
 

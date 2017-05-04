@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
@@ -37,23 +36,6 @@ namespace Fabric.Identity.API.CouchDb
 
             var result = new Resources(identityResources, apiResources);
             return Task.FromResult(result);
-        }
-
-        public void AddResources()
-        {
-            var identityResources = Config.GetIdentityResources();
-
-            foreach (var identityResource in identityResources)
-            {
-                _documentDbService.AddDocument(identityResource.Name, identityResource);
-            }
-
-            var apiResources = Config.GetApiResources();
-
-            foreach (var apiResource in apiResources)
-            {
-                _documentDbService.AddDocument(apiResource.Name, apiResource);
-            }
         }
     }
 }

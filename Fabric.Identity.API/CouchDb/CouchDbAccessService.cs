@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using MyCouch;
+using MyCouch.Net;
 using MyCouch.Requests;
 using MyCouch.Responses;
 using Newtonsoft.Json;
@@ -164,6 +165,30 @@ namespace Fabric.Identity.API.CouchDb
                 ViewQueryResponse result = client.Views.QueryAsync(viewQuery).Result;
 
                 return result;
+            }
+        }
+
+        public void AddOrUpdateDesignDocument(string id, string json)
+        {
+            var dbInfo =
+                new DbConnectionInfo(_couchDbSettings.Server, _couchDbSettings.DatabaseName)
+                {
+                    BasicAuth = new BasicAuthString("admin", "admin")
+                };
+
+            using (var client = new MyCouchClient(dbInfo))
+            {
+                var existingDoc = client.Documents.GetAsync(id).Result;
+                
+                var response = !existingDoc.IsEmpty
+                    ? client.Documents.PutAsync(id, existingDoc.Rev, json).Result
+                    : client.Documents.PostAsync(json).Result;
+                
+                if (!response.IsSuccess)
+                {
+                    throw new Exception(
+                        $"Design Document was not added or updated successfully. Document ID: {id}, Error: {response.Error}, Reason: {response.Reason}");
+                }
             }
         }
     }
