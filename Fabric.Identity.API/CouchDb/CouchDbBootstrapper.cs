@@ -22,7 +22,7 @@ namespace Fabric.Identity.API.CouchDb
         {
             foreach (var client in Config.GetClients())
             {
-                _documentDbService.AddDocument(client.ClientId, client);
+                _documentDbService.AddOrUpdateDocument(client.ClientId, client);
             }
         }
 
@@ -32,14 +32,14 @@ namespace Fabric.Identity.API.CouchDb
 
             foreach (var identityResource in identityResources)
             {
-                _documentDbService.AddDocument(identityResource.Name, identityResource);
+                _documentDbService.AddOrUpdateDocument(identityResource.Name, identityResource);
             }
 
             var apiResources = Config.GetApiResources();
 
             foreach (var apiResource in apiResources)
             {
-                _documentDbService.AddDocument(apiResource.Name, apiResource);
+                _documentDbService.AddOrUpdateDocument(apiResource.Name, apiResource);
             }
         }
 

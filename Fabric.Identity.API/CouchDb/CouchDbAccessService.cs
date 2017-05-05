@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.CouchDb
     public interface IDocumentDbService
     {
         Task<T> GetDocument<T>(string documentId);
-        void AddDocument<T>(string documentId, T documentObject);
+        void AddOrUpdateDocument<T>(string documentId, T documentObject); 
         Task<bool> DoesDocumentExist(string typeName, string[] key);
         Task<T> FindDocumentByKey<T>(string typeName, string[] key);
         Task<IEnumerable<T>> FindDocumentsByKey<T>(string typeName, string[] key);
@@ -72,35 +72,38 @@ namespace Fabric.Identity.API.CouchDb
 
         public Task<T> GetDocument<T>(string documentId)
         {
-            HttpClient webClient = new HttpClient();
-            var response = webClient.GetAsync(GetDocumentUrl(documentId)).Result;
-
-            if (!response.IsSuccessStatusCode)
+            using (var client = new MyCouchClient(_couchDbSettings.Server, _couchDbSettings.DatabaseName))
             {
-                return Task.FromResult(default(T));
+                var documentResponse = client.Documents.GetAsync(documentId).Result;
+
+                if (!documentResponse.IsSuccess)
+                {
+                    return Task.FromResult(default(T));
+                }
+
+                var json = documentResponse.Content;
+                var document = JsonConvert.DeserializeObject<T>(json);
+
+                return Task.FromResult(document);
             }
-
-            var json = response.Content.ReadAsStringAsync().Result;
-            var client = JsonConvert.DeserializeObject<T>(json);
-
-            return Task.FromResult(client);
         }
 
-        public void AddDocument<T>(string documentId, T documentObject)
+        public void AddOrUpdateDocument<T>(string documentId, T documentObject)
         {
-            if (GetDocument<T>(documentId).Result != null)
-                return;
-
-            HttpClient webClient = new HttpClient();
-
-            var postData = JsonConvert.SerializeObject(documentObject);
-            var content = new StringContent(postData, Encoding.UTF8, "application/json");
-            var response = webClient.PutAsync(GetDocumentUrl(documentId), content).Result;
-
-            if (!response.IsSuccessStatusCode)
+            using (var client = new MyCouchClient(_couchDbSettings.Server, _couchDbSettings.DatabaseName))
             {
-                _logger.Error($"could not add document to couchdb: documentId={documentId}");
-            }
+                var existingDoc = client.Documents.GetAsync(documentId).Result;
+                var docJson = JsonConvert.SerializeObject(documentObject);
+
+                var response = existingDoc.IsEmpty ?                
+                    client.Documents.PutAsync(documentId, docJson).Result
+                    : client.Documents.PutAsync(documentId, existingDoc.Rev, docJson).Result;
+
+                if (!response.IsSuccess)
+                {
+                    throw new Exception($"unable to add or update document: {documentId} - error: {response.Reason}");
+                }
+             }
         }
 
         public Task<bool> DoesDocumentExist(string typeName, string[] key)

@@ -17,7 +17,9 @@ namespace Fabric.Identity.API.CouchDb
 
         public Task StoreAsync(PersistedGrant grant)
         {
-            throw new NotImplementedException();
+            _documentDbService.AddOrUpdateDocument(grant.Key, grant);
+
+            return Task.FromResult(0);
         }
 
         public Task<PersistedGrant> GetAsync(string key)
@@ -38,7 +40,7 @@ namespace Fabric.Identity.API.CouchDb
 
         public Task RemoveAllAsync(string subjectId, string clientId)
         {
-            _documentDbService.DeleteDocument("persistedgrantsubjectclient", new[] { subjectId,clientId });
+            _documentDbService.DeleteDocument("persistedgrantsubjectclient", new[] {subjectId, clientId});
             return Task.FromResult(0);
         }
 
