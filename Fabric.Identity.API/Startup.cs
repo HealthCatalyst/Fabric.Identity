@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
+using IdentityServer4.Stores;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Core;
@@ -56,7 +57,8 @@ namespace Fabric.Identity.API
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourcesStore>()
-                .AddClientStore<CouchDbClientStore>();
+                .AddClientStore<CouchDbClientStore>()
+                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
 
             services.AddMvc();
         }
@@ -109,7 +111,7 @@ namespace Fabric.Identity.API
 
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            return _documentDbService.DoesDocumentExist("client", origin);
+            return _documentDbService.DoesDocumentExist("client", new[] {origin});
         }
     }
 

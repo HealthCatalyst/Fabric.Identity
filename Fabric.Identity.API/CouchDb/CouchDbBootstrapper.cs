@@ -54,6 +54,7 @@ namespace Fabric.Identity.API.CouchDb
 
             couchDbAccessService.AddOrUpdateDesignDocument("_design/client", ClientDesignDocumentJson);
             couchDbAccessService.AddOrUpdateDesignDocument("_design/resource", ResourcesDesignDocumentJson);
+            couchDbAccessService.AddOrUpdateDesignDocument("_design/persistedgrant", PersistedGrantDesignDocumentJson);
         }
         
         private string ClientDesignDocumentJson =>
@@ -71,12 +72,27 @@ namespace Fabric.Identity.API.CouchDb
                 ""_id"": ""_design/resource"",
                 ""views"": {
                 ""identity_resource"": {
-                    ""map"": ""function(doc){ if(doc.Name && !doc.Scopes){ emit(doc.Name, doc);}}""
+                    ""map"": ""function(doc){ if(doc.Name && !doc.Scopes){ emit(doc.Name, 1);}}""
                 },
                 ""api_resource"": {
-                    ""map"": ""function(doc){ if(doc.Scopes.length > 0){ doc.Scopes.forEach(function(scope){ emit(scope.Name, doc); });}}""
+                    ""map"": ""function(doc){ if(doc.Scopes.length > 0){ doc.Scopes.forEach(function(scope){ emit(scope.Name, 1); });}}""
                 }
                 }
             }";
+
+        private string PersistedGrantDesignDocumentJson =>
+            @"{
+	            ""_id"": ""_design/persistedgrant"",
+	            ""views"": {
+		            ""by_key"": {
+			            ""map"": ""function(doc){ emit(doc.Key, 1); }""},
+		            ""by_subjectId"" : {
+			            ""map"": ""function(doc){ emit(doc.SubjectId, 1); }""},
+		            ""by_subjectId_clientId"" : {
+			            ""map"": ""function(doc){ emit([doc.SubjectId, doc.ClientId], 1); }""},
+		            ""by_subjectId_clientId_type"": {
+			            ""map"": ""function(doc){ emit([doc.SubjectId, doc.ClientId, doc.Type], 1); }""} 
+	            }
+            }"; 
     }
 }

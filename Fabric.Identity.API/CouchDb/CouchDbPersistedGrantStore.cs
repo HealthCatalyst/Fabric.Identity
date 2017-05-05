@@ -8,6 +8,13 @@ namespace Fabric.Identity.API.CouchDb
 {
     public class CouchDbPersistedGrantStore : IPersistedGrantStore
     {
+        private readonly IDocumentDbService _documentDbService;
+
+        public CouchDbPersistedGrantStore(IDocumentDbService documentDbService)
+        {
+            _documentDbService = documentDbService;
+        }
+
         public Task StoreAsync(PersistedGrant grant)
         {
             throw new NotImplementedException();
@@ -15,27 +22,30 @@ namespace Fabric.Identity.API.CouchDb
 
         public Task<PersistedGrant> GetAsync(string key)
         {
-            throw new NotImplementedException();
+            return _documentDbService.FindDocumentByKey<PersistedGrant>("persistedgrant", new []{key});
         }
 
         public Task<IEnumerable<PersistedGrant>> GetAllAsync(string subjectId)
         {
-            throw new NotImplementedException();
+            return _documentDbService.FindDocumentsByKey<PersistedGrant>("persistedgrantsubject", new []{subjectId});
         }
 
         public Task RemoveAsync(string key)
         {
-            throw new NotImplementedException();
+            _documentDbService.DeleteDocument("persistedgrant", new[] { key });
+            return Task.FromResult(0);
         }
 
         public Task RemoveAllAsync(string subjectId, string clientId)
         {
-            throw new NotImplementedException();
+            _documentDbService.DeleteDocument("persistedgrantsubjectclient", new[] { subjectId,clientId });
+            return Task.FromResult(0);
         }
 
         public Task RemoveAllAsync(string subjectId, string clientId, string type)
         {
-            throw new NotImplementedException();
+            _documentDbService.DeleteDocument("persistedgrantsubjectclienttype", new[] { subjectId, clientId, type });
+            return Task.FromResult(0);
         }
     }
 }
