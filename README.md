@@ -1,3 +1,5 @@
+![Build status](https://healthcatalyst.visualstudio.com/_apis/public/build/definitions/eaeb1198-1e3e-4938-88f1-918e8bf769af/328/badge)
+
 # Fabric.Identity
 
 The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem. An overvie of our thinking can be found in [this presentation](https://healthcatalyst.box.com/s/alac73mlvo1ojm1jrnzm37zma282lc9b).
