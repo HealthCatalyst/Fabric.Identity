@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
@@ -111,9 +112,9 @@ namespace Fabric.Identity.API
 
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            return _documentDbService.DoesDocumentExist("client", new[] {origin});
+            var allowedOrigins = _documentDbService.GetDocument<ClientOriginList>("allowedOrigins").Result;
+
+            return Task.FromResult(allowedOrigins.AllowedOrigins.Contains(origin));
         }
     }
-
-    
 }
