@@ -4,9 +4,7 @@ using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace Fabric.Identity.API.Quickstart
+namespace Fabric.Identity.API.Management
 {
     [Route("api/[controller]")]
     public class ClientController : Controller
