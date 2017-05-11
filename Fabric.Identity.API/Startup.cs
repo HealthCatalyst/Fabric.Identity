@@ -53,8 +53,7 @@ namespace Fabric.Identity.API
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
                 })
-                .AddTemporarySigningCredential()
-                .AddInMemoryIdentityResources(Config.GetIdentityResources())
+                .AddTemporarySigningCredential()         
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourcesStore>()
@@ -95,7 +94,7 @@ namespace Fabric.Identity.API
                 }
             });
             app.UseStaticFiles();
-            app.UseMvcWithDefaultRoute();
+            app.UseMvcWithDefaultRoute();           
             app.UseOwin()
                 .UseFabricMonitoring(() => Task.FromResult(true), _loggingLevelSwitch);
         }

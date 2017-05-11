@@ -29,12 +29,18 @@ namespace Fabric.Identity.API.CouchDb
             return $"{typeof(T).Name.ToLower()}:{documentId}";
         }
 
-        private DbConnectionInfo DbConnectionInfo =>
-            new DbConnectionInfo(_couchDbSettings.Server, _couchDbSettings.DatabaseName)
+        private DbConnectionInfo DbConnectionInfo {
+            get
             {
-                BasicAuth = new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password)
-            };
-        
+                var connectionInfo = new DbConnectionInfo(_couchDbSettings.Server, _couchDbSettings.DatabaseName);
+
+                if (!string.IsNullOrEmpty(_couchDbSettings.Username) &&
+                    !string.IsNullOrEmpty(_couchDbSettings.Password))
+                    connectionInfo.BasicAuth = new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password);
+
+                return connectionInfo;
+            }
+        }
 
         public CouchDbAccessService(ICouchDbSettings config, Serilog.ILogger logger)
         {
