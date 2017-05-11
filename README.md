@@ -2,7 +2,7 @@
 
 # Fabric.Identity
 
-The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem. An overvie of our thinking can be found in [this presentation](https://healthcatalyst.box.com/s/alac73mlvo1ojm1jrnzm37zma282lc9b).
+The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem. An overview of our thinking can be found in [this presentation](https://healthcatalyst.box.com/s/alac73mlvo1ojm1jrnzm37zma282lc9b).
 
 ## Platform
 The Fabric.Identity service is built using:
