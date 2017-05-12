@@ -78,21 +78,7 @@ namespace Fabric.Identity.API
             loggerFactory.AddSerilog(_logger);
 
             app.UseIdentityServer();
-
-            app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
-            {
-                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
-                SignOutScheme = IdentityServerConstants.SignoutScheme,
-
-                DisplayName = "Azure Active Directory",
-                Authority = "https://login.microsoftonline.com/common",
-                ClientId = "0f1ee72e-1d9c-45ac-9948-0a837ba12950",
-
-                TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false
-                }
-            });
+            
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();           
             app.UseOwin()
