@@ -9,7 +9,7 @@ namespace Fabric.Identity.API
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
-            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { "location", "allowedresource" });
+            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { "location", "allowedresource", JwtClaimTypes.Role });
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
@@ -27,8 +27,14 @@ namespace Fabric.Identity.API
                 new ApiResource
                 {
                     Name = "patientapi",
-                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "allowedresource"},
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "allowedresource", JwtClaimTypes.Role},
                     Scopes = { new Scope("patientapi", "Patient API") }
+                },
+                new ApiResource
+                {
+                    Name = "authorization-api",
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, JwtClaimTypes.Role},
+                    Scopes = { new Scope("fabric/authorization.read"), new Scope("fabric/authorization.write"), new Scope("fabric/authorization.manageclients") }
                 }
             };
         }
@@ -57,6 +63,9 @@ namespace Fabric.Identity.API
                         IdentityServerConstants.StandardScopes.Profile,
                         "fabric.profile",
                         "patientapi",
+                        "fabric/authorization.read",
+                        "fabric/authorization.write"
+
                     },
                     AllowOfflineAccess = true,
                     RequireConsent = false
@@ -78,6 +87,8 @@ namespace Fabric.Identity.API
                         IdentityServerConstants.StandardScopes.Profile,
                         "fabric.profile",
                         "patientapi",
+                        "fabric/authorization.read",
+                        "fabric/authorization.write"
                     },
                     AllowOfflineAccess = true,
                     RequireConsent = false
@@ -99,6 +110,8 @@ namespace Fabric.Identity.API
                         IdentityServerConstants.StandardScopes.Profile,
                         "fabric.profile",
                         "patientapi",
+                        "fabric/authorization.read",
+                        "fabric/authorization.write"
                     },
                     RequireConsent = false
                 }

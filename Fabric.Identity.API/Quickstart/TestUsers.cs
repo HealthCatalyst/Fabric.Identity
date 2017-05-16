@@ -22,7 +22,8 @@ namespace IdentityServer4.Quickstart.UI
                     new Claim(JwtClaimTypes.Email, "AliceSmith@email.com"),
                     new Claim(JwtClaimTypes.EmailVerified, "true", ClaimValueTypes.Boolean),
                     new Claim(JwtClaimTypes.WebSite, "http://alice.com"),
-                    new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'One Hacker Way', 'locality': 'Heidelberg', 'postal_code': 69118, 'country': 'Germany' }", IdentityServerConstants.ClaimValueTypes.Json)
+                    new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'One Hacker Way', 'locality': 'Heidelberg', 'postal_code': 69118, 'country': 'Germany' }", IdentityServerConstants.ClaimValueTypes.Json),
+                    new Claim(JwtClaimTypes.Role, "Health Catalyst Viewer")
                 }
             },
             new TestUser{SubjectId = "88421113", Username = "bob", Password = "bob", 
@@ -36,7 +37,8 @@ namespace IdentityServer4.Quickstart.UI
                     new Claim(JwtClaimTypes.WebSite, "http://bob.com"),
                     new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'One Hacker Way', 'locality': 'Heidelberg', 'postal_code': 69118, 'country': 'Germany' }", IdentityServerConstants.ClaimValueTypes.Json),
                     new Claim("location", "somewhere"),
-                    new Claim("allowedresource", "user/Patient.read")
+                    new Claim("allowedresource", "user/Patient.read"),
+                    new Claim(JwtClaimTypes.Role, "Health Catalyst Editor")
                 }
             },
         };
