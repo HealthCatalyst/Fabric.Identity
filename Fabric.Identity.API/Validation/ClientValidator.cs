@@ -23,7 +23,8 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(client => client.ClientId)
                 .Must(BeUnique)
-                .When(client => !string.IsNullOrEmpty(client.ClientId));
+                .When(client => !string.IsNullOrEmpty(client.ClientId))
+                .WithMessage("Please specify a unique Id for this client");
 
             RuleFor(client => client.ClientName)
                 .NotEmpty()
@@ -42,7 +43,7 @@ namespace Fabric.Identity.API.Validation
 
         private bool BeUnique(string clientId)
         {
-            return _documentDbService.GetDocument<Client>(clientId) == null;
+            return _documentDbService.GetDocument<Client>(clientId).Result == null;
         }
     }
 }

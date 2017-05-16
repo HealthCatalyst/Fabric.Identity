@@ -42,7 +42,7 @@ namespace Fabric.Identity.API.Validation
 
         private bool BeUnique(string apiResourceName)
         {
-            return _documentDbService.GetDocument<ApiResource>(apiResourceName) == null;
+            return _documentDbService.GetDocument<ApiResource>(apiResourceName).Result == null;
         }
 
     }
