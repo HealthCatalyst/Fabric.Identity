@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
@@ -7,6 +8,7 @@ using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Models;
 using Fabric.Platform.Logging;
+using IdentityServer4.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -100,9 +102,9 @@ namespace Fabric.Identity.API
 
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            var allowedOrigins = _documentDbService.GetDocument<ClientOriginList>("allowedOrigins").Result;
+            var clients = _documentDbService.GetDocuments<Client>("client:").Result;
 
-            return Task.FromResult(allowedOrigins.AllowedOrigins.Contains(origin));
+            return Task.FromResult(clients.SelectMany(c => c.AllowedCorsOrigins).Contains(origin));
         }
     }
 }

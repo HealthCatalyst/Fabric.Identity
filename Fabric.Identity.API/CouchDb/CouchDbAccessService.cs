@@ -116,7 +116,7 @@ namespace Fabric.Identity.API.CouchDb
                     return; //TODO: how to handle this
                 }
 
-                var response = client.Documents.PutAsync(documentId, docJson).Result;
+                var response = client.Documents.PutAsync(fullDocumentId, docJson).Result;
 
                 if (!response.IsSuccess)
                 {

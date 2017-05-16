@@ -20,12 +20,12 @@ namespace Fabric.Identity.API.CouchDb
         
         public void AddIdentityServiceArtifacts()
         {
-            RecreateDb();
+            CreateDb();
             AddClients();
             AddResources();
         }
 
-        private void RecreateDb()
+        private void CreateDb()
         {
             if (string.IsNullOrEmpty(_couchDbSettings.Username) ||
                 string.IsNullOrEmpty(_couchDbSettings.Password))
@@ -66,12 +66,6 @@ namespace Fabric.Identity.API.CouchDb
             {
                 _documentDbService.AddDocument(client.ClientId, client);
             }
-
-            var allowedOrigins = clients
-                .SelectMany(a => a.AllowedCorsOrigins).ToList();
-
-            _documentDbService.AddDocument("allowedOrigins",
-                new ClientOriginList {AllowedOrigins = allowedOrigins});
         }
 
         private void AddResources()
@@ -89,12 +83,4 @@ namespace Fabric.Identity.API.CouchDb
             }
         }        
     }
-
-    public class ClientOriginList
-    {
-        public IList<string> AllowedOrigins { get; set; }
-    }    
-
-   
-
 }
