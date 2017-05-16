@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
@@ -26,86 +25,55 @@ namespace Fabric.Identity.API.Management
         [HttpGet("{id}", Name = GetIdentityResourceRouteName)]
         public IActionResult Get(string id)
         {
-            try
-            {
-                var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+            var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
 
-                if (identityResource == null)
-                {
-                    return CreateFailureResponse($"The specified client with id: {id} was not found",
-                        HttpStatusCode.NotFound);
-                }
-                return Ok(identityResource);
-            }
-            catch (Exception)
+            if (identityResource == null)
             {
-                Logger.Error($"The specified identity resource with id: {id} was not found.");
-                throw;
+                return CreateFailureResponse($"The specified client with id: {id} was not found",
+                    HttpStatusCode.NotFound);
             }
+            return Ok(identityResource);
         }
 
         // POST api/values
         [HttpPost]
-        public IActionResult Post([FromBody]IdentityResource value)
+        public IActionResult Post([FromBody] IdentityResource value)
         {
-            try
+            var validationResult = Validate(value);
+
+            if (!validationResult.IsValid)
             {
-                var validationResult = Validate(value);
-
-                if (!validationResult.IsValid)
-                {
-                    return CreateValidationFailureResponse(validationResult);
-                }
-
-                var id = value.Name;
-                _documentDbService.AddDocument(id, value);
-
-                return CreatedAtRoute(GetIdentityResourceRouteName, new {id}, value);
+                return CreateValidationFailureResponse(validationResult);
             }
-            catch (Exception e)
-            {
-                Logger.Error($"Unable to create a new identity resource. Error: {e.Message}");
-                throw;
-            }
+
+            var id = value.Name;
+            _documentDbService.AddDocument(id, value);
+
+            return CreatedAtRoute(GetIdentityResourceRouteName, new {id}, value);
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public IActionResult Put(string id, [FromBody]IdentityResource value)
+        public IActionResult Put(string id, [FromBody] IdentityResource value)
         {
-            try
-            {
-                var validationResult = Validate(value);
+            var validationResult = Validate(value);
 
-                if (!validationResult.IsValid)
-                {
-                    return CreateValidationFailureResponse(validationResult);
-                }
-                _documentDbService.UpdateDocument(id, value);
-
-                return NoContent();
-            }
-            catch (Exception e)
+            if (!validationResult.IsValid)
             {
-                Logger.Error($"Unable to update identity resource. Error: {e.Message}");
-                throw;
+                return CreateValidationFailureResponse(validationResult);
             }
+            _documentDbService.UpdateDocument(id, value);
+
+            return NoContent();
         }
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
-            try
-            {
-                _documentDbService.DeleteDocument<IdentityResource>(id);
-                return NoContent();
-            }
-            catch (Exception)
-            {
-                Logger.Error($"Unable to delete identity resource with id: {id}");
-                throw;
-            }
+            _documentDbService.DeleteDocument<IdentityResource>(id);
+
+            return NoContent();
         }
     }
 }

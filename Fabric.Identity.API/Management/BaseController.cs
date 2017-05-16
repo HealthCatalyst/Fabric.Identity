@@ -21,6 +21,7 @@ namespace Fabric.Identity.API.Management
         protected ValidationResult Validate(T model)
         {
             var validationResults = Validator.Validate(model);
+            
             if (!validationResults.IsValid)
             {
                 Logger.Information("Validation failed for model: {@model}. ValidationResults: {@validationResults}.",

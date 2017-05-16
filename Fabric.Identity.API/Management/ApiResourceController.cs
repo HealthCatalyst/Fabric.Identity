@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
@@ -23,93 +22,60 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5
-        [HttpGet("{id}", Name= GetApiResourceRouteName)]
+        [HttpGet("{id}", Name = GetApiResourceRouteName)]
         public IActionResult Get(string id)
         {
-            try
+            var apiResource = _documentDbService.GetDocument<ApiResource>(id).Result;
+
+            if (apiResource == null)
             {
-                var apiResource = _documentDbService.GetDocument<ApiResource>(id).Result;
-
-                if (apiResource == null)
-                {
-                    return CreateFailureResponse($"The specified api resource with id: {id} was not found",
-                        HttpStatusCode.NotFound);
-                }
-
-                return Ok(apiResource);
-
+                return CreateFailureResponse($"The specified api resource with id: {id} was not found",
+                    HttpStatusCode.NotFound);
             }
-            catch (Exception)
-            {
-                Logger.Error($"The specified api resource with id: {id} was not found.");
-                throw;
-            }
+
+            return Ok(apiResource);
         }
 
         // POST api/values
         [HttpPost]
-        public IActionResult Post([FromBody]ApiResource value)
+        public IActionResult Post([FromBody] ApiResource value)
         {
-            try
+            var validationResult = Validate(value);
+
+            if (!validationResult.IsValid)
             {
-                var validationResult = Validate(value);
-
-                if (!validationResult.IsValid)
-                {
-                    return CreateValidationFailureResponse(validationResult);
-                }
-
-                var id = value.Name;
-                _documentDbService.AddDocument(id, value);
-
-                return CreatedAtRoute(GetApiResourceRouteName, new {id}, value);
+                return CreateValidationFailureResponse(validationResult);
             }
-            catch (Exception e)
-            {
-                Logger.Error($"Unable to create a new api resource. Error: {e.Message}");
-                throw;
-            }
+
+            var id = value.Name;
+            _documentDbService.AddDocument(id, value);
+
+            return CreatedAtRoute(GetApiResourceRouteName, new {id}, value);
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public IActionResult Put(string id, [FromBody]ApiResource value)
+        public IActionResult Put(string id, [FromBody] ApiResource value)
         {
-            try
+            var validationResult = Validate(value);
+
+            if (!validationResult.IsValid)
             {
-                var validationResult = Validate(value);
-
-                if (!validationResult.IsValid)
-                {
-                    return CreateValidationFailureResponse(validationResult);
-                }
-
-                _documentDbService.UpdateDocument(id, value);
-
-                return NoContent();
+                return CreateValidationFailureResponse(validationResult);
             }
-            catch (Exception e)
-            {
-                Logger.Error($"Unable to update api resource. Error: {e.Message}");
-                throw;
-            }
+
+            _documentDbService.UpdateDocument(id, value);
+
+            return NoContent();
         }
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
-            try
-            {
-                _documentDbService.DeleteDocument<ApiResource>(id);
+            _documentDbService.DeleteDocument<ApiResource>(id);
 
-                return NoContent();
-            }
-            catch (Exception)
-            {
-                Logger.Error($"Unable to delete api resource with id: {id}");
-                throw;
-            }
+            return NoContent();
         }
     }
 }
