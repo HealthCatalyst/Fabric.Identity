@@ -19,7 +19,7 @@ namespace Fabric.Identity.API.CouchDb
 
         public Task StoreAsync(PersistedGrant grant)
         {
-            _documentDbService.AddOrUpdateDocument(grant.Key, grant);
+            _documentDbService.AddDocument(grant.Key, grant);
 
             return Task.FromResult(0);
         }

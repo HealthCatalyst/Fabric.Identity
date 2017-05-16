@@ -6,6 +6,7 @@ using MyCouch.Net;
 using MyCouch.Requests;
 using MyCouch.Responses;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace Fabric.Identity.API.CouchDb
 {
@@ -13,13 +14,14 @@ namespace Fabric.Identity.API.CouchDb
     {
         Task<T> GetDocument<T>(string documentId);
         Task<IEnumerable<T>> GetDocuments<T>(string documentType);
-        void AddOrUpdateDocument<T>(string documentId, T documentObject); 
+        void AddDocument<T>(string documentId, T documentObject);
+        void UpdateDocument<T>(string documentId, T documentObject);
         void DeleteDocument<T>(string documentId);
     }
 
     public class CouchDbAccessService : IDocumentDbService
     {
-        private readonly Serilog.ILogger _logger;
+        private readonly ILogger _logger;
         private readonly ICouchDbSettings _couchDbSettings;
         private const string HighestUnicodeChar = "\ufff0";
 
@@ -41,7 +43,7 @@ namespace Fabric.Identity.API.CouchDb
             }
         }
 
-        public CouchDbAccessService(ICouchDbSettings config, Serilog.ILogger logger)
+        public CouchDbAccessService(ICouchDbSettings config, ILogger logger)
         {
             _couchDbSettings = config;
             _logger = logger;
@@ -100,24 +102,51 @@ namespace Fabric.Identity.API.CouchDb
             }
         }
 
-        public void AddOrUpdateDocument<T>(string documentId, T documentObject)
+        public void AddDocument<T>(string documentId, T documentObject)
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
+
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var existingDoc = client.Documents.GetAsync(fullDocumentId).Result;
                 var docJson = JsonConvert.SerializeObject(documentObject);
 
-                var response = existingDoc.IsEmpty ?                
-                    client.Documents.PutAsync(fullDocumentId, docJson).Result
-                    : client.Documents.PutAsync(fullDocumentId, existingDoc.Rev, docJson).Result;
+                if (!string.IsNullOrEmpty(existingDoc.Id))
+                {                    
+                    return; //TODO: how to handle this
+                }
+
+                var response = client.Documents.PutAsync(documentId, docJson).Result;
 
                 if (!response.IsSuccess)
                 {
                     _logger.Error($"unable to add or update document: {documentId} - error: {response.Reason}");
                 }
-             }
+            }
         }
+
+        public void UpdateDocument<T>(string documentId, T documentObject)
+        {
+            var fullDocumentId = GetFullDocumentId<T>(documentId);
+
+            using (var client = new MyCouchClient(DbConnectionInfo))
+            {
+                var existingDoc = client.Documents.GetAsync(fullDocumentId).Result;
+                var docJson = JsonConvert.SerializeObject(documentObject);
+
+                if (existingDoc.IsEmpty)
+                {
+                    return; //TODO: how to handle this?
+                }
+
+                var response = client.Documents.PutAsync(fullDocumentId, existingDoc.Rev, docJson).Result;
+
+                if (!response.IsSuccess)
+                {
+                    _logger.Error($"unable to add or update document: {documentId} - error: {response.Reason}");
+                }
+            }
+        }        
         
         public void DeleteDocument<T>(string documentId)
         {

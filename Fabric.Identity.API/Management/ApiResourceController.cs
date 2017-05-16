@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.Management
                 }
 
                 var id = value.Name;
-                _documentDbService.AddOrUpdateDocument(id, value);
+                _documentDbService.AddDocument(id, value);
 
                 return CreatedAtRoute(GetApiResourceRouteName, new {id}, value);
             }
@@ -84,7 +84,7 @@ namespace Fabric.Identity.API.Management
                     return CreateValidationFailureResponse(validationResult);
                 }
 
-                _documentDbService.AddOrUpdateDocument(id, value);
+                _documentDbService.UpdateDocument(id, value);
 
                 return NoContent();
             }
