@@ -39,7 +39,7 @@ namespace Fabric.Identity.API.Management
         protected IActionResult CreateFailureResponse(string message, HttpStatusCode statusCode)
         {
             var error = ErrorFactory.CreateError<T>(message, statusCode);
-            return Json(error); //TODO: add exception middleware and tie into it instead of returning Json result
+            return Json(error);
         }
     }
 }

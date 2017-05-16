@@ -12,7 +12,7 @@
 
     public class InnerError
     {
-        public string code { get; set; }
+        public string Code { get; set; }
         public InnerError Innererror { get; set; }
     }
 }

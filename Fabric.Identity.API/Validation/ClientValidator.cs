@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using Fabric.Identity.API.CouchDb;
 using FluentValidation;
 using IdentityServer4.Models;
 
@@ -7,11 +6,8 @@ namespace Fabric.Identity.API.Validation
 {
     public class ClientValidator : AbstractValidator<Client>
     {
-        private readonly IDocumentDbService _documentDbService;
-
-        public ClientValidator(IDocumentDbService documentDbService)
-        {
-            _documentDbService = documentDbService;
+        public ClientValidator()
+        {     
             ConfigureRules();
         }
 
@@ -20,11 +16,6 @@ namespace Fabric.Identity.API.Validation
             RuleFor(client => client.ClientId)
                 .NotEmpty()
                 .WithMessage("Please specify an Id for this client");
-
-            RuleFor(client => client.ClientId)
-                .Must(BeUnique)
-                .When(client => !string.IsNullOrEmpty(client.ClientId))
-                .WithMessage("Please specify a unique Id for this client");
 
             RuleFor(client => client.ClientName)
                 .NotEmpty()
@@ -39,11 +30,6 @@ namespace Fabric.Identity.API.Validation
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit))
                 .WithMessage("Please specify at least one Allowed Cors Origin when using implicit grant type");
 
-        }
-
-        private bool BeUnique(string clientId)
-        {
-            return _documentDbService.GetDocument<Client>(clientId).Result == null;
         }
     }
 }

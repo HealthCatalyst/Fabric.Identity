@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Fabric.Identity.API.Configuration;
+﻿using Fabric.Identity.API.Configuration;
 using Microsoft.AspNetCore.Hosting;
 
-namespace Fabric.Identity.API
+namespace Fabric.Identity.API.Extensions
 {
     public static class WebHostBuilderExtensions
     {

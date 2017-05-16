@@ -1,18 +1,12 @@
-﻿using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
-using Fabric.Identity.API.CouchDb;
-using FluentValidation;
+﻿using FluentValidation;
 using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Validation
 {
     public class ApiResourceValidator : AbstractValidator<ApiResource>
     {
-        private readonly IDocumentDbService _documentDbService;
-
-        public ApiResourceValidator(IDocumentDbService documentDbService)
+        public ApiResourceValidator()
         {
-            _documentDbService = documentDbService;
             ConfigureRules();
         }
 
@@ -21,10 +15,6 @@ namespace Fabric.Identity.API.Validation
             RuleFor(apiResource => apiResource.Name)
                 .NotEmpty()
                 .WithMessage("Please specify a Name for this Api Resource");
-
-            RuleFor(apiResource => apiResource.Name)
-                .Must(BeUnique)
-                .When(apiResource => !string.IsNullOrEmpty(apiResource.Name));
 
             RuleFor(apiResource => apiResource.Scopes)
                 .NotNull()
@@ -39,11 +29,5 @@ namespace Fabric.Identity.API.Validation
                 .NotEmpty()
                 .WithMessage("Please ensure all User Claim items have a value for this Api Resource");
         }
-
-        private bool BeUnique(string apiResourceName)
-        {
-            return _documentDbService.GetDocument<ApiResource>(apiResourceName).Result == null;
-        }
-
     }
 }

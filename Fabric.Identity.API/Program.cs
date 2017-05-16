@@ -1,7 +1,6 @@
 ﻿using System.IO;
-using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Extensions;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 
 namespace Fabric.Identity.API
 {

@@ -1,12 +1,12 @@
-﻿using System.Linq;
+﻿using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
+using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Validation;
 using Fabric.Platform.Logging;
-using IdentityServer4;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using IdentityServer4.Stores;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Diagnostics;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -48,9 +48,7 @@ namespace Fabric.Identity.API
             services.AddSingleton(_appConfig);           
             services.AddSingleton(_logger);
             services.AddSingleton(_couchDbSettings);
-            services.AddTransient<ClientValidator, ClientValidator>();
-            services.AddTransient<IdentityResourceValidator, IdentityResourceValidator>();
-            services.AddTransient<ApiResourceValidator, ApiResourceValidator>();
+            services.AddFluentValidations();
             services
                 .AddIdentityServer(options =>
                 {
@@ -82,10 +80,8 @@ namespace Fabric.Identity.API
 
             loggerFactory.AddSerilog(_logger);
 
-           
-
             app.UseIdentityServer();
-            
+          
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();           
             app.UseOwin()
