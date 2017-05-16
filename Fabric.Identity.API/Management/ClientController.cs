@@ -12,14 +12,12 @@ namespace Fabric.Identity.API.Management
     public class ClientController : BaseController<Client>
     {
         private readonly IDocumentDbService _documentDbService;
-        private readonly ILogger _logger;
         private const string GetClientRouteName = "GetClient";
 
         public ClientController(IDocumentDbService documentDbService,  ClientValidator validator, ILogger logger) 
             : base(validator, logger)
         {
             _documentDbService = documentDbService;
-            _logger = logger;
         }
 
         // GET api/values/5
@@ -40,7 +38,7 @@ namespace Fabric.Identity.API.Management
             }
             catch (Exception)
             {
-                _logger.Error($"The specified client with id: {id} was not found.");
+                Logger.Error($"The specified client with id: {id} was not found.");
                 return CreateFailureResponse($"The specified client with id: {id} was not found",
                     HttpStatusCode.BadRequest);
             }
@@ -66,7 +64,7 @@ namespace Fabric.Identity.API.Management
             }
             catch (Exception e)
             {
-                _logger.Error($"Unable to create a new client. Error: {e.Message}");
+                Logger.Error($"Unable to create a new client. Error: {e.Message}");
                 return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
             }
         }
@@ -89,7 +87,7 @@ namespace Fabric.Identity.API.Management
             }
             catch (Exception e)
             {
-                _logger.Error($"Unable to update client. Error: {e.Message}");
+                Logger.Error($"Unable to update client. Error: {e.Message}");
                 return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
             }
         }
@@ -105,7 +103,7 @@ namespace Fabric.Identity.API.Management
             }
             catch (Exception e)
             {
-                _logger.Error($"Unable to delete client with id: {id}");
+                Logger.Error($"Unable to delete client with id: {id}");
                 return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
             }
             

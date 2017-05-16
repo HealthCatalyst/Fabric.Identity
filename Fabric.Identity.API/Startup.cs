@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Logging;
 using IdentityServer4;
@@ -48,6 +49,8 @@ namespace Fabric.Identity.API
             services.AddSingleton(_logger);
             services.AddSingleton(_couchDbSettings);
             services.AddTransient<ClientValidator, ClientValidator>();
+            services.AddTransient<IdentityResourceValidator, IdentityResourceValidator>();
+            services.AddTransient<ApiResourceValidator, ApiResourceValidator>();
             services
                 .AddIdentityServer(options =>
                 {
@@ -78,6 +81,8 @@ namespace Fabric.Identity.API
             couchDbBootStrapper.AddIdentityServiceArtifacts();
 
             loggerFactory.AddSerilog(_logger);
+
+           
 
             app.UseIdentityServer();
             

@@ -10,12 +10,12 @@ namespace Fabric.Identity.API.Management
     public abstract class BaseController<T> : Controller
     {
         protected readonly AbstractValidator<T> Validator;
-        private readonly ILogger _logger;
+        protected readonly ILogger Logger;
 
         protected BaseController(AbstractValidator<T> validator, ILogger logger)
         {
             Validator = validator;
-            _logger = logger;
+            Logger = logger;
         }
 
         protected ValidationResult Validate(T model)
@@ -23,7 +23,7 @@ namespace Fabric.Identity.API.Management
             var validationResults = Validator.Validate(model);
             if (!validationResults.IsValid)
             {
-                _logger.Information("Validation failed for model: {@model}. ValidationResults: {@validationResults}.",
+                Logger.Information("Validation failed for model: {@model}. ValidationResults: {@validationResults}.",
                     model, validationResults);
             }
 

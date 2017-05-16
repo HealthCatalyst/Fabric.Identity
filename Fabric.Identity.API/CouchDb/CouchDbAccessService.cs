@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.CouchDb
 
                 if (!documentResponse.IsSuccess)
                 {   
-                    _logger.Error($"unable to find document: {GetFullDocumentId<T>(documentId)} - error: {documentResponse.Reason}");
+                    _logger.Debug($"unable to find document: {GetFullDocumentId<T>(documentId)} - message: {documentResponse.Reason}");
                     return Task.FromResult(default(T));
                 }
 
