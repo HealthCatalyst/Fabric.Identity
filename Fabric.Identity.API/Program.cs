@@ -16,7 +16,7 @@ namespace Fabric.Identity.API
                 .UseStartup<Startup>()
                 .UseApplicationInsights()
                 .UseIisIntegrationIfConfigured(appConfig)
-                .UseUrls("http://localhost:5001")
+                .UseUrls("http://*:5001")
                 .Build();
 
             host.Run();
