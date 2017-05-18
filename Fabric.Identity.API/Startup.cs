@@ -42,24 +42,12 @@ namespace Fabric.Identity.API
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IEventSink, ElasticSearchEventSink>();
-            services.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             services.AddSingleton(_appConfig);           
             services.AddSingleton(_logger);
-            services.AddSingleton(_couchDbSettings);
             services.AddFluentValidations();
-            services
-                .AddIdentityServer(options =>
-                {
-                    options.Events.RaiseSuccessEvents = true;
-                    options.Events.RaiseFailureEvents = true;
-                    options.Events.RaiseErrorEvents = true;
-                })
-                .AddTemporarySigningCredential()         
-                .AddTestUsers(TestUsers.Users)
-                .AddCorsPolicyService<CorsPolicyService>()
-                .AddResourceStore<CouchDbResourcesStore>()
-                .AddClientStore<CouchDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
+            //services.AddCouchDbBackedIdentityServer(_couchDbSettings);
+            services.AddInMemoryIdentityServer();
+                
 
             services.AddMvc();
         }
@@ -73,8 +61,8 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
-            var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
-            couchDbBootStrapper.AddIdentityServiceArtifacts();
+            //var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
+            //couchDbBootStrapper.AddIdentityServiceArtifacts();
 
             loggerFactory.AddSerilog(_logger);
 
@@ -86,6 +74,8 @@ namespace Fabric.Identity.API
                 .UseFabricMonitoring(() => Task.FromResult(true), _loggingLevelSwitch);
         }
     }
+
+
 
     public class CorsPolicyService : ICorsPolicyService
     {
