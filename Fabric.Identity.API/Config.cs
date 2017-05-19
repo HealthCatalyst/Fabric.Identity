@@ -47,7 +47,7 @@ namespace Fabric.Identity.API
                 {
                     ClientId = "fabric-mvcsample",
                     ClientName = "Sample Fabric MVC Client",
-                    AllowedGrantTypes = GrantTypes.Hybrid,
+                    AllowedGrantTypes = GrantTypes.HybridAndClientCredentials,
 
                     ClientSecrets =
                     {
