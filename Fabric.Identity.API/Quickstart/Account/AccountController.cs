@@ -217,6 +217,13 @@ namespace IdentityServer4.Quickstart.UI
                 additionalClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
             }
 
+            // if the external provider issues groups claims, copy it over
+            var groupClaims = claims.Where(c => c.Type == "groups").ToList();
+            if (groupClaims.Any())
+            {
+                additionalClaims.AddRange(groupClaims);
+            }
+
             // if the external provider issued an id_token, we'll keep it for signout
             AuthenticationProperties props = null;
             var id_token = info.Properties.GetTokenValue("id_token");

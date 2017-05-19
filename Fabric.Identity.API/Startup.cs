@@ -11,9 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
-using IdentityServer4.Stores;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -67,7 +65,7 @@ namespace Fabric.Identity.API
             loggerFactory.AddSerilog(_logger);
 
             app.UseIdentityServer();
-          
+            app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();           
             app.UseOwin()

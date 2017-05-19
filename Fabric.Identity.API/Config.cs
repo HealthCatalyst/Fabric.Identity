@@ -9,7 +9,7 @@ namespace Fabric.Identity.API
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {
-            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { "location", "allowedresource", JwtClaimTypes.Role });
+            var fabricProfile = new IdentityResource(name: "fabric.profile", displayName: "Fabric Profile", claimTypes: new[] { "location", "allowedresource", JwtClaimTypes.Role, "groups" });
             return new List<IdentityResource>
             {
                 new IdentityResources.OpenId(),
@@ -27,13 +27,13 @@ namespace Fabric.Identity.API
                 new ApiResource
                 {
                     Name = "patientapi",
-                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "allowedresource", JwtClaimTypes.Role},
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "allowedresource", JwtClaimTypes.Role, "groups"},
                     Scopes = { new Scope("patientapi", "Patient API") }
                 },
                 new ApiResource
                 {
                     Name = "authorization-api",
-                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, JwtClaimTypes.Role},
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, JwtClaimTypes.Role, "groups"},
                     Scopes = { new Scope("fabric/authorization.read"), new Scope("fabric/authorization.write"), new Scope("fabric/authorization.manageclients") }
                 }
             };
