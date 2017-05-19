@@ -30,7 +30,7 @@ namespace Fabric.Identity.API.CouchDb
         {
             var apiResources = _documentDbService.GetDocuments<ApiResource>(ApiResourceDocumentType).Result;
 
-            var apiResourcesForScope = apiResources.Where(a => scopeNames.Contains(a.Name));
+            var apiResourcesForScope = apiResources.Where(a => a.Scopes.Any(s => scopeNames.Contains(s.Name)));
 
             return Task.FromResult(apiResourcesForScope);
         }
