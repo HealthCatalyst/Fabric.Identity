@@ -27,5 +27,13 @@
     <PackageReference Include="Serilog" Version="2.4.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="1.4.0" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update=".dockerignore">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>
