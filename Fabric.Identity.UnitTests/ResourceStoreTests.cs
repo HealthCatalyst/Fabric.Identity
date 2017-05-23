@@ -7,10 +7,6 @@ namespace Fabric.Identity.UnitTests
 {
     public class ResourceStoreTests
     {
-        [Theory]
-        public void ResourceStore_IdentityResources_CanFindByScope()
-        {
-                
-        }
+       
     }
 }
