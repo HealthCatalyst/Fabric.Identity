@@ -1,5 +1,7 @@
 ﻿using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.DocumentDbStores;
+using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Stores;
@@ -28,16 +30,17 @@ namespace Fabric.Identity.API.Extensions
                 })
                 .AddTemporarySigningCredential()
                 .AddTestUsers(TestUsers.Users)
-                .AddCorsPolicyService<CorsPolicyService>()
-                .AddResourceStore<CouchDbResourcesStore>()
-                .AddClientStore<CouchDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
+                .AddCorsPolicyService<CorsPolicyDocumentDbService>()
+                .AddResourceStore<DocumentDbResourceStore>()
+                .AddClientStore<DocumentDbClientStore>()
+                .Services.AddTransient<IPersistedGrantStore, DocumentDbPersistedGrantStore>();
 
             return serviceCollection;
         }
 
         public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddSingleton<IDocumentDbService, InMemoryDocumentService>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;
@@ -46,9 +49,10 @@ namespace Fabric.Identity.API.Extensions
                 })
                 .AddTemporarySigningCredential()
                 .AddTestUsers(TestUsers.Users)
-                .AddInMemoryApiResources(Config.GetApiResources())
-                .AddInMemoryIdentityResources(Config.GetIdentityResources())
-                .AddInMemoryClients(Config.GetClients());
+                .AddCorsPolicyService<CorsPolicyDocumentDbService>()
+                .AddResourceStore<DocumentDbResourceStore>()
+                .AddClientStore<DocumentDbClientStore>()
+                .Services.AddTransient<IPersistedGrantStore, DocumentDbPersistedGrantStore>();
 
             return serviceCollection;
         }

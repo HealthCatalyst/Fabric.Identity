@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.CouchDb
+namespace Fabric.Identity.API.DocumentDbStores
 {
-    public class CouchDbPersistedGrantStore : IPersistedGrantStore
+    public class DocumentDbPersistedGrantStore : IPersistedGrantStore
     {
         private readonly IDocumentDbService _documentDbService;
         private const string DocumentType = "persistedgrant:";
 
-        public CouchDbPersistedGrantStore(IDocumentDbService documentDbService)
+        public DocumentDbPersistedGrantStore(IDocumentDbService documentDbService)
         {
             _documentDbService = documentDbService;
         }
@@ -33,7 +35,7 @@ namespace Fabric.Identity.API.CouchDb
         {
             var persistedGrants = _documentDbService.GetDocuments<PersistedGrant>(DocumentType).Result;
 
-            var matchingGrants = persistedGrants.Where(p => p.SubjectId.Equals(subjectId,StringComparison.OrdinalIgnoreCase));
+            var matchingGrants = persistedGrants.Where(p => p.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             return Task.FromResult(matchingGrants);
         }

@@ -1,14 +1,16 @@
 ﻿using System.Threading.Tasks;
+using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.CouchDb
+namespace Fabric.Identity.API.DocumentDbStores
 {
-    public class CouchDbClientStore : IClientStore
+    public class DocumentDbClientStore : IClientStore
     {
         private readonly IDocumentDbService _documentDbService;
 
-        public CouchDbClientStore(IDocumentDbService documentDbService)
+        public DocumentDbClientStore(IDocumentDbService documentDbService)
         {
             _documentDbService = documentDbService;
         }

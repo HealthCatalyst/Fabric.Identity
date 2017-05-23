@@ -1,29 +1,30 @@
 ﻿using System;
 using System.Linq;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Services;
 using MyCouch;
 using MyCouch.Net;
 
 namespace Fabric.Identity.API.CouchDb
 {
-    public class CouchDbBootstrapper
+    public class CouchDbBootstrapper : DocumentDbBootstrapper
     {
-        private readonly IDocumentDbService _documentDbService;
-        private readonly ICouchDbSettings _couchDbSettings;
+       private readonly ICouchDbSettings _couchDbSettings;
 
-        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings)
+        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings) 
+            : base(documentDbService)
         {
-            _documentDbService = documentDbService;
             _couchDbSettings = couchDbSettings;
         }
-        
-        public void AddIdentityServiceArtifacts()
-        {
-            CreateDb();
-            AddClients();
-            AddResources();
-        }
 
+        public override void Setup()
+        {
+            //ensure we have a couchdb database setup to add the data to before trying to add the data
+            CreateDb();
+
+            base.Setup();
+        }
+        
         private void CreateDb()
         {
             if (string.IsNullOrEmpty(_couchDbSettings.Username) ||
@@ -58,28 +59,6 @@ namespace Fabric.Identity.API.CouchDb
             }
         }
 
-        private void AddClients()
-        {
-            var clients = Config.GetClients().ToList();
-            foreach (var client in clients)
-            {
-                _documentDbService.AddDocument(client.ClientId, client);
-            }
-        }
-
-        private void AddResources()
-        {
-            var identityResources = Config.GetIdentityResources();
-            foreach (var identityResource in identityResources)
-            {
-                _documentDbService.AddDocument(identityResource.Name, identityResource);
-            }
-
-            var apiResources = Config.GetApiResources();
-            foreach (var apiResource in apiResources)
-            {
-                _documentDbService.AddDocument(apiResource.Name, apiResource);
-            }
-        }        
+       
     }
 }

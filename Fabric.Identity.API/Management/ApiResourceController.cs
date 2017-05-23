@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc;

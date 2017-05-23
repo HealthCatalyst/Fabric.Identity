@@ -4,6 +4,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Builder;
@@ -45,8 +46,7 @@ namespace Fabric.Identity.API
             services.AddFluentValidations();
             //services.AddCouchDbBackedIdentityServer(_couchDbSettings);
             services.AddInMemoryIdentityServer();
-                
-
+            
             services.AddMvc();
         }
 
@@ -60,7 +60,11 @@ namespace Fabric.Identity.API
             }
 
             //var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
-            //couchDbBootStrapper.AddIdentityServiceArtifacts();
+            //couchDbBootStrapper.Setup();
+
+            var inMemoryBootStrapper = new DocumentDbBootstrapper(new InMemoryDocumentService());
+            inMemoryBootStrapper.Setup();
+
 
             loggerFactory.AddSerilog(_logger);
 
@@ -70,25 +74,6 @@ namespace Fabric.Identity.API
             app.UseMvcWithDefaultRoute();           
             app.UseOwin()
                 .UseFabricMonitoring(() => Task.FromResult(true), _loggingLevelSwitch);
-        }
-    }
-
-
-
-    public class CorsPolicyService : ICorsPolicyService
-    {
-        private readonly IDocumentDbService _documentDbService;
-
-        public CorsPolicyService(IDocumentDbService documentDbService)
-        {
-            _documentDbService = documentDbService;
-        }
-
-        public Task<bool> IsOriginAllowedAsync(string origin)
-        {
-            var clients = _documentDbService.GetDocuments<Client>("client:").Result;
-
-            return Task.FromResult(clients.SelectMany(c => c.AllowedCorsOrigins).Contains(origin));
         }
     }
 }

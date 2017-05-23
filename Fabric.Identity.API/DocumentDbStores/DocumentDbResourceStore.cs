@@ -1,18 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.CouchDb
+namespace Fabric.Identity.API.DocumentDbStores
 {
-    public class CouchDbResourcesStore : IResourceStore
+    public class DocumentDbResourceStore : IResourceStore
     {
         private readonly IDocumentDbService _documentDbService;
         private const string IdentityResourceDocumentType = "identityresource:";
         private const string ApiResourceDocumentType = "apiresource:";
 
-        public CouchDbResourcesStore(IDocumentDbService documentDbService)
+        public DocumentDbResourceStore(IDocumentDbService documentDbService)
         {
             _documentDbService = documentDbService;
         }
