@@ -19,11 +19,9 @@ namespace Fabric.Identity.API.Services
 
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            Console.WriteLine($"Looking for origin: {origin}");
-            var clients = _documentDbService.GetDocuments<Client>(ClientDocumentType).Result;
+            var clients = _documentDbService.GetDocuments<Client>(ClientDocumentType).Result.ToList();
 
-            Console.WriteLine($"Found clients: {clients?.Count()}");
-            return Task.FromResult(clients.SelectMany(c => c.AllowedCorsOrigins).Contains(origin));
+            return Task.FromResult(clients != null && clients.SelectMany(c => c.AllowedCorsOrigins).Contains(origin));
         }
     }
 }

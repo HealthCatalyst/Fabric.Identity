@@ -29,8 +29,11 @@ namespace Fabric.Identity.API.CouchDb
         {
             if (string.IsNullOrEmpty(_couchDbSettings.Username) ||
                 string.IsNullOrEmpty(_couchDbSettings.Password))
-                throw new Exception($"please add the admin username and password for the database to the CouchDbSettings in appsettings.json [DONT CHECK IT IN!!!]");
-            
+            {
+                throw new CouchDbSetupException(
+                    $"please add the admin username and password for the database to the CouchDbSettings in appsettings.json [DONT CHECK IT IN!!!]");
+            }
+
             var connectionInfo = new ServerConnectionInfo(_couchDbSettings.Server)
             {
                 BasicAuth = new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password)
@@ -46,7 +49,7 @@ namespace Fabric.Identity.API.CouchDb
 
                     if (!deleteResult.IsSuccess)
                     {
-                        throw new Exception($"unable to delete database: {_couchDbSettings.DatabaseName} reason: {deleteResult.Reason}");
+                        throw new CouchDbSetupException($"unable to delete database: {_couchDbSettings.DatabaseName} reason: {deleteResult.Reason}");
                     }
                 }
 
@@ -54,7 +57,7 @@ namespace Fabric.Identity.API.CouchDb
 
                 if (!createResult.IsSuccess)
                 {
-                    throw new Exception($"unable to create database: {_couchDbSettings.DatabaseName} reason: {createResult.Reason}");
+                    throw new CouchDbSetupException($"unable to create database: {_couchDbSettings.DatabaseName} reason: {createResult.Reason}");
                 }
             }
         }

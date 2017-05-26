@@ -88,7 +88,8 @@ namespace Fabric.Identity.API
                         "fabric.profile",
                         "patientapi",
                         "fabric/authorization.read",
-                        "fabric/authorization.write"
+                        "fabric/authorization.write",
+                        "fabric/authorization.manageclients"
                     },
                     AllowOfflineAccess = true,
                     RequireConsent = false

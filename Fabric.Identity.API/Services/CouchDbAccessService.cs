@@ -28,7 +28,10 @@ namespace Fabric.Identity.API.Services
 
                 if (!string.IsNullOrEmpty(_couchDbSettings.Username) &&
                     !string.IsNullOrEmpty(_couchDbSettings.Password))
-                    connectionInfo.BasicAuth = new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password);
+                {
+                    connectionInfo.BasicAuth =
+                        new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password);
+                }
 
                 return connectionInfo;
             }

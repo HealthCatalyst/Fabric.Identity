@@ -66,7 +66,7 @@ namespace Fabric.Identity.API.Management
 
             return NoContent();
         }
-
+        
         // DELETE api/values/5
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
