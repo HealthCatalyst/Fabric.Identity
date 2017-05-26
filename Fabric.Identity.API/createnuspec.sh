@@ -1,6 +1,7 @@
 #!/bin/bash
 version=$1
 zippedPackagePath=$2
+echo "current directory: ${PWD}"
 echo "version set to: $version"
 echo "path to zipped package: $zippedPackagePath"
 cat > Fabric.Identity.API.nuspec << EOF
