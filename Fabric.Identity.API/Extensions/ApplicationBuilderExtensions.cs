@@ -11,35 +11,37 @@ namespace Fabric.Identity.API.Extensions
         public static IApplicationBuilder UseExternalIdentityProviders(this IApplicationBuilder builder,
             IAppConfiguration appConfiguration)
         {
-            if (appConfiguration.ExternalIdProviderSettings?.ExternalIdProviders == null
-                || !appConfiguration.ExternalIdProviderSettings.ExternalIdProviders.Any()) return builder;
-
-            foreach (var externalIdProvider in appConfiguration.ExternalIdProviderSettings.ExternalIdProviders)
+            if (appConfiguration.ExternalIdProviderSettings?.ExternalIdProviders?.Any() == true)
             {
-                var options = new OpenIdConnectOptions
+                // Add OpenIdConnect options to each provider.
+                foreach (var externalIdProvider in appConfiguration.ExternalIdProviderSettings.ExternalIdProviders)
                 {
-                    SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
-                    SignOutScheme = IdentityServerConstants.SignoutScheme,
-
-                    DisplayName = externalIdProvider.DisplayName,
-                    Authority = externalIdProvider.Authority,
-                    ClientId = externalIdProvider.ClientId,
-                    ClientSecret = externalIdProvider.ClientSecret,
-                    ResponseType = externalIdProvider.ResponseType,
-                    GetClaimsFromUserInfoEndpoint = true,
-                    TokenValidationParameters = new TokenValidationParameters
+                    var options = new OpenIdConnectOptions
                     {
-                        ValidateIssuer = false
+                        SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+                        SignOutScheme = IdentityServerConstants.SignoutScheme,
+
+                        DisplayName = externalIdProvider.DisplayName,
+                        Authority = externalIdProvider.Authority,
+                        ClientId = externalIdProvider.ClientId,
+                        ClientSecret = externalIdProvider.ClientSecret,
+                        ResponseType = externalIdProvider.ResponseType,
+                        GetClaimsFromUserInfoEndpoint = true,
+                        TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = false
+                        }
+                    };
+
+                    foreach (var s in externalIdProvider.Scope)
+                    {
+                        options.Scope.Add(s);
                     }
-                };
 
-                foreach (var s in externalIdProvider.Scope)
-                {
-                    options.Scope.Add(s);
+                    builder.UseOpenIdConnectAuthentication(options);
                 }
-
-                builder.UseOpenIdConnectAuthentication(options);
             }
+
             return builder;
         }
     }

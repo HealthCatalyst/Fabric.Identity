@@ -19,7 +19,7 @@ namespace Fabric.Identity.API.Services
 
         private string GetFullDocumentId<T>(string documentId)
         {
-            return FormattableString.Invariant($"{typeof(T).Name.ToLower()}:{documentId}");
+            return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
         }
 
         private DbConnectionInfo DbConnectionInfo {
