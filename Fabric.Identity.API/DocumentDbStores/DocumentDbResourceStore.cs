@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Fabric.Identity.API.CouchDb;
-using Fabric.Identity.API.Services;
+﻿using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.DocumentDbStores
 {
