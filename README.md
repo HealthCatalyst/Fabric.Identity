@@ -1,5 +1,5 @@
 ![Build status](https://healthcatalyst.visualstudio.com/_apis/public/build/definitions/eaeb1198-1e3e-4938-88f1-918e8bf769af/328/badge)
-
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d1d11b48f7cc4fbb9277b4c1c12c2106)](https://www.codacy.com/app/HealthCatalyst/Fabric.Identity?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HealthCatalyst/Fabric.Identity&amp;utm_campaign=Badge_Grade)
 # Fabric.Identity
 
 The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem. An overview of our thinking can be found in [this presentation](https://healthcatalyst.box.com/s/alac73mlvo1ojm1jrnzm37zma282lc9b).
