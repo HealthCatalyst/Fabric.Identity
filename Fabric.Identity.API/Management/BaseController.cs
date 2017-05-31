@@ -8,7 +8,7 @@ using System.Net;
 
 namespace Fabric.Identity.API.Management
 {
-    public abstract class BaseController<T> : Controller
+    public abstract class BaseController<T> : Controller where T : class
     {
         protected readonly AbstractValidator<T> Validator;
         protected readonly ILogger Logger;

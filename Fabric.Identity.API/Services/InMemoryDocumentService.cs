@@ -14,7 +14,7 @@ namespace Fabric.Identity.API.Services
 
         private string GetFullDocumentId<T>(string documentId)
         {
-            return $"{typeof(T).Name.ToLower()}:{documentId}";
+            return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
         }
 
         public Task<T> GetDocument<T>(string documentId)
