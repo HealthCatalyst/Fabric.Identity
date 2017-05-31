@@ -6,6 +6,7 @@ using Fabric.Identity.API.Services;
 
 namespace Fabric.Identity.API.CouchDb
 {
+    [System.Obsolete]
     public class DocumentDbBootstrapper
     {
         private readonly IDocumentDbService _documentDbService;
@@ -26,7 +27,14 @@ namespace Fabric.Identity.API.CouchDb
             var clients = Config.GetClients().ToList();
             foreach (var client in clients)
             {
-                _documentDbService.AddDocument(client.ClientId, client);
+                try
+                {
+                    _documentDbService.AddDocument(client.ClientId, client);
+                }
+                catch(Exception)
+                {
+                    //Deprecated code
+                }
             }
         }
 
@@ -35,13 +43,27 @@ namespace Fabric.Identity.API.CouchDb
             var identityResources = Config.GetIdentityResources();
             foreach (var identityResource in identityResources)
             {
-                _documentDbService.AddDocument(identityResource.Name, identityResource);
+                try
+                {
+                    _documentDbService.AddDocument(identityResource.Name, identityResource);
+                }
+                catch (Exception)
+                {
+                    //Deprecated code
+                }
             }
 
             var apiResources = Config.GetApiResources();
             foreach (var apiResource in apiResources)
             {
-                _documentDbService.AddDocument(apiResource.Name, apiResource);
+                try
+                {
+                    _documentDbService.AddDocument(apiResource.Name, apiResource);
+                }
+                catch (Exception)
+                {
+                    //Deprecated code
+                }
             }
         }
     }

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace Fabric.Identity.API
 {
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {

@@ -40,32 +40,23 @@ namespace Fabric.Identity.API.Management
         [HttpPost]
         public IActionResult Post([FromBody] IdentityResource value)
         {
-            var validationResult = Validate(value);
-
-            if (!validationResult.IsValid)
+            return ValidateAndExecute(value, () =>
             {
-                return CreateValidationFailureResponse(validationResult);
-            }
-
-            var id = value.Name;
-            _documentDbService.AddDocument(id, value);
-
-            return CreatedAtRoute(GetIdentityResourceRouteName, new {id}, value);
+                var id = value.Name;
+                _documentDbService.AddDocument(id, value);
+                return CreatedAtRoute(GetIdentityResourceRouteName, new { id }, value);
+            });
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
         public IActionResult Put(string id, [FromBody] IdentityResource value)
         {
-            var validationResult = Validate(value);
-
-            if (!validationResult.IsValid)
+            return ValidateAndExecute(value, () =>
             {
-                return CreateValidationFailureResponse(validationResult);
-            }
-            _documentDbService.UpdateDocument(id, value);
-
-            return NoContent();
+                _documentDbService.UpdateDocument(id, value);
+                return NoContent();
+            });
         }
 
         // DELETE api/values/5

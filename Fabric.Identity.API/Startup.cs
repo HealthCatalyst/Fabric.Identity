@@ -17,6 +17,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using ILogger = Serilog.ILogger;
+using System;
 
 namespace Fabric.Identity.API
 {

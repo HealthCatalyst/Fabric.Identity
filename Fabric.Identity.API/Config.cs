@@ -5,7 +5,7 @@ using IdentityServer4.Models;
 
 namespace Fabric.Identity.API
 {
-    public class Config
+    public static class Config
     {
         public static IEnumerable<IdentityResource> GetIdentityResources()
         {

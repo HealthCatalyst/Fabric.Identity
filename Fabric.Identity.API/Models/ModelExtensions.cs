@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation.Results;
+using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Models
 {
@@ -25,6 +26,20 @@ namespace Fabric.Identity.API.Models
             };
 
             return error;
+        }
+
+        public static Client ToClientViewModel(this IS4.Client client)
+        {
+            var newClient = new Client()
+            {
+                Id = client.ClientId,
+                Name = client.ClientName,
+                AllowedScopes = client.AllowedScopes,
+                AllowedGrantTypes = client.AllowedGrantTypes,
+                AllowedCorsOrigins = client.AllowedCorsOrigins
+            };
+
+            return newClient;
         }
 
     }

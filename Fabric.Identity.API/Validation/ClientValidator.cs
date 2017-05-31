@@ -23,10 +23,12 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(client => client.AllowedScopes)
                 .NotNull()
+                .NotEmpty()
                 .WithMessage("Please specify at least one Allowed Scope for this client");
 
             RuleFor(client => client.AllowedCorsOrigins)
                 .NotNull()
+                .NotEmpty()
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit))
                 .WithMessage("Please specify at least one Allowed Cors Origin when using implicit grant type");
 

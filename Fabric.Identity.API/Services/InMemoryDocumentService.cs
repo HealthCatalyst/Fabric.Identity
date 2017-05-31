@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,7 +45,11 @@ namespace Fabric.Identity.API.Services
         public void AddDocument<T>(string documentId, T documentObject)
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
-            Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject));
+            if(!Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject)))
+            {
+                //TODO: Use non standard exception or change to TryAddDocument.
+                throw new ArgumentException($"Document with id {documentId} already exists.");
+            }
         }
 
         public void UpdateDocument<T>(string documentId, T documentObject)
