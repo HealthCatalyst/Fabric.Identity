@@ -21,11 +21,11 @@ namespace Fabric.Identity.IntegrationTests
 
             _server = new TestServer(builder);
 
-            this.Client = _server.CreateClient();
-            this.Client.BaseAddress = new Uri("http://localhost:5000");
+            this.HttpClient = _server.CreateClient();
+            this.HttpClient.BaseAddress = new Uri("http://localhost:5000");
         }
 
-        public HttpClient Client { get; }
+        public HttpClient HttpClient { get; }
 
         #region IDisposable implementation
 
@@ -48,7 +48,7 @@ namespace Fabric.Identity.IntegrationTests
             if (disposing)
             {
                 // free managed resources
-                this.Client.Dispose();
+                this.HttpClient.Dispose();
                 _server.Dispose();
             }
         }

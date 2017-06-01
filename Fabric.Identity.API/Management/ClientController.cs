@@ -17,7 +17,7 @@ namespace Fabric.Identity.API.Management
     {
         private readonly IDocumentDbService _documentDbService;
         private const string GetClientRouteName = "GetClient";
-        private Func<string> GeneratePassword { get; set; } = () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
+        private const string ResetPasswordRouteName = "ResetClientPassword";
 
         public ClientController(IDocumentDbService documentDbService, ClientValidator validator, ILogger logger)
             : base(validator, logger)
@@ -40,6 +40,29 @@ namespace Fabric.Identity.API.Management
             return Ok(client.ToClientViewModel());
         }
 
+        // GET api/values/5/resetPassword
+        [HttpGet("{id}/resetPassword", Name = ResetPasswordRouteName)]
+        public IActionResult ResetPassword(string id)
+        {
+            var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
+
+            if (client == null || string.IsNullOrEmpty(client.ClientId))
+            {
+                return CreateFailureResponse($"The specified client with id: {id} was not found",
+                    HttpStatusCode.NotFound);
+            }
+
+            // Update password
+            client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(GeneratePassword()) };
+            _documentDbService.UpdateDocument(id, client);
+
+            // Prepare return values
+            var viewClient = client.ToClientViewModel();
+            viewClient.ClientSecret = client.ClientSecrets.First().Value;
+
+            return Ok(viewClient);
+        }
+
         // POST api/values
         [HttpPost]
         public IActionResult Post([FromBody] IS4.Client client)
@@ -52,7 +75,7 @@ namespace Fabric.Identity.API.Management
                 _documentDbService.AddDocument(id, client);
 
                 Client viewClient = client.ToClientViewModel();
-                viewClient.Secret = client.ClientSecrets.First().Value;
+                viewClient.ClientSecret = client.ClientSecrets.First().Value;
 
                 return CreatedAtRoute(GetClientRouteName, new { id }, viewClient);
             });
@@ -64,7 +87,19 @@ namespace Fabric.Identity.API.Management
         {
             return ValidateAndExecute(client, () =>
             {
-                client.ClientSecrets = null;
+                var storedClient = _documentDbService.GetDocument<IS4.Client>(id).Result;
+
+                if (storedClient == null || string.IsNullOrEmpty(storedClient.ClientId))
+                {
+                    return CreateFailureResponse($"The specified client with id: {id} was not found",
+                        HttpStatusCode.NotFound);
+                }
+
+                // Prevent from changing secrets.
+                client.ClientSecrets = storedClient.ClientSecrets;
+                // Prevent from changing payload ClientId.
+                client.ClientId = id; 
+
                 _documentDbService.UpdateDocument(id, client);
                 return NoContent();
             });

@@ -55,9 +55,13 @@ namespace Fabric.Identity.API.Services
         public void UpdateDocument<T>(string documentId, T documentObject)
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
-            Documents.TryUpdate(fullDocumentId, 
-                JsonConvert.SerializeObject(documentObject),
-                JsonConvert.SerializeObject(GetDocument<T>(documentId)));
+            var currentValue = Documents[fullDocumentId]; //TODO: support legitimate conditional updates ?
+
+            if (!Documents.TryUpdate(fullDocumentId, JsonConvert.SerializeObject(documentObject), currentValue))
+            {
+                //TODO: Use non standard exception or change to TryUpdateDocument.
+                throw new ArgumentException($"Failed to update document with id {documentId}.");
+            }
         }
 
         public void DeleteDocument<T>(string documentId)

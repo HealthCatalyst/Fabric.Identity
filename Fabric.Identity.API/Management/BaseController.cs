@@ -10,6 +10,7 @@ namespace Fabric.Identity.API.Management
 {
     public abstract class BaseController<T> : Controller where T : class
     {
+        public Func<string> GeneratePassword { get; set; } = () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
         protected readonly AbstractValidator<T> Validator;
         protected readonly ILogger Logger;
 
@@ -24,21 +25,21 @@ namespace Fabric.Identity.API.Management
             // FluentValidation cannot handle null models.
             if (model == null)
             {
-                Logger.Information($"Input \"{typeof(T)}\" is null.");
+                this.Logger.Information($"Input \"{typeof(T)}\" is null.");
                 return CreateFailureResponse($"Input \"{typeof(T)}\" is null.", HttpStatusCode.BadRequest);
             }
 
-            var validationResults = Validator.Validate(model);
+            var validationResults = this.Validator.Validate(model);
 
             if (!validationResults.IsValid)
             {
-                Logger.Information($"Validation failed for model: {model}. ValidationResults: {validationResults}.");
+                this.Logger.Information($"Validation failed for model: {model}. ValidationResults: {validationResults}.");
                 return CreateValidationFailureResponse(validationResults);
             }
 
+            // Validation passed.
             try
             {
-                // Validation passed.
                 return successFunctor();
             }
             catch (Exception e)
