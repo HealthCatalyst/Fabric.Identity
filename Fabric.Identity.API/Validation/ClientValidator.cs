@@ -32,7 +32,6 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(client => client.AllowOfflineAccess)
                 .NotNull()
-                .NotEmpty()
                 .Must(v => !v)
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) || client.AllowedGrantTypes.Contains(GrantType.ResourceOwnerPassword))
                 .WithMessage("Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");

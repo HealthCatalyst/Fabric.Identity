@@ -18,24 +18,44 @@ namespace Fabric.Identity.UnitTests
     {
         private static readonly Random rand = new Random(DateTime.Now.Millisecond);
 
-        private static readonly Func<IS4.Client> GetTestClient = () => new IS4.Client()
+        private static readonly Func<IS4.Client> GetOnlineTestClient = () => new IS4.Client()
         {
             ClientId = rand.Next().ToString(),
-            ClientName = "ClientName",
-            AllowedScopes = new List<string>() { "scope" },
-            AllowedGrantTypes = new List<string>() { IS4.GrantType.AuthorizationCode },
-            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) }
+            ClientName = rand.Next().ToString(),
+            RequireConsent = rand.Next() % 2 == 0,
+            AllowOfflineAccess = false,
+            AllowedScopes = new List<string>() { rand.Next().ToString() },
+            AllowedGrantTypes = new List<string>() { IS4.GrantType.Implicit },
+            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
+            RedirectUris = new List<string>() { rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
+            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
         };
 
-        private static void GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller)
+        private static readonly Func<IS4.Client> GetOfflineTestClient = () => new IS4.Client()
         {
-            mockDocumentDbService = new Mock<IDocumentDbService>();
-            var validator = new ClientValidator();
-            var mockLogger = new Mock<ILogger>();
+            ClientId = rand.Next().ToString(),
+            ClientName = rand.Next().ToString(),
+            RequireConsent = rand.Next() % 2 == 0,
+            AllowOfflineAccess = true,
+            AllowedScopes = new List<string>() { rand.Next().ToString() },
+            AllowedGrantTypes = new List<string>() { IS4.GrantType.ClientCredentials },
+            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
+            RedirectUris = new List<string>() { rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
+            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+        };
 
-            controller = new ClientController(mockDocumentDbService.Object, validator, mockLogger.Object);
-        }
+        private static readonly Func<IS4.Client> GetTestClient = rand.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
 
+        /// <summary>
+        /// A collection of valid clients.
+        /// </summary>
+        private static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 6).Select(_ => new object[] { GetTestClient() });
+
+        /// <summary>
+        /// A collection of invalid clients, i.e., clients that won't pass validation.
+        /// </summary>
         public static IEnumerable<object[]> GetInvalidClients()
         {
             yield return new object[] { new IS4.Client(), "Please specify an Id for this client" };
@@ -65,6 +85,15 @@ namespace Fabric.Identity.UnitTests
                 new IS4.Client() { AllowedGrantTypes = new List<string>() { string.Empty }},
                 "Grant type not allowed"
             };
+        }
+
+        private static void GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller)
+        {
+            mockDocumentDbService = new Mock<IDocumentDbService>();
+            var validator = new ClientValidator();
+            var mockLogger = new Mock<ILogger>();
+
+            controller = new ClientController(mockDocumentDbService.Object, validator, mockLogger.Object);
         }
 
         [Theory]
@@ -108,12 +137,12 @@ namespace Fabric.Identity.UnitTests
             Assert.NotEqual(submittedSecret, client.ClientSecret);
         }
 
-        [Fact]
-        public void TestCreateNewClient_DBCall()
+        [Theory]
+        [MemberData(nameof(GetValidClients))]
+        public void TestCreateNewClient_DBCall(IS4.Client testClient)
         {
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
-            var testClient = GetTestClient();
             var result = controller.Post(testClient);
             Assert.True(result is CreatedAtRouteResult);
             Assert.True((result as CreatedAtRouteResult).Value is Client);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -15,19 +16,40 @@ namespace Fabric.Identity.IntegrationTests
     {
         private static readonly Random rand = new Random(DateTime.Now.Millisecond);
 
-        private static readonly Func<IS4.Client> GetTestClient = () => new IS4.Client()
+        private static readonly Func<IS4.Client> GetOnlineTestClient = () => new IS4.Client()
         {
             ClientId = rand.Next().ToString(),
             ClientName = rand.Next().ToString(),
             RequireConsent = rand.Next() % 2 == 0,
-            AllowOfflineAccess = rand.Next() % 2 == 0,
+            AllowOfflineAccess = false,
             AllowedScopes = new List<string>() { rand.Next().ToString() },
-            AllowedGrantTypes = new List<string>() { IS4.GrantType.AuthorizationCode },
+            AllowedGrantTypes = new List<string>() { IS4.GrantType.Implicit },
             ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
             RedirectUris = new List<string>() { rand.Next().ToString() },
             AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
             PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
         };
+
+        private static readonly Func<IS4.Client> GetOfflineTestClient = () => new IS4.Client()
+        {
+            ClientId = rand.Next().ToString(),
+            ClientName = rand.Next().ToString(),
+            RequireConsent = rand.Next() % 2 == 0,
+            AllowOfflineAccess = true,
+            AllowedScopes = new List<string>() { rand.Next().ToString() },
+            AllowedGrantTypes = new List<string>() { IS4.GrantType.ClientCredentials },
+            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
+            RedirectUris = new List<string>() { rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
+            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+        };
+
+        private static readonly Func<IS4.Client> GetTestClient = rand.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
+
+        /// <summary>
+        /// A collection of valid clients.
+        /// </summary>
+        private static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 4).Select(_ => new object[] { GetTestClient() });
 
         private async Task<HttpResponseMessage> CreateNewClient(IS4.Client testClient)
         {
@@ -36,10 +58,10 @@ namespace Fabric.Identity.IntegrationTests
             return response;
         }
 
-        [Fact]
-        public async Task TestCreateClient_Success()
+        [Theory]
+        [MemberData(nameof(GetValidClients))]
+        public async Task TestCreateClient_Success(IS4.Client testClient)
         {
-            var testClient = GetTestClient();
             HttpResponseMessage response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
