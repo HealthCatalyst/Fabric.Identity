@@ -69,10 +69,12 @@ namespace Fabric.Identity.API.Management
         {
             return ValidateAndExecute(client, () =>
             {
+                var id = client.ClientId;
+
                 // override any secret in the request.
+                // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var clientSecret = this.GeneratePassword();
                 client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
-                var id = client.ClientId;
                 _documentDbService.AddDocument(id, client);
 
                 Client viewClient = client.ToClientViewModel();
