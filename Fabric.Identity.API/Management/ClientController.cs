@@ -70,12 +70,13 @@ namespace Fabric.Identity.API.Management
             return ValidateAndExecute(client, () =>
             {
                 // override any secret in the request.
-                client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(this.GeneratePassword()) };
+                var clientSecret = this.GeneratePassword();
+                client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
                 var id = client.ClientId;
                 _documentDbService.AddDocument(id, client);
 
                 Client viewClient = client.ToClientViewModel();
-                viewClient.ClientSecret = client.ClientSecrets.First().Value;
+                viewClient.ClientSecret = clientSecret;
 
                 return CreatedAtRoute(GetClientRouteName, new { id }, viewClient);
             });

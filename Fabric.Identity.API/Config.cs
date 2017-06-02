@@ -91,7 +91,7 @@ namespace Fabric.Identity.API
                         "fabric/authorization.write",
                         "fabric/authorization.manageclients"
                     },
-                    AllowOfflineAccess = true,
+                    AllowOfflineAccess = false,
                     RequireConsent = false
                 },
                 new Client
