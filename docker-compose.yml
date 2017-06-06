@@ -1,11 +1,8 @@
 version: '3'
 
 services:
-  fabric.identity.api:
-    image: fabric.identity.api
-    build:
-      context: ./Fabric.Identity.API
-      dockerfile: Dockerfile
+  fabric.identity:
+    image: healthcatalyst/fabric.identity
     environment:
       - HostingOptions__UseInMemoryStores=false
       - CouchDbSettings__Server=http://couchdb1:5984/
