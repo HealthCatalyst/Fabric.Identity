@@ -5,19 +5,19 @@ services:
     image: healthcatalyst/fabric.identity
     environment:
       - HostingOptions__UseInMemoryStores=false
-      - CouchDbSettings__Server=http://couchdb1:5984/
+      - CouchDbSettings__Server=http://haproxy:5984/
       - CouchDbSettings__Username=${COUCHDB_USER}
       - CouchDbSettings__Password=${COUCHDB_PASSWORD}
     ports:
       - "5001:5001"
     depends_on:
       - couchdb1
-    command: ["./wait-for-it.sh", "couchdb1:5984 -t 300", "--", "dotnet", "Fabric.Identity.API.dll"]
+    command: bash -c "./wait-for-it.sh couchdb1:5984 -t 300 -- dotnet Fabric.Identity.API.dll"
     networks:
       - webnet
 
   couchdb1:
-    image: klaemo/couchdb:2.0.0
+    image: healthcatalyst/fabric.docker.couchdb
     environment:
       - NODENAME=couchdb1
       - COUCHDB_USER
@@ -26,5 +26,46 @@ services:
       - "15984:5984"
     networks:
       - webnet
+
+  setup:
+    image: healthcatalyst/fabric.docker.couchdb
+    environment:
+      - COUCHDB_USER
+      - COUCHDB_PASSWORD
+    command: bash -c "/opt/couchdb/wait-for-it.sh couchdb1:5984 -t 300 -- ./configure-cluster.sh"
+    depends_on:
+      - couchdb1
+    networks:
+      - webnet
+
+  couchdb2:
+    image: healthcatalyst/fabric.docker.couchdb
+    environment:
+      - NODENAME=couchdb2
+      - COUCHDB_USER
+      - COUCHDB_PASSWORD
+    ports:
+      - "25984:5984"
+    networks:
+      - webnet
+
+  couchdb3:
+    image: healthcatalyst/fabric.docker.couchdb
+    environment:
+      - NODENAME=couchdb3
+      - COUCHDB_USER
+      - COUCHDB_PASSWORD
+    ports:
+      - "35984:5984"
+    networks:
+      - webnet
+
+  haproxy:
+    image: healthcatalyst/fabric.docker.haproxy
+    ports:
+      - "5984:5984"
+    networks:
+      - webnet
+
 networks:
   webnet:
