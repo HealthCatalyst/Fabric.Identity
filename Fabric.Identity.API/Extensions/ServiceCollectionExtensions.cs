@@ -56,5 +56,19 @@ namespace Fabric.Identity.API.Extensions
 
             return serviceCollection;
         }
+
+        public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
+            IAppConfiguration appConfiguration)
+        {
+            if (appConfiguration.HostingOptions.UseInMemoryStores)
+            {
+                serviceCollection.AddInMemoryIdentityServer();
+            }
+            else
+            {
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings);
+            }
+            return serviceCollection;
+        }
     }
 }

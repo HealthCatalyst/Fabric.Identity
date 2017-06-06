@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 services:
   fabric.identity.api:
@@ -6,3 +6,28 @@ services:
     build:
       context: ./Fabric.Identity.API
       dockerfile: Dockerfile
+    environment:
+      - HostingOptions__UseInMemoryStores=false
+      - CouchDbSettings__Server=http://couchdb1:5984/
+      - CouchDbSettings__Username=${COUCHDB_USER}
+      - CouchDbSettings__Password=${COUCHDB_PASSWORD}
+    ports:
+      - "5001:5001"
+    depends_on:
+      - couchdb1
+    command: ["./wait-for-it.sh", "couchdb1:5984 -t 300", "--", "dotnet", "Fabric.Identity.API.dll"]
+    networks:
+      - webnet
+
+  couchdb1:
+    image: klaemo/couchdb:2.0.0
+    environment:
+      - NODENAME=couchdb1
+      - COUCHDB_USER
+      - COUCHDB_PASSWORD
+    ports:
+      - "15984:5984"
+    networks:
+      - webnet
+networks:
+  webnet:

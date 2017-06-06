@@ -13,6 +13,7 @@ namespace Fabric.Identity.API.Configuration
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
                 .SetBasePath(baseBath)
                 .Build();
 

@@ -36,4 +36,8 @@ WORKDIR /app
 #EXPOSE 5001 5984
 EXPOSE 5001
 COPY ${source:-obj/Docker/publish} .
-ENTRYPOINT ["dotnet", "Fabric.Identity.API.dll"]
+
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh wait-for-it.sh
+RUN chmod +x wait-for-it.sh
+
+CMD ["dotnet", "Fabric.Identity.API.dll"]
