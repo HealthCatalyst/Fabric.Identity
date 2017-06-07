@@ -12,7 +12,7 @@ services:
       - "5001:5001"
     depends_on:
       - couchdb1
-    command: bash -c "./wait-for-it.sh couchdb1:5984 -t 300 -- dotnet Fabric.Identity.API.dll"
+    command: ["./wait-for-couchdb.sh", "http://haproxy:5984", "dotnet", "Fabric.Identity.API.dll"]
     networks:
       - webnet
 

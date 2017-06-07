@@ -4,14 +4,16 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using MyCouch;
 using MyCouch.Net;
+using Polly;
 
 namespace Fabric.Identity.API.CouchDb
 {
     public class CouchDbBootstrapper : DocumentDbBootstrapper
     {
-       private readonly ICouchDbSettings _couchDbSettings;
+        private readonly ICouchDbSettings _couchDbSettings;
+        private static readonly Policy CircuitBreaker = Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
 
-        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings) 
+        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings)
             : base(documentDbService)
         {
             _couchDbSettings = couchDbSettings;
@@ -19,12 +21,10 @@ namespace Fabric.Identity.API.CouchDb
 
         public override void Setup()
         {
-            //ensure we have a couchdb database setup to add the data to before trying to add the data
-            CreateDb();
-
-            base.Setup();
+            CircuitBreaker.Execute(CreateDb);
+            CircuitBreaker.Execute(base.Setup);
         }
-        
+
         private void CreateDb()
         {
             if (string.IsNullOrEmpty(_couchDbSettings.Username) ||
@@ -62,6 +62,6 @@ namespace Fabric.Identity.API.CouchDb
             }
         }
 
-       
+
     }
 }
