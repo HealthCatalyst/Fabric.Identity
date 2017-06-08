@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fabric.Identity.API
+﻿namespace Fabric.Identity.API.Configuration
 {
     public class HostingOptions
     {
         public bool UseIis { get; set; }
+        public bool UseInMemoryStores { get; set; }
     }
 }

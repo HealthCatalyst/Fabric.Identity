@@ -1,17 +1,18 @@
 ﻿using System;
-using System.Linq;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using MyCouch;
 using MyCouch.Net;
+using Polly;
 
 namespace Fabric.Identity.API.CouchDb
 {
     public class CouchDbBootstrapper : DocumentDbBootstrapper
     {
-       private readonly ICouchDbSettings _couchDbSettings;
+        private readonly ICouchDbSettings _couchDbSettings;
+        private static readonly Policy CircuitBreaker = Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
 
-        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings) 
+        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings)
             : base(documentDbService)
         {
             _couchDbSettings = couchDbSettings;
@@ -19,13 +20,14 @@ namespace Fabric.Identity.API.CouchDb
 
         public override void Setup()
         {
-            //ensure we have a couchdb database setup to add the data to before trying to add the data
-            CreateDb();
-
-            base.Setup();
+            var dbCreated = CircuitBreaker.Execute(CreateDb);
+            if (dbCreated)
+            {
+                CircuitBreaker.Execute(base.Setup);
+            }
         }
-        
-        private void CreateDb()
+
+        private bool CreateDb()
         {
             if (string.IsNullOrEmpty(_couchDbSettings.Username) ||
                 string.IsNullOrEmpty(_couchDbSettings.Password))
@@ -45,12 +47,7 @@ namespace Fabric.Identity.API.CouchDb
 
                 if (databaseInfo.IsSuccess)
                 {
-                    var deleteResult = client.Databases.DeleteAsync(_couchDbSettings.DatabaseName).Result;
-
-                    if (!deleteResult.IsSuccess)
-                    {
-                        throw new CouchDbSetupException($"unable to delete database: {_couchDbSettings.DatabaseName} reason: {deleteResult.Reason}");
-                    }
+                    return false;
                 }
 
                 var createResult = client.Databases.PutAsync(_couchDbSettings.DatabaseName).Result;
@@ -59,9 +56,10 @@ namespace Fabric.Identity.API.CouchDb
                 {
                     throw new CouchDbSetupException($"unable to create database: {_couchDbSettings.DatabaseName} reason: {createResult.Reason}");
                 }
+                return true;
             }
         }
 
-       
+
     }
 }

@@ -70,11 +70,15 @@ namespace Fabric.Identity.API.Management
             return ValidateAndExecute(resource, () =>
             {
                 var id = resource.Name;
-                resource.ApiSecrets = new List<IS4.Secret>() { new IS4.Secret(GeneratePassword()) };
+
+                // override any secret in the request.
+                // TODO: we need to implement a salt strategy, either at the controller level or store level.
+                var resourceSecret = this.GeneratePassword();
+                resource.ApiSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(resourceSecret)) };
                 _documentDbService.AddDocument(id, resource);
 
                 var viewResource = resource.ToApiResourceViewModel();
-                viewResource.ApiSecret = resource.ApiSecrets.First().Value;
+                viewResource.ApiSecret = resourceSecret;
                 return CreatedAtRoute(GetApiResourceRouteName, new { id }, viewResource);
             });
         }
