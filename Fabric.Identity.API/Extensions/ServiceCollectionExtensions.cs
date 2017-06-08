@@ -18,7 +18,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<ApiResourceValidator, ApiResourceValidator>();
         }
 
-        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, ICouchDbSettings couchDbSettings)
+        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, ICouchDbSettings couchDbSettings, string issuerUri)
         {
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
@@ -27,6 +27,7 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseSuccessEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
+                    options.IssuerUri = issuerUri;
                 })
                 .AddTemporarySigningCredential()
                 .AddTestUsers(TestUsers.Users)
@@ -38,7 +39,7 @@ namespace Fabric.Identity.API.Extensions
             return serviceCollection;
         }
 
-        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, string issuerUri)
         {
             serviceCollection.AddSingleton<IDocumentDbService, InMemoryDocumentService>();
             serviceCollection.AddIdentityServer(options =>
@@ -46,6 +47,7 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseSuccessEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
+                    options.IssuerUri = issuerUri;
                 })
                 .AddTemporarySigningCredential()
                 .AddTestUsers(TestUsers.Users)
@@ -62,11 +64,11 @@ namespace Fabric.Identity.API.Extensions
         {
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
-                serviceCollection.AddInMemoryIdentityServer();
+                serviceCollection.AddInMemoryIdentityServer(appConfiguration.IssuerUri);
             }
             else
             {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings);
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri);
             }
             return serviceCollection;
         }

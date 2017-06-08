@@ -19,12 +19,25 @@ services:
       - CouchDbSettings__Server=http://haproxy:5984/
       - CouchDbSettings__Username=${COUCHDB_USER}
       - CouchDbSettings__Password=${COUCHDB_PASSWORD}
+      - IssuerUri
     deploy:
       replicas: 2
     command: ["./wait-for-couchdb.sh", "http://haproxy:5984", "dotnet", "Fabric.Identity.API.dll"]
     networks:
       - webnet
       - dbnet
+
+  authorization:
+    image: healthcatalyst/fabric.authorization
+    environment:
+      - IdentityServerConfidentialClientSettings__Authority=http://nginx
+    deploy:
+      replicas: 2
+    ports:
+      - "5004:5004"
+    command: ["dotnet", "Fabric.Authorization.API.dll"]
+    networks:
+      - webnet
 
   couchdb1:
     image: healthcatalyst/fabric.docker.couchdb
