@@ -45,8 +45,7 @@ namespace Fabric.Identity.API
             services.AddSingleton(_appConfig);           
             services.AddSingleton(_logger);
             services.AddFluentValidations();
-            //services.AddCouchDbBackedIdentityServer(_couchDbSettings);
-            services.AddInMemoryIdentityServer();
+            services.AddIdentityServer(_appConfig);
 
             services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
                 .AllowAnyMethod()
@@ -64,13 +63,8 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
-            //var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
-            //couchDbBootStrapper.Setup();
-
-            var inMemoryBootStrapper = new DocumentDbBootstrapper(new InMemoryDocumentService());
-            inMemoryBootStrapper.Setup();
-
-
+            InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
+            
             loggerFactory.AddSerilog(_logger);
             app.UseCors("AllowAll");
 
@@ -80,6 +74,20 @@ namespace Fabric.Identity.API
             app.UseMvcWithDefaultRoute();           
             app.UseOwin()
                 .UseFabricMonitoring(() => Task.FromResult(true), _loggingLevelSwitch);
+        }
+
+        private void InitializeStores(bool useInMemoryStores)
+        {
+            if (useInMemoryStores)
+            {
+                var inMemoryBootStrapper = new DocumentDbBootstrapper(new InMemoryDocumentService());
+                inMemoryBootStrapper.Setup();
+            }
+            else
+            {
+                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
+                couchDbBootStrapper.Setup();
+            }
         }
     }
 }
