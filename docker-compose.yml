@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  nginx:
+  identityproxy:
     image: healthcatalyst/fabric.docker.nginx
     environment:
       - HOST=identity
@@ -16,25 +16,33 @@ services:
     image: healthcatalyst/fabric.identity
     environment:
       - HostingOptions__UseInMemoryStores=false
-      - CouchDbSettings__Server=http://haproxy:5984/
+      - CouchDbSettings__Server=http://couchproxy:5984/
       - CouchDbSettings__Username=${COUCHDB_USER}
       - CouchDbSettings__Password=${COUCHDB_PASSWORD}
       - IssuerUri
     deploy:
       replicas: 2
-    command: ["./wait-for-couchdb.sh", "http://haproxy:5984", "dotnet", "Fabric.Identity.API.dll"]
+    command: ["./wait-for-couchdb.sh", "http://couchproxy:5984", "dotnet", "Fabric.Identity.API.dll"]
     networks:
       - webnet
       - dbnet
+  
+  authorizationproxy:
+    image: healthcatalyst/fabric.docker.nginx
+    environment:
+      - HOST=authorization
+      - REMOTEPORT=5004
+    ports:
+      - "5004:80"
+    networks:
+      - webnet
 
   authorization:
     image: healthcatalyst/fabric.authorization
     environment:
-      - IdentityServerConfidentialClientSettings__Authority=http://nginx
+      - IdentityServerConfidentialClientSettings__Authority=http://identityproxy
     deploy:
       replicas: 2
-    ports:
-      - "5004:5004"
     command: ["dotnet", "Fabric.Authorization.API.dll"]
     networks:
       - webnet
@@ -89,7 +97,7 @@ services:
     networks:
       - dbnet
 
-  haproxy:
+  couchproxy:
     image: healthcatalyst/fabric.docker.haproxy
     ports:
       - "5984:5984"
