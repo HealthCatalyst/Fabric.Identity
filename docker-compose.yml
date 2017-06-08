@@ -1,23 +1,35 @@
 version: '3'
 
 services:
-  fabric.identity:
+  nginx:
+    image: healthcatalyst/fabric.docker.nginx
+    environment:
+      - HOST=identity
+      - REMOTEPORT=5001
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - webnet
+
+  identity:
     image: healthcatalyst/fabric.identity
     environment:
       - HostingOptions__UseInMemoryStores=false
       - CouchDbSettings__Server=http://haproxy:5984/
       - CouchDbSettings__Username=${COUCHDB_USER}
       - CouchDbSettings__Password=${COUCHDB_PASSWORD}
-    ports:
-      - "5001:5001"
-    depends_on:
-      - couchdb1
+    deploy:
+      replicas: 2
     command: ["./wait-for-couchdb.sh", "http://haproxy:5984", "dotnet", "Fabric.Identity.API.dll"]
     networks:
       - webnet
+      - dbnet
 
   couchdb1:
     image: healthcatalyst/fabric.docker.couchdb
+    volumes:
+      - db1-data:/opt/couchdb/data
     environment:
       - NODENAME=couchdb1
       - COUCHDB_USER
@@ -25,7 +37,7 @@ services:
     ports:
       - "15984:5984"
     networks:
-      - webnet
+      - dbnet
 
   setup:
     image: healthcatalyst/fabric.docker.couchdb
@@ -36,10 +48,12 @@ services:
     depends_on:
       - couchdb1
     networks:
-      - webnet
+      - dbnet
 
   couchdb2:
     image: healthcatalyst/fabric.docker.couchdb
+    volumes:
+      - db2-data:/opt/couchdb/data
     environment:
       - NODENAME=couchdb2
       - COUCHDB_USER
@@ -47,10 +61,12 @@ services:
     ports:
       - "25984:5984"
     networks:
-      - webnet
+      - dbnet
 
   couchdb3:
     image: healthcatalyst/fabric.docker.couchdb
+    volumes:
+      - db3-data:/opt/couchdb/data
     environment:
       - NODENAME=couchdb3
       - COUCHDB_USER
@@ -58,14 +74,20 @@ services:
     ports:
       - "35984:5984"
     networks:
-      - webnet
+      - dbnet
 
   haproxy:
     image: healthcatalyst/fabric.docker.haproxy
     ports:
       - "5984:5984"
     networks:
-      - webnet
+      - dbnet
 
 networks:
   webnet:
+  dbnet:
+
+volumes:
+  db1-data:
+  db2-data:
+  db3-data:
