@@ -47,7 +47,11 @@ namespace Fabric.Identity.API
             services.AddFluentValidations();
             //services.AddCouchDbBackedIdentityServer(_couchDbSettings);
             services.AddInMemoryIdentityServer();
-            
+
+            services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()));
+
             services.AddMvc();
         }
 
@@ -68,6 +72,7 @@ namespace Fabric.Identity.API
 
 
             loggerFactory.AddSerilog(_logger);
+            app.UseCors("AllowAll");
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
