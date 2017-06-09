@@ -46,7 +46,11 @@ namespace Fabric.Identity.API
             services.AddSingleton(_logger);
             services.AddFluentValidations();
             services.AddIdentityServer(_appConfig);
-            
+
+            services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()));
+
             services.AddMvc();
         }
 
@@ -62,6 +66,7 @@ namespace Fabric.Identity.API
             InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
             
             loggerFactory.AddSerilog(_logger);
+            app.UseCors("AllowAll");
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
