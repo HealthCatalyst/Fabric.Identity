@@ -18,7 +18,7 @@ namespace Fabric.Identity.API.EventSinks
 
         public ElasticSearchEventSink(IAppConfiguration settings)
         {
-            _logger = LogFactory.CreateLogger(new LoggingLevelSwitch(), settings.ElasticSearchSettings, "identityservice-events");
+            _logger = LogFactory.CreateLogger(new LoggingLevelSwitch(), settings.ElasticSearchSettings, settings.ClientName, "identityservice-events");
         }
         public Task PersistAsync(Event evt)
         {

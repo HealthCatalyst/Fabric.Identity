@@ -32,7 +32,7 @@ namespace Fabric.Identity.API
         {
             _appConfig = new ConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
             _loggingLevelSwitch = new LoggingLevelSwitch();
-            _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, "identityservice", _appConfig.LogToFile);
+            _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, _appConfig.ClientName, "identityservice", _appConfig.LogToFile);
             _couchDbSettings = _appConfig.CouchDbSettings;
         }
         // This method gets called by the runtime. Use this method to add services to the container.
