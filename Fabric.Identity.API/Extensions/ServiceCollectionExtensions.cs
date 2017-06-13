@@ -1,5 +1,4 @@
 ﻿using Fabric.Identity.API.Configuration;
-using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
@@ -18,8 +17,9 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<ApiResourceValidator, ApiResourceValidator>();
         }
 
-        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, ICouchDbSettings couchDbSettings, string issuerUri)
+        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, ICouchDbSettings couchDbSettings, string issuerUri, SigningCertificateSettings certificateSettings)
         {
+            
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
             serviceCollection.AddIdentityServer(options =>
@@ -29,7 +29,7 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseErrorEvents = true;
                     options.IssuerUri = issuerUri;
                 })
-                .AddTemporarySigningCredential()
+                .AddSigningCredentials(certificateSettings)
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
                 .AddResourceStore<DocumentDbResourceStore>()
@@ -38,7 +38,7 @@ namespace Fabric.Identity.API.Extensions
 
             return serviceCollection;
         }
-
+        
         public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, string issuerUri)
         {
             serviceCollection.AddSingleton<IDocumentDbService, InMemoryDocumentService>();
@@ -68,7 +68,7 @@ namespace Fabric.Identity.API.Extensions
             }
             else
             {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri);
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri, appConfiguration.SigningCertificateSettings);
             }
             return serviceCollection;
         }
