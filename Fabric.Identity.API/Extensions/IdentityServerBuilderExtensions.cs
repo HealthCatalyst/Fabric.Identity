@@ -89,7 +89,7 @@ namespace Fabric.Identity.API.Extensions
 
         private static X509Certificate2 GetCertFromFile(string certPath, string passwordPath)
         {
-            var certStream = new FileStream(certPath, FileMode.Open);
+            var certStream = new FileStream(certPath, FileMode.Open, FileAccess.Read);
             var password = File.ReadAllText(passwordPath);
 
             return new X509Certificate2(certStream.ReadAsBytes(), password);
