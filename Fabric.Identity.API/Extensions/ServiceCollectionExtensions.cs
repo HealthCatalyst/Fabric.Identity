@@ -29,7 +29,7 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseErrorEvents = true;
                     options.IssuerUri = issuerUri;
                 })
-                .AddSigningCredentials(certificateSettings)
+                .AddSigningCredentialAndValidationKeys(certificateSettings)
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
                 .AddResourceStore<DocumentDbResourceStore>()
