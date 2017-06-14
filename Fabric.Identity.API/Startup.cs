@@ -45,7 +45,7 @@ namespace Fabric.Identity.API
             services.AddSingleton(_appConfig);           
             services.AddSingleton(_logger);
             services.AddFluentValidations();
-            services.AddIdentityServer(_appConfig);
+            services.AddIdentityServer(_appConfig, _logger);
 
             services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
                 .AllowAnyMethod()
