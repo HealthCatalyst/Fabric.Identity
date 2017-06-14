@@ -96,7 +96,7 @@ namespace Fabric.Identity.API.Extensions
         private static X509Certificate2 GetCertFromFile(string certPath, string passwordPath, ILogger logger)
         {
             var certStream = new FileStream(certPath, FileMode.Open, FileAccess.Read);
-            var password = File.ReadAllText(passwordPath);
+            var password = File.ReadAllText(passwordPath).Trim();
             logger.Information("Password for pfx is: {password}", password);
             return new X509Certificate2(certStream.ReadAsBytes(), password);
         }
