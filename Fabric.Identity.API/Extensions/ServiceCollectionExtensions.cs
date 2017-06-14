@@ -21,7 +21,8 @@ namespace Fabric.Identity.API.Extensions
         public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, 
             ICouchDbSettings couchDbSettings, 
             string issuerUri, 
-            SigningCertificateSettings certificateSettings, 
+            SigningCertificateSettings certificateSettings,
+            ICertificateService certificateService,
             ILogger logger)
         {
 
@@ -34,7 +35,7 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseErrorEvents = true;
                     options.IssuerUri = issuerUri;
                 })
-                .AddSigningCredentialAndValidationKeys(certificateSettings, logger)
+                .AddSigningCredentialAndValidationKeys(certificateSettings, certificateService, logger)
                 .AddTestUsers(TestUsers.Users)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
                 .AddResourceStore<DocumentDbResourceStore>()
@@ -65,7 +66,7 @@ namespace Fabric.Identity.API.Extensions
         }
 
         public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
-            IAppConfiguration appConfiguration, ILogger logger)
+            IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
@@ -73,7 +74,7 @@ namespace Fabric.Identity.API.Extensions
             }
             else
             {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri, appConfiguration.SigningCertificateSettings, logger);
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri, appConfiguration.SigningCertificateSettings, certificateService, logger);
             }
             return serviceCollection;
         }
