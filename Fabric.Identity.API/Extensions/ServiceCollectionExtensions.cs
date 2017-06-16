@@ -1,9 +1,11 @@
 ﻿using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.DocumentDbStores;
+using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Stores;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -28,6 +30,7 @@ namespace Fabric.Identity.API.Extensions
 
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
+            serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;

@@ -25,6 +25,7 @@ namespace Fabric.Identity.API
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
         private readonly ICouchDbSettings _couchDbSettings;
+        private const string DefaultCorsPolicy = "FabricCorsPolicy";
 
         public Startup(IHostingEnvironment env)
         {
@@ -44,11 +45,7 @@ namespace Fabric.Identity.API
             services.AddSingleton(_logger);
             services.AddFluentValidations();
             services.AddIdentityServer(_appConfig, certificateService, _logger);
-
-            services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()));
-
+            
             services.AddMvc();
         }
 
@@ -64,7 +61,7 @@ namespace Fabric.Identity.API
             InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
             
             loggerFactory.AddSerilog(_logger);
-            app.UseCors("AllowAll");
+            app.UseCors(DefaultCorsPolicy);
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
