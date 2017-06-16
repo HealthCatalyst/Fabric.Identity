@@ -50,7 +50,7 @@ You should get a response back that looks something like this:
 
 ```
 {
-	"access_token": "[base64 encoded string]",
+	"access_token": <base64 encoded string>,
 	"expires_in": 3600,
 	"token_type": "Bearer"
 }
