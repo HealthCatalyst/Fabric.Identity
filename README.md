@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/d1d11b48f7cc4fbb9277b4c1c12c2106)](https://www.codacy.com/app/HealthCatalyst/Fabric.Identity?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HealthCatalyst/Fabric.Identity&amp;utm_campaign=Badge_Grade)
 # Fabric.Identity
 
-The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem. An overview of our thinking can be found in [this presentation](https://healthcatalyst.box.com/s/alac73mlvo1ojm1jrnzm37zma282lc9b).
+The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem.
 
 ## Platform
 The Fabric.Identity service is built using:
@@ -10,7 +10,13 @@ The Fabric.Identity service is built using:
 + ASP .NET Core 1.1
 + [IdentityServer4](http://identityserver.io/)
 
+## Getting Started
+
+The documentation on our [Getting Started](https://github.com/HealthCatalyst/Fabric.Identity/wiki/Getting-Started) page will show you how to quickly get Fabric.Identity running in Docker and start developing an application using Fabric.Identity as your authentication mechanism.
+
 ## How to build and run
+If you would like to build from source without using a Docker image follow the instructions below:
+
 + [Install .NET Core 1.1](https://www.microsoft.com/net/core#windowsvs2017)
 + Clone or download the repo
 + Launch a command prompt or powershell window and change directory to the Fabric.Identity.API directory and execute the following commands
