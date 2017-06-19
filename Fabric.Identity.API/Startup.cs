@@ -16,6 +16,7 @@ using Serilog.Core;
 using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
+using Fabric.Identity.API.Infrastructure;
 
 namespace Fabric.Identity.API
 {
@@ -25,7 +26,6 @@ namespace Fabric.Identity.API
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
         private readonly ICouchDbSettings _couchDbSettings;
-        private const string DefaultCorsPolicy = "FabricCorsPolicy";
 
         public Startup(IHostingEnvironment env)
         {
@@ -61,7 +61,7 @@ namespace Fabric.Identity.API
             InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
             
             loggerFactory.AddSerilog(_logger);
-            app.UseCors(DefaultCorsPolicy);
+            app.UseCors(FabricCorsPolicyProvider.PolicyName);
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
