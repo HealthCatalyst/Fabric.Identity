@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
@@ -17,6 +18,7 @@ using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
 using Fabric.Identity.API.Infrastructure;
+using IdentityServer4.Models;
 
 namespace Fabric.Identity.API
 {
@@ -68,7 +70,22 @@ namespace Fabric.Identity.API
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();
             app.UseOwin()
-                .UseFabricMonitoring(() => Task.FromResult(true), _loggingLevelSwitch);
+                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
+        }
+
+        public async Task<bool> HealthCheck()
+        {
+            IDocumentDbService documentDbService;
+            if (_appConfig.HostingOptions.UseInMemoryStores)
+            {
+                documentDbService = new InMemoryDocumentService();
+            }
+            else
+            {
+                documentDbService = new CouchDbAccessService(_couchDbSettings, _logger);
+            }
+            var identityResources = await documentDbService.GetDocuments<IdentityResource>("identityresource:");
+            return identityResources.Any();
         }
 
         private void InitializeStores(bool useInMemoryStores)

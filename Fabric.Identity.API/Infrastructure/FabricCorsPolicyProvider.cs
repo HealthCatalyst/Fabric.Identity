@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace Fabric.Identity.API.Infrastructure
 {
     public class FabricCorsPolicyProvider : ICorsPolicyProvider
     {
-        public const string PolicyName = "FabricCorsPolicy";
+        public static readonly string PolicyName = "FabricCorsPolicy";
         private readonly ICorsPolicyService _corsPolicyService;
         private readonly ILogger _logger;
         private readonly PathString _allowedBasePath = new PathString("/api");
