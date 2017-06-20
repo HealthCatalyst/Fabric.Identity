@@ -37,7 +37,7 @@
     <None Update="Dockerfile">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="wait-for-couchdb.sh">
+    <None Update="scripts\wait-for-couchdb.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
