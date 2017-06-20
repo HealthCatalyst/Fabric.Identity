@@ -10,7 +10,6 @@ namespace Fabric.Identity.API.Services
     public class CorsPolicyDocumentDbService : ICorsPolicyService
     {
         private readonly IDocumentDbService _documentDbService;
-        private const string ClientDocumentType = "client:";
 
         public CorsPolicyDocumentDbService(IDocumentDbService documentDbService)
         {
@@ -19,7 +18,7 @@ namespace Fabric.Identity.API.Services
 
         public Task<bool> IsOriginAllowedAsync(string origin)
         {
-            var clients = _documentDbService.GetDocuments<Client>(ClientDocumentType).Result.ToList();
+            var clients = _documentDbService.GetDocuments<Client>(FabricIdentityConstants.DocumentTypes.ClientDocumentType).Result.ToList();
 
             return Task.FromResult(clients != null && clients.SelectMany(c => c.AllowedCorsOrigins).Contains(origin));
         }

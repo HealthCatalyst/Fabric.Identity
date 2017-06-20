@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
 using System.Net;
-using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Management
 {

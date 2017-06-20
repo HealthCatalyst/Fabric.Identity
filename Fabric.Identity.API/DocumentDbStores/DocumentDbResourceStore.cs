@@ -10,8 +10,6 @@ namespace Fabric.Identity.API.DocumentDbStores
     public class DocumentDbResourceStore : IResourceStore
     {
         private readonly IDocumentDbService _documentDbService;
-        private const string IdentityResourceDocumentType = "identityresource:";
-        private const string ApiResourceDocumentType = "apiresource:";
 
         public DocumentDbResourceStore(IDocumentDbService documentDbService)
         {
@@ -20,7 +18,7 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
         {
-            var identityResources = _documentDbService.GetDocuments<IdentityResource>(IdentityResourceDocumentType).Result;
+            var identityResources = _documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes.IdentityResourceDocumentType).Result;
 
             var matchingResources = identityResources.Where(r => scopeNames.Contains(r.Name));
 
@@ -29,7 +27,7 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
         {
-            var apiResources = _documentDbService.GetDocuments<ApiResource>(ApiResourceDocumentType).Result;
+            var apiResources = _documentDbService.GetDocuments<ApiResource>(FabricIdentityConstants.DocumentTypes.ApiResourceDocumentType).Result;
 
             var apiResourcesForScope = apiResources.Where(a => a.Scopes.Any(s => scopeNames.Contains(s.Name)));
 
@@ -43,8 +41,8 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public Task<Resources> GetAllResources()
         {
-            var apiResources = _documentDbService.GetDocuments<ApiResource>(ApiResourceDocumentType).Result;
-            var identityResources = _documentDbService.GetDocuments<IdentityResource>(IdentityResourceDocumentType).Result;
+            var apiResources = _documentDbService.GetDocuments<ApiResource>(FabricIdentityConstants.DocumentTypes.ApiResourceDocumentType).Result;
+            var identityResources = _documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes.IdentityResourceDocumentType).Result;
 
             var result = new Resources(identityResources, apiResources);
             return Task.FromResult(result);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.Infrastructure;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Http;
@@ -49,7 +50,7 @@ namespace Fabric.Identity.UnitTests
             var ctx = new DefaultHttpContext();
             ctx.Request.Path = new PathString("/api/client");
             ctx.Request.Headers.Add("Origin", "http://example.com");
-            var policy = _fabricCorsPolicyProvider.GetPolicyAsync(ctx, FabricCorsPolicyProvider.PolicyName).Result;
+            var policy = _fabricCorsPolicyProvider.GetPolicyAsync(ctx, FabricIdentityConstants.FabricCorsPolicyName).Result;
             Assert.NotNull(policy);
         }
 

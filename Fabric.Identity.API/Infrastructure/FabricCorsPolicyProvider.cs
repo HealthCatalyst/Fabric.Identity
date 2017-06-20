@@ -9,10 +9,9 @@ namespace Fabric.Identity.API.Infrastructure
 {
     public class FabricCorsPolicyProvider : ICorsPolicyProvider
     {
-        public static readonly string PolicyName = "FabricCorsPolicy";
         private readonly ICorsPolicyService _corsPolicyService;
         private readonly ILogger _logger;
-        private readonly PathString _allowedBasePath = new PathString("/api");
+        private readonly PathString _allowedBasePath = new PathString(FabricIdentityConstants.ManagementApiBasePath);
         public FabricCorsPolicyProvider(ICorsPolicyService corsPolicyService, ILogger logger)
         {
             _corsPolicyService = corsPolicyService ?? throw new ArgumentNullException(nameof(corsPolicyService));
@@ -20,9 +19,9 @@ namespace Fabric.Identity.API.Infrastructure
         }
         public async Task<CorsPolicy> GetPolicyAsync(HttpContext context, string policyName)
         {
-            if (policyName != PolicyName)
+            if (policyName != FabricIdentityConstants.FabricCorsPolicyName)
             {
-                _logger.Information("PolicyName: {policyName} not applicable to FabricCorsPolicyProvider: {PolicyName}", policyName, PolicyName);
+                _logger.Information("PolicyName: {policyName} not applicable to FabricCorsPolicyProvider: {PolicyName}", policyName, FabricIdentityConstants.FabricCorsPolicyName);
                 return null;
             }
 

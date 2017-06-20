@@ -1,6 +1,4 @@
-﻿using System;
-using System.Net;
-using Fabric.Identity.API.CouchDb;
+﻿using System.Net;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;

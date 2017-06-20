@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;

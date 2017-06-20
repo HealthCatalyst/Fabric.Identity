@@ -17,7 +17,6 @@ using Serilog.Core;
 using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
-using Fabric.Identity.API.Infrastructure;
 using IdentityServer4.Models;
 
 namespace Fabric.Identity.API
@@ -33,7 +32,7 @@ namespace Fabric.Identity.API
         {
             _appConfig = new ConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
             _loggingLevelSwitch = new LoggingLevelSwitch();
-            _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, _appConfig.ClientName, "identityservice", _appConfig.LogToFile);
+            _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, _appConfig.ClientName, FabricIdentityConstants.ServiceName, _appConfig.LogToFile);
             _couchDbSettings = _appConfig.CouchDbSettings;
         }
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -63,7 +62,7 @@ namespace Fabric.Identity.API
             InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
             
             loggerFactory.AddSerilog(_logger);
-            app.UseCors(FabricCorsPolicyProvider.PolicyName);
+            app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
@@ -84,7 +83,7 @@ namespace Fabric.Identity.API
             {
                 documentDbService = new CouchDbAccessService(_couchDbSettings, _logger);
             }
-            var identityResources = await documentDbService.GetDocuments<IdentityResource>("identityresource:");
+            var identityResources = await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes.IdentityResourceDocumentType);
             return identityResources.Any();
         }
 
