@@ -30,11 +30,6 @@ namespace Fabric.Identity.API.Services
             var documentList = new List<T>();
             var documents = Documents.Where(d => d.Key.StartsWith(documentType)).Select(d => d.Value).ToList();
 
-            if (documents.IsNullOrEmpty())
-            {
-                return Task.FromResult(default(IEnumerable<T>));
-            }
-
             foreach (var document in documents)
             {
                 documentList.Add(JsonConvert.DeserializeObject<T>(document));

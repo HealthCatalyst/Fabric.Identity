@@ -3,7 +3,6 @@ using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
-using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,8 +21,7 @@ namespace Fabric.Identity.API.Extensions
 
         public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, 
             ICouchDbSettings couchDbSettings, 
-            string issuerUri, 
-            SigningCertificateSettings certificateSettings,
+            IAppConfiguration appConfiguration,
             ICertificateService certificateService,
             ILogger logger)
         {
@@ -36,10 +34,10 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseSuccessEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
-                    options.IssuerUri = issuerUri;
+                    options.IssuerUri = appConfiguration.IssuerUri;
                 })
-                .AddSigningCredentialAndValidationKeys(certificateSettings, certificateService, logger)
-                .AddTestUsers(TestUsers.Users)
+                .AddSigningCredentialAndValidationKeys(appConfiguration.SigningCertificateSettings, certificateService, logger)
+                .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
                 .AddResourceStore<DocumentDbResourceStore>()
                 .AddClientStore<DocumentDbClientStore>()
@@ -48,7 +46,7 @@ namespace Fabric.Identity.API.Extensions
             return serviceCollection;
         }
 
-        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, string issuerUri)
+        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, IAppConfiguration appConfiguration)
         {
             serviceCollection.AddSingleton<IDocumentDbService, InMemoryDocumentService>();
             serviceCollection.AddIdentityServer(options =>
@@ -56,15 +54,15 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseSuccessEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
-                    options.IssuerUri = issuerUri;
+                    options.IssuerUri = appConfiguration.IssuerUri;
                 })
                 .AddTemporarySigningCredential()
-                .AddTestUsers(TestUsers.Users)
+                .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
                 .AddResourceStore<DocumentDbResourceStore>()
                 .AddClientStore<DocumentDbClientStore>()
                 .Services.AddTransient<IPersistedGrantStore, DocumentDbPersistedGrantStore>();
-
+            
             return serviceCollection;
         }
 
@@ -73,11 +71,11 @@ namespace Fabric.Identity.API.Extensions
         {
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
-                serviceCollection.AddInMemoryIdentityServer(appConfiguration.IssuerUri);
+                serviceCollection.AddInMemoryIdentityServer(appConfiguration);
             }
             else
             {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration.IssuerUri, appConfiguration.SigningCertificateSettings, certificateService, logger);
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration, certificateService, logger);
             }
             return serviceCollection;
         }

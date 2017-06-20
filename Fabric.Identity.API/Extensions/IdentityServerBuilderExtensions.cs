@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
+using IdentityServer4.Quickstart.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -9,6 +10,15 @@ namespace Fabric.Identity.API.Extensions
 {
     public static class IdentityServerBuilderExtensions
     {
+        public static IIdentityServerBuilder AddTestUsersIfConfigured(this IIdentityServerBuilder identityServerBuilder, HostingOptions hostingOptions)
+        {
+            if (hostingOptions != null && hostingOptions.UseTestUsers)
+            {
+                identityServerBuilder.AddTestUsers(TestUsers.Users);
+            }
+            return identityServerBuilder;
+        }
+
         public static IIdentityServerBuilder AddSigningCredentialAndValidationKeys(this IIdentityServerBuilder identityServerBuilder,
             SigningCertificateSettings certificateSettings, ICertificateService certificateService, ILogger logger)
         {

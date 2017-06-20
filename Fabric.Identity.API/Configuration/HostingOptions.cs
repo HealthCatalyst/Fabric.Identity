@@ -4,5 +4,7 @@
     {
         public bool UseIis { get; set; }
         public bool UseInMemoryStores { get; set; }
+
+        public bool UseTestUsers { get; set; }
     }
 }
