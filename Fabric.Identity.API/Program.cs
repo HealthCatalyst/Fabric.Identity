@@ -8,7 +8,7 @@ namespace Fabric.Identity.API
     {
         public static void Main(string[] args)
         {
-            var appConfig = new Configuration.ConfigurationProvider().GetAppConfiguration(Directory.GetCurrentDirectory());
+            var appConfig = new Configuration.IdentityConfigurationProvider().GetAppConfiguration(Directory.GetCurrentDirectory());
 
             var host = new WebHostBuilder()
                 .UseKestrel()
