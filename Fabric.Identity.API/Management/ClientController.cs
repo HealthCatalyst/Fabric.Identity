@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Fabric.Identity.API.Management
 {
+    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [Route("api/[controller]")]
     public class ClientController : BaseController<IS4.Client>
     {

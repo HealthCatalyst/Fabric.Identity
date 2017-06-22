@@ -6,11 +6,11 @@ namespace Fabric.Identity.API.CouchDb
     [System.Obsolete]
     public class DocumentDbBootstrapper
     {
-        private readonly IDocumentDbService _documentDbService;
+        protected readonly IDocumentDbService DocumentDbService;
 
         public DocumentDbBootstrapper(IDocumentDbService documentDbService)
         {
-            _documentDbService = documentDbService;
+            DocumentDbService = documentDbService;
         }
 
         public virtual void Setup()
@@ -25,7 +25,7 @@ namespace Fabric.Identity.API.CouchDb
             {
                 try
                 {
-                    _documentDbService.AddDocument(identityResource.Name, identityResource);
+                    DocumentDbService.AddDocument(identityResource.Name, identityResource);
                 }
                 catch (Exception)
                 {

@@ -3,7 +3,9 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using MyCouch;
 using MyCouch.Net;
+using MyCouch.Responses;
 using Polly;
+using Serilog;
 
 namespace Fabric.Identity.API.CouchDb
 {
@@ -11,11 +13,15 @@ namespace Fabric.Identity.API.CouchDb
     {
         private readonly ICouchDbSettings _couchDbSettings;
         private static readonly Policy CircuitBreaker = Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
+        private readonly DbConnectionInfo _dbConnectionInfo;
+        private readonly ILogger _logger;
 
-        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings)
+        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings, ILogger logger)
             : base(documentDbService)
         {
             _couchDbSettings = couchDbSettings;
+            _dbConnectionInfo = MakeDbConnectionInfo();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public override void Setup()
@@ -25,6 +31,7 @@ namespace Fabric.Identity.API.CouchDb
             {
                 CircuitBreaker.Execute(base.Setup);
             }
+            CircuitBreaker.Execute(SetupDesignDocuments);
         }
 
         private bool CreateDb()
@@ -60,6 +67,47 @@ namespace Fabric.Identity.API.CouchDb
             }
         }
 
+        private void SetupDesignDocuments()
+        {
+            using (var client = new MyCouchClient(_dbConnectionInfo))
+            {
+                var documentId = $"_design/{FabricIdentityConstants.FabricCouchDbDesignDocuments.Count}";
+                var countDocument = client.Documents
+                    .GetAsync(documentId)
+                    .Result;
 
+                DocumentHeaderResponse result;
+                if (countDocument.IsSuccess)
+                {
+                    result = client.Documents.PutAsync(documentId, countDocument.Rev,
+                            FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count)
+                        .Result;
+                    _logger.Information("{Count} design document is already created.",
+                        FabricIdentityConstants.FabricCouchDbDesignDocuments.Count);
+                }
+                else
+                {
+                    result = client.Documents.PostAsync(FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count).Result;
+                }
+                
+                if (result.IsSuccess) return;
+
+                throw new CouchDbSetupException($"unable to create design document: {FabricIdentityConstants.FabricCouchDbDesignDocuments.Count}, reason: {result.Reason}");
+            }
+        }
+        
+        private DbConnectionInfo MakeDbConnectionInfo()
+        {
+            var connectionInfo = new DbConnectionInfo(_couchDbSettings.Server, _couchDbSettings.DatabaseName);
+
+            if (!string.IsNullOrEmpty(_couchDbSettings.Username) &&
+                !string.IsNullOrEmpty(_couchDbSettings.Password))
+            {
+                connectionInfo.BasicAuth =
+                    new BasicAuthString(_couchDbSettings.Username, _couchDbSettings.Password);
+            }
+
+            return connectionInfo;
+        }
     }
 }

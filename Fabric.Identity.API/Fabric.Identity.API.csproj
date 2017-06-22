@@ -12,6 +12,7 @@
     <PackageReference Include="Fabric.Platform.Logging" Version="1.0.0-beta7" />
     <PackageReference Include="FluentValidation" Version="6.4.1" />
     <PackageReference Include="IdentityServer4" Version="1.5.0" />
+    <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="1.2.1" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="1.1.1" />

@@ -4,6 +4,7 @@ using System.Net;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using IS4 = IdentityServer4.Models;
@@ -12,6 +13,7 @@ using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Management
 {
+    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [Route("api/[controller]")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {

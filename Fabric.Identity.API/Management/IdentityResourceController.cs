@@ -2,6 +2,7 @@
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -9,6 +10,7 @@ using Serilog;
 
 namespace Fabric.Identity.API.Management
 {
+    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [Route("api/[controller]")]
     public class IdentityResourceController : BaseController<IdentityResource>
     {

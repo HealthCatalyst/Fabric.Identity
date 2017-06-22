@@ -7,11 +7,13 @@ namespace Fabric.Identity.API.Configuration
         string IssuerUri { get; }
         bool LogToFile { get; }
         string ClientName { get; }
+        string RegistrationAdminGroup { get; }
         SigningCertificateSettings SigningCertificateSettings { get; }
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }
         CouchDbSettings CouchDbSettings { get; }
 
         ExternalIdProviderSettings ExternalIdProviderSettings { get; }
+        IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; }
     }
 }

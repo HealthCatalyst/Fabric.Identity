@@ -22,7 +22,8 @@ namespace Fabric.Identity.API.Services
             return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
         }
 
-        private DbConnectionInfo DbConnectionInfo {
+        private DbConnectionInfo DbConnectionInfo
+        {
             get
             {
                 var connectionInfo = new DbConnectionInfo(_couchDbSettings.Server, _couchDbSettings.DatabaseName);
@@ -49,13 +50,13 @@ namespace Fabric.Identity.API.Services
 
         public Task<T> GetDocument<T>(string documentId)
         {
-            
+
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var documentResponse = client.Documents.GetAsync(GetFullDocumentId<T>(documentId)).Result;
 
                 if (!documentResponse.IsSuccess)
-                {   
+                {
                     _logger.Debug($"unable to find document: {GetFullDocumentId<T>(documentId)} - message: {documentResponse.Reason}");
                     return Task.FromResult(default(T));
                 }
@@ -93,7 +94,22 @@ namespace Fabric.Identity.API.Services
                     results.Add(resultRow);
                 }
 
-                return Task.FromResult((IEnumerable<T>) results);
+                return Task.FromResult((IEnumerable<T>)results);
+            }
+        }
+
+        public Task<int> GetDocumentCount<T>(string documentType)
+        {
+            using (var client = new MyCouchClient(DbConnectionInfo))
+            {
+                var viewQuery = new QueryViewRequest(FabricIdentityConstants.FabricCouchDbDesignDocuments.Count,
+                    documentType);
+                var result = client.Views.QueryAsync<int>(viewQuery).Result;
+                if (result.Rows != null && result.Rows.Length > 0)
+                {
+                    return Task.FromResult(result.Rows[0].Value);
+                }
+                return Task.FromResult(0);
             }
         }
 
@@ -107,7 +123,7 @@ namespace Fabric.Identity.API.Services
                 var docJson = JsonConvert.SerializeObject(documentObject);
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
-                {                    
+                {
                     return; //TODO: how to handle this
                 }
 
@@ -141,14 +157,14 @@ namespace Fabric.Identity.API.Services
                     _logger.Error($"unable to add or update document: {documentId} - error: {response.Reason}");
                 }
             }
-        }        
-        
+        }
+
         public void DeleteDocument<T>(string documentId)
         {
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var documentResponse = client.Documents.GetAsync(GetFullDocumentId<T>(documentId)).Result;
-                
+
                 Delete(documentResponse.Id, documentResponse.Rev);
             }
         }
@@ -164,6 +180,6 @@ namespace Fabric.Identity.API.Services
                     _logger.Error($"There was an error deleting document:{documentId}, error: {response.Reason}");
                 }
             }
-        }        
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
@@ -17,7 +18,10 @@ using Serilog.Core;
 using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
+using Fabric.Identity.API.Authorization;
 using IdentityServer4.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fabric.Identity.API
 {
@@ -39,6 +43,7 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
             var certificateService = MakeCertificateService(_logger);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IEventSink, ElasticSearchEventSink>();
@@ -46,8 +51,20 @@ namespace Fabric.Identity.API
             services.AddSingleton(_logger);
             services.AddFluentValidations();
             services.AddIdentityServer(_appConfig, certificateService, _logger);
+            services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
+            services.TryAddSingleton(new IdentityServerAuthenticationOptions
+            {
+                Authority = identityServerApiSettings.Authority,
+                RequireHttpsMetadata = false,
+                ApiName = identityServerApiSettings.ClientId
+            });
             
             services.AddMvc();
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("RegistrationThreshold",
+                    policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -67,6 +84,11 @@ namespace Fabric.Identity.API
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
+
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+            var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
+            app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
             app.UseOwin()
                 .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
@@ -96,7 +118,7 @@ namespace Fabric.Identity.API
             }
             else
             {
-                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings);
+                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings, _logger);
                 couchDbBootStrapper.Setup();
             }
         }

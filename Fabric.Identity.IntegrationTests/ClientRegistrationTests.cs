@@ -173,5 +173,28 @@ namespace Fabric.Identity.IntegrationTests
             Assert.Equal(updatedTestClient.AllowedGrantTypes, getClient.AllowedGrantTypes);
             Assert.Equal(updatedTestClient.PostLogoutRedirectUris, getClient.PostLogoutRedirectUris);
         }
+
+        [Fact]
+        public async Task TestAuthorization_NoToken_Fails()
+        {
+            var testClient = GetTestClient();
+            this.HttpClient.DefaultRequestHeaders.Remove("Authorization");
+            var response = await CreateNewClient(testClient);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task TestAuthorization_NoScope_Fails()
+        {
+            var testClient = GetOfflineTestClient();
+            testClient.AllowedScopes = new List<string>{TestScope};
+            var response = await CreateNewClient(testClient);
+            response.EnsureSuccessStatusCode();
+            var client = JsonConvert.DeserializeObject<Client>(await response.Content.ReadAsStringAsync());
+            HttpClient.SetBearerToken(await GetAccessToken(client, TestScope));
+            testClient = GetTestClient();
+            response = await CreateNewClient(testClient);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
     }
 }
