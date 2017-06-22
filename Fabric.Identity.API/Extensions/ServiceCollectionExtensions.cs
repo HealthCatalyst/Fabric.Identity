@@ -6,6 +6,7 @@ using Fabric.Identity.API.Validation;
 using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace Fabric.Identity.API.Extensions
@@ -48,7 +49,7 @@ namespace Fabric.Identity.API.Extensions
 
         public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, IAppConfiguration appConfiguration)
         {
-            serviceCollection.AddSingleton<IDocumentDbService, InMemoryDocumentService>();
+            serviceCollection.TryAddSingleton<IDocumentDbService, InMemoryDocumentService>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;

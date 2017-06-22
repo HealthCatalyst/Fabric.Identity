@@ -123,7 +123,7 @@ namespace Fabric.Identity.UnitTests
         {
             var mockDocumentDbService = new Mock<IDocumentDbService>();
             mockDocumentDbService
-                .Setup(documentDbService => documentDbService.GetDocumentCount<Client>(It.IsAny<string>()))
+                .Setup(documentDbService => documentDbService.GetDocumentCount(It.IsAny<string>()))
                 .Returns(Task.FromResult(clients.Count));
             return mockDocumentDbService.Object;
         }

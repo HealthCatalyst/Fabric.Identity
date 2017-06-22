@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
-using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Services;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;
@@ -21,13 +21,22 @@ namespace Fabric.Identity.IntegrationTests
     {
         private readonly TestServer _identityTestServer;
         private readonly TestServer _apiTestServer;
-        private static Client _client;
-        private static readonly object Lock = new object();
+        private static readonly IS4.Client Client;
+        private static readonly string ClientSecret = "secret";
         private static readonly string IdentityServerUrl = "http://localhost:5001";
         private static readonly string RegistrationApiServerUrl = "http://localhost:5000";
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         private static readonly string RegistrationApiName = "registration-api";
         protected static readonly string TestScope = "testscope";
+        private static readonly IDocumentDbService DocumentDbService = new InMemoryDocumentService();
+
+        static IntegrationTestsFixture()
+        {
+            var api = GetTestApiResource();
+            Client = GetTestClient();
+            DocumentDbService.AddDocument(api.Name, api);
+            DocumentDbService.AddDocument(Client.ClientId, Client);
+        }
 
         public IntegrationTestsFixture()
         {
@@ -38,8 +47,10 @@ namespace Fabric.Identity.IntegrationTests
 
         private TestServer CreateIdentityTestServer()
         {
-            var builder = new WebHostBuilder()
-                .UseKestrel()
+            var builder = new WebHostBuilder();
+            builder.ConfigureServices(c => c.AddSingleton<IDocumentDbService>(DocumentDbService));
+
+            builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<API.Startup>()
                 .UseApplicationInsights()
@@ -61,7 +72,9 @@ namespace Fabric.Identity.IntegrationTests
             };
 
             var apiBuilder = new WebHostBuilder();
-            apiBuilder.ConfigureServices(c => c.AddSingleton(options));
+
+            apiBuilder.ConfigureServices(c => c.AddSingleton(options)
+                .AddSingleton<IDocumentDbService>(DocumentDbService));
 
             apiBuilder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -74,73 +87,44 @@ namespace Fabric.Identity.IntegrationTests
 
         private HttpClient GetHttpClient()
         {
-            lock (Lock)
-            {
-                var httpClient = _apiTestServer.CreateClient();
-                httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
-
-                if (_client == null)
-                {
-                    var createdApiResponse = SetupRegistrationApi(httpClient);
-                    createdApiResponse.Result.EnsureSuccessStatusCode();
-
-                    var createdClientResponse = SetupTestClient(httpClient);
-                    var result = createdClientResponse.Result;
-                    result.EnsureSuccessStatusCode();
-                    _client = JsonConvert.DeserializeObject<Client>(result.Content.ReadAsStringAsync().Result);
-                }
-                httpClient.SetBearerToken(GetAccessToken(_client, FabricIdentityConstants.IdentityRegistrationScope).Result);
-                return httpClient;
-            }
+            var httpClient = _apiTestServer.CreateClient();
+            httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
+            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope).Result);
+            return httpClient;
         }
 
-        protected async Task<string> GetAccessToken(Client client, string scope = null)
+        protected async Task<string> GetAccessToken(string clientId, string clientSecret, string scope = null)
         {
             var tokenClient =
-                new TokenClient(TokenEndpoint, client.ClientId,
+                new TokenClient(TokenEndpoint, clientId,
                     _identityTestServer.CreateHandler())
                 {
-                    ClientSecret = client.ClientSecret
+                    ClientSecret = clientSecret
                 };
             var tokenResponse = await tokenClient
                 .RequestClientCredentialsAsync(scope);
             if (tokenResponse.IsError)
             {
-                throw new Exception(tokenResponse.Error);
+                throw new InvalidOperationException(tokenResponse.Error);
             }
             return tokenResponse.AccessToken;
         }
 
-        private async Task<HttpResponseMessage> SetupRegistrationApi(HttpClient httpClient)
+        private static IS4.Client GetTestClient()
         {
-            var response = await httpClient.PostAsync("api/apiResource", GetStringContent(GetTestApiResource()));
-            return response;
-        }
 
-        private async Task<HttpResponseMessage> SetupTestClient(HttpClient httpClient)
-        {
-            var response = await httpClient.PostAsync("api/client", GetStringContent(GetTestClient()));
-            return response;
-        }
-
-        private IS4.Client GetTestClient()
-        {
             return new IS4.Client
             {
                 ClientId = "test-client",
                 ClientName = "Test Client",
+                ClientSecrets = new List<IS4.Secret> { new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret)) },
                 RequireConsent = false,
                 AllowedGrantTypes = IS4.GrantTypes.ClientCredentials,
                 AllowedScopes = new List<string> { FabricIdentityConstants.IdentityRegistrationScope }
             };
         }
 
-        private StringContent GetStringContent(object entity)
-        {
-            return new StringContent(JsonConvert.SerializeObject(entity), Encoding.UTF8, "application/json");
-        }
-
-        private IS4.ApiResource GetTestApiResource()
+        private static IS4.ApiResource GetTestApiResource()
         {
             return new IS4.ApiResource
             {
@@ -152,7 +136,7 @@ namespace Fabric.Identity.IntegrationTests
                     JwtClaimTypes.Role,
                     FabricIdentityConstants.FabricClaimTypes.Groups
                 },
-                Scopes = new List<IS4.Scope> {new IS4.Scope(FabricIdentityConstants.IdentityRegistrationScope), new IS4.Scope(TestScope)}
+                Scopes = new List<IS4.Scope> { new IS4.Scope(FabricIdentityConstants.IdentityRegistrationScope), new IS4.Scope(TestScope) }
             };
         }
 

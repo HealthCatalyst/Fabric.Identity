@@ -98,7 +98,7 @@ namespace Fabric.Identity.API.Services
             }
         }
 
-        public Task<int> GetDocumentCount<T>(string documentType)
+        public Task<int> GetDocumentCount(string documentType)
         {
             using (var client = new MyCouchClient(DbConnectionInfo))
             {

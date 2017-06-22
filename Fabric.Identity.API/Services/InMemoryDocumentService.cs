@@ -37,7 +37,7 @@ namespace Fabric.Identity.API.Services
             return Task.FromResult((IEnumerable<T>)documentList);
         }
 
-        public Task<int> GetDocumentCount<T>(string documentType)
+        public Task<int> GetDocumentCount(string documentType)
         {
             var count = Documents.Count(d => d.Key.StartsWith(documentType));
             return Task.FromResult(count);

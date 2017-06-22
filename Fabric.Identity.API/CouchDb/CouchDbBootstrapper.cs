@@ -89,8 +89,11 @@ namespace Fabric.Identity.API.CouchDb
                 {
                     result = client.Documents.PostAsync(FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count).Result;
                 }
-                
-                if (result.IsSuccess) return;
+
+                if (result.IsSuccess)
+                {
+                    return;
+                }
 
                 throw new CouchDbSetupException($"unable to create design document: {FabricIdentityConstants.FabricCouchDbDesignDocuments.Count}, reason: {result.Reason}");
             }

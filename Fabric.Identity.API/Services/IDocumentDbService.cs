@@ -9,7 +9,7 @@ namespace Fabric.Identity.API.Services
     {
         Task<T> GetDocument<T>(string documentId);
         Task<IEnumerable<T>> GetDocuments<T>(string documentType);
-        Task<int> GetDocumentCount<T>(string documentType);
+        Task<int> GetDocumentCount(string documentType);
         void AddDocument<T>(string documentId, T documentObject);
         void UpdateDocument<T>(string documentId, T documentObject);
         void DeleteDocument<T>(string documentId);

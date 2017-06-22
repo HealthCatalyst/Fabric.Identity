@@ -52,13 +52,16 @@ namespace Fabric.Identity.API.Authorization
 
         private int GetClientDocumentCount()
         {
-            return _documentDbService.GetDocumentCount<Client>(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
+            return _documentDbService.GetDocumentCount(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
                 .Result;
         }
 
         private bool HasRequiredGroupClaim(ClaimsPrincipal user)
         {
-            if (string.IsNullOrEmpty(_appConfiguration.RegistrationAdminGroup)) return false;
+            if (string.IsNullOrEmpty(_appConfiguration.RegistrationAdminGroup))
+            {
+                return false;
+            }
 
             var hasGroupClaim = user.Claims.Any(c => (c.Type == ClaimTypes.Role ||
                                                       c.Type == FabricIdentityConstants.FabricClaimTypes.Groups) &&
