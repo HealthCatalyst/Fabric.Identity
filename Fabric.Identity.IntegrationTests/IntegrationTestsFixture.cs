@@ -42,7 +42,7 @@ namespace Fabric.Identity.IntegrationTests
         {
             _identityTestServer = CreateIdentityTestServer();
             _apiTestServer = CreateRegistrationApiTestServer();
-            HttpClient = GetHttpClient();
+            HttpClient = GetHttpClient().Result;
         }
 
         private TestServer CreateIdentityTestServer()
@@ -85,11 +85,15 @@ namespace Fabric.Identity.IntegrationTests
             return new TestServer(apiBuilder);
         }
 
-        private HttpClient GetHttpClient()
+        private async Task<HttpClient> GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
             httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
-            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope).Result);
+            httpClient.SetBearerToken(await GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope));
+            Console.WriteLine("**********************************Got token, validating communication with API Server");
+            var response = await httpClient.GetAsync($"/api/Client/{Client.ClientId}");
+            response.EnsureSuccessStatusCode();
+            Console.WriteLine($"*********************************Successfully called the API Server {response.Content.ReadAsStringAsync().Result}");
             return httpClient;
         }
 
