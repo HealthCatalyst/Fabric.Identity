@@ -88,10 +88,11 @@ namespace Fabric.Identity.IntegrationTests
         private async Task<HttpClient> GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
-            httpClient.SetBearerToken(await GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope));
+            //httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
+            Console.WriteLine("**********************************Getting token from token endpoint");
+            httpClient.SetBearerToken(await GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope).ConfigureAwait(false));
             Console.WriteLine("**********************************Got token, validating communication with API Server");
-            var response = await httpClient.GetAsync($"/api/Client/{Client.ClientId}");
+            var response = await httpClient.GetAsync($"/api/Client/{Client.ClientId}").ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             Console.WriteLine($"*********************************Successfully called the API Server {response.Content.ReadAsStringAsync().Result}");
             return httpClient;
@@ -106,7 +107,7 @@ namespace Fabric.Identity.IntegrationTests
                     ClientSecret = clientSecret
                 };
             var tokenResponse = await tokenClient
-                .RequestClientCredentialsAsync(scope);
+                .RequestClientCredentialsAsync(scope).ConfigureAwait(false);
             if (tokenResponse.IsError)
             {
                 throw new InvalidOperationException(tokenResponse.Error);
