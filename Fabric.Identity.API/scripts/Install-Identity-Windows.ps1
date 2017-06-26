@@ -95,8 +95,7 @@ function Publish-WebSite($zipPackage, $appDirectory){
 	#Start-Sleep -Seconds 3
 }
 
-function Set-EnvironmentVariables($appDirectory, $environmentVariables)
-{
+function Set-EnvironmentVariables($appDirectory, $environmentVariables){
 	Write-Host "Writing environment variables to config..."
 	$webConfig = [xml](Get-Content $appDirectory\web.config)
 	foreach ($variable in $environmentVariables.GetEnumerator()){
@@ -104,6 +103,11 @@ function Set-EnvironmentVariables($appDirectory, $environmentVariables)
 	}
 
 	$webConfig.Save("$appDirectory\web.config")
+}
+
+function Encrypt-String($signingCert, $stringToEncrypt){
+	$encryptedString = [System.Convert]::ToBase64String($signingCert.PublicKey.Key.Encrypt([System.Text.Encoding]::UTF8.GetBytes($stringToEncrypt), $true))
+	return "!!enc!!:" + $encryptedString
 }
 
 # Install the .net core windows server hosting bundle
@@ -122,6 +126,7 @@ Publish-WebSite $zipPackage $appDirectory
 #Write environment variables
 Write-Host "Loading up environment variables..."
 $environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "true"}
+$signingCert = Get-Item Cert:\LocalMachine\My\$primarySigningCertificateThumbprint
 
 if($clientName){
 	$environmentVariables.Add("ClientName", $clientName)
@@ -144,7 +149,8 @@ if ($couchDbUsername){
 }
 
 if ($couchDbPassword){
-	$environmentVariables.Add("CouchDbSettings__Password", $couchDbPassword)
+	$encryptedCouchDbPassword = Encrypt-String $signingCert $couchDbPassword
+	$environmentVariables.Add("CouchDbSettings__Password", $encryptedCouchDbPassword)
 }
 
 if($elasticSearchServer){
@@ -158,7 +164,8 @@ if($elasticSearchUsername){
 }
 
 if($elasticSearchPassword){
-	$environmentVariables.Add("ElasticSearchSettings__Password", $elasticSearchPassword)
+	$encryptedElasticSearchPassword = Encrypt-String $signingCert $elasticSearchPassword
+	$environmentVariables.Add("ElasticSearchSettings__Password", $encryptedElasticSearchPassword)
 }
 
 
