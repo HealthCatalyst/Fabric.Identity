@@ -147,7 +147,7 @@ namespace Fabric.Identity.API.Services
 
                 if (existingDoc.IsEmpty)
                 {
-                    return; //TODO: how to handle this?
+                    throw new ArgumentException($"Document with id {documentId} does not exist.");
                 }
 
                 var response = client.Documents.PutAsync(fullDocumentId, existingDoc.Rev, docJson).Result;
