@@ -85,15 +85,15 @@ namespace Fabric.Identity.IntegrationTests
             return new TestServer(apiBuilder);
         }
 
-        private HttpClient GetHttpClient()
+        protected HttpClient GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.BaseAddress = new Uri(RegistrationApiServerUrl);
-            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope).Result);
+            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret, FabricIdentityConstants.IdentityRegistrationScope));
+            Console.WriteLine("**********************************Got token from token endpoint");
             return httpClient;
         }
 
-        protected async Task<string> GetAccessToken(string clientId, string clientSecret, string scope = null)
+        protected string GetAccessToken(string clientId, string clientSecret, string scope = null)
         {
             var tokenClient =
                 new TokenClient(TokenEndpoint, clientId,
@@ -101,8 +101,8 @@ namespace Fabric.Identity.IntegrationTests
                 {
                     ClientSecret = clientSecret
                 };
-            var tokenResponse = await tokenClient
-                .RequestClientCredentialsAsync(scope);
+            var tokenResponse = tokenClient
+                .RequestClientCredentialsAsync(scope).Result;
             if (tokenResponse.IsError)
             {
                 throw new InvalidOperationException(tokenResponse.Error);

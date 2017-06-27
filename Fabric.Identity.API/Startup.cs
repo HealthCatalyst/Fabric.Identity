@@ -31,10 +31,12 @@ namespace Fabric.Identity.API
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
         private readonly ICouchDbSettings _couchDbSettings;
+        private readonly ICertificateService _certificateService;
 
         public Startup(IHostingEnvironment env)
         {
-            _appConfig = new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath);
+            _certificateService = MakeCertificateService();
+            _appConfig = new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, _appConfig.ClientName, FabricIdentityConstants.ServiceName);
             _couchDbSettings = _appConfig.CouchDbSettings;
@@ -44,13 +46,12 @@ namespace Fabric.Identity.API
         public void ConfigureServices(IServiceCollection services)
         {
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
-            var certificateService = MakeCertificateService(_logger);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IEventSink, ElasticSearchEventSink>();
-            services.AddSingleton(_appConfig);           
+            services.AddSingleton(_appConfig);
             services.AddSingleton(_logger);
             services.AddFluentValidations();
-            services.AddIdentityServer(_appConfig, certificateService, _logger);
+            services.AddIdentityServer(_appConfig, _certificateService, _logger);
             services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
@@ -123,13 +124,13 @@ namespace Fabric.Identity.API
             }
         }
 
-        private ICertificateService MakeCertificateService(ILogger logger)
+        private ICertificateService MakeCertificateService()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return new LinuxCertificateService(logger);
+                return new LinuxCertificateService();
             }
-            return new WindowsCertificateService(logger);
+            return new WindowsCertificateService();
         }
     }
 }

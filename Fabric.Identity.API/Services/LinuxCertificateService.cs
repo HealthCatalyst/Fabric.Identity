@@ -10,11 +10,6 @@ namespace Fabric.Identity.API.Services
 {
     public class LinuxCertificateService : ICertificateService
     {
-        private readonly ILogger _logger;
-        public LinuxCertificateService(ILogger logger)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
         public X509Certificate2 GetCertificate(SigningCertificateSettings certificateSettings, bool isPrimary)
         {
             if (isPrimary && string.IsNullOrEmpty(certificateSettings.PrimaryCertificatePath))
@@ -44,7 +39,6 @@ namespace Fabric.Identity.API.Services
 
         private X509Certificate2 GetCertFromFile(string certPath, string passwordPath)
         {
-            _logger.Information("Getting certificate from: {certPath}", certPath);
             using (var certStream = new FileStream(certPath, FileMode.Open, FileAccess.Read))
             {
                 var password = File.ReadAllText(passwordPath).Trim();

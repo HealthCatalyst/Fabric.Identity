@@ -191,7 +191,7 @@ namespace Fabric.Identity.IntegrationTests
             var response = await CreateNewClient(testClient);
             response.EnsureSuccessStatusCode();
             var client = JsonConvert.DeserializeObject<Client>(await response.Content.ReadAsStringAsync());
-            HttpClient.SetBearerToken(await GetAccessToken(client.ClientId, client.ClientSecret, TestScope));
+            HttpClient.SetBearerToken(GetAccessToken(client.ClientId, client.ClientSecret, TestScope));
             testClient = GetTestClient();
             response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);

@@ -13,19 +13,18 @@ namespace Fabric.Identity.UnitTests
 {
     public class LinuxCertificateServiceTests
     {
-        private readonly Mock<ILogger> _mockLogger = new Mock<ILogger>();
 
         [Theory, MemberData(nameof(SigningCredentialSettingsConfigurationException))]
         public void GetCertificate_WithoutCertPath_ThrowsFabricConfigurationException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
-            var certificateService = new LinuxCertificateService(_mockLogger.Object);
+            var certificateService = new LinuxCertificateService();
             Assert.Throws<FabricConfigurationException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
         }
 
         [Theory, MemberData(nameof(SigningCredentialSettingsNotFoundException))]
         public void GetCertificate_WithoutCertPath_ThrowsFileNotFoundException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
-            var certificateService = new LinuxCertificateService(_mockLogger.Object);
+            var certificateService = new LinuxCertificateService();
             Assert.Throws<FileNotFoundException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
         }
 

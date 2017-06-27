@@ -12,12 +12,11 @@ namespace Fabric.Identity.UnitTests
 {
     public class WindowsCertificateServiceTests
     {
-        private readonly Mock<ILogger> _mockLogger = new Mock<ILogger>();
 
         [Theory, MemberData(nameof(SigningCredentialSettings))]
         public void GetCertificate_WithoutThumbprint_ThrowsException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
-            var certificateService = new WindowsCertificateService(_mockLogger.Object);
+            var certificateService = new WindowsCertificateService();
             Assert.Throws<FabricConfigurationException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
         }
 

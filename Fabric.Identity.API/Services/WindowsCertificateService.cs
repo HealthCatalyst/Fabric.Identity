@@ -11,11 +11,6 @@ namespace Fabric.Identity.API.Services
 {
     public class WindowsCertificateService : ICertificateService
     {
-        private readonly ILogger _logger;
-        public WindowsCertificateService(ILogger logger)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
 
         public X509Certificate2 GetCertificate(SigningCertificateSettings certificateSettings, bool isPrimary = true)
         {
@@ -27,8 +22,7 @@ namespace Fabric.Identity.API.Services
             {
                 throw new FabricConfigurationException("You must specify a SecondardCertificateThumbprint to use AddValdationKeys.");
             }
-
-            _logger.Information("Getting certificate from Windows certificate store. IsPrimary: {isPrimary}", isPrimary);
+            
             var thumbprint = GetThumbprint(certificateSettings, isPrimary);
             return X509.LocalMachine.My.Thumbprint.Find(thumbprint, validOnly: false).FirstOrDefault();
         }
@@ -37,7 +31,6 @@ namespace Fabric.Identity.API.Services
         {
             
             var cleanedThumbprint = Regex.Replace(thumbprint, @"\s+", "").ToUpperInvariant();
-            _logger.Information("Thumbprint: {thumbprint}. CleanedThumbprint: {cleanedThumbprint}", thumbprint, cleanedThumbprint);
             return cleanedThumbprint;
         }
 
