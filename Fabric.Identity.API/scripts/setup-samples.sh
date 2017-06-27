@@ -26,6 +26,13 @@ authapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authoriza
 echo $authapiresponse
 echo ""
 
+# register the group fetcher client
+echo "registering Fabric.GroupFetcher..."
+groupfetcherresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-group-fetcher\", \"clientName\": \"Fabric Group Fetcher\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/authorization.manageclients\", \"fabric/authorization.write\"]}" http://localhost:5001/api/client)
+echo $groupfetcherresponse
+groupfetchersecret=$(echo $groupfetcherresponse | grep -oP '(?<="clientSecret":")[^"]*')
+echo ""
+
 # register patient api
 echo "registering Fabric.Identity.Samples.API..."
 patientapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"patientapi\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{\"name\":\"patientapi\", \"displayName\":\"Patient API\"}]}" http://localhost:5001/api/apiresource)
@@ -49,6 +56,11 @@ accesstoken=""
 echo "The Fabric.Installer client secret is:"
 echo $installersecret
 echo "You need this secret if you want to register additional API resources or clients."
+echo ""
+
+echo "The Fabric.GroupFetcher client secret is:"
+echo groupfetchersecret
+echo "You need this secret so the group fetcher can authenticate to get save groups."
 echo ""
 
 echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"

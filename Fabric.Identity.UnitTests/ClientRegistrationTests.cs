@@ -97,7 +97,7 @@ namespace Fabric.Identity.UnitTests
         }
 
         [Theory]
-        [InlineData(null, "is null")]
+        [InlineData(null, "is inexistent or malformed")]
         [MemberData(nameof(GetInvalidClients))]
         public void TestCreateNewClient_Failures(IS4.Client client, string errorMessage)
         {
