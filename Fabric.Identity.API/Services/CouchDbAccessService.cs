@@ -124,7 +124,7 @@ namespace Fabric.Identity.API.Services
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
                 {
-                    return; //TODO: how to handle this
+                    throw new ArgumentException($"Document with id {documentId} already exists.");
                 }
 
                 var response = client.Documents.PutAsync(fullDocumentId, docJson).Result;
