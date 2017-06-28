@@ -59,7 +59,7 @@ echo "You need this secret if you want to register additional API resources or c
 echo ""
 
 echo "The Fabric.GroupFetcher client secret is:"
-echo groupfetchersecret
+echo $groupfetchersecret
 echo "You need this secret so the group fetcher can authenticate to get save groups."
 echo ""
 
