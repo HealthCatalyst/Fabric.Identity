@@ -8,6 +8,7 @@ using MyCouch.Responses;
 using Newtonsoft.Json;
 using Serilog;
 using System;
+using Fabric.Identity.API.CouchDb;
 
 namespace Fabric.Identity.API.Services
 {
@@ -124,14 +125,16 @@ namespace Fabric.Identity.API.Services
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
                 {
-                    throw new ArgumentException($"Document with id {documentId} already exists.");
+                    throw new ResourceOperationException($"Document with id {documentId} already exists.", ResourceOperationType.Add);
                 }
 
                 var response = client.Documents.PutAsync(fullDocumentId, docJson).Result;
 
                 if (!response.IsSuccess)
                 {
-                    _logger.Error($"unable to add or update document: {documentId} - error: {response.Reason}");
+                    var message = $"unable to add document: {documentId} - error: {response.Reason}";
+                    _logger.Error(message);
+                    throw new ResourceOperationException(message, ResourceOperationType.Add);
                 }
             }
         }
@@ -147,14 +150,16 @@ namespace Fabric.Identity.API.Services
 
                 if (existingDoc.IsEmpty)
                 {
-                    throw new ArgumentException($"Document with id {documentId} does not exist.");
+                    throw new ResourceOperationException($"Document with id {documentId} does not exist.", ResourceOperationType.Update);
                 }
 
                 var response = client.Documents.PutAsync(fullDocumentId, existingDoc.Rev, docJson).Result;
 
                 if (!response.IsSuccess)
                 {
-                    _logger.Error($"unable to add or update document: {documentId} - error: {response.Reason}");
+                    var message = $"unable to update document: {documentId} - error: {response.Reason}";
+                    _logger.Error(message);
+                    throw new ResourceOperationException(message, ResourceOperationType.Update);
                 }
             }
         }
@@ -177,7 +182,9 @@ namespace Fabric.Identity.API.Services
 
                 if (!response.IsSuccess)
                 {
-                    _logger.Error($"There was an error deleting document:{documentId}, error: {response.Reason}");
+                    var message = $"There was an error deleting document:{documentId}, error: {response.Reason}";
+                    _logger.Error(message);
+                    throw new ResourceOperationException(message, ResourceOperationType.Delete);
                 }
             }
         }
