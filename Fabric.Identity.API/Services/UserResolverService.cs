@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using IdentityModel;
 using Microsoft.AspNetCore.Http;
 
@@ -12,8 +9,11 @@ namespace Fabric.Identity.API.Services
         private readonly HttpContext _context;
         public UserResolverService(IHttpContextAccessor contextAccessor)
         {
-            var contextAccessorLocal = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
-            _context = contextAccessorLocal.HttpContext;
+            if (contextAccessor == null)
+            {
+                throw new ArgumentNullException(nameof(contextAccessor));
+            }
+            _context = contextAccessor.HttpContext;
         }
 
         public string Username => _context?.User?.Identity.Name;

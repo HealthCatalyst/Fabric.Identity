@@ -7,7 +7,6 @@ using MyCouch.Requests;
 using MyCouch.Responses;
 using Newtonsoft.Json;
 using Serilog;
-using System;
 using Fabric.Identity.API.CouchDb;
 
 namespace Fabric.Identity.API.Services
