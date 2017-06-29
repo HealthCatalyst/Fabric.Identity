@@ -6,6 +6,8 @@
         public static readonly string FabricCorsPolicyName = "FabricCorsPolicy";
         public static readonly string ManagementApiBasePath = "/api";
         public static readonly string IdentityRegistrationScope = "fabric/identity.manageresources";
+        public static readonly string AuditEventCategory = "Audit";
+
         public static class DocumentTypes
         {
             public static readonly string IdentityResourceDocumentType = "identityresource:";
@@ -45,6 +47,14 @@
         public static class FabricCouchDbDesignDocuments
         {
             public static readonly string Count = "count";
+        }
+
+        public static class CustomEventIds
+        {
+            public static readonly int EntityCreatedAudit = 2000;
+            public static readonly int EntityUpdatedAudit = 2001;
+            public static readonly int EntityDeletedAudit = 2002;
+            public static readonly int EntityReadAudit = 2003;
         }
     }
 }

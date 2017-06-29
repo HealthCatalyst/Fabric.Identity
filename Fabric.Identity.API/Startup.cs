@@ -52,7 +52,9 @@ namespace Fabric.Identity.API
             services.AddSingleton(_logger);
             services.AddFluentValidations();
             services.AddIdentityServer(_appConfig, _certificateService, _logger);
+            services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
+            services.AddScoped<IUserResolveService, UserResolverService>();
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
                 Authority = identityServerApiSettings.Authority,

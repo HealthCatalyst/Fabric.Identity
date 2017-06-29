@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Platform.Logging;
 using IdentityServer4.Events;
@@ -12,10 +13,9 @@ namespace Fabric.Identity.API.EventSinks
     {
         private readonly ILogger _logger;
 
-        public ElasticSearchEventSink(IAppConfiguration settings)
+        public ElasticSearchEventSink(ILogger logger)
         {
-            var applicationName = $"{FabricIdentityConstants.ServiceName}-events";
-            _logger = LogFactory.CreateLogger(new LoggingLevelSwitch(), settings.ElasticSearchSettings, settings.ClientName, applicationName);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         public Task PersistAsync(Event evt)
         {
