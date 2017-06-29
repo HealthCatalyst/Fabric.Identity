@@ -28,7 +28,7 @@ namespace Fabric.Identity.API.Validation
                 .NotNull()
                 .NotEmpty()
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit))
-                .WithMessage("Please specify at least one Allowed Cors Origin when using implicit grant type");
+                .WithMessage("Please specify at least one Allowed Cors Origin when using Implicit grant type");
 
             RuleFor(client => client.AllowOfflineAccess)
                 .NotNull()

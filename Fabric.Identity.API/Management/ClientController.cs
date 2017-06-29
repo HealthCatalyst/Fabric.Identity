@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Fabric.Identity.API.Management
 {
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
-    [Route("api/[controller]")]
+    [Route("api/client")]
     public class ClientController : BaseController<IS4.Client>
     {
         private readonly IDocumentDbService _documentDbService;

@@ -61,7 +61,7 @@ namespace Fabric.Identity.UnitTests
             yield return new object[] { new IS4.Client(), "Please specify an Id for this client" };
             yield return new object[] { new IS4.Client(), "Please specify a Name for this client" };
             yield return new object[] { new IS4.Client(), "Please specify at least one Allowed Scope for this client" };
-            yield return new object[] { new IS4.Client(), "Please specify at least one Allowed Cors Origin when using implicit grant type" };
+            yield return new object[] { new IS4.Client(), "Please specify at least one Allowed Cors Origin when using Implicit grant type" };
 
             yield return new object[]
             {
@@ -110,7 +110,7 @@ namespace Fabric.Identity.UnitTests
 
             if (error.Details != null)
             {
-                Assert.True(error.Details.Any(e => e.Message.Contains(errorMessage)));
+                Assert.True(error.Details.Any(e => e.Message.Contains(errorMessage)), $"error message not found in error stiring. returned error message: {String.Join(",", error.Details.Select(e => e.Message)) }");
             }
             else
             {
