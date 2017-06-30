@@ -1,25 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using IdentityServer4.Events;
 using IdentityServer4.Models;
 using Newtonsoft.Json;
 
 namespace Fabric.Identity.API.Events
 {
-    public abstract class EntityAuditEvent : Event
+    public abstract class EntityAuditEvent<T> : Event
     {
-        protected EntityAuditEvent(string username, string clientId, string subject, string category, string name, int id) 
+        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category, string name, int id) 
             : base(category, name, EventTypes.Information, id)
         {
             Username = username;
             ClientId = clientId;
             Subject = subject;
+            DocumentId = documentId;
+            EntityType = typeof(T).FullName;
+        }
+
+        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category, string name,
+            int id, T entity)
+            : this(username, clientId, subject, documentId, category, name, id)
+        {
+            Entity = ObfuscateEntity(entity);
         }
 
         public string Username { get; set; }
         public string ClientId { get; set; }
         public string Subject { get; set; }
+        public string DocumentId { get; set; }
+        public string EntityType { get; set; }
+        public T Entity { get; set; }
 
         protected static T ObfuscateEntity<T>(T entity)
         {

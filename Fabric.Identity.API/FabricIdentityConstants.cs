@@ -56,5 +56,13 @@
             public static readonly int EntityDeletedAudit = 2002;
             public static readonly int EntityReadAudit = 2003;
         }
+
+        public static class CustomEventNames
+        {
+            public static readonly string EntityCreatedAudit = "EntityCreated";
+            public static readonly string EntityUpdatedAudit = "EntityUpdated";
+            public static readonly string EntityDeletedAudit = "EntityDeleted";
+            public static readonly string EntityReadAudit = "EntityRead";
+        }
     }
 }

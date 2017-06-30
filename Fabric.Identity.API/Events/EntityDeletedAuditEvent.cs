@@ -5,17 +5,18 @@ using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.Events
 {
-    public class EntityDeletedAuditEvent<T> : EntityAuditEvent
+    public class EntityDeletedAuditEvent<T> : EntityAuditEvent<T>
     {
         public EntityDeletedAuditEvent(string username, string clientId, string subject, string documentId)
-            : base(username, clientId, subject, FabricIdentityConstants.AuditEventCategory, "Entity Deleted",
-                FabricIdentityConstants.CustomEventIds.EntityDeletedAudit)
+            : base(username, 
+                  clientId, 
+                  subject, 
+                  documentId, 
+                  FabricIdentityConstants.AuditEventCategory, 
+                  FabricIdentityConstants.CustomEventNames.EntityDeletedAudit,
+                  FabricIdentityConstants.CustomEventIds.EntityDeletedAudit)
         {
-            DocumentId = documentId;
-            TypeName = typeof(T).FullName;
         }
-
-        public string DocumentId { get; set; }
-        public string TypeName { get; set; }
+        
     }
 }

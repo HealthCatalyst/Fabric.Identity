@@ -5,17 +5,17 @@ using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.Events
 {
-    public class EntityReadAuditEvent<T> : EntityAuditEvent
+    public class EntityReadAuditEvent<T> : EntityAuditEvent<T>
     {
         public EntityReadAuditEvent(string username, string clientId, string subject, string documentId)
-            : base(username, clientId, subject, FabricIdentityConstants.AuditEventCategory, "Entity Read",
-                FabricIdentityConstants.CustomEventIds.EntityReadAudit)
+            : base(username,
+                  clientId,
+                  subject,
+                  documentId,
+                  FabricIdentityConstants.AuditEventCategory,
+                  FabricIdentityConstants.CustomEventNames.EntityReadAudit,
+                  FabricIdentityConstants.CustomEventIds.EntityReadAudit)
         {
-            DocumentId = documentId;
-            TypeName = typeof(T).FullName;
         }
-
-        public string DocumentId { get; set; }
-        public string TypeName { get; set; }
     }
 }

@@ -3,15 +3,18 @@ using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Events
 {
-    public class EntityCreatedAuditEvent<T> : EntityAuditEvent
+    public class EntityCreatedAuditEvent<T> : EntityAuditEvent<T>
     {
-        public EntityCreatedAuditEvent(string username, string clientId, string subject, T entity)
-            : base(username, clientId, subject, FabricIdentityConstants.AuditEventCategory, "Entity Created",
-                FabricIdentityConstants.CustomEventIds.EntityCreatedAudit)
+        public EntityCreatedAuditEvent(string username, string clientId, string subject, string documentId, T entity)
+            : base(username, 
+                  clientId, 
+                  subject, 
+                  documentId, 
+                  FabricIdentityConstants.AuditEventCategory, 
+                  FabricIdentityConstants.CustomEventNames.EntityCreatedAudit,
+                  FabricIdentityConstants.CustomEventIds.EntityCreatedAudit, entity)
         {
-            Entity = ObfuscateEntity(entity);
         }
        
-        public T Entity { get; set; }
     }
 }

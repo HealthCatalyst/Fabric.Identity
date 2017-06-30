@@ -1,13 +1,17 @@
 ﻿namespace Fabric.Identity.API.Events
 {
-    public class EntityUpdatedAuditEvent<T> : EntityAuditEvent
+    public class EntityUpdatedAuditEvent<T> : EntityAuditEvent<T>
     {
-        public EntityUpdatedAuditEvent(string username, string clientId, string subject, T entity)
-            : base(username, clientId, subject, FabricIdentityConstants.AuditEventCategory, "Entity Updated", FabricIdentityConstants.CustomEventIds.EntityUpdatedAudit)
+        public EntityUpdatedAuditEvent(string username, string clientId, string subject, string documentId, T entity)
+            : base(username, 
+                  clientId, 
+                  subject, 
+                  documentId, 
+                  FabricIdentityConstants.AuditEventCategory, 
+                  FabricIdentityConstants.CustomEventNames.EntityUpdatedAudit, 
+                  FabricIdentityConstants.CustomEventIds.EntityUpdatedAudit, 
+                  entity)
         {
-            Entity = ObfuscateEntity(entity);
         }
-
-        public T Entity { get; set; }
     }
 }

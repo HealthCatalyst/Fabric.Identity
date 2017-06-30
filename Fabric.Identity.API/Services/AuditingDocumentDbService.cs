@@ -44,7 +44,7 @@ namespace Fabric.Identity.API.Services
         {
             _innerDocumentDbService.AddDocument(documentId, documentObject);
             _eventService.RaiseAsync(new EntityCreatedAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentObject))
+                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject))
                 .ConfigureAwait(false);
         }
 
@@ -52,7 +52,7 @@ namespace Fabric.Identity.API.Services
         {
             _innerDocumentDbService.UpdateDocument(documentId, documentObject);
             _eventService.RaiseAsync(new EntityUpdatedAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentObject))
+                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject))
                 .ConfigureAwait(false);
         }
 
