@@ -8,7 +8,7 @@ echo ""
 
 # register the installer client
 echo "registering Fabric.Installer..."
-installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\"]}" http://localhost:5001/api/client)
+installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\"]}" http://localhost:5001/api/client)
 echo $installerresponse
 installersecret=$(echo $installerresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""
