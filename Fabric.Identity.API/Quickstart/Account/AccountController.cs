@@ -15,6 +15,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
@@ -39,13 +40,14 @@ namespace IdentityServer4.Quickstart.UI
             IClientStore clientStore,
             IHttpContextAccessor httpContextAccessor,
             IEventService events,
+            IAppConfiguration appConfiguration,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
             _users = users ?? new TestUserStore(TestUsers.Users);
             _interaction = interaction;
             _events = events;
-            _account = new AccountService(interaction, httpContextAccessor, clientStore);
+            _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
         }
 
         /// <summary>

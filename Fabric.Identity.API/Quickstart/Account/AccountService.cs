@@ -9,6 +9,7 @@ using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Configuration;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -17,15 +18,18 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IClientStore _clientStore;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAppConfiguration _appConfiguration;
 
         public AccountService(
             IIdentityServerInteractionService interaction,
             IHttpContextAccessor httpContextAccessor,
-            IClientStore clientStore)
+            IClientStore clientStore,
+            IAppConfiguration appConfiguration)
         {
             _interaction = interaction;
             _httpContextAccessor = httpContextAccessor;
             _clientStore = clientStore;
+            _appConfiguration = appConfiguration;
         }
 
         public async Task<LoginViewModel> BuildLoginViewModelAsync(string returnUrl)
@@ -85,7 +89,7 @@ namespace IdentityServer4.Quickstart.UI
             return new LoginViewModel
             {
                 AllowRememberLogin = AccountOptions.AllowRememberLogin,
-                EnableLocalLogin = allowLocal && AccountOptions.AllowLocalLogin,
+                EnableLocalLogin = allowLocal && _appConfiguration.AllowLocalLogin,
                 ReturnUrl = returnUrl,
                 Username = context?.LoginHint,
                 ExternalProviders = providers.ToArray()

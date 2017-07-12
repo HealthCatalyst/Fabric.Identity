@@ -8,6 +8,7 @@ namespace Fabric.Identity.API.Configuration
         bool LogToFile { get; }
         string ClientName { get; }
         string RegistrationAdminGroup { get; }
+        bool AllowLocalLogin { get; }
         SigningCertificateSettings SigningCertificateSettings { get; }
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }
