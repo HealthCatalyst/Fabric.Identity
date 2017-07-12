@@ -64,7 +64,8 @@ echo "You need this secret so the group fetcher can authenticate to get save gro
 echo ""
 
 echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
-echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*'
+authapisecret=$(echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*')
+echo $authapisecret
 echo ""
 
 echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
