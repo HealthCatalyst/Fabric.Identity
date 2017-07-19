@@ -9,7 +9,7 @@
     <Folder Include="wwwroot\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fabric.Platform.Logging" Version="1.0.0-beta7" />
+    <PackageReference Include="Fabric.Platform.Logging" Version="1.0.0-beta8" />
     <PackageReference Include="FluentValidation" Version="7.1.0" />
     <PackageReference Include="IdentityServer4" Version="1.5.2" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="1.2.1" />

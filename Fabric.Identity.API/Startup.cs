@@ -32,6 +32,7 @@ namespace Fabric.Identity.API
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
         private readonly ICouchDbSettings _couchDbSettings;
         private readonly ICertificateService _certificateService;
+        private static readonly string ChallengeDirectory = @".well-known";
 
         public Startup(IHostingEnvironment env)
         {
@@ -87,6 +88,8 @@ namespace Fabric.Identity.API
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
+            app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
+            
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 

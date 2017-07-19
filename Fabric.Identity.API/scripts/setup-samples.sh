@@ -8,7 +8,7 @@ echo ""
 
 # register the installer client
 echo "registering Fabric.Installer..."
-installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\"]}" http://localhost:5001/api/client)
+installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\"]}" http://localhost:5001/api/client)
 echo $installerresponse
 installersecret=$(echo $installerresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""
@@ -64,7 +64,8 @@ echo "You need this secret so the group fetcher can authenticate to get save gro
 echo ""
 
 echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
-echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*'
+authapisecret=$(echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*')
+echo $authapisecret
 echo ""
 
 echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
