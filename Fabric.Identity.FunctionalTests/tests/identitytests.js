@@ -43,6 +43,17 @@ describe("identity tests", function(){
         ]    
     }
 
+    var patientApi = {
+        "name": "patientapi", 
+        "userClaims": [
+            "name", 
+            "email", 
+            "role", 
+            "groups"
+        ],  
+        "scopes": [{"name":"patientapi", "displayName":"Patient API"}]
+    }
+
     function registerAuthorizationApi(){
         var authApiResource = { 
             "name": "authorization-api", 
@@ -147,6 +158,17 @@ describe("identity tests", function(){
                 newClientSecret = clientResponse.body.clientSecret;                
             });
         }); 
+    });
+
+    describe("register api", function(){
+        it("should register an api", function(){
+            return chakram.post(baseIdentityUrl + "/api/apiresource", patientApi, authRequestOptions)
+            .then(function(clientResponse){
+                expect(clientResponse).to.have.status(201);                      
+                expect(clientResponse).to.comprise.of.json({name: "patientapi"});         
+                newClientSecret = clientResponse.body.clientSecret;                
+            });
+        });
     });
 
 });

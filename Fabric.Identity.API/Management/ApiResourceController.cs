@@ -14,7 +14,7 @@ using IS4 = IdentityServer4.Models;
 namespace Fabric.Identity.API.Management
 {
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
-    [Route("api/[controller]")]
+    [Route("api/apiresource")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {
         private readonly IDocumentDbService _documentDbService;
