@@ -232,9 +232,9 @@ describe("identity tests", function () {
             var qs = require("qs");
 
             //setup custom phantomJS capability
-            var phantomjs_exe = require("phantomjs").path;
+            var phantomjsExe = require("phantomjs").path;
             var customPhantom = webdriver.Capabilities.phantomjs();
-            customPhantom.set("phantomjs.binary.path", phantomjs_exe);
+            customPhantom.set("phantomjs.binary.path", phantomjsExe);
             //build custom phantomJS driver
             var driver = new webdriver.Builder().
                 withCapabilities(customPhantom).
@@ -258,7 +258,7 @@ describe("identity tests", function () {
                 var authUrl = url.parse(currentUrl);    
                 var obj = qs.parse(authUrl.hash);
                 var token = obj["access_token"];
-                expect(token).to.not.equal(undefined);               
+                expect(token).to.not.be.undefined;               
                 return Promise.resolve(token);
             })
             .then(function(accessToken){                
