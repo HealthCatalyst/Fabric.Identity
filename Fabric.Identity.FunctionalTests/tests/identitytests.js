@@ -34,14 +34,17 @@ describe("identity tests", function () {
         "clientId": "func-test",
         "clientName": "Functional Test Client",
         "requireConsent": "false",
-        "allowedGrantTypes": ["client_credentials", "password"],
+        "allowedGrantTypes": ["client_credentials", "password", "implicit"],
         "allowedScopes": [
             "fabric/identity.manageresources",
             "fabric/authorization.read",
             "fabric/authorization.write",
             "openid",
             "profile"
-        ]
+        ],
+        "redirectUris": [baseIdentityUrl],
+        "allowAccessTokensViaBrowser": true,
+        "allowedCorsOrigins": ["http://localhost:4200"]
     }
 
     var authClientFuncTest = {
@@ -216,6 +219,65 @@ describe("identity tests", function () {
             return getAccessTokenForInstaller(installerSecret)
             .then(function(accessToken){
                 expect(accessToken).to.not.be.null;
+            });
+        });
+
+        it("should be able to authenticate user using implicit flow", function(){           
+            this.timeout(10000);
+            var webdriver = require("selenium-webdriver"),
+            By = webdriver.By,
+            until = webdriver.until;
+
+            var url = require("url");
+            var qs = require("qs");
+
+            //setup custom phantomJS capability
+            var phantomjs_exe = require("phantomjs").path;
+            var customPhantom = webdriver.Capabilities.phantomjs();
+            customPhantom.set("phantomjs.binary.path", phantomjs_exe);
+            //build custom phantomJS driver
+            var driver = new webdriver.Builder().
+                withCapabilities(customPhantom).
+                build();
+
+
+            driver.manage().window().setSize(1024, 768);
+            var encodedRedirectUri = encodeURIComponent(baseIdentityUrl);
+            return driver.get(baseIdentityUrl + "/account/login?returnUrl=%2Fconnect%2Fauthorize%2Flogin%3Fclient_id%3Dfunc-test%26redirect_uri%3D" + encodedRedirectUri + "%26response_type%3Did_token%2520token%26scope%3Dopenid%2520profile%2520fabric%252Fauthorization.read%2520fabric%252Fauthorization.write%26nonce%3Dd9bfc7af239b4e99b18cb08f69f77377")
+            .then(function(){  
+
+                //sign in using driver
+                driver.findElement(By.id("Username")).sendKeys("bob");
+                driver.findElement(By.id("Password")).sendKeys("bob");
+                driver.findElement(By.id("login_but")).click();                     
+                return driver.getCurrentUrl();
+            })
+            .then(function(currentUrl){                   
+                expect(currentUrl).to.include("5001");
+                
+                var authUrl = url.parse(currentUrl);    
+                var obj = qs.parse(authUrl.hash);
+                var token = obj["access_token"];
+                expect(token).to.not.equal(undefined);               
+                return Promise.resolve(token);
+            })
+            .then(function(accessToken){                
+                //use access token to add a role 
+                var options = {
+                    headers: {
+                        "content-type": "application/json",
+                        "authorization": "Bearer " + accessToken
+                    }
+                }
+                var roleFoo = {
+                    "Grain": "app",
+                    "SecurableItem": "func-test",
+                    "Name": "FABRIC\\\Health Catalyst Viewer"
+                }
+                return chakram.post(baseAuthUrl + "/roles", roleFoo, options);    
+            })
+            .then(function(postResponse){
+                expect(postResponse).to.have.status(201);
             });
         });
     });

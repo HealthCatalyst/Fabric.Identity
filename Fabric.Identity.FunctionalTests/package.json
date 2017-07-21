@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "description": "a functional test suite for the fabric.identity server ",
   "main": "identitytests.js",
+  "directories": {
+    "test": "tests"
+  },
   "scripts": {
     "test": "mocha tests"
   },
-  "author": "",
+  "author": "Health Catalyst",
   "license": "ISC",
-  "dependencies": {    
+  "dependencies": {
     "chakram": "^1.5.0",
-    "mocha": "^3.4.2"
+    "mocha": "^3.4.2",    
+    "phantomjs": "1.9.8",    
+    "selenium-webdriver": "^3.4.0"
   }
 }
