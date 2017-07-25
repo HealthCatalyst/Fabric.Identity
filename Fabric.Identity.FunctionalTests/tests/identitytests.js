@@ -1,6 +1,13 @@
 var chakram = require("chakram");
 var expect = require("chakram").expect;
 
+var webdriver = require("selenium-webdriver"),
+By = webdriver.By,
+until = webdriver.until;
+
+var url = require("url");
+var qs = require("qs");
+
 describe("identity tests", function () {
     var baseAuthUrl = process.env.BASE_AUTH_URL;
     var baseIdentityUrl = process.env.BASE_IDENTITY_URL;
@@ -45,6 +52,20 @@ describe("identity tests", function () {
         "redirectUris": [baseIdentityUrl],
         "allowAccessTokensViaBrowser": true,
         "allowedCorsOrigins": ["http://localhost:4200"]
+    }
+
+    var identityClientHybridFuncTest = {
+        "clientId": "func-test-hybrid",
+        "clientName": "Functional Test Hybrid Client",
+        "requireConsent": "false",
+        "allowedGrantTypes": ["hybrid"],
+        "allowedScopes": [
+            "fabric/identity.manageresources",            
+            "openid",
+            "profile"            
+        ],
+        "allowOfflineAccess": true,
+        "redirectUris": [baseIdentityUrl],
     }
 
     var authClientFuncTest = {
@@ -107,7 +128,7 @@ describe("identity tests", function () {
     function getAccessToken(clientData) {
         return chakram.post(baseIdentityUrl + "/connect/token", null, clientData)
             .then(function (postResponse) {
-                var accessToken = "Bearer " + postResponse.body.access_token;
+                var accessToken = "Bearer " + postResponse.body.access_token;               
                 return accessToken;
             });
     }
@@ -132,6 +153,20 @@ describe("identity tests", function () {
                 "client_secret": newAuthClientSecret,
                 "grant_type": "client_credentials",
                 "scope": "fabric/authorization.read fabric/authorization.write"
+            }
+        }
+
+        return getAccessToken(clientData);
+    }
+
+    function getAccessTokenForFuncTestHybridClient(hybridClientSecret, authCode){
+        var clientData = {
+            form: {
+                "client_id": "func-test-hybrid",
+                "client_secret": hybridClientSecret,
+                "grant_type": "authorization_code",
+                "redirect_uri": "http://localhost:5001",
+                "code": authCode
             }
         }
 
@@ -223,13 +258,7 @@ describe("identity tests", function () {
         });
 
         it("should be able to authenticate user using implicit flow", function(){           
-            this.timeout(10000);
-            var webdriver = require("selenium-webdriver"),
-            By = webdriver.By,
-            until = webdriver.until;
-
-            var url = require("url");
-            var qs = require("qs");
+            this.timeout(10000);           
 
             //setup custom phantomJS capability
             var phantomjsExe = require("phantomjs").path;
@@ -253,7 +282,7 @@ describe("identity tests", function () {
                 return driver.getCurrentUrl();
             })
             .then(function(currentUrl){                   
-                expect(currentUrl).to.include("5001");
+                expect(currentUrl).to.include(baseIdentityUrl);
                 
                 var authUrl = url.parse(currentUrl);    
                 var obj = qs.parse(authUrl.hash);
@@ -278,6 +307,60 @@ describe("identity tests", function () {
             })
             .then(function(postResponse){
                 expect(postResponse).to.have.status(201);
+            });
+        });
+
+        it("should be able to authenticate user using hybrid flow", function(){
+            this.timeout(10000);
+             //setup custom phantomJS capability
+            var phantomjsExe = require("phantomjs").path;
+            var customPhantom = webdriver.Capabilities.phantomjs();
+            customPhantom.set("phantomjs.binary.path", phantomjsExe);
+            //build custom phantomJS driver
+            var driver = new webdriver.Builder().
+                withCapabilities(customPhantom).
+                build();
+            
+            var hybridClientSecret = "";
+
+            driver.manage().window().setSize(1024, 768);
+            var encodedRedirectUri = encodeURIComponent(baseIdentityUrl);
+            return chakram.post(baseIdentityUrl + "/api/client", identityClientHybridFuncTest, authRequestOptions)
+            .then(function(postResponse){
+                expect(postResponse).to.have.status(201);
+                expect(postResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
+                hybridClientSecret = postResponse.body.clientSecret;
+                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri=http://localhost:5001&state=abx&nonce=xyz");
+            })            
+            .then(function(){  
+                //sign in using driver
+                driver.findElement(By.id("Username")).sendKeys("bob");
+                driver.findElement(By.id("Password")).sendKeys("bob");
+                driver.findElement(By.id("login_but")).click();                     
+                return driver.getCurrentUrl();
+            })            
+            .then(function(currentUrl){                                   
+                expect(currentUrl).to.include(baseIdentityUrl);
+                
+                var authUrl = url.parse(currentUrl);    
+                var obj = qs.parse(authUrl.hash);
+                var authCode = obj["#code"];
+                expect(authCode).to.not.be.undefined;               
+                return getAccessTokenForFuncTestHybridClient(hybridClientSecret, authCode);
+            })
+            .then(function(accessToken){                
+                //use access token to get the client from identity
+                var options = {
+                    headers: {
+                        "content-type": "application/json",
+                        "authorization": accessToken
+                    }
+                }              
+                return chakram.get(baseIdentityUrl + "/api/client/func-test-hybrid", options);    
+            })
+            .then(function(getResponse){
+                expect(getResponse).to.have.status(200);
+                expect(getResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
             });
         });
     });
