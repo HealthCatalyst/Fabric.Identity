@@ -330,7 +330,7 @@ describe("identity tests", function () {
                 expect(postResponse).to.have.status(201);
                 expect(postResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
                 hybridClientSecret = postResponse.body.clientSecret;
-                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri=http://localhost:5001&state=abx&nonce=xyz");
+                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri="+ baseIdentityUrl +"&state=abx&nonce=xyz");
             })            
             .then(function(){  
                 //sign in using driver
