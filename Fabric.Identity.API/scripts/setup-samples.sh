@@ -1,53 +1,61 @@
 #!/bin/bash
 
+if [ $1 ]; then
+	identitybaseurl=$1
+fi
+
+if ! [ $identitybaseurl ]; then
+	identitybaseurl=http://localhost:5001
+fi
+
 # register registration api
 echo "registering Fabric.Registration..."
-registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}]}" http://localhost:5001/api/apiresource)
+registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}]}" $identitybaseurl/api/apiresource)
 echo $registrationapiresponse
 echo ""
 
 # register the installer client
 echo "registering Fabric.Installer..."
-installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\"]}" http://localhost:5001/api/client)
+installerresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"clientId\": \"fabric-installer\", \"clientName\": \"Fabric Installer\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.manageresources\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\"]}" $identitybaseurl/api/client)
 echo $installerresponse
 installersecret=$(echo $installerresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""
 
 # get access token for installer
 echo "getting access token for installer..."
-accesstokenresponse=$(curl http://localhost:5001/connect/token --data "client_id=fabric-installer&grant_type=client_credentials&scope=fabric/identity.manageresources" --data-urlencode "client_secret=$installersecret")
+accesstokenresponse=$(curl $identitybaseurl/connect/token --data "client_id=fabric-installer&grant_type=client_credentials&scope=fabric/identity.manageresources" --data-urlencode "client_secret=$installersecret")
 echo $accesstokenresponse
 accesstoken=$(echo $accesstokenresponse | grep -oP '(?<="access_token":")[^"]*')
 echo ""
 
 # register authorization api
 echo "registering Fabric.Authorization..."
-authapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"authorization-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/authorization.read\"}, {\"name\": \"fabric/authorization.write\"}, {\"name\":\"fabric/authorization.manageclients\"}]}" http://localhost:5001/api/apiresource)
+authapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"authorization-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/authorization.read\"}, {\"name\": \"fabric/authorization.write\"}, {\"name\":\"fabric/authorization.manageclients\"}]}" $identitybaseurl/api/apiresource)
 echo $authapiresponse
 echo ""
 
 # register the group fetcher client
 echo "registering Fabric.GroupFetcher..."
-groupfetcherresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-group-fetcher\", \"clientName\": \"Fabric Group Fetcher\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/authorization.manageclients\", \"fabric/authorization.write\"]}" http://localhost:5001/api/client)
+groupfetcherresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-group-fetcher\", \"clientName\": \"Fabric Group Fetcher\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/authorization.manageclients\", \"fabric/authorization.write\"]}" $identitybaseurl/api/client)
 echo $groupfetcherresponse
 groupfetchersecret=$(echo $groupfetcherresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""
 
 # register patient api
 echo "registering Fabric.Identity.Samples.API..."
-patientapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"patientapi\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{\"name\":\"patientapi\", \"displayName\":\"Patient API\"}]}" http://localhost:5001/api/apiresource)
+patientapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"patientapi\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{\"name\":\"patientapi\", \"displayName\":\"Patient API\"}]}" $identitybaseurl/api/apiresource)
 echo $patientapiresponse
 echo ""
 
 # register mvc client
 echo "registering Fabric.Identity.Samples.MVC..."
-mvcclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-mvcsample\", \"clientName\": \"Sample Fabric MVC Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"hybrid\", \"client_credentials\"], \"redirectUris\": [\"http://localhost:5002/signin-oidc\"], \"postLogoutRedirectUris\": [ \"http://localhost:5002/signout-callback-oidc\"], \"allowOfflineAccess\": true, \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"patientapi\"]}" http://localhost:5001/api/client)
+mvcclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-mvcsample\", \"clientName\": \"Sample Fabric MVC Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"hybrid\", \"client_credentials\"], \"redirectUris\": [\"http://localhost:5002/signin-oidc\"], \"postLogoutRedirectUris\": [ \"http://localhost:5002/signout-callback-oidc\"], \"allowOfflineAccess\": true, \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"patientapi\"]}" $identitybaseurl/api/client)
 echo $mvcclientresponse
 echo ""
 
 # register angular client
 echo "registering Fabric.Identity.Samples.Angular..."
-angularclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-angularsample\", \"clientName\": \"Sample Fabric Angular Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"implicit\"], \"redirectUris\": [\"http://localhost:4200/oidc-callback.html\", \"http://localhost:4200/silent.html\"], \"postLogoutRedirectUris\": [ \"http://localhost:4200\"], \"allowOfflineAccess\": false, \"AllowAccessTokensViaBrowser\": true, \"AllowedCorsOrigins\":[\"http://localhost:4200\"], \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\", \"patientapi\"]}" http://localhost:5001/api/client)
+angularclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-angularsample\", \"clientName\": \"Sample Fabric Angular Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"implicit\"], \"redirectUris\": [\"http://localhost:4200/oidc-callback.html\", \"http://localhost:4200/silent.html\"], \"postLogoutRedirectUris\": [ \"http://localhost:4200\"], \"allowOfflineAccess\": false, \"AllowAccessTokensViaBrowser\": true, \"AllowedCorsOrigins\":[\"http://localhost:4200\"], \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\", \"patientapi\"]}" $identitybaseurl/api/client)
 echo $angularclientresponse
 echo ""
 
