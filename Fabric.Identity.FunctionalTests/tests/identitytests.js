@@ -310,7 +310,7 @@ describe("identity tests", function () {
             });
         });
 
-        xit("should be able to authenticate user using hybrid flow", function(){
+        it("should be able to authenticate user using hybrid flow", function(){
             this.timeout(10000);
              //setup custom phantomJS capability
             var phantomjsExe = require("phantomjs").path;
