@@ -165,7 +165,7 @@ describe("identity tests", function () {
                 "client_id": "func-test-hybrid",
                 "client_secret": hybridClientSecret,
                 "grant_type": "authorization_code",
-                "redirect_uri": "http://localhost:5001",
+                "redirect_uri": baseIdentityUrl,
                 "code": authCode
             }
         }
