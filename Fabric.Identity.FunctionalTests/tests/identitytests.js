@@ -165,7 +165,7 @@ describe("identity tests", function () {
                 "client_id": "func-test-hybrid",
                 "client_secret": hybridClientSecret,
                 "grant_type": "authorization_code",
-                "redirect_uri": "http://localhost:5001",
+                "redirect_uri": baseIdentityUrl,
                 "code": authCode
             }
         }
@@ -310,7 +310,7 @@ describe("identity tests", function () {
             });
         });
 
-        xit("should be able to authenticate user using hybrid flow", function(){
+        it("should be able to authenticate user using hybrid flow", function(){
             this.timeout(10000);
              //setup custom phantomJS capability
             var phantomjsExe = require("phantomjs").path;
@@ -330,7 +330,7 @@ describe("identity tests", function () {
                 expect(postResponse).to.have.status(201);
                 expect(postResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
                 hybridClientSecret = postResponse.body.clientSecret;
-                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri=http://localhost:5001&state=abx&nonce=xyz");
+                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri="+ baseIdentityUrl +"&state=abx&nonce=xyz");
             })            
             .then(function(){  
                 //sign in using driver
