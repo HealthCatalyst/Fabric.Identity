@@ -9,11 +9,11 @@ using Serilog.Core;
 
 namespace Fabric.Identity.API.EventSinks
 {
-    public class ElasticSearchEventSink : IEventSink
+    public class SerilogEventSink : IEventSink
     {
         private readonly ILogger _logger;
 
-        public ElasticSearchEventSink(ILogger logger)
+        public SerilogEventSink(ILogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

@@ -19,6 +19,7 @@ using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
 using Fabric.Identity.API.Authorization;
+using Fabric.Identity.API.Infrastructure;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -39,7 +40,7 @@ namespace Fabric.Identity.API
             _certificateService = MakeCertificateService();
             _appConfig = new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
-            _logger = LogFactory.CreateLogger(_loggingLevelSwitch, _appConfig.ElasticSearchSettings, _appConfig.ClientName, FabricIdentityConstants.ServiceName);
+            _logger = Logging.LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             _couchDbSettings = _appConfig.CouchDbSettings;
         }
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -47,8 +48,12 @@ namespace Fabric.Identity.API
         public void ConfigureServices(IServiceCollection services)
         {
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
+            var eventLogger = Logging.LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
+            var serilogEventSink = new SerilogEventSink(eventLogger);
+            var innerEventSink = new Decorator<IEventSink>(serilogEventSink);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IEventSink, ElasticSearchEventSink>();
+            services.AddSingleton(innerEventSink);
+            services.AddSingleton(serilogEventSink);
             services.AddSingleton(_appConfig);
             services.AddSingleton(_logger);
             services.AddFluentValidations();

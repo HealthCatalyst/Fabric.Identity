@@ -15,5 +15,6 @@ namespace Fabric.Identity.API.Configuration
         public CouchDbSettings CouchDbSettings { get; set; }
         public ExternalIdProviderSettings ExternalIdProviderSettings { get; set; }
         public IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; set; }
+        public ApplicationInsights ApplicationInsights { get; set; }
     }
 }

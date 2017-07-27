@@ -21,17 +21,11 @@ namespace Fabric.Identity.API.Services
         }
         public Task<T> GetDocument<T>(string documentId)
         {
-            _eventService.RaiseAsync(new EntityReadAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentId))
-                .ConfigureAwait(false);
             return _innerDocumentDbService.GetDocument<T>(documentId);
         }
 
         public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
         {
-            _eventService.RaiseAsync(new EntityReadAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, "all"))
-                .ConfigureAwait(false);
             return _innerDocumentDbService.GetDocuments<T>(documentType);
         }
 
