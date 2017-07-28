@@ -126,10 +126,10 @@ namespace Fabric.Identity.UnitTests
             var testClient = GetTestClient();
             var submittedSecret = testClient.ClientSecrets.First().Value;
             var result = controller.Post(testClient);
-            Assert.True(result is CreatedAtRouteResult);
-            Assert.True((result as CreatedAtRouteResult).Value is Client);
+            Assert.True(result is CreatedAtActionResult);
+            Assert.True((result as CreatedAtActionResult).Value is Client);
 
-            var client = (result as CreatedAtRouteResult).Value as Client;
+            var client = (result as CreatedAtActionResult).Value as Client;
             Assert.NotNull(client.ClientSecret);
             Assert.NotEmpty(client.ClientSecret);
 
@@ -144,10 +144,10 @@ namespace Fabric.Identity.UnitTests
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
             var result = controller.Post(testClient);
-            Assert.True(result is CreatedAtRouteResult);
-            Assert.True((result as CreatedAtRouteResult).Value is Client);
+            Assert.True(result is CreatedAtActionResult);
+            Assert.True((result as CreatedAtActionResult).Value is Client);
 
-            var client = (result as CreatedAtRouteResult).Value as Client;
+            var client = (result as CreatedAtActionResult).Value as Client;
             Assert.Equal(testClient.ClientId, client.ClientId);
             Assert.Equal(testClient.ClientName, client.ClientName);
 
