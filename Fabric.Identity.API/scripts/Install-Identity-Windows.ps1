@@ -17,7 +17,8 @@ param(
 	[String]$elasticSearchPassword,
 	[String]$couchDbServer,
 	[String]$couchDbUsername,
-	[String]$couchDbPassword)
+	[String]$couchDbPassword,
+	[String]$appInsightsInstrumentationKey)
 
 Import-Module WebAdministration
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -166,6 +167,11 @@ if($elasticSearchUsername){
 if($elasticSearchPassword){
 	$encryptedElasticSearchPassword = Encrypt-String $signingCert $elasticSearchPassword
 	$environmentVariables.Add("ElasticSearchSettings__Password", $encryptedElasticSearchPassword)
+}
+
+if($appInsightsInstrumentationKey){
+	$environmentVariables.Add("ApplicationInsights__Enabled", "true")
+	$environmentVariables.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
 }
 
 

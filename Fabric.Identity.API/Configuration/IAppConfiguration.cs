@@ -16,5 +16,6 @@ namespace Fabric.Identity.API.Configuration
 
         ExternalIdProviderSettings ExternalIdProviderSettings { get; }
         IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; }
+        ApplicationInsights ApplicationInsights { get; }
     }
 }

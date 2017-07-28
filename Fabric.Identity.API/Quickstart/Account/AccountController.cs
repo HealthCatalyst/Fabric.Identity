@@ -44,10 +44,19 @@ namespace IdentityServer4.Quickstart.UI
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
-            _users = users ?? new TestUserStore(TestUsers.Users);
+            _users = users ?? MakeTestUserStore(appConfiguration);
             _interaction = interaction;
             _events = events;
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
+        }
+
+        private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
+        {
+            if (appConfiguration.HostingOptions != null && appConfiguration.HostingOptions.UseTestUsers)
+            {
+                return new TestUserStore(TestUsers.Users);
+            }
+            return new TestUserStore(new List<TestUser>());
         }
 
         /// <summary>
