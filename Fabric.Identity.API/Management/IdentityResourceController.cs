@@ -11,11 +11,12 @@ using Serilog;
 namespace Fabric.Identity.API.Management
 {
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/identityresource")]
+    [Route("api/v{version.apiVersion}/identityresource")]
     public class IdentityResourceController : BaseController<IdentityResource>
     {
         private readonly IDocumentDbService _documentDbService;
-        private const string GetIdentityResourceRouteName = "GetIdentityResource";
         
         public IdentityResourceController(IDocumentDbService documentDbService, IdentityResourceValidator validator, ILogger logger) 
             : base(validator, logger)
@@ -24,7 +25,8 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5
-        [HttpGet("{id}", Name = GetIdentityResourceRouteName)]
+        // [HttpGet("{id}", Name = GetIdentityResourceRouteName)]
+        [HttpGet("{id}")]
         public IActionResult Get(string id)
         {
             var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
@@ -45,7 +47,7 @@ namespace Fabric.Identity.API.Management
             {
                 var id = value.Name;
                 _documentDbService.AddDocument(id, value);
-                return CreatedAtRoute(GetIdentityResourceRouteName, new { id }, value);
+                return CreatedAtAction("Get", new { id }, value);
             });
         }
 

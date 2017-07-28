@@ -14,12 +14,12 @@ using IS4 = IdentityServer4.Models;
 namespace Fabric.Identity.API.Management
 {
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    [ApiVersion("1.0")]
     [Route("api/apiresource")]
+    [Route("api/v{version.apiVersion}/apiresource")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {
-        private readonly IDocumentDbService _documentDbService;
-        private const string GetApiResourceRouteName = "GetApiResource";
-        private const string ResetPasswordRouteName = "ResetApiResourcePassword";
+        private readonly IDocumentDbService _documentDbService;        
 
         public ApiResourceController(IDocumentDbService documentDbService, ApiResourceValidator validator, ILogger logger)
             : base(validator, logger)
@@ -28,7 +28,7 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5
-        [HttpGet("{id}", Name = GetApiResourceRouteName)]
+        [HttpGet("{id}")]
         public IActionResult Get(string id)
         {
             var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
@@ -43,7 +43,7 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5/resetPassword
-        [HttpGet("{id}/resetPassword", Name = ResetPasswordRouteName)]
+        [HttpGet("{id}/resetPassword")]
         public IActionResult ResetPassword(string id)
         {
             var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
@@ -81,7 +81,7 @@ namespace Fabric.Identity.API.Management
 
                 var viewResource = resource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
-                return CreatedAtRoute(GetApiResourceRouteName, new { id }, viewResource);
+                return CreatedAtAction("Get", new { id }, viewResource);
             });
         }
 

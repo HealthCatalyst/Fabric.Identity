@@ -21,6 +21,8 @@ using System.Runtime.InteropServices;
 using Fabric.Identity.API.Authorization;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fabric.Identity.API
@@ -64,6 +66,12 @@ namespace Fabric.Identity.API
             });
             
             services.AddMvc();
+            services.AddApiVersioning(options =>
+            {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ReportApiVersions = true;                
+            });            
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("RegistrationThreshold",

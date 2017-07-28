@@ -12,12 +12,12 @@ using Microsoft.AspNetCore.Authorization;
 namespace Fabric.Identity.API.Management
 {
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    [ApiVersion("1.0")]
     [Route("api/client")]
+    [Route("api/v{version:apiVersion}/client")]
     public class ClientController : BaseController<IS4.Client>
     {
         private readonly IDocumentDbService _documentDbService;
-        private const string GetClientRouteName = "GetClient";
-        private const string ResetPasswordRouteName = "ResetClientPassword";
 
         public ClientController(IDocumentDbService documentDbService, ClientValidator validator, ILogger logger)
             : base(validator, logger)
@@ -26,7 +26,7 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5
-        [HttpGet("{id}", Name = GetClientRouteName)]
+        [HttpGet("{id}")]
         public IActionResult Get(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Management
         }
 
         // GET api/values/5/resetPassword
-        [HttpGet("{id}/resetPassword", Name = ResetPasswordRouteName)]
+        [HttpGet("{id}/resetPassword")]
         public IActionResult ResetPassword(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -80,7 +80,7 @@ namespace Fabric.Identity.API.Management
                 Client viewClient = client.ToClientViewModel();
                 viewClient.ClientSecret = clientSecret;
 
-                return CreatedAtRoute(GetClientRouteName, new { id }, viewClient);
+                return CreatedAtAction("Get", new { id }, viewClient);
             });
         }
 
