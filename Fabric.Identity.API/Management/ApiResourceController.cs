@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.Management
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/apiresource")]
-    [Route("api/v{version.apiVersion}/apiresource")]
+    [Route("api/v{version:apiVersion}/apiresource")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {
         private readonly IDocumentDbService _documentDbService;        

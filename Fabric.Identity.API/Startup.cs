@@ -1,5 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
@@ -19,12 +22,14 @@ using Serilog.Events;
 using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
 using Fabric.Identity.API.Authorization;
+using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.Infrastructure;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.PlatformAbstractions;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace Fabric.Identity.API
 {
@@ -76,12 +81,42 @@ namespace Fabric.Identity.API
                 options.AssumeDefaultVersionWhenUnspecified = true;
                 options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.ReportApiVersions = true;                
-            });            
+            });
+
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("RegistrationThreshold",
                     policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
             });
+
+            // Swagger
+            services.AddSwaggerGen(swaggerOptions =>
+            {
+                swaggerOptions.SwaggerDoc("{version:apiVersion}",
+                    new Info
+                    {
+                        Title = "Health Catalyst Fabric Identity API",
+                        Version = "{version:apiVersion}",
+                        Description = "Health Catalyst Fabric Identity API used for centralized authentication.",
+                        TermsOfService = "None"
+                    }
+                );
+
+                swaggerOptions.IncludeXmlComments(XmlCommentsFilePath);
+                swaggerOptions.DescribeAllEnumsAsStrings();
+                //swaggerOptions.DocumentFilter<>();
+                swaggerOptions.OperationFilter<SwaggerDefaultValues>();
+            });
+        }
+
+        private static string XmlCommentsFilePath
+        {
+            get
+            {
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
+                return Path.Combine(basePath, fileName);
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -111,6 +146,15 @@ namespace Fabric.Identity.API
             app.UseMvcWithDefaultRoute();
             app.UseOwin()
                 .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
+
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS etc.), specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/{version:apiVersion}/swagger.json", "Health Catalyst Fabric Identity API");
+            });
         }
 
         public async Task<bool> HealthCheck()
