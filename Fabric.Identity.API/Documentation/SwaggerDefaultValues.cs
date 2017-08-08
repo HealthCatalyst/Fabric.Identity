@@ -18,12 +18,12 @@ namespace Fabric.Identity.API.Documentation
         /// <param name="context">The current operation filter context.</param>
         public void Apply(Operation operation, OperationFilterContext context)
         {
-            var controllerAttributes = context.ApiDescription.ControllerAttributes();
-
             // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/412
             // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/pull/413
             foreach (var parameter in operation.Parameters.OfType<NonBodyParameter>())
             {
+               var description = context.ApiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
+
                 if (parameter.Description == null)
                 {
                     parameter.Description = description.ModelMetadata?.Description;
