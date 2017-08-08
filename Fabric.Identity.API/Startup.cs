@@ -104,7 +104,6 @@ namespace Fabric.Identity.API
 
                 swaggerOptions.IncludeXmlComments(XmlCommentsFilePath);
                 swaggerOptions.DescribeAllEnumsAsStrings();
-                //swaggerOptions.DocumentFilter<>();
                 swaggerOptions.OperationFilter<SwaggerDefaultValues>();
             });
         }
