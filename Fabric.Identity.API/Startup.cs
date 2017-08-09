@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Fabric.Identity.API
 {
@@ -90,21 +91,25 @@ namespace Fabric.Identity.API
             });
 
             // Swagger
-            services.AddSwaggerGen(swaggerOptions =>
+            services.AddSwaggerGen(c =>
             {
-                swaggerOptions.SwaggerDoc("{version:apiVersion}",
-                    new Info
-                    {
-                        Title = "Health Catalyst Fabric Identity API",
-                        Version = "{version:apiVersion}",
-                        Description = "Health Catalyst Fabric Identity API used for centralized authentication.",
-                        TermsOfService = "None"
-                    }
-                );
+                c.SwaggerDoc("1.0", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1" });
+                // TODO: c.SwaggerDoc("2.0", new Info { Version = "v2", Title = "Health Catalyst Fabric Identity API V2" });
 
-                swaggerOptions.IncludeXmlComments(XmlCommentsFilePath);
-                swaggerOptions.DescribeAllEnumsAsStrings();
-                swaggerOptions.OperationFilter<SwaggerOperationFilter>();
+                c.DocInclusionPredicate((docName, apiDesc) =>
+                {
+                    var versions = apiDesc.ControllerAttributes()
+                        .OfType<ApiVersionAttribute>()
+                        .SelectMany(attr => attr.Versions);
+
+                    return versions.Any(v => $"{v.ToString()}" == docName);
+                });
+
+                c.OperationFilter<VersionRemovalOperationFilter>();
+                c.OperationFilter<ParamMetadataOperationFilter>();
+                c.DocumentFilter<PathVersionDocumentFilter>();
+                c.IncludeXmlComments(XmlCommentsFilePath);
+                c.DescribeAllEnumsAsStrings();
             });
         }
 
@@ -137,7 +142,6 @@ namespace Fabric.Identity.API
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
             
-
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
@@ -152,7 +156,8 @@ namespace Fabric.Identity.API
             // Enable middleware to serve swagger-ui (HTML, JS, CSS etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/{version:apiVersion}/swagger.json", "Health Catalyst Fabric Identity API");
+                c.SwaggerEndpoint("/swagger/1.0/swagger.json", "Health Catalyst Fabric Identity API V1");
+                // TODO: c.SwaggerEndpoint("/swagger/2.0/swagger.json", "Health Catalyst Fabric Identity API V2");
             });
         }
 
