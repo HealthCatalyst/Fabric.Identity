@@ -12,9 +12,6 @@ param(
 	[String]$clientName,
 	[String]$primarySigningCertificateThumbprint,
 	[String]$secondarySigningCertificateThumbprint,
-	[System.Uri]$elasticSearchServer,
-	[String]$elasticSearchUsername,
-	[String]$elasticSearchPassword,
 	[String]$couchDbServer,
 	[String]$couchDbUsername,
 	[String]$couchDbPassword,
@@ -126,7 +123,7 @@ Publish-WebSite $zipPackage $appDirectory
 
 #Write environment variables
 Write-Host "Loading up environment variables..."
-$environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "true"}
+$environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 $signingCert = Get-Item Cert:\LocalMachine\My\$primarySigningCertificateThumbprint
 
 if($clientName){
@@ -134,6 +131,7 @@ if($clientName){
 }
 
 if ($primarySigningCertificateThumbprint){
+	$environmentVariables.Add("SigningCertificateSettings__UseTemporarySigningCredential", "false")
 	$environmentVariables.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
 }
 
@@ -154,25 +152,11 @@ if ($couchDbPassword){
 	$environmentVariables.Add("CouchDbSettings__Password", $encryptedCouchDbPassword)
 }
 
-if($elasticSearchServer){
-	$environmentVariables.Add("ElasticSearchSettings__Scheme", $elasticSearchServer.Scheme)
-	$environmentVariables.Add("ElasticSearchSettings__Server", $elasticSearchServer.Host)
-	$environmentVariables.Add("ElasticSearchSettings__Port", $elasticSearchServer.Port)
-}
-
-if($elasticSearchUsername){
-	$environmentVariables.Add("ElasticSearchSettings__Username", $elasticSearchUsername)
-}
-
-if($elasticSearchPassword){
-	$encryptedElasticSearchPassword = Encrypt-String $signingCert $elasticSearchPassword
-	$environmentVariables.Add("ElasticSearchSettings__Password", $encryptedElasticSearchPassword)
-}
-
 if($appInsightsInstrumentationKey){
 	$environmentVariables.Add("ApplicationInsights__Enabled", "true")
 	$environmentVariables.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
 }
 
+$environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "https://${hostHeader}:${portNumber}")
 
 Set-EnvironmentVariables $appDirectory $environmentVariables
