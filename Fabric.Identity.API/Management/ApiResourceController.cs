@@ -38,9 +38,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Retrieve metadata about APIs protected by the Identity API by unique <paramref name="id"/>.
+        /// Retrieve API resource by <paramref name="id"/>.
         /// </summary>
-        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns><see cref="IS4.ApiResource"/></returns>
         [HttpGet("{id}")]
         [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
@@ -60,9 +60,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Reset password
+        /// Reset password by API resource <paramref name="id"/>.
         /// </summary>
-        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
         [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
         [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
@@ -116,9 +116,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Modifies the API resource.
+        /// Modifies the API resource by <paramref name="id"/>.
         /// </summary>
-        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <param name="id">The unique identifier of the API resource.</param>
         /// <param name="apiResource"><see cref="IS4.ApiResource"/></param>
         /// <returns></returns>
         [SwaggerResponse(204, null, "No Content")]
@@ -148,9 +148,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Removes the API resource from storage.
+        /// Deletes the API resource by <paramref name="id"/>.
         /// </summary>
-        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
         [SwaggerResponse(204, null, "No Content")]
         [HttpDelete("{id}")]

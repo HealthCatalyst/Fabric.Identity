@@ -5,11 +5,15 @@ using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Fabric.Identity.API.Management
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/identityresource")]
@@ -17,15 +21,24 @@ namespace Fabric.Identity.API.Management
     public class IdentityResourceController : BaseController<IdentityResource>
     {
         private readonly IDocumentDbService _documentDbService;
-        
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="documentDbService">IDocumentDbService</param>
+        /// <param name="validator">IdentityResourceValidator</param>
+        /// <param name="logger">ILogger</param>
         public IdentityResourceController(IDocumentDbService documentDbService, IdentityResourceValidator validator, ILogger logger) 
             : base(validator, logger)
         {
             _documentDbService = documentDbService;
         }
 
-        // GET api/values/5
-        // [HttpGet("{id}", Name = GetIdentityResourceRouteName)]
+        /// <summary>
+        /// Retrieve Identity resource by <paramref name="id"/>.
+        /// </summary>
+        /// <param name="id">The unique identifier of the identity resource</param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public IActionResult Get(string id)
         {
@@ -39,7 +52,13 @@ namespace Fabric.Identity.API.Management
             return Ok(identityResource);
         }
 
-        // POST api/values
+        /// <summary>
+        /// Creates an Identity resource.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [SwaggerResponse(201, typeof(IdentityResource), "Success")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPost]
         public IActionResult Post([FromBody] IdentityResource value)
         {
@@ -51,7 +70,15 @@ namespace Fabric.Identity.API.Management
             });
         }
 
-        // PUT api/values/5
+        /// <summary>
+        /// Modifies the Identity resource by <paramref name="id"/>.
+        /// </summary>
+        /// <param name="id">The unique identifier of the identity resource</param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [SwaggerResponse(204, null, "No Content")]
+        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPut("{id}")]
         public IActionResult Put(string id, [FromBody] IdentityResource value)
         {
@@ -62,7 +89,12 @@ namespace Fabric.Identity.API.Management
             });
         }
 
-        // DELETE api/values/5
+        /// <summary>
+        /// Deletes the Identity resource by <paramref name="id"/>.
+        /// </summary>
+        /// <param name="id">The unique identifier of the identity resource.</param>
+        /// <returns></returns>
+        [SwaggerResponse(204, null, "No Content")]
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
