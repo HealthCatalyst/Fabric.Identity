@@ -8,9 +8,13 @@ using Serilog;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Fabric.Identity.API.Management
 {
+    /// <summary>
+    /// Manage client applications.
+    /// </summary>
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/client")]
@@ -19,14 +23,27 @@ namespace Fabric.Identity.API.Management
     {
         private readonly IDocumentDbService _documentDbService;
 
+        /// <summary>
+        /// Manage client applications (aka relying parties) in Fabric.Identity. 
+        /// </summary>
+        /// <param name="documentDbService"></param>
+        /// <param name="validator"></param>
+        /// <param name="logger"></param>
         public ClientController(IDocumentDbService documentDbService, ClientValidator validator, ILogger logger)
             : base(validator, logger)
         {
             _documentDbService = documentDbService;
         }
 
-        // GET api/values/5
+        /// <summary>
+        /// Find a client by id
+        /// </summary>
+        /// <param name="id">The unique identifier of the client.</param>
+        /// <returns></returns>
         [HttpGet("{id}")]
+        [SwaggerResponse(200, typeof(Client), "Success")]
+        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
+        [SwaggerResponse(400, typeof(Error), "The specified client id was in an invalid format.")]
         public IActionResult Get(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -40,8 +57,15 @@ namespace Fabric.Identity.API.Management
             return Ok(client.ToClientViewModel());
         }
 
-        // GET api/values/5/resetPassword
+        /// <summary>
+        /// Reset a client secret
+        /// </summary>
+        /// <param name="id">The unique id of the client to reset.</param>
+        /// <returns></returns>
         [HttpGet("{id}/resetPassword")]
+        [SwaggerResponse(200, typeof(Client), "The password for the client has been reset.")]
+        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
+        [SwaggerResponse(400, typeof(Error), "The specified client id was in an invalid format.")]
         public IActionResult ResetPassword(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -63,8 +87,14 @@ namespace Fabric.Identity.API.Management
             return Ok(viewClient);
         }
 
-        // POST api/values
+        /// <summary>
+        /// Add a client
+        /// </summary>
+        /// <param name="client">The client object to add.</param>
+        /// <returns></returns>
         [HttpPost]
+        [SwaggerResponse(201, typeof(Client), "The specified client was created.")]
+        [SwaggerResponse(400, typeof(Error), "The specified client object has missing or invalid values.")]
         public IActionResult Post([FromBody] IS4.Client client)
         {
             return ValidateAndExecute(client, () =>
@@ -84,8 +114,16 @@ namespace Fabric.Identity.API.Management
             });
         }
 
-        // PUT api/values/5
+        /// <summary>
+        /// Update a client
+        /// </summary>
+        /// <param name="id">The unique id of the client to update.</param>
+        /// <param name="client">The client object to update.</param>
+        /// <returns></returns>
         [HttpPut("{id}")]
+        [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
+        [SwaggerResponse(404, typeof(Error), "The specidied client id could not be found.")]
+        [SwaggerResponse(400, typeof(Error), "The client object has missing or invalid values.")]
         public IActionResult Put(string id, [FromBody] IS4.Client client)
         {
             return ValidateAndExecute(client, () =>
@@ -107,9 +145,16 @@ namespace Fabric.Identity.API.Management
                 return NoContent();
             });
         }
-        
-        // DELETE api/values/5
+
+        /// <summary>
+        /// Delete a client
+        /// </summary>
+        /// <param name="id">The unique id of the client to delete.</param>
+        /// <returns></returns>
         [HttpDelete("{id}")]
+        [SwaggerResponse(204, typeof(void), "The specified client was deleted.")]
+        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
+        [SwaggerResponse(400, typeof(Error), "The specified client id was invalid or malformed.")]
         public IActionResult Delete(string id)
         {
             _documentDbService.DeleteDocument<IS4.Client>(id);
