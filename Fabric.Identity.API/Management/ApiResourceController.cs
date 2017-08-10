@@ -7,28 +7,45 @@ using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using IS4 = IdentityServer4.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Fabric.Identity.API.Management
 {
+    /// <summary>
+    /// Manage metadata for APIs protected by the Identity API.
+    /// </summary>
     [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/apiresource")]
     [Route("api/v{version:apiVersion}/apiresource")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {
-        private readonly IDocumentDbService _documentDbService;        
+        private readonly IDocumentDbService _documentDbService;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="documentDbService">IDocumentDbService</param>
+        /// <param name="validator">ApiResourceValidator</param>
+        /// <param name="logger">ILogger</param>
         public ApiResourceController(IDocumentDbService documentDbService, ApiResourceValidator validator, ILogger logger)
             : base(validator, logger)
         {
             _documentDbService = documentDbService;
         }
 
-        // GET api/values/5
+        /// <summary>
+        /// Retrieve metadata about APIs protected by the Identity API by unique <paramref name="id"/>.
+        /// </summary>
+        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <returns><see cref="IS4.ApiResource"/></returns>
         [HttpGet("{id}")]
+        [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
+        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         public IActionResult Get(string id)
         {
             var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
@@ -42,7 +59,14 @@ namespace Fabric.Identity.API.Management
             return Ok(apiResource.ToApiResourceViewModel());
         }
 
-        // GET api/values/5/resetPassword
+        /// <summary>
+        /// Reset password
+        /// </summary>
+        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <returns></returns>
+        [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
+        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpGet("{id}/resetPassword")]
         public IActionResult ResetPassword(string id)
         {
@@ -65,7 +89,13 @@ namespace Fabric.Identity.API.Management
             return Ok(viewApiResource);
         }
 
-        // POST api/values
+        /// <summary>
+        /// Creates an API resource.
+        /// </summary>
+        /// <param name="resource"><see cref="IS4.ApiResource"/></param>
+        /// <returns></returns>
+        [SwaggerResponse(201, typeof(IS4.ApiResource), "Success")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPost]
         public IActionResult Post([FromBody] IS4.ApiResource resource)
         {
@@ -85,7 +115,15 @@ namespace Fabric.Identity.API.Management
             });
         }
 
-        // PUT api/values/5
+        /// <summary>
+        /// Modifies the API resource.
+        /// </summary>
+        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <param name="apiResource"><see cref="IS4.ApiResource"/></param>
+        /// <returns></returns>
+        [SwaggerResponse(204, null, "No Content")]
+        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
+        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPut("{id}")]
         public IActionResult Put(string id, [FromBody] IS4.ApiResource apiResource)
         {
@@ -109,7 +147,12 @@ namespace Fabric.Identity.API.Management
             });
         }
 
-        // DELETE api/values/5
+        /// <summary>
+        /// Removes the API resource from storage.
+        /// </summary>
+        /// <param name="id">Unique API resource identifier (e.g., authorization-api)</param>
+        /// <returns></returns>
+        [SwaggerResponse(204, null, "No Content")]
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {

@@ -93,8 +93,8 @@ namespace Fabric.Identity.API
             // Swagger
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("1.0", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1" });
-                // TODO: c.SwaggerDoc("2.0", new Info { Version = "v2", Title = "Health Catalyst Fabric Identity API V2" });
+                // this defines the Swagger doc (1 call to SwaggerDoc per version)
+                c.SwaggerDoc("1.0", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Description goes here"});
 
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
@@ -156,8 +156,8 @@ namespace Fabric.Identity.API
             // Enable middleware to serve swagger-ui (HTML, JS, CSS etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
+                // this sets up the JSON endpoint (1 call to SwaggerEndpoint per version)
                 c.SwaggerEndpoint("/swagger/1.0/swagger.json", "Health Catalyst Fabric Identity API V1");
-                // TODO: c.SwaggerEndpoint("/swagger/2.0/swagger.json", "Health Catalyst Fabric Identity API V2");
             });
         }
 

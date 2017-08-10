@@ -18,7 +18,10 @@ namespace Fabric.Identity.API.Documentation
         {
             var versionParameter = operation.Parameters.FirstOrDefault(p => p.Name == "version");
 
-            if (versionParameter == null) return;
+            if (versionParameter == null)
+            {
+                return;
+            }
             operation.Parameters.Remove(versionParameter);
         }
     }

@@ -25,8 +25,8 @@ namespace Fabric.Identity.API.Management
             // FluentValidation cannot handle null models.
             if (model == null)
             {
-                this.Logger.Information($"Input \"{typeof(T)}\" is inexistent or malformed.");
-                return CreateFailureResponse($"Input \"{typeof(T)}\" is inexistent or malformed.", HttpStatusCode.BadRequest);
+                this.Logger.Information($"Input \"{typeof(T)}\" is nonexistent or malformed.");
+                return CreateFailureResponse($"Input \"{typeof(T)}\" is nonexistent or malformed.", HttpStatusCode.BadRequest);
             }
 
             var validationResults = this.Validator.Validate(model);
