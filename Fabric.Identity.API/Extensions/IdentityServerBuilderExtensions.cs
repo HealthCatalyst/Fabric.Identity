@@ -1,7 +1,9 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using IdentityServer4.Quickstart.UI;
+using IdentityServer4.Test;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -15,6 +17,10 @@ namespace Fabric.Identity.API.Extensions
             if (hostingOptions != null && hostingOptions.UseTestUsers)
             {
                 identityServerBuilder.AddTestUsers(TestUsers.Users);
+            }
+            else
+            {
+                identityServerBuilder.AddTestUsers(new List<TestUser>());
             }
             return identityServerBuilder;
         }
