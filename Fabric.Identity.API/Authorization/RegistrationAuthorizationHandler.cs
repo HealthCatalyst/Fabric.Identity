@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using IdentityModel;
-using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
 using Serilog;
 
@@ -40,7 +39,7 @@ namespace Fabric.Identity.API.Authorization
                 return  Task.CompletedTask;
             }
 
-            if (HasRequiredScopeClaim(context.User))
+            if (HasRequiredScopeClaim(context.User, requirement.ClaimType))
             {
                 _logger.Information("User has required scope claim, authorization succeeded.");
                 context.Succeed(requirement);
@@ -70,10 +69,10 @@ namespace Fabric.Identity.API.Authorization
             return hasGroupClaim;
         }
 
-        private bool HasRequiredScopeClaim(ClaimsPrincipal user)
+        private bool HasRequiredScopeClaim(ClaimsPrincipal user, string claimType)
         {
             var hasScopeClaim = user.Claims.Any(c => c.Type == JwtClaimTypes.Scope &&
-                                                     c.Value == FabricIdentityConstants.IdentityRegistrationScope &&
+                                                     c.Value == claimType &&
                                                      c.Issuer == _appConfiguration.IssuerUri);
             return hasScopeClaim;
         }

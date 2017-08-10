@@ -218,6 +218,11 @@ namespace IdentityServer4.Quickstart.UI
                 // another common approach is to start a registrations workflow first
                 user = _users.AutoProvisionUser(provider, userId, claims);
             }
+            else
+            {
+                //update the role claims from the provider
+                UpdateRoleClaims(user, claims);
+            }
 
             var additionalClaims = new List<Claim>();
 
@@ -312,6 +317,26 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return View("LoggedOut", vm);
+        }
+
+        private void UpdateRoleClaims(TestUser user, List<Claim> claims)
+        {
+            //if the provider sent us role claims, use those and remove any other role
+            //claims from the user
+            if (claims.Any(c => c.Type == JwtClaimTypes.Role))
+            {
+                //update the role claims from the provider
+                var roleClaimsFromProvider = claims.Where(c => c.Type == JwtClaimTypes.Role);
+                var originalRoleClaims = user.Claims.Where(c => c.Type == JwtClaimTypes.Role).ToList();
+                foreach (var originalRoleClaim in originalRoleClaims)
+                {
+                    user.Claims.Remove(originalRoleClaim);
+                }
+                foreach (var roleClaim in roleClaimsFromProvider)
+                {
+                    user.Claims.Add(roleClaim);
+                }
+            }
         }
     }
 }

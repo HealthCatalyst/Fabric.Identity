@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
@@ -105,11 +106,25 @@ namespace Fabric.Identity.API
                     return versions.Any(v => $"{v.ToString()}" == docName);
                 });
 
+                c.AddSecurityDefinition("oauth2", new OAuth2Scheme
+                {
+                    Type = "oauth2",
+                    AuthorizationUrl = identityServerApiSettings.Authority,
+                    Scopes = new Dictionary<string, string>()
+                    {
+                        { "fabric/identity.manageresources", "Access to manage Client, API, and Identity resources." }
+                    }
+                });
+
+                c.CustomSchemaIds((type) => type.FullName);
+
                 c.OperationFilter<VersionRemovalOperationFilter>();
                 c.OperationFilter<ParamMetadataOperationFilter>();
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
                 c.DocumentFilter<PathVersionDocumentFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
+                
             });
         }
 
