@@ -21,6 +21,8 @@ namespace Fabric.Identity.API.Management
     [Route("api/v{version:apiVersion}/client")]
     public class ClientController : BaseController<IS4.Client>
     {
+        private const string NotFoundErrorMsg = "The specified client id could not be found.";
+
         private readonly IDocumentDbService _documentDbService;
 
         /// <summary>
@@ -42,8 +44,8 @@ namespace Fabric.Identity.API.Management
         /// <returns></returns>
         [HttpGet("{id}")]
         [SwaggerResponse(200, typeof(Client), "Success")]
-        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
-        [SwaggerResponse(400, typeof(Error), "The specified client id was in an invalid format.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -64,8 +66,8 @@ namespace Fabric.Identity.API.Management
         /// <returns></returns>
         [HttpGet("{id}/resetPassword")]
         [SwaggerResponse(200, typeof(Client), "The password for the client has been reset.")]
-        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
-        [SwaggerResponse(400, typeof(Error), "The specified client id was in an invalid format.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
@@ -93,8 +95,8 @@ namespace Fabric.Identity.API.Management
         /// <param name="client">The client object to add.</param>
         /// <returns></returns>
         [HttpPost]
-        [SwaggerResponse(201, typeof(Client), "The specified client was created.")]
-        [SwaggerResponse(400, typeof(Error), "The specified client object has missing or invalid values.")]
+        [SwaggerResponse(201, typeof(Client), "The client was created.")]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Post([FromBody] IS4.Client client)
         {
             return ValidateAndExecute(client, () =>
@@ -122,8 +124,8 @@ namespace Fabric.Identity.API.Management
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
-        [SwaggerResponse(404, typeof(Error), "The specidied client id could not be found.")]
-        [SwaggerResponse(400, typeof(Error), "The client object has missing or invalid values.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Put(string id, [FromBody] IS4.Client client)
         {
             return ValidateAndExecute(client, () =>
@@ -153,8 +155,7 @@ namespace Fabric.Identity.API.Management
         /// <returns></returns>
         [HttpDelete("{id}")]
         [SwaggerResponse(204, typeof(void), "The specified client was deleted.")]
-        [SwaggerResponse(404, typeof(Error), "The specified client id could not be found.")]
-        [SwaggerResponse(400, typeof(Error), "The specified client id was invalid or malformed.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
             _documentDbService.DeleteDocument<IS4.Client>(id);

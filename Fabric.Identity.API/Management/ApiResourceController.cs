@@ -23,6 +23,8 @@ namespace Fabric.Identity.API.Management
     [Route("api/v{version:apiVersion}/apiresource")]
     public class ApiResourceController : BaseController<IS4.ApiResource>
     {
+        private const string NotFoundErrorMsg = "The specified API resource id could not be found.";
+
         private readonly IDocumentDbService _documentDbService;
 
         /// <summary>
@@ -44,8 +46,8 @@ namespace Fabric.Identity.API.Management
         /// <returns><see cref="IS4.ApiResource"/></returns>
         [HttpGet("{id}")]
         [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
-        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
             var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
@@ -64,10 +66,10 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
-        [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
-        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpGet("{id}/resetPassword")]
+        [SwaggerResponse(200, typeof(IS4.ApiResource), "The password was reset.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
         {
             var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
@@ -94,9 +96,9 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="resource"><see cref="IS4.ApiResource"/></param>
         /// <returns></returns>
-        [SwaggerResponse(201, typeof(IS4.ApiResource), "Success")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPost]
+        [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Post([FromBody] IS4.ApiResource resource)
         {
             return ValidateAndExecute(resource, () =>
@@ -121,10 +123,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <param name="apiResource"><see cref="IS4.ApiResource"/></param>
         /// <returns></returns>
-        [SwaggerResponse(204, null, "No Content")]
-        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPut("{id}")]
+        [SwaggerResponse(204, null, "No Content")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Put(string id, [FromBody] IS4.ApiResource apiResource)
         {
             return ValidateAndExecute(apiResource, () =>
@@ -152,8 +154,9 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
-        [SwaggerResponse(204, null, "No Content")]
         [HttpDelete("{id}")]
+        [SwaggerResponse(204, null, "The specified API resource was deleted.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
             _documentDbService.DeleteDocument<IS4.ApiResource>(id);

@@ -10,6 +10,8 @@ namespace Fabric.Identity.API.Management
 {
     public abstract class BaseController<T> : Controller where T : class
     {
+        protected const string BadRequestErrorMsg = "The request has invalid or missing values.";
+
         public Func<string> GeneratePassword { get; set; } = () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
         protected readonly AbstractValidator<T> Validator;
         protected readonly ILogger Logger;

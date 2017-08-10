@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
@@ -20,6 +21,8 @@ namespace Fabric.Identity.API.Management
     [Route("api/v{version:apiVersion}/identityresource")]
     public class IdentityResourceController : BaseController<IdentityResource>
     {
+        private const string NotFoundErrorMsg = "The specified Identity resource id could not be found.";
+
         private readonly IDocumentDbService _documentDbService;
 
         /// <summary>
@@ -40,6 +43,8 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the identity resource</param>
         /// <returns></returns>
         [HttpGet("{id}")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
             var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
@@ -57,9 +62,9 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        [SwaggerResponse(201, typeof(IdentityResource), "Success")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPost]
+        [SwaggerResponse(201, typeof(IdentityResource), "The identity resource was created.")]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Post([FromBody] IdentityResource value)
         {
             return ValidateAndExecute(value, () =>
@@ -76,10 +81,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the identity resource</param>
         /// <param name="value"></param>
         /// <returns></returns>
-        [SwaggerResponse(204, null, "No Content")]
-        [SwaggerResponse(404, typeof(NotFoundObjectResult), "Not Found")]
-        [SwaggerResponse(400, typeof(BadRequestObjectResult), "Bad Request")]
         [HttpPut("{id}")]
+        [SwaggerResponse(204, null, "The identity resource was updated.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Put(string id, [FromBody] IdentityResource value)
         {
             return ValidateAndExecute(value, () =>
@@ -94,8 +99,9 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="id">The unique identifier of the identity resource.</param>
         /// <returns></returns>
-        [SwaggerResponse(204, null, "No Content")]
         [HttpDelete("{id}")]
+        [SwaggerResponse(204, null, "The specified identity resource was deleted.")]
+        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
             _documentDbService.DeleteDocument<IdentityResource>(id);
