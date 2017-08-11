@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/d1d11b48f7cc4fbb9277b4c1c12c2106)](https://www.codacy.com/app/HealthCatalyst/Fabric.Identity?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=HealthCatalyst/Fabric.Identity&amp;utm_campaign=Badge_Grade)
 # Fabric.Identity
 
-The Fabric.Identity service is planned to provide central authentication and authorization across the Fabric ecosystem.
+The Fabric.Identity service provides centralized authentication across the Fabric ecosystem. The goal is to allow client applications (aka relying party applications) the ability to offload authentication logic to Fabric.Identity so that developers of the client applications can concentrate on solving their core business needs and not have to build one off authentication systems. Fabric.Identity is based on the [OpenID Connect](http://openid.net/connect/) specification and leverages [IdentityServer4](http://identityserver.io/) as the OpenID Connect provider implemenation.
 
 ## Platform
 The Fabric.Identity service is built using:
@@ -40,18 +40,4 @@ Which will return a json document representing the discovery information for the
 }
 ```
 
-You can then run the following curl to ensure the service is issuing access tokens properly:
-
-```
-curl http://localhost:5001/connect/token --data "client_id=fabric-sampleapi-client&client_secret=secret&grant_type=client_credentials&scope=patientapi"
-```
-
-You should get a response back that looks something like this:
-
-```
-{
-	"access_token": <base64 encoded string>,
-	"expires_in": 3600,
-	"token_type": "Bearer"
-}
-```
+You can then run the [`setup-samples.sh`](https://github.com/HealthCatalyst/Fabric.Identity/blob/master/Fabric.Identity.API/scripts/setup-samples.sh) script to setup the sample applications in Fabric.Identity.
