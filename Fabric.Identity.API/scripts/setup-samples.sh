@@ -62,24 +62,26 @@ echo ""
 accesstoken=""
 
 echo "The Fabric.Installer client secret is:"
-echo $installersecret
+echo "\"installerSecret\":\"$installersecret\""
 echo "You need this secret if you want to register additional API resources or clients."
 echo ""
 
 echo "The Fabric.GroupFetcher client secret is:"
-echo $groupfetchersecret
-echo "You need this secret so the group fetcher can authenticate to get save groups."
+echo "\"groupFetcherSecret\":\"$groupfetchersecret\""
+echo "You need this secret so the group fetcher can authenticate to get and save groups."
 echo ""
-
-echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
+echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
 authapisecret=$(echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*')
-echo $authapisecret
+echo "\"authApiSecret\":\"$authapisecret\""
 echo ""
 
-echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
-echo $patientapiresponse | grep -oP '(?<="apiSecret":")[^"]*'
+echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
+patientapisecret=$(echo $patientapiresponse | grep -oP '(?<="apiSecret":")[^"]*')
+echo "\"patientApiSecret\":\"$patientapisecret\""
 echo ""
 
-echo "Update the Fabric.Identity.Samples.MVC appsettings.json IdentityServerConfidentialClientSettings.ClientSecret value to:"
-echo $mvcclientresponse | grep -oP '(?<="clientSecret":")[^"]*'
+echo "Update the Fabric.Identity.Samples.MVC appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
+mvcclientsecret=$(echo $mvcclientresponse | grep -oP '(?<="clientSecret":")[^"]*')
+echo "\"mvcClientSecret\":\"$mvcclientsecret\""
 echo ""
+
