@@ -251,3 +251,7 @@ paket-files/
 .idea/
 *.sln.iml
 /Fabric.Identity.API/Logs
+
+# Gradle
+.gradle/
+build/

@@ -95,7 +95,7 @@ namespace Fabric.Identity.API
             services.AddSwaggerGen(c =>
             {
                 // this defines the Swagger doc (1 call to SwaggerDoc per version)
-                c.SwaggerDoc("1.0", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Description goes here"});
+                c.SwaggerDoc("v1", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Description goes here"});
 
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
@@ -103,7 +103,7 @@ namespace Fabric.Identity.API
                         .OfType<ApiVersionAttribute>()
                         .SelectMany(attr => attr.Versions);
 
-                    return versions.Any(v => $"{v.ToString()}" == docName);
+                    return versions.Any(v => $"v{v.ToString().Substring(0, 1)}" == docName);
                 });
 
                 c.AddSecurityDefinition("oauth2", new OAuth2Scheme
@@ -172,7 +172,7 @@ namespace Fabric.Identity.API
             app.UseSwaggerUI(c =>
             {
                 // this sets up the JSON endpoint (1 call to SwaggerEndpoint per version)
-                c.SwaggerEndpoint("/swagger/1.0/swagger.json", "Health Catalyst Fabric Identity API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Health Catalyst Fabric Identity API V1");
             });
         }
 

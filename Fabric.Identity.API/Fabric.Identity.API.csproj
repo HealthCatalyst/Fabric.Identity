@@ -15,6 +15,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Documentation\build\**" />
+    <Content Remove="Documentation\build\**" />
+    <EmbeddedResource Remove="Documentation\build\**" />
+    <None Remove="Documentation\build\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
   <ItemGroup>
