@@ -14,14 +14,22 @@ apply plugin: 'io.github.swagger2markup'
 
 convertSwagger2markup {
 
-    if (project.hasProperty('hostName')) {
-        logger.info("----------HOST NAME = ${project.hostName}----------")
-        swaggerInput "${project.hostName}:5001/swagger/v1/swagger.json"
+	def url = "${System.env.FABRICIDENTITYBASEURL}"
+    if (url?.trim()) {
+        logger.info("----------HOST NAME = ${url}----------")
+        swaggerInput "${url}:5001/swagger/v1/swagger.json"
     }
     else {
-        throw new GradleException("hostName is required.")
+        throw new GradleException("FABRICIDENTITYBASEURL environment variable is required.")
     }
     
-    outputDir file("${buildDir}/markdown")
+	def dir = "${System.env.IDENTITYMDDOCOUTPUTDIR}"
+	if (!dir?.trim()) {
+	    dir = "${buildDir}/markdown"
+	}
+
+	logger.info("----------OUTPUT DIR = ${dir}----------")
+	outputDir file(dir)
+
     config = ['swagger2markup.markupLanguage' : 'MARKDOWN']
 }
