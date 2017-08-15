@@ -23,7 +23,7 @@ convertSwagger2markup {
         throw new GradleException("FABRICIDENTITYBASEURL environment variable is required.")
     }
     
-	def dir = "${System.env.IDENTITYMDDOCOUTPUTDIR}"
+	def dir = "${System.env.IDENTITYMARKDOWNDIRECTORY}"
 	if (!dir?.trim()) {
 	    dir = "${buildDir}/markdown"
 	}
