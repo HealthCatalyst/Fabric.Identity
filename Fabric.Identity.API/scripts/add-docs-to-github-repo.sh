@@ -9,7 +9,7 @@ mv *.md Fabric.Identity.wiki
 echo "Changing directory..."
 cd Fabric.Identity.wiki
 
-echo "Present directory = $(pwd)"
+echo "-----Present directory = $(pwd)-----"
 
 git config user.name "Fabric Identity System User"
 git config user.email "brian.smith@healthcatalyst.com"
