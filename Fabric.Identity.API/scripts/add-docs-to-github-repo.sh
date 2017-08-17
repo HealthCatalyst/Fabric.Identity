@@ -1,14 +1,14 @@
 ﻿#!/bin/bash
+
 echo "Cloning Git Wiki repo..."
-REPO="https://$GITWIKIACCESSTOKEN@github.com/HealthCatalyst/Fabric.Identity.wiki.git"
-echo $REPO
+REPO="https://$1@github.com/HealthCatalyst/Fabric.Identity.wiki.git"
 git clone $REPO
 
 echo "Moving MD files to Fabric.Identity.wiki..."
 mv overview.md API-Reference-Overview.md
 mv paths.md API-Reference-Resources.md
 mv definitions.md API-Reference-Models.md
-mv security.md API-Reference-Security.md 
+mv security.md API-Reference-Security.md
 
 mv *.md Fabric.Identity.wiki
 
