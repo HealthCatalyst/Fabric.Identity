@@ -15,7 +15,8 @@ param(
 	[String]$couchDbServer,
 	[String]$couchDbUsername,
 	[String]$couchDbPassword,
-	[String]$appInsightsInstrumentationKey)
+	[String]$appInsightsInstrumentationKey,
+	[String]$siteName)
 
 Import-Module WebAdministration
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -86,6 +87,12 @@ function Create-WebSite($appName, $portNumber, $appDirectory, $hostHeader){
 	}
 }
 
+function Create-Application($appName, $siteName, $appDirectory){
+	cd IIS:\
+
+	New-WebApplication -Name $appName -Site $siteName -PhysicalPath $appDirectory -ApplicationPool $appName
+}
+
 function Publish-WebSite($zipPackage, $appDirectory){
 	# Extract the app into the app directory
 	Write-Host "Extracting $zipPackage to $appDirectory."
@@ -109,7 +116,7 @@ function Encrypt-String($signingCert, $stringToEncrypt){
 }
 
 # Install the .net core windows server hosting bundle
-Write-Host "Installing dotnet core Windows Server hosting bundle..."
+#Write-Host "Installing dotnet core Windows Server hosting bundle..."
 #Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile bundle.exe
 #.\bundle.exe /quiet /install
 
@@ -117,7 +124,13 @@ $appDirectory = "$webroot\$appName"
 Create-AppRoot $appDirectory $iisUser
 Write-Host "App directory is: $appDirectory"
 Create-AppPool $appName
-Create-WebSite $appName $portNumber $appDirectory $hostHeader
+
+if($siteName){
+	Create-Application $appName $siteName $appDirectory
+}else{
+	Create-WebSite $appName $portNumber $appDirectory $hostHeader
+}
+
 Publish-WebSite $zipPackage $appDirectory
 
 
