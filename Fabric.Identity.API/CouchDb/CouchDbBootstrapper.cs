@@ -69,9 +69,15 @@ namespace Fabric.Identity.API.CouchDb
 
         private void SetupDesignDocuments()
         {
+            SetupDesignDocument(FabricIdentityConstants.FabricCouchDbDesignDocuments.Count, FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count);
+            SetupDesignDocument(FabricIdentityConstants.FabricCouchDbDesignDocuments.User, FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.User);
+        }
+
+        private void SetupDesignDocument(string designDocName, string designDocJson)
+        {
             using (var client = new MyCouchClient(_dbConnectionInfo))
             {
-                var documentId = $"_design/{FabricIdentityConstants.FabricCouchDbDesignDocuments.Count}";
+                var documentId = $"_design/{designDocName}";
                 var countDocument = client.Documents
                     .GetAsync(documentId)
                     .Result;
@@ -80,14 +86,14 @@ namespace Fabric.Identity.API.CouchDb
                 if (countDocument.IsSuccess)
                 {
                     result = client.Documents.PutAsync(documentId, countDocument.Rev,
-                            FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count)
+                            designDocJson)
                         .Result;
                     _logger.Information("{Count} design document is already created.",
-                        FabricIdentityConstants.FabricCouchDbDesignDocuments.Count);
+                        designDocName);
                 }
                 else
                 {
-                    result = client.Documents.PostAsync(FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count).Result;
+                    result = client.Documents.PostAsync(designDocJson).Result;
                 }
 
                 if (result.IsSuccess)
@@ -95,7 +101,7 @@ namespace Fabric.Identity.API.CouchDb
                     return;
                 }
 
-                throw new CouchDbSetupException($"unable to create design document: {FabricIdentityConstants.FabricCouchDbDesignDocuments.Count}, reason: {result.Reason}");
+                throw new CouchDbSetupException($"unable to create design document: {designDocName}, reason: {result.Reason}");
             }
         }
         

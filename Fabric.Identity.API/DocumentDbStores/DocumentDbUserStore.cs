@@ -22,20 +22,20 @@ namespace Fabric.Identity.API.DocumentDbStores
             _logger = logger;
         }
 
-        public async Task<User> FindBySubjectId(string subjectId)
-        {            
-            var user = await _documentDbService.GetDocument<User>(subjectId);
+        //id for a  user stored in documentDb = user:subjectid:provider
 
-            return user;
+        public async Task<User> FindBySubjectId(string subjectId)
+        {                        
+            var user = await _documentDbService.GetDocuments<User>($"user:{subjectId}:");
+            return user.FirstOrDefault();
         }
 
-        public Task<User> FindByExternalProvider(string provider, string subjectId)
+        public Task<User> FindByExternalProvider(string provider, string userId)
         {
-            //create a view in couchDb for finding by subject and provider ??
             throw new NotImplementedException();
         }
 
-        public Task<User> ProvisionUser(string provider, string subjectId, IEnumerable<Claim> claims)
+        public Task<User> AddUser(string provider, string userId, IEnumerable<Claim> claims)
         {
             // create a list of claims that we want to transfer into our store
             var filtered = new List<Claim>();
@@ -78,15 +78,19 @@ namespace Fabric.Identity.API.DocumentDbStores
                 }
             }
 
+            //create a new sub for the user
+            var sub = CryptoRandom.CreateUniqueId();
+
             // create new user
             var user = new User
             {
-                SubjectId = subjectId,
+                SubjectId = sub,
                 ProviderName = provider,
+                ProviderSubjectId = userId,
                 Claims = filtered
             };
 
-            _documentDbService.AddDocument(subjectId, user);
+            _documentDbService.AddDocument($"{sub}:{provider}", user);
 
             return Task.FromResult(user);
 

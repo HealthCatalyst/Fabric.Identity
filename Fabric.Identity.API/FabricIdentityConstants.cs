@@ -14,11 +14,12 @@
             public static readonly string ClientDocumentType = "client:";
             public static readonly string ApiResourceDocumentType = "apiresource:";
             public static readonly string PersistedGrantDocumentType = "persistedgrant:";
+            public static readonly string UserDocumentType = "user:";
         }
 
         public static class FabricClaimTypes
         {
-            public static readonly string Groups = "groups";
+            public static readonly string Groups = "groups";            
         }
 
         public static class FabricCouchDbDesignDocumentDefinitions
@@ -42,11 +43,23 @@
                                                         }
                                                       }
                                                     }";
+
+            public static readonly string User = @"{
+	                                                  ""_id"": ""_design/user"",
+	                                                  ""language"": ""javascript"",
+	                                                  ""views"": 
+                                                      {
+		                                                ""byproviderid:"": {
+			                                                ""map"": ""function(doc) { if (doc._id.indexOf('user:') !== -1) emit(doc.ProviderName+doc.ProviderSubjectId) }""
+			                                            }			
+		                                              }	                                                  
+                                                    }";
         }
 
         public static class FabricCouchDbDesignDocuments
         {
             public static readonly string Count = "count";
+            public static readonly string User = "user";
         }
 
         public static class CustomEventIds

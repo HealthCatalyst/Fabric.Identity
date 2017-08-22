@@ -10,7 +10,7 @@ namespace Fabric.Identity.API.DocumentDbStores
     public interface IUserStore
     {
         Task<User> FindBySubjectId(string subjectId);
-        Task<User> FindByExternalProvider(string provider, string subjectId);
-        Task<User> ProvisionUser(string provider, string subjectId, IEnumerable<Claim> claims);
+        Task<User> FindByExternalProvider(string provider, string userId);
+        Task<User> AddUser(string provider, string userId, IEnumerable<Claim> claims);
     }
 }
