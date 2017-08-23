@@ -26,8 +26,8 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public async Task<User> FindBySubjectId(string subjectId)
         {                        
-            var user = await _documentDbService.GetDocuments<User>($"user:{subjectId}:");
-            return user.FirstOrDefault();
+            var user = await _documentDbService.GetDocument<User>(subjectId);
+            return user;
         }
 
         public Task<User> FindByExternalProvider(string provider, string userId)
@@ -90,7 +90,7 @@ namespace Fabric.Identity.API.DocumentDbStores
                 Claims = filtered
             };
 
-            _documentDbService.AddDocument($"{sub}:{provider}", user);
+            _documentDbService.AddDocument(sub, user);
 
             return Task.FromResult(user);
 
