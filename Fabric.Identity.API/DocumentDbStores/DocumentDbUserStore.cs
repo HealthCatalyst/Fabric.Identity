@@ -9,9 +9,9 @@ using Fabric.Identity.API.Services;
 using IdentityModel;
 using Serilog;
 
-namespace Fabric.Identity.API.DocumentDbStores
+namespace Fabric.Identity.API.DocumentDbStores  
 {
-    public class DocumentDbUserStore : IUserStore
+    public class DocumentDbUserStore
     {
         private readonly IDocumentDbService _documentDbService;
         private readonly ILogger _logger;
@@ -26,16 +26,17 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public async Task<User> FindBySubjectId(string subjectId)
         {                        
-            var user = await _documentDbService.GetDocument<User>(subjectId);
-            return user;
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
+            return user.FirstOrDefault();
         }
 
-        public Task<User> FindByExternalProvider(string provider, string userId)
+        public async Task<User> FindByExternalProvider(string provider, string subjectId)
         {
-            throw new NotImplementedException();
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}:{provider}");
+            return user.FirstOrDefault();
         }
 
-        public Task<User> AddUser(string provider, string userId, IEnumerable<Claim> claims)
+        public Task<User> AddUser(string provider, string subjectId, IEnumerable<Claim> claims)
         {
             // create a list of claims that we want to transfer into our store
             var filtered = new List<Claim>();
@@ -78,19 +79,19 @@ namespace Fabric.Identity.API.DocumentDbStores
                 }
             }
 
-            //create a new sub for the user
-            var sub = CryptoRandom.CreateUniqueId();
+            // check if a display name is available, otherwise fallback to subject id
+            var name = filtered.FirstOrDefault(c => c.Type == JwtClaimTypes.Name)?.Value ?? subjectId;
 
             // create new user
             var user = new User
             {
-                SubjectId = sub,
+                SubjectId = subjectId,
+                Username = name,
                 ProviderName = provider,
-                ProviderSubjectId = userId,
                 Claims = filtered
             };
 
-            _documentDbService.AddDocument(sub, user);
+            _documentDbService.AddDocument($"{subjectId}:{provider}", user);
 
             return Task.FromResult(user);
 

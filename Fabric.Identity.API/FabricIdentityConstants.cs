@@ -43,23 +43,11 @@
                                                         }
                                                       }
                                                     }";
-
-            public static readonly string User = @"{
-	                                                  ""_id"": ""_design/user"",
-	                                                  ""language"": ""javascript"",
-	                                                  ""views"": 
-                                                      {
-		                                                ""byproviderid:"": {
-			                                                ""map"": ""function(doc) { if (doc._id.indexOf('user:') !== -1) emit(doc.ProviderName+doc.ProviderSubjectId) }""
-			                                            }			
-		                                              }	                                                  
-                                                    }";
         }
 
         public static class FabricCouchDbDesignDocuments
         {
             public static readonly string Count = "count";
-            public static readonly string User = "user";
         }
 
         public static class CustomEventIds

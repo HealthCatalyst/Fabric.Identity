@@ -70,7 +70,6 @@ namespace Fabric.Identity.API.CouchDb
         private void SetupDesignDocuments()
         {
             SetupDesignDocument(FabricIdentityConstants.FabricCouchDbDesignDocuments.Count, FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.Count);
-            SetupDesignDocument(FabricIdentityConstants.FabricCouchDbDesignDocuments.User, FabricIdentityConstants.FabricCouchDbDesignDocumentDefinitions.User);
         }
 
         private void SetupDesignDocument(string designDocName, string designDocJson)
