@@ -16,6 +16,8 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.DocumentDbStores;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
@@ -34,8 +36,9 @@ namespace IdentityServer4.Quickstart.UI
         private readonly TestUserStore _users;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IEventService _events;
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IAppConfiguration _appConfiguration;
         private readonly AccountService _account;
+        private readonly UserFunctions _userFunctions;
 
         public AccountController(
             IIdentityServerInteractionService interaction,
@@ -43,15 +46,17 @@ namespace IdentityServer4.Quickstart.UI
             IHttpContextAccessor httpContextAccessor,
             IEventService events,
             IAppConfiguration appConfiguration,
-            IDocumentDbService documentDbService,
+            DocumentDbUserStore documentDbUserStore,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
             _users = users ?? MakeTestUserStore(appConfiguration);
             _interaction = interaction;
             _events = events;
-            _documentDbService = documentDbService;
+            _appConfiguration = appConfiguration;
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
+            _userFunctions = new UserFunctions(_users, documentDbUserStore);
+            
         }
 
         private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
@@ -214,18 +219,43 @@ namespace IdentityServer4.Quickstart.UI
             var provider = info.Properties.Items["scheme"];
             var userId = userIdClaim.Value;
 
-            // check if the external user is already provisioned
-            var user = _users.FindByExternalProvider(provider, userId);
-            if (user == null)
+            UserInfo userInfo;
+            if (_appConfiguration.HostingOptions.UseTestUsers)
             {
-                // this sample simply auto-provisions new external user
-                // another common approach is to start a registrations workflow first
-                user = _users.AutoProvisionUser(provider, userId, claims);
+                // check if the external user is already provisioned
+                var user = _userFunctions.FindTestUserByExternalProvider(provider, userId);
+                if (user == null)
+                {
+                    // this sample simply auto-provisions new external user
+                    // another common approach is to start a registrations workflow first
+                    user = _userFunctions.AddTestUser(provider, userId, claims);
+                }
+                else
+                {
+                    //update the role claims from the provider
+                    _userFunctions.UpdateTestUserRoleClaims(user, claims);
+                }
+                userInfo = new UserInfo(user);
             }
             else
             {
-                //update the role claims from the provider
-                UpdateRoleClaims(user, claims);
+                // check if the external user is already provisioned
+                var user = _userFunctions.FindTestUserByExternalProvider(provider, userId);
+                if (user == null)
+                {
+                    // this sample simply auto-provisions new external user
+                    // another common approach is to start a registrations workflow first
+                    user = _userFunctions.AddTestUser(provider, userId, claims);                   
+                }
+                else
+                {
+                    //update the role claims from the provider
+                    _userFunctions.UpdateTestUserRoleClaims(user, claims);
+                }
+                userInfo = new UserInfo(user);
+                //update the user model with the login
+                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
+                await _userFunctions.SetLastLogin(context.ClientId, user.SubjectId);
             }
 
             var additionalClaims = new List<Claim>();
@@ -254,8 +284,8 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             // issue authentication cookie for user
-            await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, user.SubjectId, user.Username));
-            await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, provider, props, additionalClaims.ToArray());
+            await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, userInfo.SubjectId, userInfo.Username));
+            await HttpContext.Authentication.SignInAsync(userInfo.SubjectId, userInfo.Username, provider, props, additionalClaims.ToArray());
 
             // delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
@@ -321,26 +351,24 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return View("LoggedOut", vm);
+        }        
+    }
+
+    public class UserInfo
+    {
+        public string SubjectId { get; set; }
+        public string Username { get; set; }
+
+        public UserInfo(TestUser user)
+        {
+            SubjectId = user.SubjectId;
+            Username = user.Username;
         }
 
-        private void UpdateRoleClaims(TestUser user, List<Claim> claims)
+        public UserInfo(User user)
         {
-            //if the provider sent us role claims, use those and remove any other role
-            //claims from the user
-            if (claims.Any(c => c.Type == JwtClaimTypes.Role))
-            {
-                //update the role claims from the provider
-                var roleClaimsFromProvider = claims.Where(c => c.Type == JwtClaimTypes.Role);
-                var originalRoleClaims = user.Claims.Where(c => c.Type == JwtClaimTypes.Role).ToList();
-                foreach (var originalRoleClaim in originalRoleClaims)
-                {
-                    user.Claims.Remove(originalRoleClaim);
-                }
-                foreach (var roleClaim in roleClaimsFromProvider)
-                {
-                    user.Claims.Add(roleClaim);
-                }
-            }
+            SubjectId = user.SubjectId;
+            Username = user.Username;
         }
     }
 }

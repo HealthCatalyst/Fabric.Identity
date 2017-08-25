@@ -36,7 +36,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             return user.FirstOrDefault();
         }
 
-        public Task<User> AddUser(string provider, string subjectId, IEnumerable<Claim> claims)
+        public User AddUser(string provider, string subjectId, IEnumerable<Claim> claims)
         {
             // create a list of claims that we want to transfer into our store
             var filtered = new List<Claim>();
@@ -93,8 +93,17 @@ namespace Fabric.Identity.API.DocumentDbStores
 
             _documentDbService.AddDocument($"{subjectId}:{provider}", user);
 
-            return Task.FromResult(user);
+            return user;
 
+        }
+
+        public async Task SetLastLogin(string clientId, string subjectId)
+        {
+            var user = await FindBySubjectId(subjectId);
+
+            user.SetLastLoginDateByClient(clientId);
+
+            _documentDbService.UpdateDocument($"{user.SubjectId}:{user.ProviderName}", user);
         }
     }
 }

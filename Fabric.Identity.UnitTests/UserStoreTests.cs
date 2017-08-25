@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using Castle.Components.DictionaryAdapter;
 using Fabric.Identity.API.DocumentDbStores;
@@ -73,6 +75,50 @@ namespace Fabric.Identity.UnitTests
             Assert.Equal(shouldBeFound, user != null);
         }
 
+        [Fact]
+        public async void UserStore_CanSetLastLoginPerClient()
+        {
+            var clientId = "clientOne";
+            var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+
+            var testUser = await userStore.FindBySubjectId("userone");
+            await userStore.SetLastLogin(clientId, testUser.SubjectId);
+
+            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
+
+            Assert.NotEmpty(testUser.LatestLoginsByClient);
+            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+
+            var login = testUser.LatestLoginsByClient.First();
+
+            Assert.Equal(clientId, login.Key);
+        }
+
+        [Fact]
+        public async void UserStore_CanSetLoginForExistingClient()
+        {
+            var clientId = "clientTwo";
+            var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+            var testUser = await userStore.FindBySubjectId("usertwo");
+            await userStore.SetLastLogin(clientId, testUser.SubjectId);
+
+            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
+
+            Assert.NotEmpty(testUser.LatestLoginsByClient);
+            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+
+            var login = testUser.LatestLoginsByClient.First();
+            Assert.Equal(clientId, login.Key);
+            
+            await userStore.SetLastLogin(clientId, testUser.SubjectId);
+            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
+
+            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+
+            login = testUser.LatestLoginsByClient.First();
+            Assert.Equal(clientId, login.Key);
+        }
+
         public static IEnumerable<object[]> SubjectIdData => new[]
         {
             new object[]{ "userone", true},
@@ -85,7 +131,7 @@ namespace Fabric.Identity.UnitTests
             new object[]{ "userone", "ad", true},
             new object[]{ "usertwo", "azuread", true},
             new object[]{ "userthree", "ad", false},
-            new object[]{ "foo", "" , false},
+            new object[]{ "foo", "" , false}
         };
     }
 }
