@@ -240,22 +240,22 @@ namespace IdentityServer4.Quickstart.UI
             else
             {
                 // check if the external user is already provisioned
-                var user = _userFunctions.FindTestUserByExternalProvider(provider, userId);
+                var user = await _userFunctions.FindUserByExternalProvider(provider, userId);
                 if (user == null)
                 {
                     // this sample simply auto-provisions new external user
                     // another common approach is to start a registrations workflow first
-                    user = _userFunctions.AddTestUser(provider, userId, claims);                   
+                    user =  _userFunctions.AddUser(provider, userId, claims);                   
                 }
                 else
                 {
                     //update the role claims from the provider
-                    _userFunctions.UpdateTestUserRoleClaims(user, claims);
+                    _userFunctions.UpdateUserRoleClaims(user, claims);
                 }
                 userInfo = new UserInfo(user);
                 //update the user model with the login
                 var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-                await _userFunctions.SetLastLogin(context.ClientId, user.SubjectId);
+                await _userFunctions.SetLastLogin(context.ClientId, userInfo.SubjectId);
             }
 
             var additionalClaims = new List<Claim>();
