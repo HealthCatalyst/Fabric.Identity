@@ -123,6 +123,7 @@ namespace Fabric.Identity.API.Extensions
         public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
             IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
+            serviceCollection.AddSingleton<DocumentDbUserStore, DocumentDbUserStore>();
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
                 serviceCollection.AddInMemoryIdentityServer(appConfiguration);
