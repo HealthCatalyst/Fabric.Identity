@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Castle.Components.DictionaryAdapter;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
@@ -76,7 +77,7 @@ namespace Fabric.Identity.UnitTests
         }
 
         [Fact]
-        public async void UserStore_CanSetLastLoginPerClient()
+        public async Task UserStore_CanSetLastLoginPerClient()
         {
             var clientId = "clientOne";
             var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
@@ -95,7 +96,7 @@ namespace Fabric.Identity.UnitTests
         }
 
         [Fact]
-        public async void UserStore_CanSetLoginForExistingClient()
+        public async Task UserStore_CanSetLoginForExistingClient()
         {
             var clientId = "clientTwo";
             var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);

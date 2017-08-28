@@ -75,7 +75,9 @@ namespace Fabric.Identity.API.Models
             //if the provider sent us role claims, use those and remove any other role
             //claims from the user
             if (!updatedClaims.Any(c => c.Type == JwtClaimTypes.Role))
+            {
                 return existingClaims;
+            }
 
             //update the role claims from the provider
             var roleClaimsFromProvider = updatedClaims.Where(c => c.Type == JwtClaimTypes.Role);

@@ -63,20 +63,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             // if no display name was provided, try to construct by first and/or last name
             if (filtered.All(x => x.Type != JwtClaimTypes.Name))
             {
-                var first = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value;
-                var last = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value;
-                if (first != null && last != null)
-                {
-                    filtered.Add(new Claim(JwtClaimTypes.Name, first + " " + last));
-                }
-                else if (first != null)
-                {
-                    filtered.Add(new Claim(JwtClaimTypes.Name, first));
-                }
-                else if (last != null)
-                {
-                    filtered.Add(new Claim(JwtClaimTypes.Name, last));
-                }
+                SetNameClaim(filtered);
             }
 
             // check if a display name is available, otherwise fallback to subject id
@@ -97,9 +84,27 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         }
 
+        private static void SetNameClaim(List<Claim> filtered)
+        {
+            var first = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value;
+            var last = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value;
+            if (first != null && last != null)
+            {
+                filtered.Add(new Claim(JwtClaimTypes.Name, first + " " + last));
+            }
+            else if (first != null)
+            {
+                filtered.Add(new Claim(JwtClaimTypes.Name, first));
+            }
+            else if (last != null)
+            {
+                filtered.Add(new Claim(JwtClaimTypes.Name, last));
+            }
+        }
+
         public async Task SetLastLogin(string clientId, string subjectId)
         {
-            var user = await FindBySubjectId(subjectId);
+            var user = await FindBySubjectId(subjectId).ConfigureAwait(false);
 
             user.SetLastLoginDateByClient(clientId);
 
