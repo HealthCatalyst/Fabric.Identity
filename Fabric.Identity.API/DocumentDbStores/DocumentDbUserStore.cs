@@ -25,7 +25,8 @@ namespace Fabric.Identity.API.DocumentDbStores
         //id for a  user stored in documentDb = user:subjectid:provider
 
         public async Task<User> FindBySubjectId(string subjectId)
-        {                        
+        {   
+            _logger.Information($"finding user with subject id {subjectId}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
             return user.FirstOrDefault();
         }
@@ -106,6 +107,12 @@ namespace Fabric.Identity.API.DocumentDbStores
         public async Task SetLastLogin(string clientId, string subjectId)
         {
             var user = await FindBySubjectId(subjectId).ConfigureAwait(false);
+
+            if (user == null)
+            {
+                _logger.Information($"did not find a user with subject id {subjectId}");
+                return;
+            }
 
             user.SetLastLoginDateByClient(clientId);
             _logger.Information($"setting loging date for user: {user.Username} and provider: {user.ProviderName}");
