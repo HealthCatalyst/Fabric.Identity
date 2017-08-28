@@ -9,6 +9,7 @@ using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Moq;
+using Serilog;
 using Xunit;
 
 namespace Fabric.Identity.UnitTests
@@ -57,7 +58,7 @@ namespace Fabric.Identity.UnitTests
         [Theory, MemberData(nameof(SubjectIdData))]
         public void UserStore_CanFindBySubjectId(string subjectId, bool shouldBeFound)
         {
-           var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+           var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
             var user = userStore.FindBySubjectId(subjectId).Result;
             if (user != null)
@@ -70,7 +71,7 @@ namespace Fabric.Identity.UnitTests
         [Theory, MemberData(nameof(ProviderSubjectIdData))]
         public void UserStore_CanFindByExternalProvider(string subjectId, string provider, bool shouldBeFound)
         {
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
             var user = userStore.FindByExternalProvider(provider, subjectId).Result;
             Assert.Equal(shouldBeFound, user != null);
@@ -80,7 +81,7 @@ namespace Fabric.Identity.UnitTests
         public async Task UserStore_CanSetLastLoginPerClient()
         {
             var clientId = "clientOne";
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
             var testUser = await userStore.FindBySubjectId("userone");
             await userStore.SetLastLogin(clientId, testUser.SubjectId);
@@ -99,7 +100,7 @@ namespace Fabric.Identity.UnitTests
         public async Task UserStore_CanSetLoginForExistingClient()
         {
             var clientId = "clientTwo";
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, null);
+            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
             var testUser = await userStore.FindBySubjectId("usertwo");
             await userStore.SetLastLogin(clientId, testUser.SubjectId);
 
