@@ -79,6 +79,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             };
 
             _documentDbService.AddDocument($"{subjectId}:{provider}", user);
+            _logger.Information($"added user: {name}");
 
             return user;
 
@@ -107,6 +108,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             var user = await FindBySubjectId(subjectId).ConfigureAwait(false);
 
             user.SetLastLoginDateByClient(clientId);
+            _logger.Information($"setting loging date for user: {user.Username} and provider: {user.ProviderName}");
 
             _documentDbService.UpdateDocument($"{user.SubjectId}:{user.ProviderName}", user);
         }
