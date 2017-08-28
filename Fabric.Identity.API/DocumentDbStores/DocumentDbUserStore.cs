@@ -26,15 +26,16 @@ namespace Fabric.Identity.API.DocumentDbStores
 
         public async Task<User> FindBySubjectId(string subjectId)
         {   
-            _logger.Information($"finding user with subject id {subjectId}");
+            _logger.Information($"finding user with subject id: {subjectId}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
-            return user.FirstOrDefault();
+            return user?.FirstOrDefault();
         }
 
         public async Task<User> FindByExternalProvider(string provider, string subjectId)
         {
+            _logger.Information($"finding user with subject id: {subjectId} and provider: {provider}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}:{provider}");
-            return user.FirstOrDefault();
+            return user?.FirstOrDefault();
         }
 
         public User AddUser(string provider, string subjectId, IEnumerable<Claim> claims)
