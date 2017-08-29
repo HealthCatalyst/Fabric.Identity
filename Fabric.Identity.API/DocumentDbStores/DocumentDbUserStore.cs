@@ -85,7 +85,9 @@ namespace Fabric.Identity.API.DocumentDbStores
                 Claims = filtered
             };
 
-            _documentDbService.AddDocument($"{subjectId}:{provider}", user);
+            var encodedProvider = UrlEncodeString(provider);
+            var encodedSubjectId = UrlEncodeString(subjectId);
+            _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
             _logger.Information($"added user: {name}");
 
             return user;
