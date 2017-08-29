@@ -90,7 +90,12 @@ namespace Fabric.Identity.API.Services
 
                 foreach (var responseRow in result.Rows)
                 {
-                    var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc);
+                    var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, new JsonSerializerSettings
+                    {
+                        ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
                     results.Add(resultRow);
                 }
 
@@ -124,7 +129,7 @@ namespace Fabric.Identity.API.Services
                     new JsonSerializerSettings
                     {
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects                        
                     });
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
