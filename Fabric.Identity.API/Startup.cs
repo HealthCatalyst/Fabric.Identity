@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.PlatformAbstractions;
+using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -50,7 +51,7 @@ namespace Fabric.Identity.API
             _appConfig = new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = Logging.LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
-            _couchDbSettings = _appConfig.CouchDbSettings;
+            _couchDbSettings = _appConfig.CouchDbSettings;           
         }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
@@ -77,7 +78,8 @@ namespace Fabric.Identity.API
                 ApiName = identityServerApiSettings.ClientId
             });
             
-            services.AddMvc();
+            services.AddMvc()
+                .AddJsonOptions(x => x.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
             services.AddApiVersioning(options =>
             {
                 options.AssumeDefaultVersionWhenUnspecified = true;
@@ -163,7 +165,7 @@ namespace Fabric.Identity.API
             app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
             app.UseOwin()
-                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
+                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);            
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();

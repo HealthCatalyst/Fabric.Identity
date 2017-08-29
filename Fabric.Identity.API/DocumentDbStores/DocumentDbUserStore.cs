@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using IdentityModel;
+using RestSharp.Extensions.MonoHttp;
 using Serilog;
 
 namespace Fabric.Identity.API.DocumentDbStores  
@@ -25,16 +26,20 @@ namespace Fabric.Identity.API.DocumentDbStores
         //id for a  user stored in documentDb = user:subjectid:provider
 
         public async Task<User> FindBySubjectId(string subjectId)
-        {   
-            _logger.Information($"finding user with subject id: {subjectId}");
-            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
+        {
+            var encodedSubjectId = UrlEncodeString(subjectId);
+            _logger.Information($"finding user with subject id: {encodedSubjectId}");
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}");
             return user?.FirstOrDefault();
         }
 
         public async Task<User> FindByExternalProvider(string provider, string subjectId)
         {
-            _logger.Information($"finding user with subject id: {subjectId} and provider: {provider}");
-            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}:{provider}");
+            var encodedProvider = UrlEncodeString(provider);
+            var encodedSubjectId = UrlEncodeString(subjectId);
+
+            _logger.Information($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}:{encodedProvider}");
             return user?.FirstOrDefault();
         }
 
@@ -116,9 +121,14 @@ namespace Fabric.Identity.API.DocumentDbStores
             }
 
             user.SetLastLoginDateByClient(clientId);
-            _logger.Information($"setting loging date for user: {user.Username} and provider: {user.ProviderName}");
+            _logger.Information($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
 
             _documentDbService.UpdateDocument($"{user.SubjectId}:{user.ProviderName}", user);
+        }
+
+        private string UrlEncodeString(string unencoded)
+        {
+            return HttpUtility.UrlEncode(unencoded);
         }
     }
 }
