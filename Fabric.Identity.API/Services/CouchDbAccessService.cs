@@ -120,7 +120,12 @@ namespace Fabric.Identity.API.Services
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var existingDoc = client.Documents.GetAsync(fullDocumentId).Result;
-                var docJson = JsonConvert.SerializeObject(documentObject);
+                var docJson = JsonConvert.SerializeObject(documentObject,
+                    new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
                 {
