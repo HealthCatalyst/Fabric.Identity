@@ -61,7 +61,12 @@ namespace Fabric.Identity.API.Events
 
         private static T DeepClone<T>(T entity)
         {
-            var serializedEntity = JsonConvert.SerializeObject(entity);
+            var serializedEntity = JsonConvert.SerializeObject(entity,
+                new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                });
             return JsonConvert.DeserializeObject<T>(serializedEntity);
         }
     }
