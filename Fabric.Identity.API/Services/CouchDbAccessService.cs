@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using MyCouch;
@@ -8,6 +10,7 @@ using MyCouch.Responses;
 using Newtonsoft.Json;
 using Serilog;
 using Fabric.Identity.API.CouchDb;
+using Newtonsoft.Json.Linq;
 
 namespace Fabric.Identity.API.Services
 {
@@ -91,10 +94,10 @@ namespace Fabric.Identity.API.Services
                 foreach (var responseRow in result.Rows)
                 {
                     var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, new JsonSerializerSettings
-                    {
-                        ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    {                     
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+                        Converters = new List<JsonConverter> { new ClaimConverter()}
                     });
                     results.Add(resultRow);
                 }
@@ -196,6 +199,35 @@ namespace Fabric.Identity.API.Services
                     throw new ResourceOperationException(message, ResourceOperationType.Delete);
                 }
             }
+        }
+    }
+
+    internal class ClaimConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return (objectType == typeof(System.Security.Claims.Claim));
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            JObject jo = JObject.Load(reader);
+            string type = (string)jo["Type"];
+            string value = (string)jo["Value"];
+            string valueType = (string)jo["ValueType"];
+            string issuer = (string)jo["Issuer"];
+            string originalIssuer = (string)jo["OriginalIssuer"];
+            return new Claim(type, value, valueType, issuer, originalIssuer);
+        }
+
+        public override bool CanWrite
+        {
+            get { return false; }
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
         }
     }
 }
