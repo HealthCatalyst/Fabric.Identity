@@ -95,8 +95,7 @@ namespace Fabric.Identity.API.Services
                 {
                     var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, new JsonSerializerSettings
                     {                     
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,                     
                         Converters = new List<JsonConverter> { new ClaimConverter()}
                     });
                     results.Add(resultRow);
@@ -131,8 +130,7 @@ namespace Fabric.Identity.API.Services
                 var docJson = JsonConvert.SerializeObject(documentObject,
                     new JsonSerializerSettings
                     {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects                        
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                     });
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
@@ -206,7 +204,7 @@ namespace Fabric.Identity.API.Services
     {
         public override bool CanConvert(Type objectType)
         {
-            return (objectType == typeof(System.Security.Claims.Claim));
+            return objectType == typeof(Claim);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -220,10 +218,7 @@ namespace Fabric.Identity.API.Services
             return new Claim(type, value, valueType, issuer, originalIssuer);
         }
 
-        public override bool CanWrite
-        {
-            get { return false; }
-        }
+        public override bool CanWrite => false;
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
