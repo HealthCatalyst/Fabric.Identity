@@ -124,7 +124,8 @@ namespace Fabric.Identity.API.Extensions
             IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
             serviceCollection.AddSingleton<DocumentDbUserStore, DocumentDbUserStore>();
-           
+            serviceCollection.AddSingleton<IProfileService, UserProfileService>();
+
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
                 serviceCollection.AddInMemoryIdentityServer(appConfiguration);
@@ -133,8 +134,6 @@ namespace Fabric.Identity.API.Extensions
             {
                 serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration, certificateService, logger);
             }
-
-            serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
             return serviceCollection;
         }
