@@ -2,7 +2,7 @@
 {
     public static class FabricIdentityConstants
     {
-        public const string ServiceName = "identityservice";
+        public static readonly string ServiceName = "identityservice";
         public static readonly string FabricCorsPolicyName = "FabricCorsPolicy";
         public static readonly string ManagementApiBasePath = "/api";
         public static readonly string IdentityRegistrationScope = "fabric/identity.manageresources";
