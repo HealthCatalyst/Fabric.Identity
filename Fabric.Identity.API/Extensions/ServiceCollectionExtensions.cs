@@ -124,6 +124,8 @@ namespace Fabric.Identity.API.Extensions
             IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
             serviceCollection.AddSingleton<DocumentDbUserStore, DocumentDbUserStore>();
+            serviceCollection.AddSingleton<IProfileService, UserProfileService>();
+
             if (appConfiguration.HostingOptions.UseInMemoryStores)
             {
                 serviceCollection.AddInMemoryIdentityServer(appConfiguration);
