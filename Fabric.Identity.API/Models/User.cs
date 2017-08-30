@@ -17,7 +17,7 @@ namespace Fabric.Identity.API.Models
         public ICollection<Claim> Claims { get; set; }
         public Dictionary<string, DateTime> LatestLoginsByClient { get; } = new Dictionary<string, DateTime>();
 
-        public void SetLastLoginDateByClient(string clientId)
+        public void SetLastLoginDateByClient(string clientId = FabricIdentityConstants.ServiceName)
         {
             if (LatestLoginsByClient.ContainsKey(clientId))
             {

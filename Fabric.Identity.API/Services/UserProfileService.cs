@@ -52,7 +52,7 @@ namespace Fabric.Identity.API.Services
         public async Task IsActiveAsync(IsActiveContext context)
         {
             var sub = context.Subject.GetSubjectId();
-            _logger.Information($"found sub from IsActiveContext: {sub}");
+            _logger.Debug($"found sub from IsActiveContext: {sub}");
             var user = await _userStore.FindBySubjectId(sub);            
             context.IsActive = user != null;
         }
