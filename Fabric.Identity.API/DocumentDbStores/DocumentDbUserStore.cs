@@ -124,8 +124,9 @@ namespace Fabric.Identity.API.DocumentDbStores
 
             user.SetLastLoginDateByClient(clientId);
             _logger.Information($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
-
-            _documentDbService.UpdateDocument($"{user.SubjectId}:{user.ProviderName}", user);
+            
+            var encodedSubjectId = UrlEncodeString(user.SubjectId);
+            _documentDbService.UpdateDocument($"{encodedSubjectId}:{user.ProviderName}", user);
         }
 
         private string UrlEncodeString(string unencoded)
