@@ -20,7 +20,7 @@ namespace Fabric.Identity.API.Extensions
             }
             else
             {
-                identityServerBuilder.AddTestUsers(new List<TestUser>());
+              //  identityServerBuilder.AddTestUsers(new List<TestUser>());
             }
             return identityServerBuilder;
         }
