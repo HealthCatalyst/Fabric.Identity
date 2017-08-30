@@ -13,10 +13,10 @@ namespace Fabric.Identity.API.Services
 {
     public class UserProfileService : IProfileService
     {
-        private readonly IUserStore _userStore;
+        private readonly DocumentDbUserStore _userStore;
         private readonly ILogger _logger;
 
-        public UserProfileService(IUserStore userStore, ILogger logger)
+        public UserProfileService(DocumentDbUserStore userStore, ILogger logger)
         {
             _userStore = userStore;
             _logger = logger;

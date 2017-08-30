@@ -259,7 +259,8 @@ namespace IdentityServer4.Quickstart.UI
                 userInfo = new UserInfo(user);
                 _logger.Information("update the user model with the login");
                 var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-                await _userFunctions.SetLastLogin(context.ClientId, userInfo.SubjectId);
+                _logger.Information($"authorization context: {context?.ClientId} user subjectId: {userInfo.SubjectId}");
+                await _userFunctions.SetLastLogin(context?.ClientId, userInfo.SubjectId);
             }
 
             var additionalClaims = new List<Claim>();
