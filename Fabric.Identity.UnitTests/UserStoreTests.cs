@@ -269,15 +269,6 @@ namespace Fabric.Identity.UnitTests
 		
             }
         }";
-
-            //var claim = new Claim(JwtClaimTypes.Name, "Fabric\\kyle.paul");
-
-            //var docJson = JsonConvert.SerializeObject(claim,
-            //    new JsonSerializerSettings
-            //    {
-            //        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            //    });
-
             var result = JsonConvert.DeserializeObject<User>(jsonString, new SerializationSettings().JsonSettings);
 
             Assert.NotNull(result);
