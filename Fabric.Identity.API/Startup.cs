@@ -117,8 +117,10 @@ namespace Fabric.Identity.API
 
                 c.AddSecurityDefinition("oauth2", new OAuth2Scheme
                 {
+                    Description = "The Fabric.Identity management API requires authentication using oath2 and requires the below scopes.",
                     Type = "oauth2",
                     AuthorizationUrl = identityServerApiSettings.Authority,
+                    Flow = "hybrid, implicit, client_credentials",
                     Scopes = new Dictionary<string, string>()
                     {
                         {"fabric/identity.manageresources", "Access to manage Client, API, and Identity resources."}
@@ -131,6 +133,7 @@ namespace Fabric.Identity.API
                 c.OperationFilter<VersionRemovalOperationFilter>();
                 c.OperationFilter<ParamMetadataOperationFilter>();
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
+                c.OperationFilter<SetBodyParametersRequiredOperationFilter>();
                 c.DocumentFilter<PathVersionDocumentFilter>();
                 c.DocumentFilter<TagFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);

@@ -65,7 +65,7 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique id of the client to reset.</param>
         /// <returns></returns>
         [HttpGet("{id}/resetPassword")]
-        [SwaggerResponse(200, typeof(Client), "The password for the client has been reset.")]
+        [SwaggerResponse(200, typeof(Client), "The secret for the client has been reset.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
@@ -92,7 +92,7 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         /// Add a client
         /// </summary>
-        /// <param name="client">The client object to add.</param>
+        /// <param name="client">The <see cref="IS4.Client"/> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(Client), "The client was created.")]
@@ -120,7 +120,7 @@ namespace Fabric.Identity.API.Management
         /// Update a client
         /// </summary>
         /// <param name="id">The unique id of the client to update.</param>
-        /// <param name="client">The client object to update.</param>
+        /// <param name="client">The <see cref="IS4.Client"/> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, typeof(void), "The specified client was updated.")]

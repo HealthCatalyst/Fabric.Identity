@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         /// Creates an Identity resource.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">The <see cref="IdentityResource"/> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IdentityResource), "The identity resource was created.")]
@@ -79,7 +79,7 @@ namespace Fabric.Identity.API.Management
         /// Modifies the Identity resource by <paramref name="id"/>.
         /// </summary>
         /// <param name="id">The unique identifier of the identity resource</param>
-        /// <param name="value"></param>
+        /// <param name="value">The <see cref="IdentityResource"/> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, null, "The identity resource was updated.")]
