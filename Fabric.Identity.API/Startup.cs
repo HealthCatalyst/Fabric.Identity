@@ -104,8 +104,15 @@ namespace Fabric.Identity.API
             services.AddSwaggerGen(c =>
             {
                 // this defines the Swagger doc (1 call to SwaggerDoc per version)
-                c.SwaggerDoc("v1", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Fabric.Identity contains a set of APIs that provides authentication for applications based on the OpenID Connect protocol." });
-
+                c.SwaggerDoc("v1",
+                    new Info
+                    {
+                        Version = "v1",
+                        Title = "Health Catalyst Fabric Identity API V1",
+                        Description =
+                            "Fabric.Identity contains a set of APIs that provides authentication for applications based on the OpenID Connect protocol. If you don't include the version in the URL you will get the v1 API."
+                    });
+                
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
                     var versions = apiDesc.ControllerAttributes()
