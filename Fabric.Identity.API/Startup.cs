@@ -102,7 +102,7 @@ namespace Fabric.Identity.API
             services.AddSwaggerGen(c =>
             {
                 // this defines the Swagger doc (1 call to SwaggerDoc per version)
-                c.SwaggerDoc("v1", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Description goes here"});
+                c.SwaggerDoc("v1", new Info { Version = "v1", Title = "Health Catalyst Fabric Identity API V1", Description = "Fabric.Identity contains a set of APIs that provides authentication for applications based on the OpenID Connect protocol." });
 
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
@@ -122,6 +122,7 @@ namespace Fabric.Identity.API
                         { "fabric/identity.manageresources", "Access to manage Client, API, and Identity resources." }
                     }
                 });
+                
 
                 c.CustomSchemaIds((type) => type.FullName);
 
@@ -129,6 +130,7 @@ namespace Fabric.Identity.API
                 c.OperationFilter<ParamMetadataOperationFilter>();
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
                 c.DocumentFilter<PathVersionDocumentFilter>();
+                c.DocumentFilter<TagFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
                 
