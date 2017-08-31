@@ -18,10 +18,7 @@ namespace Fabric.Identity.API.Extensions
             {
                 identityServerBuilder.AddTestUsers(TestUsers.Users);
             }
-            else
-            {
-                identityServerBuilder.AddTestUsers(new List<TestUser>());
-            }
+          
             return identityServerBuilder;
         }
 

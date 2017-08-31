@@ -48,11 +48,13 @@ namespace Fabric.Identity.API
         public Startup(IHostingEnvironment env)
         {
             _certificateService = MakeCertificateService();
-            _appConfig = new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
+            _appConfig =
+                new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = Logging.LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
-            _couchDbSettings = _appConfig.CouchDbSettings;           
+            _couchDbSettings = _appConfig.CouchDbSettings;
         }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -71,25 +73,25 @@ namespace Fabric.Identity.API
             services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
             services.AddScoped<IUserResolveService, UserResolverService>();
+            services.AddSingleton<ISerializationSettings, SerializationSettings>();
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
                 Authority = identityServerApiSettings.Authority,
                 RequireHttpsMetadata = false,
                 ApiName = identityServerApiSettings.ClientId
             });
-            
+
             services.AddMvc()
                 .AddJsonOptions(x =>
-                {
-                    x.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                    x.SerializerSettings.PreserveReferencesHandling = PreserveReferencesHandling.Objects;
+                {                    
+                    x.SerializerSettings.ReferenceLoopHandling = new SerializationSettings().JsonSettings.ReferenceLoopHandling;
                 });
 
             services.AddApiVersioning(options =>
             {
                 options.AssumeDefaultVersionWhenUnspecified = true;
                 options.DefaultApiVersion = new ApiVersion(1, 0);
-                options.ReportApiVersions = true;                
+                options.ReportApiVersions = true;
             });
 
             services.AddAuthorization(options =>
@@ -119,7 +121,7 @@ namespace Fabric.Identity.API
                     AuthorizationUrl = identityServerApiSettings.Authority,
                     Scopes = new Dictionary<string, string>()
                     {
-                        { "fabric/identity.manageresources", "Access to manage Client, API, and Identity resources." }
+                        {"fabric/identity.manageresources", "Access to manage Client, API, and Identity resources."}
                     }
                 });
                 
@@ -133,7 +135,7 @@ namespace Fabric.Identity.API
                 c.DocumentFilter<TagFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
-                
+
             });
         }
 
@@ -156,8 +158,9 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
-            InitializeStores(_appConfig.HostingOptions.UseInMemoryStores);
-            
+            var serializationSettings = app.ApplicationServices.GetService<ISerializationSettings>();
+            InitializeStores(_appConfig.HostingOptions.UseInMemoryStores, serializationSettings);
+
             loggerFactory.AddSerilog(_logger);
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
@@ -165,14 +168,14 @@ namespace Fabric.Identity.API
             app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
-            
+
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
             app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
             app.UseOwin()
-                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);            
+                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
@@ -194,13 +197,14 @@ namespace Fabric.Identity.API
             }
             else
             {
-                documentDbService = new CouchDbAccessService(_couchDbSettings, _logger);
+                documentDbService = new CouchDbAccessService(_couchDbSettings, _logger, new SerializationSettings());
             }
-            var identityResources = await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes.IdentityResourceDocumentType);
+            var identityResources = await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants
+                .DocumentTypes.IdentityResourceDocumentType);
             return identityResources.Any();
         }
 
-        private void InitializeStores(bool useInMemoryStores)
+        private void InitializeStores(bool useInMemoryStores, ISerializationSettings serializationSettings)
         {
             if (useInMemoryStores)
             {
@@ -209,7 +213,8 @@ namespace Fabric.Identity.API
             }
             else
             {
-                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger), _couchDbSettings, _logger);
+                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger, serializationSettings),
+                    _couchDbSettings, _logger);
                 couchDbBootStrapper.Setup();
             }
         }

@@ -22,6 +22,7 @@ using Fabric.Identity.API.Services;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
+using Serilog;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -36,7 +37,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly TestUserStore _users;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IEventService _events;
-        private readonly IAppConfiguration _appConfiguration;
+        private readonly IAppConfiguration _appConfiguration;        
         private readonly AccountService _account;
         private readonly UserFunctions _userFunctions;
 
@@ -53,7 +54,7 @@ namespace IdentityServer4.Quickstart.UI
             _users = users ?? MakeTestUserStore(appConfiguration);
             _interaction = interaction;
             _events = events;
-            _appConfiguration = appConfiguration;
+            _appConfiguration = appConfiguration;            
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
             _userFunctions = new UserFunctions(_users, documentDbUserStore);
             
@@ -141,10 +142,10 @@ namespace IdentityServer4.Quickstart.UI
         {
             returnUrl = Url.Action("ExternalLoginCallback", new { returnUrl = returnUrl });
 
-            // windows authentication is modeled as external in the asp.net core authentication manager, so we need special handling
+            //windows authentication is modeled as external in the asp.net core authentication manager, so we need special handling
             if (AccountOptions.WindowsAuthenticationSchemes.Contains(provider))
             {
-                // but they don't support the redirect uri, so this URL is re-triggered when we call challenge
+                //"but they don't support the redirect uri, so this URL is re-triggered when we call challenge
                 if (HttpContext.User is WindowsPrincipal wp)
                 {
                     var props = new AuthenticationProperties();
@@ -154,7 +155,7 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Subject, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
 
-                    // add the groups as claims -- be careful if the number of groups is too large
+                    //add the groups as claims -- be careful if the number of groups is too large
                     if (AccountOptions.IncludeWindowsGroups)
                     {
                         var wi = wp.Identity as WindowsIdentity;
@@ -168,13 +169,13 @@ namespace IdentityServer4.Quickstart.UI
                 }
                 else
                 {
-                    // this triggers all of the windows auth schemes we're supporting so the browser can use what it supports
+                    //this triggers all of the windows auth schemes we're supporting so the browser can use what it supports
                     return new ChallengeResult(AccountOptions.WindowsAuthenticationSchemes);
                 }
             }
             else
             {
-                // start challenge and roundtrip the return URL
+                //start challenge and roundtrip the return URL
                 var props = new AuthenticationProperties
                 {
                     RedirectUri = returnUrl,
@@ -190,7 +191,7 @@ namespace IdentityServer4.Quickstart.UI
         [HttpGet]
         public async Task<IActionResult> ExternalLoginCallback(string returnUrl)
         {
-            // read external identity from the temporary cookie
+            //read external identity from the temporary cookie
             var info = await HttpContext.Authentication.GetAuthenticateInfoAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
             var tempUser = info?.Principal;
             if (tempUser == null)
@@ -198,11 +199,11 @@ namespace IdentityServer4.Quickstart.UI
                 throw new Exception("External authentication error");
             }
 
-            // retrieve claims of the external user
+            //retrieve claims of the external user
             var claims = tempUser.Claims.ToList();
 
-            // try to determine the unique id of the external user - the most common claim type for that are the sub claim and the NameIdentifier
-            // depending on the external provider, some other claim type might be used
+            //try to determine the unique id of the external user - the most common claim type for that are the sub claim and the NameIdentifier
+            //depending on the external provider, some other claim type might be used
             var userIdClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Subject);
             if (userIdClaim == null)
             {
@@ -213,8 +214,8 @@ namespace IdentityServer4.Quickstart.UI
                 throw new Exception("Unknown userid");
             }
 
-            // remove the user id claim from the claims collection and move to the userId property
-            // also set the name of the external authentication provider
+            //remove the user id claim from the claims collection and move to the userId property
+            //also set the name of the external authentication provider
             claims.Remove(userIdClaim);
             var provider = info.Properties.Items["scheme"];
             var userId = userIdClaim.Value;
@@ -222,12 +223,12 @@ namespace IdentityServer4.Quickstart.UI
             UserInfo userInfo;
             if (_appConfiguration.HostingOptions.UseTestUsers)
             {
-                // check if the external user is already provisioned
+                //check if the external user is already provisioned
                 var user = _userFunctions.FindTestUserByExternalProvider(provider, userId);
                 if (user == null)
                 {
-                    // this sample simply auto-provisions new external user
-                    // another common approach is to start a registrations workflow first
+                    //this sample simply auto-provisions new external user
+                    //another common approach is to start a registrations workflow first
                     user = _userFunctions.AddTestUser(provider, userId, claims);
                 }
                 else
@@ -239,12 +240,12 @@ namespace IdentityServer4.Quickstart.UI
             }
             else
             {
-                // check if the external user is already provisioned
+                //check if the external user is already provisioned
                 var user = await _userFunctions.FindUserByExternalProvider(provider, userId);
                 if (user == null)
                 {
-                    // this sample simply auto-provisions new external user
-                    // another common approach is to start a registrations workflow first
+                    //this sample simply auto-provisions new external user
+                    //another common approach is to start a registrations workflow first
                     user =  _userFunctions.AddUser(provider, userId, claims);                   
                 }
                 else
@@ -254,27 +255,27 @@ namespace IdentityServer4.Quickstart.UI
                 }
                 userInfo = new UserInfo(user);
                 //update the user model with the login
-                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-                await _userFunctions.SetLastLogin(context.ClientId, userInfo.SubjectId);
+                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);                
+                await _userFunctions.SetLastLogin(context?.ClientId, userInfo.SubjectId);
             }
 
             var additionalClaims = new List<Claim>();
 
-            // if the external system sent a session id claim, copy it over
+            //if the external system sent a session id claim, copy it over
             var sid = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);
             if (sid != null)
             {
                 additionalClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
             }
 
-            // if the external provider issues groups claims, copy it over
+            //if the external provider issues groups claims, copy it over
             var groupClaims = claims.Where(c => c.Type == "groups").ToList();
             if (groupClaims.Any())
             {
                 additionalClaims.AddRange(groupClaims);
             }
 
-            // if the external provider issued an id_token, we'll keep it for signout
+            //if the external provider issued an id_token, we'll keep it for signout
             AuthenticationProperties props = null;
             var id_token = info.Properties.GetTokenValue("id_token");
             if (id_token != null)
@@ -283,14 +284,14 @@ namespace IdentityServer4.Quickstart.UI
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
             }
 
-            // issue authentication cookie for user
+            //issue authentication cookie for user
             await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, userInfo.SubjectId, userInfo.Username));
             await HttpContext.Authentication.SignInAsync(userInfo.SubjectId, userInfo.Username, provider, props, additionalClaims.ToArray());
 
-            // delete temporary cookie used during external authentication
+            //delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
 
-            // validate return URL and redirect back to authorization endpoint or a local page
+            //validate return URL and redirect back to authorization endpoint or a local page
             if (_interaction.IsValidReturnUrl(returnUrl) || Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);

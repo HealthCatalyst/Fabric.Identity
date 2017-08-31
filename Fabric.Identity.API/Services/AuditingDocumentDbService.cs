@@ -9,12 +9,14 @@ namespace Fabric.Identity.API.Services
 {
     public class AuditingDocumentDbService : IDocumentDbService
     {
+        private readonly ISerializationSettings _serializationSettings;
         private readonly IEventService _eventService;
         private readonly IDocumentDbService _innerDocumentDbService;
         private readonly IUserResolveService _userResolveService;
 
-        public AuditingDocumentDbService(IUserResolveService userResolverService, IEventService eventService, Decorator<IDocumentDbService> decorator)
+        public AuditingDocumentDbService(IUserResolveService userResolverService, IEventService eventService, Decorator<IDocumentDbService> decorator, ISerializationSettings serializationSettings)
         {
+            _serializationSettings = serializationSettings;
             _eventService = eventService ?? throw new ArgumentNullException(nameof(eventService));
             _innerDocumentDbService = decorator.Instance ?? throw new ArgumentNullException(nameof(decorator));
             _userResolveService = userResolverService ?? throw new ArgumentNullException(nameof(userResolverService));
@@ -38,7 +40,7 @@ namespace Fabric.Identity.API.Services
         {
             _innerDocumentDbService.AddDocument(documentId, documentObject);
             _eventService.RaiseAsync(new EntityCreatedAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject))
+                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject, _serializationSettings))
                 .ConfigureAwait(false);
         }
 
@@ -46,7 +48,7 @@ namespace Fabric.Identity.API.Services
         {
             _innerDocumentDbService.UpdateDocument(documentId, documentObject);
             _eventService.RaiseAsync(new EntityUpdatedAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject))
+                    _userResolveService.ClientId, _userResolveService.Subject, documentId, documentObject, _serializationSettings))
                 .ConfigureAwait(false);
         }
 
@@ -54,7 +56,7 @@ namespace Fabric.Identity.API.Services
         {
             _innerDocumentDbService.DeleteDocument<T>(documentId);
             _eventService.RaiseAsync(new EntityDeletedAuditEvent<T>(_userResolveService.Username,
-                    _userResolveService.ClientId, _userResolveService.Subject, documentId))
+                    _userResolveService.ClientId, _userResolveService.Subject, documentId, _serializationSettings))
                 .ConfigureAwait(false);
         }
 

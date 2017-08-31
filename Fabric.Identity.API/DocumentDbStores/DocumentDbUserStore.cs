@@ -28,7 +28,7 @@ namespace Fabric.Identity.API.DocumentDbStores
         public async Task<User> FindBySubjectId(string subjectId)
         {
             var encodedSubjectId = UrlEncodeString(subjectId);
-            _logger.Information($"finding user with subject id: {encodedSubjectId}");
+            _logger.Debug($"finding user with subject id: {encodedSubjectId}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}");
             return user?.FirstOrDefault();
         }
@@ -38,7 +38,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             var encodedProvider = UrlEncodeString(provider);
             var encodedSubjectId = UrlEncodeString(subjectId);
 
-            _logger.Information($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
+            _logger.Debug($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}:{encodedProvider}");
             return user?.FirstOrDefault();
         }
@@ -88,7 +88,7 @@ namespace Fabric.Identity.API.DocumentDbStores
             var encodedProvider = UrlEncodeString(provider);
             var encodedSubjectId = UrlEncodeString(subjectId);
             _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
-            _logger.Information($"added user: {name}");
+            _logger.Debug($"added user: {name}");
 
             return user;
 
@@ -118,13 +118,13 @@ namespace Fabric.Identity.API.DocumentDbStores
 
             if (user == null)
             {
-                _logger.Information($"did not find a user with subject id {subjectId}");
+                _logger.Debug($"did not find a user with subject id {subjectId}");
                 return;
             }
 
             user.SetLastLoginDateByClient(clientId);
-            _logger.Information($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
             
+            _logger.Debug($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
             var encodedSubjectId = UrlEncodeString(user.SubjectId);
             _documentDbService.UpdateDocument($"{encodedSubjectId}:{user.ProviderName}", user);
         }

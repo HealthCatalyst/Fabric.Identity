@@ -13,10 +13,10 @@ namespace Fabric.Identity.API.Services
 {
     public class UserProfileService : IProfileService
     {
-        private readonly IUserStore _userStore;
+        private readonly DocumentDbUserStore _userStore;
         private readonly ILogger _logger;
 
-        public UserProfileService(IUserStore userStore, ILogger logger)
+        public UserProfileService(DocumentDbUserStore userStore, ILogger logger)
         {
             _userStore = userStore;
             _logger = logger;
@@ -52,7 +52,8 @@ namespace Fabric.Identity.API.Services
         public async Task IsActiveAsync(IsActiveContext context)
         {
             var sub = context.Subject.GetSubjectId();
-            var user = await _userStore.FindBySubjectId(sub);
+            _logger.Debug($"found sub from IsActiveContext: {sub}");
+            var user = await _userStore.FindBySubjectId(sub);            
             context.IsActive = user != null;
         }
     }
