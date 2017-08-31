@@ -2,7 +2,7 @@
 {
     public class EntityUpdatedAuditEvent<T> : EntityAuditEvent<T>
     {
-        public EntityUpdatedAuditEvent(string username, string clientId, string subject, string documentId, T entity)
+        public EntityUpdatedAuditEvent(string username, string clientId, string subject, string documentId, T entity, ISerializationSettings serializationSettings)
             : base(username, 
                   clientId, 
                   subject, 
@@ -10,7 +10,8 @@
                   FabricIdentityConstants.AuditEventCategory, 
                   FabricIdentityConstants.CustomEventNames.EntityUpdatedAudit, 
                   FabricIdentityConstants.CustomEventIds.EntityUpdatedAudit, 
-                  entity)
+                  entity,
+                  serializationSettings)
         {
         }
     }

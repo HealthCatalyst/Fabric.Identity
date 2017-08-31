@@ -17,6 +17,7 @@ namespace Fabric.Identity.API.Services
     public class CouchDbAccessService : IDocumentDbService
     {
         private readonly ILogger _logger;
+        private readonly ISerializationSettings _serializationSettings;
         private readonly ICouchDbSettings _couchDbSettings;
         private const string HighestUnicodeChar = "\ufff0";
 
@@ -42,10 +43,11 @@ namespace Fabric.Identity.API.Services
             }
         }
 
-        public CouchDbAccessService(ICouchDbSettings config, ILogger logger)
+        public CouchDbAccessService(ICouchDbSettings config, ILogger logger, ISerializationSettings serializationSettings)
         {
             _couchDbSettings = config;
             _logger = logger;
+            _serializationSettings = serializationSettings;
 
             _logger.Debug(
                 $"couchDb configuration properties: Server: {config.Server} -- DatabaseName: {config.DatabaseName}");
@@ -65,7 +67,7 @@ namespace Fabric.Identity.API.Services
                 }
 
                 var json = documentResponse.Content;
-                var document = JsonConvert.DeserializeObject<T>(json);
+                var document = JsonConvert.DeserializeObject<T>(json, _serializationSettings.JsonSettings);
 
                 return Task.FromResult(document);
             }
@@ -93,11 +95,7 @@ namespace Fabric.Identity.API.Services
 
                 foreach (var responseRow in result.Rows)
                 {
-                    var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, new JsonSerializerSettings
-                    {                     
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,                     
-                        Converters = new List<JsonConverter> { new ClaimConverter()}
-                    });
+                    var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, _serializationSettings.JsonSettings);
                     results.Add(resultRow);
                 }
 
@@ -127,11 +125,7 @@ namespace Fabric.Identity.API.Services
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var existingDoc = client.Documents.GetAsync(fullDocumentId).Result;
-                var docJson = JsonConvert.SerializeObject(documentObject,
-                    new JsonSerializerSettings
-                    {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    });
+                var docJson = JsonConvert.SerializeObject(documentObject, _serializationSettings.JsonSettings);
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
                 {
@@ -156,7 +150,7 @@ namespace Fabric.Identity.API.Services
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var existingDoc = client.Documents.GetAsync(fullDocumentId).Result;
-                var docJson = JsonConvert.SerializeObject(documentObject);
+                var docJson = JsonConvert.SerializeObject(documentObject, _serializationSettings.JsonSettings);
 
                 if (existingDoc.IsEmpty)
                 {
@@ -200,29 +194,5 @@ namespace Fabric.Identity.API.Services
         }
     }
 
-    internal class ClaimConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(Claim);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            JObject jo = JObject.Load(reader);
-            string type = (string)jo["Type"];
-            string value = (string)jo["Value"];
-            string valueType = (string)jo["ValueType"];
-            string issuer = (string)jo["Issuer"];
-            string originalIssuer = (string)jo["OriginalIssuer"];
-            return new Claim(type, value, valueType, issuer, originalIssuer);
-        }
-
-        public override bool CanWrite => false;
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
-    }
+    
 }

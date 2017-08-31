@@ -19,17 +19,18 @@ namespace Fabric.Identity.API.Models
 
         public void SetLastLoginDateByClient(string clientId)
         {
+            var clientIdToLog = clientId;
             if (string.IsNullOrEmpty(clientId))
             {
-                clientId = FabricIdentityConstants.ServiceName;
+                clientIdToLog = FabricIdentityConstants.ServiceName;
             }
 
-            if (LatestLoginsByClient.ContainsKey(clientId))
+            if (LatestLoginsByClient.ContainsKey(clientIdToLog))
             {
-                LatestLoginsByClient.Remove(clientId);
+                LatestLoginsByClient.Remove(clientIdToLog);
             }
 
-            LatestLoginsByClient.Add(clientId, DateTime.UtcNow);
+            LatestLoginsByClient.Add(clientIdToLog, DateTime.UtcNow);
         }
     }
 

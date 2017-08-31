@@ -23,7 +23,7 @@ namespace Fabric.Identity.UnitTests
                 Name = "test-api"
             };
 
-            var createdAuditEvent = new EntityCreatedAuditEvent<ApiResource>("username", "clientid", "subject", apiResource.Name, apiResource);
+            var createdAuditEvent = new EntityCreatedAuditEvent<ApiResource>("username", "clientid", "subject", apiResource.Name, apiResource, new SerializationSettings());
             
             foreach (var secret in clearTextSecrets)
             {
@@ -41,7 +41,7 @@ namespace Fabric.Identity.UnitTests
             var expectedClientId = "clientid";
             var expectedSubject = "subect";
             var expectedDocumentId = "123456";
-            var readAuditEvent = new EntityReadAuditEvent<Client>("username", "clientid", "subect", "123456");
+            var readAuditEvent = new EntityReadAuditEvent<Client>("username", "clientid", "subect", "123456", new SerializationSettings());
             Assert.Equal(typeof(Client).FullName, readAuditEvent.EntityType);
             Assert.Equal(expectedUsername, readAuditEvent.Username);
             Assert.Equal(expectedClientId, readAuditEvent.ClientId);
