@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.Documentation
         /// <param name="context">DocumentFilterContext</param>
         public void Apply(SwaggerDocument swaggerDoc, DocumentFilterContext context)
         {
-            swaggerDoc.Paths = swaggerDoc.Paths
+            swaggerDoc.Paths = swaggerDoc.Paths.Where(p => p.Key.Contains("v{version}"))
                 .ToDictionary(
                     path => path.Key.Replace("v{version}", swaggerDoc.Info.Version),
                     path => path.Value

@@ -62,7 +62,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Reset password by API resource <paramref name="id"/>.
+        /// Reset the api secret by API resource <paramref name="id"/>.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
@@ -94,7 +94,7 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         /// Creates an API resource.
         /// </summary>
-        /// <param name="resource"><see cref="IS4.ApiResource"/></param>
+        /// <param name="resource">The <see cref="IS4.ApiResource"/> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
@@ -121,7 +121,7 @@ namespace Fabric.Identity.API.Management
         /// Modifies the API resource by <paramref name="id"/>.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
-        /// <param name="apiResource"><see cref="IS4.ApiResource"/></param>
+        /// <param name="apiResource">The <see cref="IS4.ApiResource"/> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, null, "No Content")]

@@ -109,9 +109,10 @@ namespace Fabric.Identity.API
                     {
                         Version = "v1",
                         Title = "Health Catalyst Fabric Identity API V1",
-                        Description = "Description goes here"
+                        Description =
+                            "Fabric.Identity contains a set of APIs that provides authentication for applications based on the OpenID Connect protocol. If you don't include the version in the URL you will get the v1 API."
                     });
-
+                
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
                     var versions = apiDesc.ControllerAttributes()
@@ -123,20 +124,25 @@ namespace Fabric.Identity.API
 
                 c.AddSecurityDefinition("oauth2", new OAuth2Scheme
                 {
+                    Description = "The Fabric.Identity management API requires authentication using oath2 and requires the below scopes.",
                     Type = "oauth2",
                     AuthorizationUrl = identityServerApiSettings.Authority,
+                    Flow = "hybrid, implicit, client_credentials",
                     Scopes = new Dictionary<string, string>()
                     {
                         {"fabric/identity.manageresources", "Access to manage Client, API, and Identity resources."}
                     }
                 });
+                
 
                 c.CustomSchemaIds((type) => type.FullName);
 
                 c.OperationFilter<VersionRemovalOperationFilter>();
                 c.OperationFilter<ParamMetadataOperationFilter>();
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
+                c.OperationFilter<SetBodyParametersRequiredOperationFilter>();
                 c.DocumentFilter<PathVersionDocumentFilter>();
+                c.DocumentFilter<TagFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
 
