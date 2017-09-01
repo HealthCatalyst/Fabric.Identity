@@ -122,7 +122,7 @@ namespace Fabric.Identity.API.DocumentDbStores
                 return;
             }
 
-            user.SetLastLoginDateByClient(clientId);
+            user.SetLastLoginDateForClient(clientId);
             
             _logger.Debug($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
             var encodedSubjectId = UrlEncodeString(user.SubjectId);

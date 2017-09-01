@@ -92,10 +92,10 @@ namespace Fabric.Identity.UnitTests
 
             testUser = await userStore.FindBySubjectId(testUser.SubjectId);
 
-            Assert.NotEmpty(testUser.LatestLoginsByClient);
-            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+            Assert.NotEmpty(testUser.LastLoginDatesByClient);
+            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
 
-            var login = testUser.LatestLoginsByClient.First();
+            var login = testUser.LastLoginDatesByClient.First();
 
             Assert.Equal(clientId, login.Key);
         }
@@ -110,169 +110,20 @@ namespace Fabric.Identity.UnitTests
 
             testUser = await userStore.FindBySubjectId(testUser.SubjectId);
 
-            Assert.NotEmpty(testUser.LatestLoginsByClient);
-            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+            Assert.NotEmpty(testUser.LastLoginDatesByClient);
+            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
 
-            var login = testUser.LatestLoginsByClient.First();
+            var login = testUser.LastLoginDatesByClient.First();
             Assert.Equal(clientId, login.Key);
             
             await userStore.SetLastLogin(clientId, testUser.SubjectId);
             testUser = await userStore.FindBySubjectId(testUser.SubjectId);
 
-            Assert.Equal(1, testUser.LatestLoginsByClient.Count);
+            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
 
-            login = testUser.LatestLoginsByClient.First();
+            login = testUser.LastLoginDatesByClient.First();
             Assert.Equal(clientId, login.Key);
         }
-
-        [Fact]
-        public void SerializeAndDeserializeClaim()
-        {
-            var jsonString = @"{
-	        ""SubjectId"": ""FABRIC\\kyle.paul"",
-            ""Username"": ""FABRIC\\kyle.paul"",
-            ""ProviderName"": ""Windows"",
-            ""Claims"": [{
-                ""$id"": ""2"",
-                ""Issuer"": ""LOCAL AUTHORITY"",
-                ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                ""Properties"": {
-                },
-                ""Subject"": {
-                    ""AuthenticationType"": ""Negotiate"",
-                    ""IsAuthenticated"": true,
-                    ""Actor"": null,
-                    ""BootstrapContext"": null,
-                    ""Claims"": [{
-                        ""$id"": ""3"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-
-
-                        },
-                        ""Type"": ""sub"",
-                        ""Value"": ""FABRIC\\kyle.paul"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$ref"": ""2""
-                    },
-                    {
-                        ""$id"": ""4"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""FABRIC\\Domain Users"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""5"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""Everyone"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""6"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""BUILTIN\\Users"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""7"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""NT AUTHORITY\\NETWORK"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""8"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""NT AUTHORITY\\Authenticated Users"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""9"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""NT AUTHORITY\\This Organization"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    },
-                    {
-                        ""$id"": ""10"",
-                        ""Issuer"": ""LOCAL AUTHORITY"",
-                        ""OriginalIssuer"": ""LOCAL AUTHORITY"",
-                        ""Properties"": {
-					
-                        },
-                        ""Type"": ""role"",
-                        ""Value"": ""NT AUTHORITY\\NTLM Authentication"",
-                        ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-                    }],
-                    ""Label"": null,
-                    ""Name"": null,
-                    ""NameClaimType"": ""http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"",
-                    ""RoleClaimType"": ""http://schemas.microsoft.com/ws/2008/06/identity/claims/role""
-                },
-                ""Type"": ""name"",
-                ""Value"": ""FABRIC\\kyle.paul"",
-                ""ValueType"": ""http://www.w3.org/2001/XMLSchema#string""
-            },
-            {
-                ""$ref"": ""4""
-            },
-            {
-                ""$ref"": ""5""
-            },
-            {
-                ""$ref"": ""6""
-            },
-            {
-                ""$ref"": ""7""
-            },
-            {
-                ""$ref"": ""8""
-            },
-            {
-                ""$ref"": ""9""
-            },
-            {
-                ""$ref"": ""10""
-            }],
-            ""LatestLoginsByClient"": {
-		
-            }
-        }";
-            var result = JsonConvert.DeserializeObject<User>(jsonString, new SerializationSettings().JsonSettings);
-
-            Assert.NotNull(result);
-        }        
 
         public static IEnumerable<object[]> SubjectIdData => new[]
         {

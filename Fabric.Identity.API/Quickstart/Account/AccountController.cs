@@ -39,7 +39,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IEventService _events;
         private readonly IAppConfiguration _appConfiguration;        
         private readonly AccountService _account;
-        private readonly UserFunctions _userFunctions;
+        private readonly UserSetup _userSetup;
 
         public AccountController(
             IIdentityServerInteractionService interaction,
@@ -56,7 +56,7 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;            
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
-            _userFunctions = new UserFunctions(_users, documentDbUserStore);
+            _userSetup = new UserSetup(_users, documentDbUserStore);
             
         }
 
@@ -223,40 +223,13 @@ namespace IdentityServer4.Quickstart.UI
             UserInfo userInfo;
             if (_appConfiguration.HostingOptions.UseTestUsers)
             {
-                //check if the external user is already provisioned
-                var user = _userFunctions.FindTestUserByExternalProvider(provider, userId);
-                if (user == null)
-                {
-                    //this sample simply auto-provisions new external user
-                    //another common approach is to start a registrations workflow first
-                    user = _userFunctions.AddTestUser(provider, userId, claims);
-                }
-                else
-                {
-                    //update the role claims from the provider
-                    _userFunctions.UpdateTestUserRoleClaims(user, claims);
-                }
-                userInfo = new UserInfo(user);
+                userInfo = _userSetup.SetupTestUser(provider, userId, claims);
             }
             else
             {
-                //check if the external user is already provisioned
-                var user = await _userFunctions.FindUserByExternalProvider(provider, userId);
-                if (user == null)
-                {
-                    //this sample simply auto-provisions new external user
-                    //another common approach is to start a registrations workflow first
-                    user =  _userFunctions.AddUser(provider, userId, claims);                   
-                }
-                else
-                {
-                    //update the role claims from the provider
-                    _userFunctions.UpdateUserRoleClaims(user, claims);
-                }
-                userInfo = new UserInfo(user);
-                //update the user model with the login
-                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);                
-                await _userFunctions.SetLastLogin(context?.ClientId, userInfo.SubjectId);
+                //get the client id from the auth context
+                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
+                userInfo = await _userSetup.SetupUser(provider, userId, claims, context?.ClientId);
             }
 
             var additionalClaims = new List<Claim>();
@@ -353,23 +326,5 @@ namespace IdentityServer4.Quickstart.UI
 
             return View("LoggedOut", vm);
         }        
-    }
-
-    public class UserInfo
-    {
-        public string SubjectId { get; set; }
-        public string Username { get; set; }
-
-        public UserInfo(TestUser user)
-        {
-            SubjectId = user.SubjectId;
-            Username = user.Username;
-        }
-
-        public UserInfo(User user)
-        {
-            SubjectId = user.SubjectId;
-            Username = user.Username;
-        }
     }
 }
