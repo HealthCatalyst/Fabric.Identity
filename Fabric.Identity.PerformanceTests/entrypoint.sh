@@ -6,4 +6,4 @@ mkdir results
 mkdir results/output
 /jmeter/apache-jmeter-3.2/bin/jmeter -n -t /Fabric.Identity.Perf.jmx -l /results/results.txt -e -o /results/output
 cd /apdexcalc
-dotnet /apdexcalc/Fabric.Identity.ApdexCalculator.dll /results/results.txt
+dotnet /apdexcalc/Fabric.ApdexCalculator.dll /results/results.txt
