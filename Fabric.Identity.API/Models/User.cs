@@ -9,6 +9,9 @@ namespace Fabric.Identity.API.Models
     {
         public string SubjectId { get; set; }
         public string Username { get; set; }
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public string LastName { get; set; }
         public string ProviderName { get; set; }
         public ICollection<Claim> Claims { get; set; }
         public Dictionary<string, DateTime> LastLoginDatesByClient { get; } = new Dictionary<string, DateTime>();
@@ -27,6 +30,20 @@ namespace Fabric.Identity.API.Models
             }
 
             LastLoginDatesByClient.Add(clientIdToLog, DateTime.UtcNow);
+        }       
+    }
+
+    public static class TestUserExtensions
+    {
+        public static User ToUser(this TestUser testUser)
+        {
+            return new User
+            {
+                SubjectId = testUser.SubjectId,
+                ProviderName = testUser.ProviderName,
+                Username = testUser.Username,
+                Claims = testUser.Claims,
+            };
         }
     }
 }
