@@ -149,33 +149,6 @@ namespace Fabric.Identity.API.Management
             {
                 filtered.Add(new Claim(JwtClaimTypes.Name, last));
             }
-        }
-
-        //private ICollection<Claim> UpdateClaims(ICollection<Claim> existingClaims, ICollection<Claim> updatedClaims)
-        //{
-        //    //if the provider sent us role claims, use those and remove any other role
-        //    //claims from the user
-        //    //if (!updatedClaims.Any(c => c.Type == JwtClaimTypes.Role))
-        //    //{
-        //    //    return existingClaims;
-        //    //}
-
-        //    //update the role claims from the provider
-        //    //var roleClaimsFromProvider = updatedClaims.Where(c => c.Type == JwtClaimTypes.Role);
-        //    //var originalRoleClaims = existingClaims.Where(c => c.Type == JwtClaimTypes.Role).ToList();
-        //    //foreach (var originalRoleClaim in originalRoleClaims)
-        //    //{
-        //    //    existingClaims.Remove(originalRoleClaim);
-        //    //}
-        //    //foreach (var roleClaim in roleClaimsFromProvider)
-        //    //{
-        //    //    existingClaims.Add(roleClaim);
-        //    //}
-
-        //    //overwrite any claims sent 
-            
-
-        //    return existingClaims;
-        //}
+        }        
     }
 }

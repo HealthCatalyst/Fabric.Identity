@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using FluentValidation.Results;
+using IdentityServer4.Test;
 using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Models
@@ -73,6 +74,17 @@ namespace Fabric.Identity.API.Models
             };
 
             return newScope;
+        }
+
+        public static User ToUser(this TestUser testUser)
+        {
+            return new User
+            {
+                SubjectId = testUser.SubjectId,
+                ProviderName = testUser.ProviderName,
+                Username = testUser.Username,
+                Claims = testUser.Claims,
+            };
         }
     }
 }

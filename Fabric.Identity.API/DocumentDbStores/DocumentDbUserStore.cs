@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
+using Newtonsoft.Json;
 using RestSharp.Extensions.MonoHttp;
 using Serilog;
 
@@ -43,7 +44,8 @@ namespace Fabric.Identity.API.DocumentDbStores
             var encodedProvider = UrlEncodeString(user.ProviderName);
             var encodedSubjectId = UrlEncodeString(user.SubjectId);
             _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
-            _logger.Debug($"added user: {user.SubjectId}");
+            _logger.Debug(
+                $"added user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims.Select(c => new {c.Type, c.Value}))}");
 
             return user;
 
