@@ -32,18 +32,4 @@ namespace Fabric.Identity.API.Models
             LastLoginDatesByClient.Add(clientIdToLog, DateTime.UtcNow);
         }       
     }
-
-    public static class TestUserExtensions
-    {
-        public static User ToUser(this TestUser testUser)
-        {
-            return new User
-            {
-                SubjectId = testUser.SubjectId,
-                ProviderName = testUser.ProviderName,
-                Username = testUser.Username,
-                Claims = testUser.Claims,
-            };
-        }
-    }
 }
