@@ -9,6 +9,7 @@ using Fabric.Identity.API;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.UnitTests.ClassFixtures;
 using IdentityModel;
 using Moq;
 using Newtonsoft.Json;
@@ -18,43 +19,12 @@ using Xunit;
 
 namespace Fabric.Identity.UnitTests
 {
-    public class InMemoryDocumentFixure
+    
+    public class UserStoreTests : IClassFixture<InMemoryUserDocumentFixture>
     {
-        public InMemoryDocumentService DocumentService { get; } = new InMemoryDocumentService();
+        private readonly InMemoryUserDocumentFixture _fixture;
 
-        public InMemoryDocumentFixure()
-        {
-            _users.ForEach(u => DocumentService.AddDocument($"{u.SubjectId}:{u.ProviderName}", u));
-        }
-
-        private readonly List<User> _users = new List<User>
-        {
-            new User
-            {
-                SubjectId = "UserOne",
-                ProviderName = "AD",
-                Username = "User One"
-            },
-            new User
-            {
-                SubjectId = "UserTwo",
-                ProviderName = "AzureAD",
-                Username = "User Two"
-            },
-            new User
-            {
-                SubjectId = "UserThree",
-                ProviderName = "AzureAD",
-                Username = "User Three"
-            }
-        };
-    }
-
-    public class UserStoreTests : IClassFixture<InMemoryDocumentFixure>
-    {
-        private readonly InMemoryDocumentFixure _fixture;
-
-        public UserStoreTests(InMemoryDocumentFixure fixture)
+        public UserStoreTests(InMemoryUserDocumentFixture fixture)
         {
             _fixture = fixture;
         }
@@ -80,51 +50,7 @@ namespace Fabric.Identity.UnitTests
             var user = userStore.FindByExternalProvider(provider, subjectId).Result;
             Assert.Equal(shouldBeFound, user != null);
         }
-
-        [Fact]
-        public async Task UserStore_CanSetLastLoginPerClient()
-        {
-            var clientId = "clientOne";
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
-
-            var testUser = await userStore.FindBySubjectId("userone");
-            await userStore.SetLastLogin(clientId, testUser.SubjectId);
-
-            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
-
-            Assert.NotEmpty(testUser.LastLoginDatesByClient);
-            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
-
-            var login = testUser.LastLoginDatesByClient.First();
-
-            Assert.Equal(clientId, login.Key);
-        }
-
-        [Fact]
-        public async Task UserStore_CanSetLoginForExistingClient()
-        {
-            var clientId = "clientTwo";
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
-            var testUser = await userStore.FindBySubjectId("usertwo");
-            await userStore.SetLastLogin(clientId, testUser.SubjectId);
-
-            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
-
-            Assert.NotEmpty(testUser.LastLoginDatesByClient);
-            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
-
-            var login = testUser.LastLoginDatesByClient.First();
-            Assert.Equal(clientId, login.Key);
-            
-            await userStore.SetLastLogin(clientId, testUser.SubjectId);
-            testUser = await userStore.FindBySubjectId(testUser.SubjectId);
-
-            Assert.Equal(1, testUser.LastLoginDatesByClient.Count);
-
-            login = testUser.LastLoginDatesByClient.First();
-            Assert.Equal(clientId, login.Key);
-        }
-
+        
         public static IEnumerable<object[]> SubjectIdData => new[]
         {
             new object[]{ "userone", true},

@@ -17,12 +17,11 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.DocumentDbStores;
+using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
-using Serilog;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -39,7 +38,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IEventService _events;
         private readonly IAppConfiguration _appConfiguration;        
         private readonly AccountService _account;
-        private readonly UserSetup _userSetup;
+        private readonly UserLoginManager _userLoginManager;
 
         public AccountController(
             IIdentityServerInteractionService interaction,
@@ -56,7 +55,7 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;            
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
-            _userSetup = new UserSetup(_users, documentDbUserStore);
+            _userLoginManager = new UserLoginManager(_users, documentDbUserStore);
             
         }
 
@@ -220,16 +219,16 @@ namespace IdentityServer4.Quickstart.UI
             var provider = info.Properties.Items["scheme"];
             var userId = userIdClaim.Value;
 
-            UserInfo userInfo;
+            User user;
             if (_appConfiguration.HostingOptions.UseTestUsers)
             {
-                userInfo = _userSetup.SetupTestUser(provider, userId, claims);
+                user = _userLoginManager.TestUserLogin(provider, userId, claims);
             }
             else
             {
                 //get the client id from the auth context
                 var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-                userInfo = await _userSetup.SetupUser(provider, userId, claims, context?.ClientId);
+                user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
             }
 
             var additionalClaims = new List<Claim>();
@@ -258,8 +257,8 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             //issue authentication cookie for user
-            await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, userInfo.SubjectId, userInfo.Username));
-            await HttpContext.Authentication.SignInAsync(userInfo.SubjectId, userInfo.Username, provider, props, additionalClaims.ToArray());
+            await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, user.SubjectId, user.Username));
+            await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, provider, props, additionalClaims.ToArray());
 
             //delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);

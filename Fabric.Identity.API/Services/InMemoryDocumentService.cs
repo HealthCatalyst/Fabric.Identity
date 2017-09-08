@@ -21,7 +21,7 @@ namespace Fabric.Identity.API.Services
         {
             string documentJson;
             return Task.FromResult(Documents.TryGetValue(GetFullDocumentId<T>(documentId), out documentJson) 
-                ? JsonConvert.DeserializeObject<T>(documentJson) 
+                ? JsonConvert.DeserializeObject<T>(documentJson, new SerializationSettings().JsonSettings) 
                 : default(T));
         }
 
@@ -32,7 +32,7 @@ namespace Fabric.Identity.API.Services
 
             foreach (var document in documents)
             {
-                documentList.Add(JsonConvert.DeserializeObject<T>(document));
+                documentList.Add(JsonConvert.DeserializeObject<T>(document, new SerializationSettings().JsonSettings));
             }
             return Task.FromResult((IEnumerable<T>)documentList);
         }
@@ -46,7 +46,7 @@ namespace Fabric.Identity.API.Services
         public void AddDocument<T>(string documentId, T documentObject)
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
-            if(!Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject)))
+            if(!Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings)))
             {
                 //TODO: Use non standard exception or change to TryAddDocument.
                 throw new ArgumentException($"Document with id {documentId} already exists.");
@@ -58,7 +58,7 @@ namespace Fabric.Identity.API.Services
             var fullDocumentId = GetFullDocumentId<T>(documentId);
             var currentValue = Documents[fullDocumentId]; //TODO: support legitimate conditional updates ?
 
-            if (!Documents.TryUpdate(fullDocumentId, JsonConvert.SerializeObject(documentObject), currentValue))
+            if (!Documents.TryUpdate(fullDocumentId, JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings), currentValue))
             {
                 //TODO: Use non standard exception or change to TryUpdateDocument.
                 throw new ArgumentException($"Failed to update document with id {documentId}.");
@@ -69,6 +69,11 @@ namespace Fabric.Identity.API.Services
         {
             string document;
             Documents.TryRemove(GetFullDocumentId<T>(documentId), out document);
+        }
+
+        public void Clean()
+        {
+            Documents.Clear();
         }
     }
 }

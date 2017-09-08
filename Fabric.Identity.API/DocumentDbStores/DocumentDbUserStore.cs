@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
-using IdentityModel;
 using RestSharp.Extensions.MonoHttp;
 using Serilog;
 
@@ -43,88 +38,19 @@ namespace Fabric.Identity.API.DocumentDbStores
             return user?.FirstOrDefault();
         }
 
-        public User AddUser(string provider, string subjectId, IEnumerable<Claim> claims)
+        public User AddUser(User user)
         {
-            // create a list of claims that we want to transfer into our store
-            var filtered = new List<Claim>();
-
-            foreach (var claim in claims)
-            {
-                // if the external system sends a display name - translate that to the standard OIDC name claim
-                if (claim.Type == ClaimTypes.Name)
-                {
-                    filtered.Add(new Claim(JwtClaimTypes.Name, claim.Value));
-                }
-                // if the JWT handler has an outbound mapping to an OIDC claim use that
-                else if (JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.ContainsKey(claim.Type))
-                {
-                    filtered.Add(new Claim(JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[claim.Type], claim.Value));
-                }
-                // copy the claim as-is
-                else
-                {
-                    filtered.Add(claim);
-                }
-            }
-
-            // if no display name was provided, try to construct by first and/or last name
-            if (filtered.All(x => x.Type != JwtClaimTypes.Name))
-            {
-                SetNameClaim(filtered);
-            }
-
-            // check if a display name is available, otherwise fallback to subject id
-            var name = filtered.FirstOrDefault(c => c.Type == JwtClaimTypes.Name)?.Value ?? subjectId;
-
-            // create new user
-            var user = new User
-            {
-                SubjectId = subjectId,
-                Username = name,
-                ProviderName = provider,
-                Claims = filtered
-            };
-
-            var encodedProvider = UrlEncodeString(provider);
-            var encodedSubjectId = UrlEncodeString(subjectId);
+            var encodedProvider = UrlEncodeString(user.ProviderName);
+            var encodedSubjectId = UrlEncodeString(user.SubjectId);
             _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
-            _logger.Debug($"added user: {name}");
+            _logger.Debug($"added user: {user.SubjectId}");
 
             return user;
 
         }
 
-        private static void SetNameClaim(List<Claim> filtered)
-        {
-            var first = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value;
-            var last = filtered.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value;
-            if (first != null && last != null)
-            {
-                filtered.Add(new Claim(JwtClaimTypes.Name, first + " " + last));
-            }
-            else if (first != null)
-            {
-                filtered.Add(new Claim(JwtClaimTypes.Name, first));
-            }
-            else if (last != null)
-            {
-                filtered.Add(new Claim(JwtClaimTypes.Name, last));
-            }
-        }
-
-        public async Task SetLastLogin(string clientId, string subjectId)
-        {
-            var user = await FindBySubjectId(subjectId).ConfigureAwait(false);
-
-            if (user == null)
-            {
-                _logger.Debug($"did not find a user with subject id {subjectId}");
-                return;
-            }
-
-            user.SetLastLoginDateForClient(clientId);
-            
-            _logger.Debug($"setting login date for user: {user.Username} and provider: {user.ProviderName}");
+        public void UpdateUser(User user)
+        {            
             var encodedSubjectId = UrlEncodeString(user.SubjectId);
             _documentDbService.UpdateDocument($"{encodedSubjectId}:{user.ProviderName}", user);
         }
