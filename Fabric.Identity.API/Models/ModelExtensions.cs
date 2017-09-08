@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentValidation.Results;
 using IdentityServer4.Test;
+using Newtonsoft.Json;
 using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Models
@@ -85,6 +87,30 @@ namespace Fabric.Identity.API.Models
                 Username = testUser.Username,
                 Claims = testUser.Claims,
             };
+        }
+
+        public static UserApiModel ToUserViewModel(this User user, string clientId)
+        {
+            return new UserApiModel()
+            {
+                SubjectId = user.SubjectId,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                MiddleName = user.MiddleName,
+                LastLoginDate = user.LastLoginDatesByClient
+                    .SingleOrDefault(l => l.Key.Equals(clientId, StringComparison.OrdinalIgnoreCase))
+                    .Value
+            };
+        }
+
+        public static IEnumerable<T> Deserialize<T>(this IEnumerable<string> jsonObjects)
+        {
+            var documentList = new List<T>();
+            foreach (var document in jsonObjects)
+            {
+                documentList.Add(JsonConvert.DeserializeObject<T>(document, new SerializationSettings().JsonSettings));
+            }
+            return documentList;
         }
     }
 }

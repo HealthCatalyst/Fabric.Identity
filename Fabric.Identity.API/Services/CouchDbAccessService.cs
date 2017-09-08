@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
@@ -10,6 +11,7 @@ using MyCouch.Responses;
 using Newtonsoft.Json;
 using Serilog;
 using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Fabric.Identity.API.Services
@@ -73,6 +75,29 @@ namespace Fabric.Identity.API.Services
             }
         }
 
+        public async Task<IEnumerable<T>> GetDocumentsById<T>(IEnumerable<string> documentIds)
+        {
+            using (var client = new MyCouchClient(DbConnectionInfo))
+            {
+                var keys = documentIds.Select(GetFullDocumentId<T>);
+
+                var viewQuery = new QueryViewRequest(SystemViewIdentity.AllDocs)
+                    .Configure(q => q.Reduce(false)
+                    .IncludeDocs(true)
+                    .Keys(keys));
+
+                ViewQueryResponse result = await client.Views.QueryAsync(viewQuery);
+
+                if (!result.IsSuccess)
+                {
+                    _logger.Debug($"there was an error getting documents - message: {result.Reason}");
+                    
+                }
+
+                return result.Rows.Select(r => r.IncludedDoc).Deserialize<T>();
+            }
+        }
+
         public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
         {
             using (var client = new MyCouchClient(DbConnectionInfo))
@@ -91,15 +116,7 @@ namespace Fabric.Identity.API.Services
                     return Task.FromResult(default(IEnumerable<T>));
                 }
 
-                var results = new List<T>();
-
-                foreach (var responseRow in result.Rows)
-                {
-                    var resultRow = JsonConvert.DeserializeObject<T>(responseRow.IncludedDoc, _serializationSettings.JsonSettings);
-                    results.Add(resultRow);
-                }
-
-                return Task.FromResult((IEnumerable<T>)results);
+                return Task.FromResult(result.Rows.Select(r => r.IncludedDoc).Deserialize<T>());
             }
         }
 

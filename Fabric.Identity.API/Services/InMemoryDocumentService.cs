@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Models;
 using IdentityServer4.Extensions;
 using Newtonsoft.Json;
 
@@ -25,16 +26,22 @@ namespace Fabric.Identity.API.Services
                 : default(T));
         }
 
+        public Task<IEnumerable<T>> GetDocumentsById<T>(IEnumerable<string> documentIds)
+        {
+            var keys = documentIds.Select(GetFullDocumentId<T>);
+
+            return Task.FromResult(Documents.Where(pair => keys.Contains(pair.Key))
+                .Select(d => d.Value)
+                .Deserialize<T>());
+        }
+
         public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
         {
-            var documentList = new List<T>();
-            var documents = Documents.Where(d => d.Key.StartsWith(documentType,StringComparison.OrdinalIgnoreCase)).Select(d => d.Value).ToList();
-
-            foreach (var document in documents)
-            {
-                documentList.Add(JsonConvert.DeserializeObject<T>(document, new SerializationSettings().JsonSettings));
-            }
-            return Task.FromResult((IEnumerable<T>)documentList);
+            return Task.FromResult(Documents
+                .Where(d => d.Key.StartsWith(documentType, StringComparison.OrdinalIgnoreCase))
+                .Select(d => d.Value)
+                .ToList()
+                .Deserialize<T>());
         }
 
         public Task<int> GetDocumentCount(string documentType)
