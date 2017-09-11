@@ -9,6 +9,6 @@ namespace Fabric.Identity.API.Authorization
 {
     public class ReadScopeRequirement : IAuthorizationRequirement
     {
-        public readonly string ReadScope = FabricIdentityConstants.IdentityReadScope;
+        public string ReadScope { get; } = FabricIdentityConstants.IdentityReadScope;
     }
 }
