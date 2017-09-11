@@ -11,7 +11,7 @@ using Serilog;
 
 namespace Fabric.Identity.API.Management
 {
-    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = "ReadScopeClaim", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/users")]
     [Route("api/v{version:apiVersion}/users")]
