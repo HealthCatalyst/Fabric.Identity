@@ -16,8 +16,8 @@ namespace Fabric.Identity.API.Authorization
 
         public ReadAuthorizationHandler(IAppConfiguration appConfiguration, ILogger logger)
         {
-            _logger = logger;
-            _appConfiguration = appConfiguration ?? throw new ArgumentNullException(nameof(appConfiguration)); ;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _appConfiguration = appConfiguration ?? throw new ArgumentNullException(nameof(appConfiguration));
         }
 
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, ReadScopeRequirement requirement)
