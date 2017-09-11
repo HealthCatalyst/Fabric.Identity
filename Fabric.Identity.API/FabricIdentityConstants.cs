@@ -6,6 +6,7 @@
         public static readonly string FabricCorsPolicyName = "FabricCorsPolicy";
         public static readonly string ManagementApiBasePath = "/api";
         public static readonly string IdentityRegistrationScope = "fabric/identity.manageresources";
+        public static readonly string IdentityReadScope = "fabric/identity.read";
         public static readonly string AuditEventCategory = "Audit";
 
         public static class DocumentTypes

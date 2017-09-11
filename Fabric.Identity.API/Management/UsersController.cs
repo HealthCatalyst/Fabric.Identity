@@ -25,7 +25,7 @@ namespace Fabric.Identity.API.Management
             _documentDbService = documentDbService;
         }
 
-        
+        [HttpGet]
         public async Task<IActionResult> Get(string clientId, IEnumerable<string> subjectIds)
         {
             var client = _documentDbService.GetDocument<IdentityServer4.Models.Client>(clientId).Result;

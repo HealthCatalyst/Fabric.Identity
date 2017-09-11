@@ -72,6 +72,7 @@ namespace Fabric.Identity.API
             services.AddIdentityServer(_appConfig, _certificateService, _logger);
             services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
+            services.AddSingleton<IAuthorizationHandler, ReadAuthorizationHandler>();
             services.AddScoped<IUserResolveService, UserResolverService>();
             services.AddSingleton<ISerializationSettings, SerializationSettings>();
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
@@ -98,6 +99,8 @@ namespace Fabric.Identity.API
             {
                 options.AddPolicy("RegistrationThreshold",
                     policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
+                options.AddPolicy("ReadScopeClaim",
+                    policy => policy.Requirements.Add(new ReadScopeRequirement()));
             });
 
             // Swagger
