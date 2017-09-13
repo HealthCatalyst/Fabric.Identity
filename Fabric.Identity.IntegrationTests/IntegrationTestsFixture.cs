@@ -31,6 +31,8 @@ namespace Fabric.Identity.IntegrationTests
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
+        private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
+        private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
 
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
@@ -54,6 +56,16 @@ namespace Fabric.Identity.IntegrationTests
                     if (!string.IsNullOrEmpty(couchDbServer))
                     {
                         CouchDbSettings.Server = couchDbServer;
+                    }
+                    var couchDbUsername = Environment.GetEnvironmentVariable(CouchDbUsernameEnvironmentVariable);
+                    if (!string.IsNullOrEmpty(couchDbUsername))
+                    {
+                        CouchDbSettings.Username = couchDbUsername;
+                    }
+                    var couchDbPassword = Environment.GetEnvironmentVariable(CouchDbPasswordEnvironmentVariable);
+                    if (!string.IsNullOrEmpty(couchDbPassword))
+                    {
+                        CouchDbSettings.Password = couchDbPassword;
                     }
 
                     var couchDbService = new CouchDbAccessService(CouchDbSettings, new Mock<ILogger>().Object,
