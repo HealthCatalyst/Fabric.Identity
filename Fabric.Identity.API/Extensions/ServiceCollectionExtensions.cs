@@ -23,6 +23,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<ClientValidator, ClientValidator>();
             serviceCollection.AddTransient<IdentityResourceValidator, IdentityResourceValidator>();
             serviceCollection.AddTransient<ApiResourceValidator, ApiResourceValidator>();
+            serviceCollection.AddTransient<UserApiModelValidator, UserApiModelValidator>();
         }
 
         public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, 

@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
-using FluentValidation;
+using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -19,15 +19,22 @@ namespace Fabric.Identity.API.Management
     {
         private readonly IDocumentDbService _documentDbService;
 
-        public UsersController(IDocumentDbService documentDbService, AbstractValidator<UserApiModel> validator, ILogger logger) 
+        public UsersController(IDocumentDbService documentDbService, UserApiModelValidator validator, ILogger logger) 
             : base(validator, logger)
         {
             _documentDbService = documentDbService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get(string clientId, IEnumerable<string> subjectIds)
+        public async Task<IActionResult> Get(string clientId, IEnumerable<string> documentIds)
         {
+            var docIds = documentIds.ToList();
+            if (!docIds.Any())
+            {
+                return CreateFailureResponse("No documentIds were included in the request",
+                    HttpStatusCode.BadRequest);
+            }
+
             var client = _documentDbService.GetDocument<IdentityServer4.Models.Client>(clientId).Result;
 
             if (string.IsNullOrEmpty(client?.ClientId))
@@ -36,7 +43,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            var users = await _documentDbService.GetDocumentsById<User>(subjectIds);
+            var users = await _documentDbService.GetDocumentsById<User>(docIds);
 
             return Ok(users.Select(u => u.ToUserViewModel(clientId)));
         }

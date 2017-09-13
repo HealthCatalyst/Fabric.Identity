@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Security.Claims;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,7 +12,10 @@ namespace Fabric.Identity.API
         public JsonSerializerSettings JsonSettings => new JsonSerializerSettings
         {                     
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,                     
-            Converters = new List<JsonConverter> { new ClaimConverter()}
+            Converters = new List<JsonConverter>
+            {
+                new ClaimConverter()     
+            }
         };
     }
 

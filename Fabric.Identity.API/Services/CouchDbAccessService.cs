@@ -84,7 +84,7 @@ namespace Fabric.Identity.API.Services
                 var viewQuery = new QueryViewRequest(SystemViewIdentity.AllDocs)
                     .Configure(q => q.Reduce(false)
                     .IncludeDocs(true)
-                    .Keys(keys));
+                    .Keys(keys.ToArray()));
 
                 ViewQueryResponse result = await client.Views.QueryAsync(viewQuery);
 
