@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
@@ -36,6 +37,7 @@ namespace Fabric.Identity.API.DocumentDbStores
 
             _logger.Debug($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}:{encodedProvider}");
+            
             return user?.FirstOrDefault();
         }
 
@@ -45,10 +47,8 @@ namespace Fabric.Identity.API.DocumentDbStores
             var encodedSubjectId = UrlEncodeString(user.SubjectId);
             _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
             _logger.Debug(
-                $"added user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims.Select(c => new {c.Type, c.Value}))}");
-
+                $"added user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
             return user;
-
         }
 
         public void UpdateUser(User user)

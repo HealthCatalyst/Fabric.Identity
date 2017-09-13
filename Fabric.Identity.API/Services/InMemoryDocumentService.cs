@@ -1,11 +1,10 @@
-﻿using System;
+﻿using Fabric.Identity.API.Models;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Models;
-using IdentityServer4.Extensions;
-using Newtonsoft.Json;
 
 namespace Fabric.Identity.API.Services
 {
@@ -58,6 +57,7 @@ namespace Fabric.Identity.API.Services
                 //TODO: Use non standard exception or change to TryAddDocument.
                 throw new ArgumentException($"Document with id {documentId} already exists.");
             }
+            
         }
 
         public void UpdateDocument<T>(string documentId, T documentObject)

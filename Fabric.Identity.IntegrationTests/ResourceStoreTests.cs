@@ -49,10 +49,12 @@ namespace Fabric.Identity.IntegrationTests
         public async Task TestCreateApiResource_DuplicateIdFailure()
         {
             var testApiResource = GetTestApiResource();
+            Console.WriteLine("calling create for test client 1");
             HttpResponseMessage response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             // Send POST with same Name
+            Console.WriteLine("calling create for test client 2");
             response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }

@@ -91,15 +91,23 @@ namespace Fabric.Identity.API.Models
 
         public static UserApiModel ToUserViewModel(this User user, string clientId)
         {
+            var lastLoginDate = user.LastLoginDatesByClient
+                .SingleOrDefault(l => l.Key.Equals(clientId, StringComparison.OrdinalIgnoreCase))
+                .Value;
+
+            DateTime? dateToSet = null;
+            if (lastLoginDate != DateTime.MinValue)
+            {
+                dateToSet = lastLoginDate;
+            }
+
             return new UserApiModel()
             {
                 SubjectId = user.SubjectId,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 MiddleName = user.MiddleName,
-                LastLoginDate = user.LastLoginDatesByClient
-                    .SingleOrDefault(l => l.Key.Equals(clientId, StringComparison.OrdinalIgnoreCase))
-                    .Value
+                LastLoginDate = dateToSet
             };
         }
 
@@ -108,6 +116,11 @@ namespace Fabric.Identity.API.Models
             var documentList = new List<T>();
             foreach (var document in jsonObjects)
             {
+                if (document == null)
+                {
+                    continue;
+                }
+
                 documentList.Add(JsonConvert.DeserializeObject<T>(document, new SerializationSettings().JsonSettings));
             }
             return documentList;

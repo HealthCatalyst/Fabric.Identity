@@ -107,7 +107,7 @@ namespace Fabric.Identity.API.Management
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var clientSecret = this.GeneratePassword();
                 client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
-                _documentDbService.AddDocument(id, client);
+                 _documentDbService.AddDocument(id, client);
 
                 Client viewClient = client.ToClientViewModel();
                 viewClient.ClientSecret = clientSecret;
