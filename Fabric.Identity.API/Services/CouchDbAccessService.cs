@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using MyCouch;
@@ -12,7 +10,6 @@ using Newtonsoft.Json;
 using Serilog;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.Models;
-using Newtonsoft.Json.Linq;
 
 namespace Fabric.Identity.API.Services
 {
