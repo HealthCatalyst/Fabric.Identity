@@ -21,6 +21,7 @@ namespace Fabric.Identity.IntegrationTests
         private readonly DocumentDbUserStore _documentDbUserStore;
         private readonly string _usersSearchApiBaseUrl = "/api/users";
 
+
         public UsersStoreTests() : base(false)
         {          
             var documentDbService = CouchDbService;
@@ -76,8 +77,7 @@ namespace Fabric.Identity.IntegrationTests
         public async Task UsersController_Get_FindsUsersByDocumentId_LastLoginForClientSet()
         {
             var numberOfUsers = 10;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName);
-            
+            var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName);      
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             var content = await response.Content.ReadAsStringAsync();
@@ -95,7 +95,6 @@ namespace Fabric.Identity.IntegrationTests
         {
             var numberOfUsers = 10;
             var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName, true);
-
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             var content = await response.Content.ReadAsStringAsync();
@@ -110,7 +109,6 @@ namespace Fabric.Identity.IntegrationTests
         {
             var numberOfUsers = 1;
             var usersQuery = CreateUsersAndQuery(numberOfUsers, "foo");
-
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -121,7 +119,6 @@ namespace Fabric.Identity.IntegrationTests
         {
             var numberOfUsers = 0;
             var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName);
-
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
