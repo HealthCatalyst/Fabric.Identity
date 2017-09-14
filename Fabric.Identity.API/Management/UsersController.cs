@@ -7,11 +7,15 @@ using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Fabric.Identity.API.Management
 {
-    
+    /// <summary>
+    /// Find Users registered in Identity.
+    /// </summary>
     [Authorize(Policy = "ReadScopeClaim", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/users")]
@@ -25,17 +29,34 @@ namespace Fabric.Identity.API.Management
         {
             _documentDbService = documentDbService;
         }
-
+        
+        /// <summary>
+        /// Find users by client id and document id
+        /// </summary>
+        /// <param name="clientId">The client id to find users for</param>
+        /// <param name="documentIds">The document ids for the users requested in the format 'subjectid:provider'</param>
+        /// <returns></returns>
         [HttpGet]
+        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
         public async Task<IActionResult> Get(string clientId, IEnumerable<string> documentIds)
         {
-            return await ProcessSearchRequest(clientId, documentIds);
+            return await ProcessSearchRequest(clientId, documentIds).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Find users by client id and document id
+        /// </summary>
+        /// <param name="searchParameters">The <see cref="UserSearchParameter"/> containing the client id and document ids in the format 'subjectid:provider'</param>
+        /// <returns></returns>
         [HttpPost]
+        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
         public async Task<IActionResult> Post([FromBody] UserSearchParameter searchParameters)
         {
-            return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.DocumentIds);
+            return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.DocumentIds).ConfigureAwait(false);
         }
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> documentIds)
