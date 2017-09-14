@@ -11,7 +11,8 @@ using Serilog;
 
 namespace Fabric.Identity.API.Management
 {
-    [Authorize(Policy = "ReadScopeClaim", ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    //   [Authorize(Policy = "ReadScopeClaim", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/users")]
     [Route("api/v{version:apiVersion}/users")]
@@ -27,6 +28,17 @@ namespace Fabric.Identity.API.Management
 
         [HttpGet]
         public async Task<IActionResult> Get(string clientId, IEnumerable<string> documentIds)
+        {
+            return await ProcessSearchRequest(clientId, documentIds);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] UserSearchParameter searchParameters)
+        {
+            return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.DocumentIds);
+        }
+
+        private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> documentIds)
         {
             var docIds = documentIds.ToList();
             if (!docIds.Any())
@@ -47,5 +59,5 @@ namespace Fabric.Identity.API.Management
 
             return Ok(users.Select(u => u.ToUserViewModel(clientId)));
         }
-    }
+    }    
 }
