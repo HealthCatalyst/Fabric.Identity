@@ -55,7 +55,7 @@ echo ""
 
 # register angular client
 echo "registering Fabric.Identity.Samples.Angular..."
-angularclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-angularsample\", \"clientName\": \"Sample Fabric Angular Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"implicit\"], \"redirectUris\": [\"http://localhost:4200/oidc-callback.html\", \"http://localhost:4200/silent.html\"], \"postLogoutRedirectUris\": [ \"http://localhost:4200\"], \"allowOfflineAccess\": false, \"AllowAccessTokensViaBrowser\": true, \"AllowedCorsOrigins\":[\"http://localhost:4200\"], \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\", \"patientapi\"]}" $identitybaseurl/api/client)
+angularclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-angularsample\", \"clientName\": \"Sample Fabric Angular Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"implicit\"], \"redirectUris\": [\"http://localhost:4200/oidc-callback.html\", \"http://localhost:4200/silent.html\"], \"postLogoutRedirectUris\": [ \"http://localhost:4200\"], \"allowOfflineAccess\": false, \"AllowAccessTokensViaBrowser\": true, \"AllowedCorsOrigins\":[\"http://localhost:4200\"], \"RequireConsent\": false, \"allowedScopes\": [\"openid\", \"profile\", \"fabric.profile\", \"fabric/authorization.read\", \"fabric/authorization.write\", \"fabric/authorization.manageclients\", \"patientapi\", \"fabric/identity.manageresources\"]}" $identitybaseurl/api/client)
 echo $angularclientresponse
 echo ""
 
