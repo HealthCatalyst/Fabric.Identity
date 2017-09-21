@@ -10,7 +10,8 @@ namespace Fabric.Identity.API.Documentation
             swaggerDoc.Tags = new[] {
                 new Tag { Name = "ApiResource", Description = "Manage ApiResources" },
                 new Tag { Name = "Client", Description = "Manage Clients" },
-                new Tag { Name = "IdentityResource", Description = "Manage IdentityResources" }
+                new Tag { Name = "IdentityResource", Description = "Manage IdentityResources" },
+                new Tag { Name = "Users", Description = "Get User Information" }
             };
         }
     }
