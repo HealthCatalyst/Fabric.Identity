@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Fabric.Identity.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -31,8 +28,8 @@ namespace Fabric.Identity.API.Documentation
             var policies = controllerPolicies.Union(actionPolicies).Distinct();
             var requiredClaimTypes = policies
                 .Select(x => authorizationOptions.Value.GetPolicy(x))
-                .SelectMany(x => x.Requirements)
-                .OfType<RegisteredClientThresholdRequirement>()
+                .SelectMany(x => x.Requirements)               
+                .OfType<IHaveAuthorizationClaimType>()
                 .Select(x => x.ClaimType);
 
             if (requiredClaimTypes.Any())

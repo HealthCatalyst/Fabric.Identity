@@ -2,7 +2,7 @@
 
 namespace Fabric.Identity.API.Authorization
 {
-    public class RegisteredClientThresholdRequirement : IAuthorizationRequirement
+    public class RegisteredClientThresholdRequirement : IAuthorizationRequirement, IHaveAuthorizationClaimType
     {
         public int RegisteredClientThreshold { get; }
 

@@ -7,8 +7,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace Fabric.Identity.API.Authorization
 {
-    public class ReadScopeRequirement : IAuthorizationRequirement
+    public class ReadScopeRequirement : IAuthorizationRequirement, IHaveAuthorizationClaimType
     {
-        public string ReadScope { get; } = FabricIdentityConstants.IdentityReadScope;
+        public string ClaimType { get; } = FabricIdentityConstants.IdentityReadScope;
     }
 }
