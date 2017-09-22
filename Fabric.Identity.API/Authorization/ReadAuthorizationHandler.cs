@@ -24,9 +24,9 @@ namespace Fabric.Identity.API.Authorization
         {
             //ensure the logged in client has the read scope claim
 
-            if (HasRequiredScopeClaim(context.User, requirement.ReadScope))
+            if (HasRequiredScopeClaim(context.User, requirement.ClaimType))
             {
-                _logger.Information($"User has required scope claim: {requirement.ReadScope}, authorization succeeded.");
+                _logger.Information($"User has required scope claim: {requirement.ClaimType}, authorization succeeded.");
                 context.Succeed(requirement);                
             }
 
