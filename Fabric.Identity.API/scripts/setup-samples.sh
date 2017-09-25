@@ -10,7 +10,7 @@ fi
 
 # register registration api
 echo "registering Fabric.Registration..."
-registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}]}" $identitybaseurl/api/apiresource)
+registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}, { \"name\": \"fabric/identity.read\"}]}" $identitybaseurl/api/apiresource)
 echo $registrationapiresponse
 echo ""
 
