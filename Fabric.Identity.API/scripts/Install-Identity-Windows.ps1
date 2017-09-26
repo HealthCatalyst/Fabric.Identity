@@ -1,6 +1,12 @@
 #
 # Install_Identity_Windows.ps1
 #	
+
+function Get-CurrentScriptDirectory()
+{
+	return Split-Path $script:MyInvocation.MyCommand.Path
+}
+
 function Test-RegistrationComplete($authUrl)
 {
     $url = "$authUrl/api/client/fabric-installer"
@@ -43,6 +49,31 @@ function Get-InstallationSettings($configSection)
 	return $installationSettings
 }
 
+function Create-InstallationSetting($configSection, $configSetting, $configValue)
+{
+	$currentDirectory = Get-CurrentScriptDirectory
+	$configFile = "install.config"
+	$installationConfig = [xml](Get-Content "$currentDirectory\$configFile")
+	$sectionSettings = $installationConfig.installation.settings.scope | where {$_.name -eq $configSection}
+	$existingSetting = $sectionSettings.variable | where {$_.name -eq $configSetting}
+	if($existingSetting -eq $null){
+		$setting = $installationConfig.CreateElement("variable")
+		
+		$nameAttribute = $installationConfig.CreateAttribute("name")
+		$nameAttribute.Value = $configSetting
+		$setting.Attributes.Append($nameAttribute)
+
+		$valueAttribute = $installationConfig.CreateAttribute("value")
+		$valueAttribute.Value = $configValue
+		$setting.Attributes.Append($valueAttribute)
+
+		$sectionSettings.AppendChild($setting)
+	}else{
+		$existingSetting.value = $configValue
+	}
+	$installationConfig.Save("$currentDirectory\$configFile")
+}
+
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
 $webroot = $installSettings.webroot
@@ -56,7 +87,7 @@ $appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
 $siteName = $installSettings.siteName
 $hostUrl = $installSettings.hostUrl
 
-$workingDirectory = Split-Path $script:MyInvocation.MyCommand.Path
+$workingDirectory = Get-CurrentScriptDirectory
 if(!(Test-Path $workingDirectory\Fabric-Install-Utilities.psm1)){
 	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
 }
@@ -169,6 +200,7 @@ $body = @'
 
 Write-Host "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
+Create-InstallationSetting "common" "fabricInstallerSecret" $installerClientSecret
 
 Write-Host ""
 Write-Host "Please keep the following secrets in a secure place:"
