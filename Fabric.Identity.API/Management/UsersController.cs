@@ -31,24 +31,24 @@ namespace Fabric.Identity.API.Management
         }
         
         /// <summary>
-        /// Find users by client id and document id
+        /// Find users by client id and user id
         /// </summary>
         /// <param name="clientId">The client id to find users for</param>
-        /// <param name="documentIds">The document ids for the users requested in the format 'subjectid:provider'</param>
+        /// <param name="userIds">The user ids for the users requested in the format 'subjectid:provider'</param>
         /// <returns></returns>
         [HttpGet]
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
-        public async Task<IActionResult> Get(string clientId, IEnumerable<string> documentIds)
+        public async Task<IActionResult> Get(string clientId, IEnumerable<string> userIds)
         {
-            return await ProcessSearchRequest(clientId, documentIds).ConfigureAwait(false);
+            return await ProcessSearchRequest(clientId, userIds).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Find users by client id and document id
+        /// Find users by client id and user id
         /// </summary>
-        /// <param name="searchParameters">The <see cref="UserSearchParameter"/> containing the client id and document ids in the format 'subjectid:provider'</param>
+        /// <param name="searchParameters">The <see cref="UserSearchParameter"/> containing the client id and user ids in the format 'subjectid:provider'</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
@@ -56,15 +56,15 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
         public async Task<IActionResult> Post([FromBody] UserSearchParameter searchParameters)
         {
-            return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.DocumentIds).ConfigureAwait(false);
+            return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.UserIds).ConfigureAwait(false);
         }
 
-        private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> documentIds)
+        private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
         {
-            var docIds = documentIds.ToList();
+            var docIds = userIds.ToList();
             if (!docIds.Any())
             {
-                return CreateFailureResponse("No documentIds were included in the request",
+                return CreateFailureResponse("No userIds were included in the request",
                     HttpStatusCode.BadRequest);
             }
 
