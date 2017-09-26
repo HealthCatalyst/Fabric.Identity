@@ -67,7 +67,7 @@ namespace Fabric.Identity.IntegrationTests
                 }
 
                 CreateNewUser(user);
-                queryBuilder.Append($"&documentIds={user.SubjectId}:{user.ProviderName}");
+                queryBuilder.Append($"&userIds={user.SubjectId}:{user.ProviderName}");
             }
 
             return queryBuilder.ToString();
