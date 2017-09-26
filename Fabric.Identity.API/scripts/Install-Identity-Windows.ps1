@@ -45,8 +45,19 @@ function Get-InstallationSettings($configSection)
 			$installationSettings.Add($variable.name, $variable.value)
 		}
 	}
-
-	return $installationSettings
+	
+	$encryptionCertificate = Get-EncryptionCertificate $installationSettings.encryptionCertificateThumbprint
+	$installationSettingsDecrypted = @{}
+	foreach($key in $installationSettings.Keys){
+		$value = $installationSettings[$key]
+		if($value.StartsWith("!!enc!!:"))
+		{
+			$value = Get-DecryptedString $encryptionCertificate $value
+		}
+		$installationSettingsDecrypted.Add($key, $value)
+	}
+	
+	return $installationSettingsDecrypted
 }
 
 function Create-InstallationSetting($configSection, $configSetting, $configValue)
@@ -72,6 +83,27 @@ function Create-InstallationSetting($configSection, $configSetting, $configValue
 		$existingSetting.value = $configValue
 	}
 	$installationConfig.Save("$currentDirectory\$configFile")
+}
+
+function Create-SecureInstallationSetting($configSection, $configSetting, $configValue, $encryptionCertificate)
+{
+	$encryptedConfigValue = Get-EncryptedString $encryptionCertificate $configValue
+	Create-InstallationSetting $configSection $configSetting $encryptedConfigValue
+}
+
+function Get-EncryptionCertificate($encryptionCertificateThumbprint)
+{
+	return Get-Item Cert:\LocalMachine\My\$encryptionCertificateThumbprint
+}
+
+function Get-DecryptedString($encryptionCertificate, $encryptedString){
+	if($encryptedString.Contains("!!enc!!:")){
+		$cleanedEncryptedString = $encryptedString.Replace("!!enc!!:","")
+		$clearTextValue = [System.Text.Encoding]::UTF8.GetString($encryptionCertificate.PrivateKey.Decrypt([System.Convert]::FromBase64String($cleanedEncryptedString), $true))
+		return $clearTextValue
+	}else{
+		return $encryptedString
+	}
 }
 
 $installSettings = Get-InstallationSettings "identity"
@@ -200,7 +232,7 @@ $body = @'
 
 Write-Host "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
-Create-InstallationSetting "common" "fabricInstallerSecret" $installerClientSecret
+Create-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
 
 Write-Host ""
 Write-Host "Please keep the following secrets in a secure place:"
