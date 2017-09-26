@@ -1,19 +1,6 @@
 #
 # Install_Identity_Windows.ps1
-#
-param(
-	[String]$zipPackage, 
-	[String]$webroot = "C:\inetpub\wwwroot", 
-	[String]$appName = "identity", 
-	[String]$iisUser = "IIS_IUSRS", 
-	[String]$sslCertificateThumbprint,
-	[String]$couchDbServer,
-	[String]$couchDbUsername,
-	[String]$couchDbPassword,
-	[String]$appInsightsInstrumentationKey,
-	[String]$siteName = "Default Web Site",
-	[String]$hostUrl)
-	
+#	
 function Test-RegistrationComplete($authUrl)
 {
     $url = "$authUrl/api/client/fabric-installer"
@@ -33,6 +20,41 @@ function Test-RegistrationComplete($authUrl)
 
     return $false
 }
+
+function Get-InstallationSettings($configSection)
+{
+	$installationConfig = [xml](Get-Content install.config)
+	$sectionSettings = $installationConfig.installation.settings.scope | where {$_.name -eq $configSection}
+	$installationSettings = @{}
+
+	foreach($variable in $sectionSettings.variable){
+		if($variable.name -and $variable.value){
+			$installationSettings.Add($variable.name, $variable.value)
+		}
+	}
+
+	$commonSettings = $installationConfig.installation.settings.scope | where {$_.name -eq "common"}
+	foreach($variable in $commonSettings.variable){
+		if($variable.name -and $variable.value -and !$installationSettings.Contains($variable.name)){
+			$installationSettings.Add($variable.name, $variable.value)
+		}
+	}
+
+	return $installationSettings
+}
+
+$installSettings = Get-InstallationSettings "identity"
+$zipPackage = $installSettings.zipPackage
+$webroot = $installSettings.webroot
+$appName = $installSettings.appName
+$iisUser = $installSettings.iisUser
+$sslCertificateThumbprint = $installSettings.sslCertificateThumbprint
+$couchDbServer = $installSettings.couchDbServer
+$couchDbUsername = $installSettings.couchDbUsername
+$couchDbPassword = $installSettings.couchDbPassword 
+$appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
+$siteName = $installSettings.siteName
+$hostUrl = $installSettings.hostUrl
 
 $workingDirectory = Split-Path $script:MyInvocation.MyCommand.Path
 if(!(Test-Path $workingDirectory\Fabric-Install-Utilities.psm1)){
