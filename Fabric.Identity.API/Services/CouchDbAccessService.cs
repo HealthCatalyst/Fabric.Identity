@@ -23,7 +23,8 @@ namespace Fabric.Identity.API.Services
 
         private string GetFullDocumentId<T>(string documentId)
         {
-            return ReplaceInvalidChars($"{typeof(T).Name.ToLowerInvariant()}:{documentId}");
+            var validDocumentId = ReplaceInvalidChars(documentId);
+            return $"{typeof(T).Name.ToLowerInvariant()}:{validDocumentId}";
         }
 
         private string ReplaceInvalidChars(string documentId)
@@ -60,14 +61,14 @@ namespace Fabric.Identity.API.Services
 
         public Task<T> GetDocument<T>(string documentId)
         {
-
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
-                var documentResponse = client.Documents.GetAsync(GetFullDocumentId<T>(documentId)).Result;
+                var fullDocumentId = GetFullDocumentId<T>(documentId);
+                var documentResponse = client.Documents.GetAsync(fullDocumentId).Result;
 
                 if (!documentResponse.IsSuccess)
                 {
-                    _logger.Debug($"unable to find document: {GetFullDocumentId<T>(documentId)} - message: {documentResponse.Reason}");
+                    _logger.Debug($"unable to find document: {fullDocumentId} - message: {documentResponse.Reason}");
                     return Task.FromResult(default(T));
                 }
 
