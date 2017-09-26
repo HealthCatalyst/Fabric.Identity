@@ -24,22 +24,18 @@ namespace Fabric.Identity.API.DocumentDbStores
         private string GetUserDocumentId(string subjectId, string provider)
         {
             return $"{subjectId}:{provider}";
-        }
+        }        
 
         public async Task<User> FindBySubjectId(string subjectId)
-        {
-            var encodedSubjectId = UrlEncodeString(subjectId);
-            _logger.Debug($"finding user with subject id: {encodedSubjectId}");
-            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}");
+        {            
+            _logger.Debug($"finding user with subject id: {subjectId}");
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
             return user?.FirstOrDefault();
         }
 
         public async Task<User> FindByExternalProvider(string provider, string subjectId)
         {
-            var encodedProvider = UrlEncodeString(provider);
-            var encodedSubjectId = UrlEncodeString(subjectId);
-
-            _logger.Debug($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
+            _logger.Debug($"finding user with subject id: {subjectId} and provider: {provider}");
             var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{GetUserDocumentId(subjectId, provider)}");
             
             return user?.FirstOrDefault();
@@ -58,11 +54,6 @@ namespace Fabric.Identity.API.DocumentDbStores
             _documentDbService.UpdateDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
             _logger.Debug(
                 $"updated user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
-        }
-
-        private string UrlEncodeString(string unencoded)
-        {
-            return HttpUtility.UrlEncode(unencoded);
-        }
+        }      
     }
 }

@@ -64,6 +64,6 @@ namespace Fabric.Identity.UnitTests
             new object[]{ "usertwo", "azuread", true},
             new object[]{ "userthree", "ad", false},
             new object[]{ "foo", "" , false}
-        };
+        };        
     }
 }
