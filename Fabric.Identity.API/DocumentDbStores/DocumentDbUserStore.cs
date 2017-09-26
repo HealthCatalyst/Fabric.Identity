@@ -21,6 +21,10 @@ namespace Fabric.Identity.API.DocumentDbStores
         }
 
         //id for a  user stored in documentDb = user:subjectid:provider
+        private string GetUserDocumentId(string subjectId, string provider)
+        {
+            return $"{subjectId}:{provider}";
+        }
 
         public async Task<User> FindBySubjectId(string subjectId)
         {
@@ -36,25 +40,24 @@ namespace Fabric.Identity.API.DocumentDbStores
             var encodedSubjectId = UrlEncodeString(subjectId);
 
             _logger.Debug($"finding user with subject id: {encodedSubjectId} and provider: {encodedProvider}");
-            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{encodedSubjectId}:{encodedProvider}");
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{GetUserDocumentId(subjectId, provider)}");
             
             return user?.FirstOrDefault();
         }
 
         public User AddUser(User user)
         {
-            var encodedProvider = UrlEncodeString(user.ProviderName);
-            var encodedSubjectId = UrlEncodeString(user.SubjectId);
-            _documentDbService.AddDocument($"{encodedSubjectId}:{encodedProvider}", user);
+            _documentDbService.AddDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
             _logger.Debug(
                 $"added user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
             return user;
         }
 
         public void UpdateUser(User user)
-        {            
-            var encodedSubjectId = UrlEncodeString(user.SubjectId);
-            _documentDbService.UpdateDocument($"{encodedSubjectId}:{user.ProviderName}", user);
+        {                    
+            _documentDbService.UpdateDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
+            _logger.Debug(
+                $"updated user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
         }
 
         private string UrlEncodeString(string unencoded)

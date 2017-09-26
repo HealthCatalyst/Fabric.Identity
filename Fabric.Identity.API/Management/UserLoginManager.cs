@@ -7,6 +7,7 @@ using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
 using IdentityModel;
 using IdentityServer4.Test;
+using Serilog;
 
 namespace Fabric.Identity.API.Management
 {
@@ -14,12 +15,15 @@ namespace Fabric.Identity.API.Management
     {
         private readonly TestUserStore _testUserStore;
         private readonly DocumentDbUserStore _userStore;
+        private readonly ILogger _logger;
 
         public UserLoginManager(TestUserStore testUserStore,
-            DocumentDbUserStore userStore)
+            DocumentDbUserStore userStore,
+            ILogger logger)
         {
             _testUserStore = testUserStore;
             _userStore = userStore;
+            _logger = logger;
         }
 
         public User TestUserLogin(string provider, string userId, List<Claim> claims)
@@ -41,13 +45,14 @@ namespace Fabric.Identity.API.Management
             return testUser.ToUser();
         }
 
-        public async Task<User> UserLogin(string provider, string userId, List<Claim> claims, string clientId)
+        public async Task<User> UserLogin(string provider, string subjectId, List<Claim> claims, string clientId)
         {
             //check if the external user is already provisioned
-            var user = await _userStore.FindByExternalProvider(provider, userId);
+            var user = await _userStore.FindByExternalProvider(provider, subjectId);
             if (user == null)
             {
-                user = CreateNewUser(provider, userId, claims, clientId);
+                _logger.Information($"user was not found. subjectId: {subjectId} provider: {provider}");
+                user = CreateNewUser(provider, subjectId, claims, clientId);
                 _userStore.AddUser(user);
                 return user;
             }

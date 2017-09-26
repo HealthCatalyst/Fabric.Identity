@@ -39,7 +39,7 @@ namespace Fabric.Identity.IntegrationTests
             string path = Path.GetRandomFileName();
             path = path.Replace(".", "");
 
-            var stringLength = Random.Next(10, path.Length);
+            var stringLength = Random.Next(5, path.Length);
             
             return path.Substring(0, stringLength);
         }
@@ -52,7 +52,7 @@ namespace Fabric.Identity.IntegrationTests
             {
                 var user = new User
                 {
-                    SubjectId = GetRandomString(),
+                    SubjectId = $"{GetRandomString()}\\{GetRandomString()}",
                     Username = i.ToString(),
                     ProviderName = "Windows"
                 };

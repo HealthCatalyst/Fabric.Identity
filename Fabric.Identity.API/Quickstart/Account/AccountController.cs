@@ -22,6 +22,7 @@ using Fabric.Identity.API.Models;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
+using Serilog;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -36,7 +37,8 @@ namespace IdentityServer4.Quickstart.UI
         private readonly TestUserStore _users;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IEventService _events;
-        private readonly IAppConfiguration _appConfiguration;        
+        private readonly IAppConfiguration _appConfiguration;
+        private readonly ILogger _logger;
         private readonly AccountService _account;
         private readonly UserLoginManager _userLoginManager;
 
@@ -47,15 +49,17 @@ namespace IdentityServer4.Quickstart.UI
             IEventService events,
             IAppConfiguration appConfiguration,
             DocumentDbUserStore documentDbUserStore,
+            ILogger logger,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
             _users = users ?? MakeTestUserStore(appConfiguration);
             _interaction = interaction;
             _events = events;
-            _appConfiguration = appConfiguration;            
+            _appConfiguration = appConfiguration;
+            _logger = logger;
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
-            _userLoginManager = new UserLoginManager(_users, documentDbUserStore);
+            _userLoginManager = new UserLoginManager(_users, documentDbUserStore, _logger);
             
         }
 
