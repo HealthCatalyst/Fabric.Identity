@@ -123,5 +123,24 @@ namespace Fabric.Identity.IntegrationTests
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
+
+        [Fact]
+        public async Task UsersStore_FindByExternalProvider_ReturnsUser()
+        {
+            //add a user 
+            var user = new User
+            {
+                SubjectId = $"{GetRandomString()}\\{GetRandomString()}",
+                Username = GetRandomString(),
+                ProviderName = "Windows"
+            };
+
+            CreateNewUser(user);
+
+            //find them using user 
+            var foundUser = await _documentDbUserStore.FindByExternalProvider(user.ProviderName, user.SubjectId);
+
+            Assert.NotNull(foundUser);
+        }
     }
 }

@@ -34,10 +34,10 @@ namespace Fabric.Identity.API.Services
                 .Deserialize<T>());
         }
 
-        public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
+        public Task<IEnumerable<T>> GetDocuments<T>(string documentKey)
         {
             return Task.FromResult(Documents
-                .Where(d => d.Key.StartsWith(documentType, StringComparison.OrdinalIgnoreCase))
+                .Where(d => d.Key.StartsWith(documentKey, StringComparison.OrdinalIgnoreCase))
                 .Select(d => d.Value)
                 .ToList()
                 .Deserialize<T>());

@@ -31,9 +31,9 @@ namespace Fabric.Identity.API.Services
             return _innerDocumentDbService.GetDocumentsById<T>(documentIds);
         }
 
-        public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
+        public Task<IEnumerable<T>> GetDocuments<T>(string documentKey)
         {
-            return _innerDocumentDbService.GetDocuments<T>(documentType);
+            return _innerDocumentDbService.GetDocuments<T>(documentKey);
         }
 
         public Task<int> GetDocumentCount(string documentType)

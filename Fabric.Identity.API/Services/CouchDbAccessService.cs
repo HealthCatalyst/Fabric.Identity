@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
@@ -22,7 +23,12 @@ namespace Fabric.Identity.API.Services
 
         private string GetFullDocumentId<T>(string documentId)
         {
-            return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
+            return ReplaceInvalidChars($"{typeof(T).Name.ToLowerInvariant()}:{documentId}");
+        }
+
+        private string ReplaceInvalidChars(string documentId)
+        {
+            return documentId.Replace(@"\", "::");
         }
 
         private DbConnectionInfo DbConnectionInfo
@@ -95,22 +101,24 @@ namespace Fabric.Identity.API.Services
             }
         }
 
-        public Task<IEnumerable<T>> GetDocuments<T>(string documentType)
+        public Task<IEnumerable<T>> GetDocuments<T>(string documentKey)
         {
+            var validKey = ReplaceInvalidChars(documentKey);
+
             using (var client = new MyCouchClient(DbConnectionInfo))
             {
                 var viewQuery = new QueryViewRequest(SystemViewIdentity.AllDocs)
                     .Configure(q => q.Reduce(false)
                         .IncludeDocs(true)
-                        .StartKey(documentType)
-                        .EndKey($"{documentType}{HighestUnicodeChar}"));
+                        .StartKey(validKey)
+                        .EndKey($"{validKey}{HighestUnicodeChar}"));
 
                 ViewQueryResponse result = client.Views.QueryAsync(viewQuery).Result;
 
                 if (!result.IsSuccess)
                 {
-                    _logger.Error($"unable to find documents for type: {documentType} - error: {result.Reason}");
-                    return Task.FromResult(default(IEnumerable<T>));
+                    _logger.Error($"unable to find documents for type: {validKey} - error: {result.Reason}");
+                    throw new Exception($"unable to find documents for type: {validKey} - error: {result.Reason}");
                 }
 
                 return Task.FromResult(result.Rows.Select(r => r.IncludedDoc).Deserialize<T>());
@@ -207,6 +215,4 @@ namespace Fabric.Identity.API.Services
             }
         }
     }
-
-    
 }
