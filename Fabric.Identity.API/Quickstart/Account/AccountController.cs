@@ -59,7 +59,7 @@ namespace IdentityServer4.Quickstart.UI
             _appConfiguration = appConfiguration;
             _logger = logger;
             _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
-            _userLoginManager = new UserLoginManager(_users, documentDbUserStore, _logger);
+            _userLoginManager = new UserLoginManager(documentDbUserStore, _logger);
             
         }
 
@@ -115,6 +115,9 @@ namespace IdentityServer4.Quickstart.UI
 
                     // issue authentication cookie with subject ID and username
                     var user = _users.FindByUsername(model.Username);
+                    //get the client id from the auth context
+                    var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
+                    await _userLoginManager.UserLogin("test", user.SubjectId, user.Claims.ToList(), context?.ClientId);
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.Username, user.SubjectId, user.Username));
                     await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, props);
 
@@ -223,17 +226,10 @@ namespace IdentityServer4.Quickstart.UI
             var provider = info.Properties.Items["scheme"];
             var userId = userIdClaim.Value;
 
-            User user;
-            if (_appConfiguration.HostingOptions.UseTestUsers)
-            {
-                user = _userLoginManager.TestUserLogin(provider, userId, claims);
-            }
-            else
-            {
-                //get the client id from the auth context
-                var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-                user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
-            }
+            //get the client id from the auth context
+            var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
+
+            var  user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
 
             var additionalClaims = new List<Claim>();
 

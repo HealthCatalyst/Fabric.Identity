@@ -20,8 +20,9 @@ namespace Fabric.Identity.UnitTests
         public async Task UserLoginManager_UserLogin_NewUser_HasCorrectPropertiesSet()
         {
             //create a new user, ensure claims,  login date, provider, and name properties are set correctly
-            var userLoginManager = new UserLoginManager(null,
-                new DocumentDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object), new Mock<ILogger>().Object);
+            var userLoginManager = new UserLoginManager(
+                new DocumentDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object),
+                new Mock<ILogger>().Object);
 
             var userId = "HealthCatalyst\\foo.bar";
             var provider = "Windows";
@@ -59,7 +60,7 @@ namespace Fabric.Identity.UnitTests
         {
             var documentDbUserStore = new DocumentDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object);
 
-            var userLoginManager = new UserLoginManager(null, documentDbUserStore, new Mock<ILogger>().Object);
+            var userLoginManager = new UserLoginManager(documentDbUserStore, new Mock<ILogger>().Object);
 
             var userId = "HealthCatalyst\\foo.bar";
             var provider = "Windows";
