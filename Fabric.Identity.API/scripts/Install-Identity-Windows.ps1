@@ -2,11 +2,6 @@
 # Install_Identity_Windows.ps1
 #	
 
-function Get-CurrentScriptDirectory()
-{
-	return Split-Path $script:MyInvocation.MyCommand.Path
-}
-
 function Test-RegistrationComplete($authUrl)
 {
     $url = "$authUrl/api/client/fabric-installer"
@@ -27,84 +22,10 @@ function Test-RegistrationComplete($authUrl)
     return $false
 }
 
-function Get-InstallationSettings($configSection)
-{
-	$installationConfig = [xml](Get-Content install.config)
-	$sectionSettings = $installationConfig.installation.settings.scope | where {$_.name -eq $configSection}
-	$installationSettings = @{}
-
-	foreach($variable in $sectionSettings.variable){
-		if($variable.name -and $variable.value){
-			$installationSettings.Add($variable.name, $variable.value)
-		}
-	}
-
-	$commonSettings = $installationConfig.installation.settings.scope | where {$_.name -eq "common"}
-	foreach($variable in $commonSettings.variable){
-		if($variable.name -and $variable.value -and !$installationSettings.Contains($variable.name)){
-			$installationSettings.Add($variable.name, $variable.value)
-		}
-	}
-	
-	$encryptionCertificate = Get-EncryptionCertificate $installationSettings.encryptionCertificateThumbprint
-	$installationSettingsDecrypted = @{}
-	foreach($key in $installationSettings.Keys){
-		$value = $installationSettings[$key]
-		if($value.StartsWith("!!enc!!:"))
-		{
-			$value = Get-DecryptedString $encryptionCertificate $value
-		}
-		$installationSettingsDecrypted.Add($key, $value)
-	}
-	
-	return $installationSettingsDecrypted
+if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
+	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
 }
-
-function Create-InstallationSetting($configSection, $configSetting, $configValue)
-{
-	$currentDirectory = Get-CurrentScriptDirectory
-	$configFile = "install.config"
-	$installationConfig = [xml](Get-Content "$currentDirectory\$configFile")
-	$sectionSettings = $installationConfig.installation.settings.scope | where {$_.name -eq $configSection}
-	$existingSetting = $sectionSettings.variable | where {$_.name -eq $configSetting}
-	if($existingSetting -eq $null){
-		$setting = $installationConfig.CreateElement("variable")
-		
-		$nameAttribute = $installationConfig.CreateAttribute("name")
-		$nameAttribute.Value = $configSetting
-		$setting.Attributes.Append($nameAttribute)
-
-		$valueAttribute = $installationConfig.CreateAttribute("value")
-		$valueAttribute.Value = $configValue
-		$setting.Attributes.Append($valueAttribute)
-
-		$sectionSettings.AppendChild($setting)
-	}else{
-		$existingSetting.value = $configValue
-	}
-	$installationConfig.Save("$currentDirectory\$configFile")
-}
-
-function Create-SecureInstallationSetting($configSection, $configSetting, $configValue, $encryptionCertificate)
-{
-	$encryptedConfigValue = Get-EncryptedString $encryptionCertificate $configValue
-	Create-InstallationSetting $configSection $configSetting $encryptedConfigValue
-}
-
-function Get-EncryptionCertificate($encryptionCertificateThumbprint)
-{
-	return Get-Item Cert:\LocalMachine\My\$encryptionCertificateThumbprint
-}
-
-function Get-DecryptedString($encryptionCertificate, $encryptedString){
-	if($encryptedString.Contains("!!enc!!:")){
-		$cleanedEncryptedString = $encryptedString.Replace("!!enc!!:","")
-		$clearTextValue = [System.Text.Encoding]::UTF8.GetString($encryptionCertificate.PrivateKey.Decrypt([System.Convert]::FromBase64String($cleanedEncryptedString), $true))
-		return $clearTextValue
-	}else{
-		return $encryptedString
-	}
-}
+Import-Module -Name .\Fabric-Install-Utilities.psm1
 
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
@@ -120,10 +41,6 @@ $siteName = $installSettings.siteName
 $hostUrl = $installSettings.hostUrl
 
 $workingDirectory = Get-CurrentScriptDirectory
-if(!(Test-Path $workingDirectory\Fabric-Install-Utilities.psm1)){
-	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
-}
-Import-Module -Name .\Fabric-Install-Utilities.psm1
 
 if(!(Test-Prerequisite '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
 {
@@ -232,7 +149,7 @@ $body = @'
 
 Write-Host "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
-Create-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
+Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
 
 Write-Host ""
 Write-Host "Please keep the following secrets in a secure place:"
