@@ -34,6 +34,13 @@ authapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authoriza
 echo $authapiresponse
 echo ""
 
+# register the fabric authorization client
+echo "registering Fabric.Authorization client..."
+authorizationclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-authorization-client\", \"clientName\": \"Fabric Authorization Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.read\"]}" $identitybaseurl/api/client)
+echo $authorizationclientresponse
+authorizationclientsecret=$(echo $authorizationclientresponse | grep -oP '(?<="clientSecret":")[^"]*')
+echo ""
+
 # register the group fetcher client
 echo "registering Fabric.GroupFetcher..."
 groupfetcherresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-group-fetcher\", \"clientName\": \"Fabric Group Fetcher\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/authorization.manageclients\", \"fabric/authorization.write\"]}" $identitybaseurl/api/client)
@@ -70,9 +77,14 @@ echo "The Fabric.GroupFetcher client secret is:"
 echo "\"groupFetcherSecret\":\"$groupfetchersecret\""
 echo "You need this secret so the group fetcher can authenticate to get and save groups."
 echo ""
-echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
+
+echo "Fabric.Authorization api secret:"
 authapisecret=$(echo $authapiresponse | grep -oP '(?<="apiSecret":")[^"]*')
 echo "\"authApiSecret\":\"$authapisecret\""
+echo ""
+
+echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
+echo "\"authClientSecret\":\"$authorizationclientsecret\""
 echo ""
 
 echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
