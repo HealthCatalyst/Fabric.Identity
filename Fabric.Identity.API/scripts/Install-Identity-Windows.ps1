@@ -111,7 +111,7 @@ $zipPackage = $installSettings.zipPackage
 $webroot = $installSettings.webroot
 $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
-$sslCertificateThumbprint = $installSettings.sslCertificateThumbprint
+$primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint
 $couchDbServer = $installSettings.couchDbServer
 $couchDbUsername = $installSettings.couchDbUsername
 $couchDbPassword = $installSettings.couchDbPassword 
@@ -165,15 +165,15 @@ Publish-WebSite $zipPackage $appDirectory $appName
 #Write environment variables
 Write-Host "Loading up environment variables..."
 $environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
-$signingCert = Get-Item Cert:\LocalMachine\My\$sslCertificateThumbprint
+$signingCert = Get-Item Cert:\LocalMachine\My\$primarySigningCertificateThumbprint
 
 if($clientName){
 	$environmentVariables.Add("ClientName", $clientName)
 }
 
-if ($sslCertificateThumbprint){
+if ($primarySigningCertificateThumbprint){
 	$environmentVariables.Add("SigningCertificateSettings__UseTemporarySigningCredential", "false")
-	$environmentVariables.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $sslCertificateThumbprint)
+	$environmentVariables.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
 }
 
 if ($couchDbServer){
