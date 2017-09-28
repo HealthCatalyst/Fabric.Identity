@@ -71,6 +71,7 @@ accesstoken=""
 echo "The Fabric.Installer client secret is:"
 echo "\"installerSecret\":\"$installersecret\""
 echo "You need this secret if you want to register additional API resources or clients."
+echo "##vso[task.setvariable variable=FABRIC_INSTALLER_SECRET;]$installersecret"
 echo ""
 
 echo "The Fabric.GroupFetcher client secret is:"
@@ -85,6 +86,7 @@ echo ""
 
 echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
 echo "\"authClientSecret\":\"$authorizationclientsecret\""
+echo "##vso[task.setvariable variable=AUTH_CLIENT_SECRET;]$authorizationclientsecret"
 echo ""
 
 echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
