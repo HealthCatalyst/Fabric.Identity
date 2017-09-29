@@ -9,11 +9,11 @@ namespace Fabric.Identity.API.Services
 {
     public class LdapProviderService : IExternalIdentityProviderService
     {
-        private readonly ILdapConnection _connection;
+        private readonly ILdapConnectionProvider _ldapConnectionProvider;
         private readonly ILogger _logger;
-        public LdapProviderService(LdapSettings settings, ILogger logger)
+        public LdapProviderService(ILdapConnectionProvider ldapConnectionProvider, ILogger logger)
         {
-            _connection = GetConnection(settings);
+            _ldapConnectionProvider = ldapConnectionProvider;
             _logger = logger;
         }
         public ExternalUser FindUserBySubjectId(string subjectId)
@@ -39,28 +39,23 @@ namespace Fabric.Identity.API.Services
         private ICollection<ExternalUser> SearchLdap(string ldapQuery)
         {
             var users = new List<ExternalUser>();
-            var results = _connection.Search(string.Empty, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
-            while (results.hasMore())
+            using (var ldapConnection = _ldapConnectionProvider.GetConnection())
             {
-                var next = results.next();
-                var atttributes = next.getAttributeSet();
-                var user = new ExternalUser
+                var results = ldapConnection.Search(string.Empty, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
+                while (results.hasMore())
                 {
-                    LastName = atttributes.getAttribute("SN").StringValue,
-                    FirstName = atttributes.getAttribute("GIVENNAME").StringValue,
-                    Username = atttributes.getAttribute("SAMACCOUNTNAME").StringValue
-                };
-                users.Add(user);
+                    var next = results.next();
+                    var atttributes = next.getAttributeSet();
+                    var user = new ExternalUser
+                    {
+                        LastName = atttributes.getAttribute("SN").StringValue,
+                        FirstName = atttributes.getAttribute("GIVENNAME").StringValue,
+                        Username = atttributes.getAttribute("SAMACCOUNTNAME").StringValue
+                    };
+                    users.Add(user);
+                }
+                return users;
             }
-            return users;
-        }
-
-        private ILdapConnection GetConnection(LdapSettings settings)
-        {
-            var connection = new LdapConnection(){SecureSocketLayer = true};
-            connection.Connect(settings.Server, settings.Port);
-            connection.Bind(settings.Username, settings.Password);
-            return connection;
         }
     }
 }
