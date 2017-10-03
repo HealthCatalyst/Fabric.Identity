@@ -75,6 +75,9 @@ namespace Fabric.Identity.API
             services.AddSingleton<IAuthorizationHandler, ReadAuthorizationHandler>();
             services.AddScoped<IUserResolveService, UserResolverService>();
             services.AddSingleton<ISerializationSettings, SerializationSettings>();
+            services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
+            services.AddSingleton<IExternalIdentityProviderService, LdapProviderService>();
+            services.AddSingleton(_appConfig.LdapSettings);
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
                 Authority = identityServerApiSettings.Authority,
