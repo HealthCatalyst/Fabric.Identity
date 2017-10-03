@@ -9,5 +9,6 @@ namespace Fabric.Identity.API.Services
     public interface ILdapConnectionProvider
     {
         ILdapConnection GetConnection();
+        string BaseDn { get; }
     }
 }
