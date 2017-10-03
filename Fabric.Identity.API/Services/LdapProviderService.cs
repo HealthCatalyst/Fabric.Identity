@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Models;
 using Novell.Directory.Ldap;
 using Serilog;
@@ -41,6 +40,10 @@ namespace Fabric.Identity.API.Services
             var users = new List<ExternalUser>();
             using (var ldapConnection = _ldapConnectionProvider.GetConnection())
             {
+                if (ldapConnection == null)
+                {
+                    return users;
+                }
                 var results = ldapConnection.Search(_ldapConnectionProvider.BaseDn, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
                 while (results.hasMore())
                 {
@@ -48,9 +51,10 @@ namespace Fabric.Identity.API.Services
                     var atttributes = next.getAttributeSet();
                     var user = new ExternalUser
                     {
-                        LastName = atttributes.getAttribute("SN")?.StringValue,
-                        FirstName = atttributes.getAttribute("GIVENNAME")?.StringValue,
-                        Username = atttributes.getAttribute("SAMACCOUNTNAME")?.StringValue
+                        LastName = atttributes.getAttribute("SN") == null ? string.Empty : atttributes.getAttribute("SN").StringValue,
+                        FirstName = atttributes.getAttribute("GIVENNAME") == null ? string.Empty : atttributes.getAttribute("GIVENNAME").StringValue,
+                        MiddleName = atttributes.getAttribute("MIDDLENAME") == null ? string.Empty : atttributes.getAttribute("MIDDLENAME").StringValue,
+                        Username = atttributes.getAttribute("SAMACCOUNTNAME") == null ? string.Empty : atttributes.getAttribute("SAMACCOUNTNAME").StringValue
                     };
                     users.Add(user);
                 }
