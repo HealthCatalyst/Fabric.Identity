@@ -41,16 +41,16 @@ namespace Fabric.Identity.API.Services
             var users = new List<ExternalUser>();
             using (var ldapConnection = _ldapConnectionProvider.GetConnection())
             {
-                var results = ldapConnection.Search(string.Empty, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
+                var results = ldapConnection.Search(_ldapConnectionProvider.BaseDn, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
                 while (results.hasMore())
                 {
                     var next = results.next();
                     var atttributes = next.getAttributeSet();
                     var user = new ExternalUser
                     {
-                        LastName = atttributes.getAttribute("SN").StringValue,
-                        FirstName = atttributes.getAttribute("GIVENNAME").StringValue,
-                        Username = atttributes.getAttribute("SAMACCOUNTNAME").StringValue
+                        LastName = atttributes.getAttribute("SN")?.StringValue,
+                        FirstName = atttributes.getAttribute("GIVENNAME")?.StringValue,
+                        Username = atttributes.getAttribute("SAMACCOUNTNAME")?.StringValue
                     };
                     users.Add(user);
                 }
