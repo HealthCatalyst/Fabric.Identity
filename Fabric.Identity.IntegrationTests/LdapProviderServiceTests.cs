@@ -10,7 +10,7 @@ namespace Fabric.Identity.IntegrationTests
     public class LdapProviderServiceTests
     {
         [Fact]
-        public void FindUser_Succeeds()
+        public void FindUser_Succeeds_WhenUserExists()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = new LdapSettings
@@ -23,14 +23,63 @@ namespace Fabric.Identity.IntegrationTests
                 BaseDn = "dc=example,dc=org"
             };
 
-            var ldapConnectionProvider = new LdapConnectionProvider(settings);
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var newUser = CreateTestUser("test", "user", settings.BaseDn, ldapConnectionProvider);
             var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
-            var users = ldapProviderService.FindUserBySubjectId($"TEST\\{newUser.getAttribute("cn").StringValue}");
-            Assert.NotNull(users);
-            Assert.Equal("test", users.FirstName);
-            Assert.Equal("user", users.LastName);
-            Assert.Equal("test.user", users.Username);
+            var externalUser = ldapProviderService.FindUserBySubjectId($"TEST\\{newUser.getAttribute("cn").StringValue}");
+            RemoveEntry(newUser, ldapConnectionProvider);
+            Assert.NotNull(externalUser);
+            Assert.Equal("test", externalUser.FirstName);
+            Assert.Equal("user", externalUser.LastName);
+            Assert.Equal("test.user", externalUser.Username);
+            Assert.Equal("", externalUser.MiddleName);
+        }
+
+        [Fact]
+        public void FindUser_ReturnsNull_WhenUserDoesNotExist()
+        {
+            var logger = new Mock<ILogger>().Object;
+            var settings = new LdapSettings
+            {
+                Server = "localhost",
+                Port = 389,
+                Username = @"cn=admin,dc=example,dc=org",
+                Password = "password",
+                UseSsl = false,
+                BaseDn = "dc=example,dc=org"
+            };
+
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
+            var externalUser = ldapProviderService.FindUserBySubjectId($"TEST\\nonexistant.user");
+            Assert.Null(externalUser);
+        }
+
+        [Fact]
+        public void FindUser_ReturnsNull_WithNoConnection()
+        {
+            var logger = new Mock<ILogger>().Object;
+            var settings = new LdapSettings
+            {
+                Server = "",
+                Port = 389,
+                Username = @"",
+                Password = "",
+                UseSsl = false
+            };
+
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
+            var externalUser = ldapProviderService.FindUserBySubjectId($"TEST\\nonexistant.user");
+            Assert.Null(externalUser);
+        }
+
+        private void RemoveEntry(LdapEntry ldapEntry, LdapConnectionProvider ldapConnectionProvider)
+        {
+            using (var connection = ldapConnectionProvider.GetConnection())
+            {
+                connection.Delete(ldapEntry.DN);
+            }
         }
 
         private LdapEntry CreateTestUser(string firstName, string lastName, string baseDn, LdapConnectionProvider ldapConnectionProvider)
@@ -56,16 +105,6 @@ namespace Fabric.Identity.IntegrationTests
             };
             var dn = $"cn={firstName}.{lastName},{baseDn}";
             return new LdapEntry(dn, attributeSet);
-        }
-
-        private LdapModification CreateLdapModification()
-        {
-            var attributeType = new LdapAttributeSchema(new[] {"objectCategory"}, "1.2.3.4.5.6", "category",
-                "1.3.6.1.4.1.1466.115.121.1.15", true, null, false, null, null, null, false, true,
-                LdapAttributeSchema.USER_APPLICATIONS);
-            var objectClass = new LdapObjectClassSchema(new []{"user"}, "2.16.840.1133730.2.123", new []{"top"}, "user", null, null, LdapObjectClassSchema.STRUCTURAL, false);
-            var modification = new LdapModification(LdapModification.ADD, attributeType);
-            return modification;
         }
     }
 }
