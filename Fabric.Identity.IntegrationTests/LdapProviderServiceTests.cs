@@ -1,4 +1,5 @@
-﻿using Fabric.Identity.API.Configuration;
+﻿using System;
+using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Moq;
 using Novell.Directory.Ldap;
@@ -13,15 +14,7 @@ namespace Fabric.Identity.IntegrationTests
         public void FindUser_Succeeds_WhenUserExists()
         {
             var logger = new Mock<ILogger>().Object;
-            var settings = new LdapSettings
-            {
-                Server = "localhost",
-                Port = 389,
-                Username = @"cn=admin,dc=example,dc=org",
-                Password = "password",
-                UseSsl = false,
-                BaseDn = "dc=example,dc=org"
-            };
+            var settings = GetLdapSettings();
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var newUser = CreateTestUser("test", "user", settings.BaseDn, ldapConnectionProvider);
@@ -39,15 +32,7 @@ namespace Fabric.Identity.IntegrationTests
         public void FindUser_ReturnsNull_WhenUserDoesNotExist()
         {
             var logger = new Mock<ILogger>().Object;
-            var settings = new LdapSettings
-            {
-                Server = "localhost",
-                Port = 389,
-                Username = @"cn=admin,dc=example,dc=org",
-                Password = "password",
-                UseSsl = false,
-                BaseDn = "dc=example,dc=org"
-            };
+            var settings = GetLdapSettings();
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
@@ -105,6 +90,28 @@ namespace Fabric.Identity.IntegrationTests
             };
             var dn = $"cn={firstName}.{lastName},{baseDn}";
             return new LdapEntry(dn, attributeSet);
+        }
+
+        private LdapSettings GetLdapSettings()
+        {
+            var settings = new LdapSettings
+            {
+                Server = "localhost",
+                Port = 389,
+                Username = @"cn=admin,dc=example,dc=org",
+                Password = "password",
+                UseSsl = false,
+                BaseDn = "dc=example,dc=org"
+            };
+
+            var ldapServer = Environment.GetEnvironmentVariable("LDAPSETTINGS__SERVER");
+
+            if (!string.IsNullOrEmpty(ldapServer))
+            {
+                settings.Server = ldapServer;
+            }
+
+            return settings;
         }
     }
 }
