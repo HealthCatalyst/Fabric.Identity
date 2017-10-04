@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Fabric.Identity.API.Models;
 using Novell.Directory.Ldap;
@@ -54,12 +55,41 @@ namespace Fabric.Identity.API.Services
                         LastName = atttributes.getAttribute("SN") == null ? string.Empty : atttributes.getAttribute("SN").StringValue,
                         FirstName = atttributes.getAttribute("GIVENNAME") == null ? string.Empty : atttributes.getAttribute("GIVENNAME").StringValue,
                         MiddleName = atttributes.getAttribute("MIDDLENAME") == null ? string.Empty : atttributes.getAttribute("MIDDLENAME").StringValue,
-                        Username = atttributes.getAttribute("SAMACCOUNTNAME") == null ? string.Empty : atttributes.getAttribute("SAMACCOUNTNAME").StringValue
+                        SubjectId = GetSubjectId(atttributes.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
                     };
                     users.Add(user);
                 }
                 return users;
             }
+        }
+
+        private string GetSubjectId(string samAccountName, string distinguishedName)
+        {
+            if (string.IsNullOrEmpty(samAccountName))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(distinguishedName))
+            {
+                return samAccountName;
+            }
+
+            var distinguishedNameSegments = distinguishedName.Split(',');
+            var topLevelSubDomain =
+                distinguishedNameSegments.FirstOrDefault(s => s.StartsWith("DC=", StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrEmpty(topLevelSubDomain))
+            {
+                return samAccountName;
+            }
+
+            var netbiosName = topLevelSubDomain.ToUpperInvariant().Replace("DC=", string.Empty);
+            if (netbiosName.Length > 15)
+            {
+                netbiosName = netbiosName.Substring(0, 15);
+            }
+            return $"{netbiosName}\\{samAccountName}";
         }
     }
 }
