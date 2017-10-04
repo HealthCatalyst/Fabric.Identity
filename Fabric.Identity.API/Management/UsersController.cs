@@ -23,14 +23,14 @@ namespace Fabric.Identity.API.Management
     public class UsersController : BaseController<UserApiModel>
     {
         private readonly IDocumentDbService _documentDbService;
-        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
+        private readonly IExternalIdentityProviderServiceResolver _externalIdentityProviderServiceResolver;
 
-        public UsersController(IDocumentDbService documentDbService, IExternalIdentityProviderService externalIdentityProviderService, UserApiModelValidator validator, ILogger logger) 
+        public UsersController(IDocumentDbService documentDbService, IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver, UserApiModelValidator validator, ILogger logger) 
             : base(validator, logger)
         {
             _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));
-            _externalIdentityProviderService = externalIdentityProviderService ??
-                                               throw new ArgumentNullException(nameof(externalIdentityProviderService));
+            _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver ??
+                                               throw new ArgumentNullException(nameof(externalIdentityProviderServiceResolver));
         }
         
         /// <summary>
@@ -62,12 +62,20 @@ namespace Fabric.Identity.API.Management
             return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.UserIds).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Find users in the 3rd party identity provider (IDP), e.g. Active Directory, Azure Active Directory, etc..
+        /// </summary>
+        /// <param name="searchText">The portion of a user's name or username to search for in the 3rd party identity provider. We will search in the First Name, LastName, and Useranme fields as specified by the 3rd party IDP.</param>
+        /// <param name="identityProvider">The source identity provider to search within.</param>
+        /// <returns></returns>
         [HttpGet("search")]
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Search(string searchText, string identityProvider)
         {
-            var users = _externalIdentityProviderService.SearchUsers(searchText);
+            var externalIdentityProvider =
+                _externalIdentityProviderServiceResolver.GetExternalIdentityProviderService(identityProvider);
+            var users = externalIdentityProvider.SearchUsers(searchText);
             var apiUsers = users.Select(u => new UserApiModel
             {
                 FirstName = u.FirstName,
