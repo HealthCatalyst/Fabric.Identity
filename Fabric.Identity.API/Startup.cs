@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
@@ -30,7 +29,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.PlatformAbstractions;
-using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -76,7 +74,8 @@ namespace Fabric.Identity.API
             services.AddScoped<IUserResolveService, UserResolverService>();
             services.AddSingleton<ISerializationSettings, SerializationSettings>();
             services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
-            services.AddSingleton<IExternalIdentityProviderService, LdapProviderService>();
+            services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();
+            services.AddSingleton<LdapProviderService>();
             services.AddSingleton(_appConfig.LdapSettings);
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
