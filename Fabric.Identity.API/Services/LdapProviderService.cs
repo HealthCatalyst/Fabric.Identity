@@ -24,7 +24,7 @@ namespace Fabric.Identity.API.Services
             }
             var subjectIdParts = subjectId.Split('\\');
             var accountName = subjectIdParts[subjectIdParts.Length - 1];
-            var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}*))";
+            var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}))";
             var users = SearchLdap(ldapQuery);
             return users.FirstOrDefault();
         }
