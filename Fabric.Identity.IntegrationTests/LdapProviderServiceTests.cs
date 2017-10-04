@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Moq;
@@ -59,11 +61,55 @@ namespace Fabric.Identity.IntegrationTests
             Assert.Null(externalUser);
         }
 
+        [Theory]
+        [MemberData(nameof(SearchData))]
+        public void SearchUsers_Succeeds(string searchText, int count)
+        {
+            var logger = new Mock<ILogger>().Object;
+            var settings = GetLdapSettings();
+
+            var testUsers = new List<Tuple<string, string>>
+            {
+                Tuple.Create("mike", "trout"),
+                Tuple.Create("mike", "piazza"),
+                Tuple.Create("mike", "stanton"),
+                Tuple.Create("carlos", "beltran")
+            };
+
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
+            var ldapEntries = CreateTestUsers(testUsers, settings.BaseDn, ldapConnectionProvider);
+
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
+            var searchResults = ldapProviderService.SearchUsers(searchText);
+            RemoveEntries(ldapEntries, ldapConnectionProvider);
+
+            Assert.NotNull(searchResults);
+            Assert.Equal(count, searchResults.Count);
+
+        }
+
+        public static IEnumerable<object[]> SearchData => new[]
+        {
+            new object[] {"mike", 3},
+            new object[] {"mike.piazza", 1},
+            new object[] {"car", 1},
+            new object[] {"belt", 1},
+            new object[] {"griffey", 0},
+        };
+
         private void RemoveEntry(LdapEntry ldapEntry, LdapConnectionProvider ldapConnectionProvider)
         {
             using (var connection = ldapConnectionProvider.GetConnection())
             {
                 connection.Delete(ldapEntry.DN);
+            }
+        }
+
+        private void RemoveEntries(IEnumerable<LdapEntry> ldapEntries, LdapConnectionProvider ldapConnectionProvider)
+        {
+            foreach (var ldapEntry in ldapEntries)
+            {
+                RemoveEntry(ldapEntry, ldapConnectionProvider);
             }
         }
 
@@ -75,6 +121,16 @@ namespace Fabric.Identity.IntegrationTests
                 connection.Add(ldapEntry);
                 return ldapEntry;
             }
+        }
+
+        private List<LdapEntry> CreateTestUsers(IEnumerable<Tuple<string, string>> testUsers, string baseDn, LdapConnectionProvider ldapConnectionProvider)
+        {
+            var ldapEntries = new List<LdapEntry>();
+            foreach (var testUser in testUsers)
+            {
+                ldapEntries.Add(CreateTestUser(testUser.Item1, testUser.Item2, baseDn, ldapConnectionProvider));
+            }
+            return ldapEntries;
         }
 
         private LdapEntry CreateNewLdapEntry(string firstName, string lastName, string baseDn)
