@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -7,7 +8,6 @@ using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -23,11 +23,14 @@ namespace Fabric.Identity.API.Management
     public class UsersController : BaseController<UserApiModel>
     {
         private readonly IDocumentDbService _documentDbService;
+        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
 
-        public UsersController(IDocumentDbService documentDbService, UserApiModelValidator validator, ILogger logger) 
+        public UsersController(IDocumentDbService documentDbService, IExternalIdentityProviderService externalIdentityProviderService, UserApiModelValidator validator, ILogger logger) 
             : base(validator, logger)
         {
-            _documentDbService = documentDbService;
+            _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));
+            _externalIdentityProviderService = externalIdentityProviderService ??
+                                               throw new ArgumentNullException(nameof(externalIdentityProviderService));
         }
         
         /// <summary>
@@ -57,6 +60,22 @@ namespace Fabric.Identity.API.Management
         public async Task<IActionResult> Post([FromBody] UserSearchParameter searchParameters)
         {
             return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.UserIds).ConfigureAwait(false);
+        }
+
+        [HttpGet("search")]
+        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        public IActionResult Search(string searchText, string identityProvider)
+        {
+            var users = _externalIdentityProviderService.SearchUsers(searchText);
+            var apiUsers = users.Select(u => new UserApiModel
+            {
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                MiddleName = u.MiddleName,
+                SubjectId = u.SubjectId
+            });
+            return Ok(apiUsers);
         }
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
