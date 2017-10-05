@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Fabric.Identity.API.Models;
 
 namespace IdentityServer4.Quickstart.UI
 {

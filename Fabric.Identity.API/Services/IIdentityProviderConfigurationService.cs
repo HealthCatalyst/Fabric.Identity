@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using IdentityServer4.Quickstart.UI;
+﻿using System.Collections.Generic;
+using Fabric.Identity.API.Models;
 
 namespace Fabric.Identity.API.Services
 {
