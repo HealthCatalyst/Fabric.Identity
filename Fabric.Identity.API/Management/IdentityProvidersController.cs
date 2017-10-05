@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
-using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -14,6 +12,10 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Fabric.Identity.API.Management
 {
+    /// <summary>
+    /// Manage third party identity providers configured for authentication
+    /// </summary>
+    [Authorize(Policy = "ReadScopeClaim", ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/identityproviders")]
     [Route("api/v{version:apiVersion}/identityproviders")]
@@ -29,6 +31,10 @@ namespace Fabric.Identity.API.Management
                                                         nameof(identityProviderConfigurationService));
         }
 
+        /// <summary>
+        /// Get a list of all the configured third party identity providers.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<ExternalProviderApiModel>), "Success")]
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
