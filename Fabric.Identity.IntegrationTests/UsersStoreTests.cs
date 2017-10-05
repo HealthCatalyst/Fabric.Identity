@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Services;
 using Moq;
 using Newtonsoft.Json;
 using Serilog;
@@ -20,6 +21,7 @@ namespace Fabric.Identity.IntegrationTests
         private readonly ILogger _logger = new Mock<ILogger>().Object;
         private readonly DocumentDbUserStore _documentDbUserStore;
         private readonly string _usersSearchApiBaseUrl = "/api/users";
+        private readonly string _identityProviderSearchBaseUrl = "/api/users/search";
 
 
         public UsersStoreTests() : base(false)
@@ -125,6 +127,35 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
+        public async Task UsersController_Search_ReturnsUsers()
+        {
+            var logger = new Mock<ILogger>().Object;
+            var settings = LdapTestHelper.GetLdapSettings();
+
+            var testUsers = new List<Tuple<string, string>>
+            {
+                Tuple.Create("john", "smoltz"),
+                Tuple.Create("john", "lackey"),
+                Tuple.Create("johnny", "damon"),
+                Tuple.Create("david", "wright")
+            };
+
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
+            var ldapEntries = LdapTestHelper.CreateTestUsers(testUsers, settings.BaseDn, ldapConnectionProvider);
+
+            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                $"{_identityProviderSearchBaseUrl}?searchText=john&identityProvider=Windows"));
+
+            LdapTestHelper.RemoveEntries(ldapEntries, ldapConnectionProvider);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var content = await response.Content.ReadAsStringAsync();
+            var users = JsonConvert.DeserializeObject<List<UserApiModel>>(content);
+            Assert.NotNull(users);
+            Assert.Equal(3, users.Count);
+        }
+
+        [Fact]
         public async Task UsersStore_FindByExternalProvider_ReturnsUser()
         {
             //add a user 
@@ -142,5 +173,6 @@ namespace Fabric.Identity.IntegrationTests
 
             Assert.NotNull(foundUser);
         }
+
     }
 }

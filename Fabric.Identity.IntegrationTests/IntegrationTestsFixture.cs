@@ -36,13 +36,15 @@ namespace Fabric.Identity.IntegrationTests
 
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
+        private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings()
         {
             DatabaseName = "integration-" + DateTime.UtcNow.Ticks.ToString(),
-            Username = "",
-            Password = "",
+            Username = "admin",
+            Password = "admin",
             Server = "http://127.0.0.1:5984"
         });
+        
 
         private static IDocumentDbService _dbService;
         protected static IDocumentDbService CouchDbService
@@ -111,7 +113,8 @@ namespace Fabric.Identity.IntegrationTests
         {
             var builder = new WebHostBuilder();
             builder.ConfigureServices(c =>
-                c.AddSingleton(CouchDbSettings)
+                c.AddSingleton(LdapSettings)
+                .AddSingleton(CouchDbSettings)
                 .AddSingleton<IDocumentDbService>(documentDbService)
             );
             
@@ -138,7 +141,8 @@ namespace Fabric.Identity.IntegrationTests
 
             var apiBuilder = new WebHostBuilder();
 
-            apiBuilder.ConfigureServices(c => c.AddSingleton(options)
+            apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
+                .AddSingleton(options)
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton<IDocumentDbService>(documentDbService)
                 );
