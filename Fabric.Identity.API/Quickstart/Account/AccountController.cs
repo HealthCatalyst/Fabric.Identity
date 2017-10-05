@@ -15,6 +15,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Management;
@@ -166,7 +167,7 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
 
                     var externalIdentityProviderService = _externalIdentityProviderServiceResolver
-                        .GetExternalIdentityProviderService("Windows");
+                        .GetExternalIdentityProviderService(FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows);
                     var externalUser = externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
                     if (externalUser != null)
                     {

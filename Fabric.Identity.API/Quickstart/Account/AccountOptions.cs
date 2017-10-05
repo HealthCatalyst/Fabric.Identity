@@ -3,6 +3,7 @@
 
 
 using System;
+using Fabric.Identity.API;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -21,8 +22,8 @@ namespace IdentityServer4.Quickstart.UI
         public static bool IncludeWindowsGroups = true;
         // specify the Windows authentication schemes you want to use for authentication
         public static readonly string[] WindowsAuthenticationSchemes = new string[] { "Negotiate", "NTLM" };
-        public static readonly string WindowsAuthenticationProviderName = "Windows";
-        public static readonly string WindowsAuthenticationDisplayName = "Windows";
+        public static readonly string WindowsAuthenticationProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
+        public static readonly string WindowsAuthenticationDisplayName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
 
         public static string InvalidCredentialsErrorMessage = "Invalid username or password";
     }

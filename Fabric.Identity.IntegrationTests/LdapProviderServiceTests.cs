@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Moq;
-using Novell.Directory.Ldap;
 using Serilog;
 using Xunit;
 

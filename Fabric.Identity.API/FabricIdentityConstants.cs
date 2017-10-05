@@ -66,5 +66,11 @@
             public static readonly string EntityDeletedAudit = "EntityDeleted";
             public static readonly string EntityReadAudit = "EntityRead";
         }
+
+        public static class FabricExternalIdentityProviderTypes
+        {
+            public const string Windows = "Windows";
+            public const string Oidc = "OIDC";
+        }
     }
 }

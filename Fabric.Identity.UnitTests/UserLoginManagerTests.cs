@@ -3,6 +3,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Services;
@@ -25,7 +26,7 @@ namespace Fabric.Identity.UnitTests
                 new Mock<ILogger>().Object);
 
             var userId = "HealthCatalyst\\foo.bar";
-            var provider = "Windows";
+            var provider = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
             var clientId = "sampleApp";
             var userName = "foo bar";
             var firstName = "foo";
@@ -63,7 +64,7 @@ namespace Fabric.Identity.UnitTests
             var userLoginManager = new UserLoginManager(documentDbUserStore, new Mock<ILogger>().Object);
 
             var userId = "HealthCatalyst\\foo.bar";
-            var provider = "Windows";
+            var provider = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
             var clientId = "sampleApp";
             var userName = "foo bar";
             var firstName = "foo";
@@ -84,7 +85,7 @@ namespace Fabric.Identity.UnitTests
             var firstLoginDate = existingUser.LastLoginDatesByClient.First().Value;
 
             userId = "HealthCatalyst\\foo.bar";
-            provider = "Windows";
+            provider = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
             clientId = "sampleApp";
             userName = "abc def";
             firstName = "abc";
