@@ -20,9 +20,10 @@ namespace Fabric.Identity.API.Services
         {
             if (!subjectId.Contains(@"\"))
             {
-                _logger.Information("subjectId '{subjectId}' was not in the correct format. Expected DOMAIN\\username.");
+                _logger.Information("subjectId '{subjectId}' was not in the correct format. Expected DOMAIN\\username.", subjectId);
                 return new ExternalUser();
             }
+            _logger.Debug("Searching LDAP for '{subjectId}'.", subjectId);
             var subjectIdParts = subjectId.Split('\\');
             var accountName = subjectIdParts[subjectIdParts.Length - 1];
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}))";
@@ -43,8 +44,10 @@ namespace Fabric.Identity.API.Services
             {
                 if (ldapConnection == null)
                 {
+                    _logger.Warning("Could not get an LDAP connection.");
                     return users;
                 }
+                _logger.Debug("Searching LDAP with query: {ldapQuery} and BaseDN: {baseDn}.", ldapQuery, _ldapConnectionProvider.BaseDn);
                 var results = ldapConnection.Search(_ldapConnectionProvider.BaseDn, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
                 while (results.hasMore())
                 {

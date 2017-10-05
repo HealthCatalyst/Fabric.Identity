@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
@@ -56,7 +57,7 @@ namespace Fabric.Identity.IntegrationTests
                 {
                     SubjectId = $"{GetRandomString()}\\{GetRandomString()}",
                     Username = i.ToString(),
-                    ProviderName = "Windows"
+                    ProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows
                 };
 
                 if (halfWithoutLoginForClient && i % 2 == 0)
@@ -163,7 +164,7 @@ namespace Fabric.Identity.IntegrationTests
             {
                 SubjectId = $"{GetRandomString()}\\{GetRandomString()}",
                 Username = GetRandomString(),
-                ProviderName = "Windows"
+                ProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows
             };
 
             CreateNewUser(user);
