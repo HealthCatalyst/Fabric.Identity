@@ -11,6 +11,8 @@ namespace Fabric.Identity.API.Services
     {
         private readonly ILdapConnectionProvider _ldapConnectionProvider;
         private readonly ILogger _logger;
+        private const string DomainKey = "DC=";
+
         public LdapProviderService(ILdapConnectionProvider ldapConnectionProvider, ILogger logger)
         {
             _ldapConnectionProvider = ldapConnectionProvider;
@@ -52,13 +54,13 @@ namespace Fabric.Identity.API.Services
                 while (results.hasMore())
                 {
                     var next = results.next();
-                    var atttributes = next.getAttributeSet();
+                    var attributeSet = next.getAttributeSet();
                     var user = new ExternalUser
                     {
-                        LastName = atttributes.getAttribute("SN") == null ? string.Empty : atttributes.getAttribute("SN").StringValue,
-                        FirstName = atttributes.getAttribute("GIVENNAME") == null ? string.Empty : atttributes.getAttribute("GIVENNAME").StringValue,
-                        MiddleName = atttributes.getAttribute("MIDDLENAME") == null ? string.Empty : atttributes.getAttribute("MIDDLENAME").StringValue,
-                        SubjectId = GetSubjectId(atttributes.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
+                        LastName = attributeSet.getAttribute("SN") == null ? string.Empty : attributeSet.getAttribute("SN").StringValue,
+                        FirstName = attributeSet.getAttribute("GIVENNAME") == null ? string.Empty : attributeSet.getAttribute("GIVENNAME").StringValue,
+                        MiddleName = attributeSet.getAttribute("MIDDLENAME") == null ? string.Empty : attributeSet.getAttribute("MIDDLENAME").StringValue,
+                        SubjectId = GetSubjectId(attributeSet.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
                     };
                     users.Add(user);
                 }
@@ -68,26 +70,26 @@ namespace Fabric.Identity.API.Services
 
         private string GetSubjectId(string samAccountName, string distinguishedName)
         {
-            if (string.IsNullOrEmpty(samAccountName))
+            if (string.IsNullOrWhiteSpace(samAccountName))
             {
                 return string.Empty;
             }
 
-            if (string.IsNullOrEmpty(distinguishedName))
+            if (string.IsNullOrWhiteSpace(distinguishedName))
             {
                 return samAccountName;
             }
 
             var distinguishedNameSegments = distinguishedName.Split(',');
             var topLevelSubDomain =
-                distinguishedNameSegments.FirstOrDefault(s => s.StartsWith("DC=", StringComparison.OrdinalIgnoreCase));
+                distinguishedNameSegments.FirstOrDefault(s => s.StartsWith(DomainKey, StringComparison.OrdinalIgnoreCase));
 
-            if (string.IsNullOrEmpty(topLevelSubDomain))
+            if (string.IsNullOrWhiteSpace(topLevelSubDomain))
             {
                 return samAccountName;
             }
 
-            var netbiosName = topLevelSubDomain.ToUpperInvariant().Replace("DC=", string.Empty);
+            var netbiosName = topLevelSubDomain.ToUpperInvariant().Replace(DomainKey, string.Empty);
             if (netbiosName.Length > 15)
             {
                 netbiosName = netbiosName.Substring(0, 15);
