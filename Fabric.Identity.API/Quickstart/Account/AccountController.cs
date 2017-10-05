@@ -53,6 +53,7 @@ namespace IdentityServer4.Quickstart.UI
             DocumentDbUserStore documentDbUserStore,
             ILogger logger,
             IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver,
+            AccountService account,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
@@ -61,7 +62,7 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;
             _logger = logger;
-            _account = new AccountService(interaction, httpContextAccessor, clientStore, appConfiguration);
+            _account = account;
             _userLoginManager = new UserLoginManager(documentDbUserStore, _logger);
             _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver;
 
