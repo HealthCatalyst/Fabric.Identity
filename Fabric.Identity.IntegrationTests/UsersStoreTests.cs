@@ -157,6 +157,14 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
+        public async Task UsersController_Search_InvalidIdentityProvider_ReturnsBadRequest()
+        {
+            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                $"{_identityProviderSearchBaseUrl}?searchText=john&identityProvider=Test"));
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task UsersStore_FindByExternalProvider_ReturnsUser()
         {
             //add a user 

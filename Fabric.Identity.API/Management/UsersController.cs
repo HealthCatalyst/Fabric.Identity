@@ -73,17 +73,25 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Search(string searchText, string identityProvider)
         {
-            var externalIdentityProvider =
-                _externalIdentityProviderServiceResolver.GetExternalIdentityProviderService(identityProvider);
-            var users = externalIdentityProvider.SearchUsers(searchText);
-            var apiUsers = users.Select(u => new UserApiModel
+            try
             {
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                MiddleName = u.MiddleName,
-                SubjectId = u.SubjectId
-            });
-            return Ok(apiUsers);
+                var externalIdentityProvider =
+                    _externalIdentityProviderServiceResolver.GetExternalIdentityProviderService(identityProvider);
+                var users = externalIdentityProvider.SearchUsers(searchText);
+                var apiUsers = users.Select(u => new UserApiModel
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    MiddleName = u.MiddleName,
+                    SubjectId = u.SubjectId
+                });
+                return Ok(apiUsers);
+            }
+            catch (InvalidOperationException e)
+            {
+                return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
+            }
+            
         }
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)

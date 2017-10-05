@@ -17,7 +17,7 @@ namespace Fabric.Identity.API.Services
                 case FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows:
                     return _serviceProvider.GetRequiredService<LdapProviderService>();
                 default:
-                    throw new InvalidOperationException("There is no search provider specified for the requested Identity Provider.");
+                    throw new InvalidOperationException($"There is no search provider specified for the requested Identity Provider: {identityProviderName}.");
             }
         }
     }
