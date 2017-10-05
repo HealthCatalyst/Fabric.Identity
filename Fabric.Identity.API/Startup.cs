@@ -25,6 +25,7 @@ using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.Infrastructure;
 using IdentityServer4.Models;
+using IdentityServer4.Quickstart.UI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -83,6 +84,8 @@ namespace Fabric.Identity.API
                 RequireHttpsMetadata = false,
                 ApiName = identityServerApiSettings.ClientId
             });
+            services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
+            services.AddTransient<AccountService>();
 
             services.AddMvc()
                 .AddJsonOptions(x =>
