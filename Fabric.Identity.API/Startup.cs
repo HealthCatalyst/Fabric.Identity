@@ -76,7 +76,7 @@ namespace Fabric.Identity.API
             services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
             services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();
             services.AddSingleton<LdapProviderService>();
-            services.AddSingleton(_appConfig.LdapSettings);
+            services.TryAddSingleton(_appConfig.LdapSettings);
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
             {
                 Authority = identityServerApiSettings.Authority,
