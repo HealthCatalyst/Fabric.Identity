@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 
 namespace IdentityServer4.Quickstart.UI
