@@ -11,7 +11,8 @@ namespace Fabric.Identity.API.Documentation
                 new Tag { Name = "ApiResource", Description = "Manage ApiResources" },
                 new Tag { Name = "Client", Description = "Manage Clients" },
                 new Tag { Name = "IdentityResource", Description = "Manage IdentityResources" },
-                new Tag { Name = "Users", Description = "Get User Information" }
+                new Tag { Name = "Users", Description = "Get User Information" },
+                new Tag { Name = "IdentityProviders", Description = "Manage IdentityProviders"}
             };
         }
     }

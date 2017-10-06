@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.Documentation
         /// <param name="context">OperationFilterContext</param>
         public void Apply(Operation operation, OperationFilterContext context)
         {
-            var versionParameter = operation.Parameters.FirstOrDefault(p => p.Name == "version");
+            var versionParameter = operation.Parameters?.FirstOrDefault(p => p.Name == "version");
 
             if (versionParameter == null)
             {
