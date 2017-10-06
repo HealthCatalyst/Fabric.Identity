@@ -12,7 +12,7 @@ namespace Fabric.Identity.IntegrationTests
     {
         private readonly string _identityProvidersBaseUrl = "/api/identityProviders";
         [Fact]
-        public async Task UsersController_Search_InvalidIdentityProvider_ReturnsBadRequest()
+        public async Task IdentityProvidersController_Get_ReturnsProviders()
         {
             var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                 $"{_identityProvidersBaseUrl}"));
