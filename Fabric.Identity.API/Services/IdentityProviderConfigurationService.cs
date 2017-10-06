@@ -13,8 +13,7 @@ namespace Fabric.Identity.API.Services
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public IdentityProviderConfigurationService(IAppConfiguration appConfiguration,
-            IHttpContextAccessor httpContextAccessor)
+        public IdentityProviderConfigurationService(IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
