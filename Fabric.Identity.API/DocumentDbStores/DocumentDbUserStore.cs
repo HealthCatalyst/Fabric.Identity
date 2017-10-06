@@ -1,10 +1,8 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Newtonsoft.Json;
-using RestSharp.Extensions.MonoHttp;
 using Serilog;
 
 namespace Fabric.Identity.API.DocumentDbStores  
