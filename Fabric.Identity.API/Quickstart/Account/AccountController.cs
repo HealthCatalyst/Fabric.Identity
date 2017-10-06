@@ -40,7 +40,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IEventService _events;
         private readonly IAppConfiguration _appConfiguration;
         private readonly ILogger _logger;
-        private readonly AccountService _account;
+        private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
         private readonly IExternalIdentityProviderServiceResolver _externalIdentityProviderServiceResolver;
 
@@ -53,7 +53,7 @@ namespace IdentityServer4.Quickstart.UI
             DocumentDbUserStore documentDbUserStore,
             ILogger logger,
             IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver,
-            AccountService account,
+            AccountService accountService,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
@@ -62,7 +62,7 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;
             _logger = logger;
-            _account = account;
+            _accountService = accountService;
             _userLoginManager = new UserLoginManager(documentDbUserStore, _logger);
             _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver;
 
@@ -83,7 +83,7 @@ namespace IdentityServer4.Quickstart.UI
         [HttpGet]
         public async Task<IActionResult> Login(string returnUrl)
         {
-            var vm = await _account.BuildLoginViewModelAsync(returnUrl);
+            var vm = await _accountService.BuildLoginViewModelAsync(returnUrl);
 
             if (vm.IsExternalLoginOnly)
             {
@@ -141,7 +141,7 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             // something went wrong, show form with error
-            var vm = await _account.BuildLoginViewModelAsync(model);
+            var vm = await _accountService.BuildLoginViewModelAsync(model);
             return View(vm);
         }
 
@@ -293,7 +293,7 @@ namespace IdentityServer4.Quickstart.UI
         [HttpGet]
         public async Task<IActionResult> Logout(string logoutId)
         {
-            var vm = await _account.BuildLogoutViewModelAsync(logoutId);
+            var vm = await _accountService.BuildLogoutViewModelAsync(logoutId);
 
             if (vm.ShowLogoutPrompt == false)
             {
@@ -311,7 +311,7 @@ namespace IdentityServer4.Quickstart.UI
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(LogoutInputModel model)
         {
-            var vm = await _account.BuildLoggedOutViewModelAsync(model.LogoutId);
+            var vm = await _accountService.BuildLoggedOutViewModelAsync(model.LogoutId);
             if (vm.TriggerExternalSignout)
             {
                 string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
