@@ -43,6 +43,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
         private readonly IExternalIdentityProviderServiceResolver _externalIdentityProviderServiceResolver;
+        private readonly GroupFilterService _groupFilterService;
 
         public AccountController(
             IIdentityServerInteractionService interaction,
@@ -54,6 +55,7 @@ namespace IdentityServer4.Quickstart.UI
             ILogger logger,
             IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver,
             AccountService accountService,
+            GroupFilterService groupFilterService,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
@@ -63,9 +65,9 @@ namespace IdentityServer4.Quickstart.UI
             _appConfiguration = appConfiguration;
             _logger = logger;
             _accountService = accountService;
+            _groupFilterService = groupFilterService;
             _userLoginManager = new UserLoginManager(documentDbUserStore, _logger);
             _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver;
-
         }
 
         private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
@@ -182,7 +184,7 @@ namespace IdentityServer4.Quickstart.UI
                         var wi = wp.Identity as WindowsIdentity;
                         var groups = wi.Groups.Translate(typeof(NTAccount));
                         var roles = groups.Select(x => new Claim(JwtClaimTypes.Role, x.Value));
-                        id.AddClaims(roles);
+                        id.AddClaims(_groupFilterService.FilterClaims(roles));
                     }
 
                     await HttpContext.Authentication.SignInAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme, new ClaimsPrincipal(id), props);

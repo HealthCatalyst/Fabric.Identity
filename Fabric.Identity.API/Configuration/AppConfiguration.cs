@@ -17,5 +17,6 @@ namespace Fabric.Identity.API.Configuration
         public IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; set; }
         public ApplicationInsights ApplicationInsights { get; set; }
         public LdapSettings LdapSettings { get; set; }
+        public FilterSettings FilterSettings { get; set; }
     }
 }

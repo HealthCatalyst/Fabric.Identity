@@ -13,10 +13,10 @@ namespace Fabric.Identity.API.Configuration
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }
         CouchDbSettings CouchDbSettings { get; }
-
         ExternalIdProviderSettings ExternalIdProviderSettings { get; }
         IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; }
         ApplicationInsights ApplicationInsights { get; }
         LdapSettings LdapSettings { get; }
+        FilterSettings FilterSettings { get; }
     }
 }
