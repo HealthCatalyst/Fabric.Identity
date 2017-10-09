@@ -19,15 +19,15 @@ namespace Fabric.Identity.API.DocumentDbStores
         }
 
         //id for a  user stored in documentDb = user:subjectid:provider
-        private string GetUserDocumentId(string subjectId, string provider)
+        private static string GetUserDocumentId(string subjectId, string provider)
         {
-            return $"{subjectId}:{provider}";
+            return $"{subjectId}:{provider}".ToLower();
         }        
 
         public async Task<User> FindBySubjectId(string subjectId)
         {            
             _logger.Debug($"finding user with subject id: {subjectId}");
-            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId}");
+            var user = await _documentDbService.GetDocuments<User>($"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId.ToLower()}");
             return user?.FirstOrDefault();
         }
 
