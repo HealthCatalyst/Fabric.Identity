@@ -39,6 +39,12 @@ $couchDbPassword = $installSettings.couchDbPassword
 $appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
 $siteName = $installSettings.siteName
 $hostUrl = $installSettings.hostUrl
+$ldapServer = $installSettings.ldapServer
+$ldapPort = $installSettings.ldapPort
+$ldapUserName = $installSettings.ldapUserName
+$ldapPassword = $installSettings.ldapPassword
+$ldapUseSsl = $installSettings.ldapUseSsl
+$ldapBaseDn = $installSettings.ldapBaseDn
 
 $workingDirectory = Get-CurrentScriptDirectory
 
@@ -112,6 +118,31 @@ if($appInsightsInstrumentationKey){
 }
 
 $environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "${hostUrl}/${appName}")
+
+if($ldapServer){
+	$environmentVariables.Add("LdapSettings__Server", $ldapServer)
+}
+
+if($ldapPort){
+	$environmentVariables.Add("LdapSettings__Port", $ldapPort)
+}
+
+if($ldapUserName){
+	$environmentVariables.Add("LdapSettings__Username", $ldapUserName)
+}
+
+if($ldapPassword){
+	$encryptedLdapPassword = Get-EncryptedString $signingCert $ldapPassword
+	$environmentVariables.Add("LdapSettings__Password", $encryptedLdapPassword)
+}
+
+if($ldapUseSsl){
+	$environmentVariables.Add("LdapSettings__UseSsl", $ldapUseSsl)
+}
+
+if($ldapBaseDn){
+	$environmentVariables.Add("LdapSettings__BaseDn", $ldapBaseDn)
+}
 
 Set-EnvironmentVariables $appDirectory $environmentVariables
 
