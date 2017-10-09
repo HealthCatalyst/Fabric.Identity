@@ -96,7 +96,7 @@ namespace Fabric.Identity.API.Management
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
         {
-            var docIds = userIds.ToList();
+            var docIds = userIds.Select(id => id.ToLower()).ToList();
             if (!docIds.Any())
             {
                 return CreateFailureResponse("No userIds were included in the request",
