@@ -24,7 +24,6 @@ namespace Fabric.Identity.IntegrationTests
         private readonly string _usersSearchApiBaseUrl = "/api/users";
         private readonly string _identityProviderSearchBaseUrl = "/api/users/search";
 
-
         public UsersStoreTests() : base(false)
         {          
             var documentDbService = CouchDbService;
