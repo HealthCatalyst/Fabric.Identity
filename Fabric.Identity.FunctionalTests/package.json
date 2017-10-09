@@ -13,8 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "chakram": "^1.5.0",
-    "mocha": "^3.4.2",    
-    "phantomjs": "1.9.8",    
+    "mocha": "^3.4.2",
+    "phantomjs": "1.9.8",
     "selenium-webdriver": "^3.4.0"
   }
 }

@@ -9,22 +9,22 @@ namespace Fabric.Identity.API.Services
 {
     public class GroupFilterService
     {
-        private readonly GroupFilterSettings _groupMatchSettings;
+        private readonly GroupFilterSettings _groupFilterSettings;
 
-        public GroupFilterService(GroupFilterSettings groupMatchSettings)
+        public GroupFilterService(GroupFilterSettings groupFilterSettings)
         {
-            _groupMatchSettings = groupMatchSettings;
+            _groupFilterSettings = groupFilterSettings;
         }
 
         public IEnumerable<Claim> FilterClaims(IEnumerable<Claim> claims)
         {
-            if (_groupMatchSettings == null)
+            if (_groupFilterSettings == null)
             {
                 return claims;
             }
 
-            var prefixes = _groupMatchSettings.Prefixes?.ToList();
-            var suffixes = _groupMatchSettings.Suffixes?.ToList();
+            var prefixes = _groupFilterSettings.Prefixes?.ToList();
+            var suffixes = _groupFilterSettings.Suffixes?.ToList();
             var claimList = claims.ToList();
             var prefixFilteredClaims = claimList;
             var suffixFilteredClaims = claimList;

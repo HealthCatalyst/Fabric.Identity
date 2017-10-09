@@ -78,10 +78,11 @@ namespace Fabric.Identity.API
             services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();
             services.AddSingleton<LdapProviderService>();
 
-            if (_appConfig.FilterSettings?.GroupFilterSettings != null)
-            {
-                services.TryAddSingleton(_appConfig.FilterSettings?.GroupFilterSettings);
-            }
+            // filter settings
+            var filterSettings = _appConfig.FilterSettings ??
+                                 new FilterSettings {GroupFilterSettings = new GroupFilterSettings()};
+            filterSettings.GroupFilterSettings = filterSettings.GroupFilterSettings ?? new GroupFilterSettings();
+            services.TryAddSingleton(filterSettings.GroupFilterSettings);
             
             services.AddSingleton<GroupFilterService>();
             services.TryAddSingleton(_appConfig.LdapSettings);
