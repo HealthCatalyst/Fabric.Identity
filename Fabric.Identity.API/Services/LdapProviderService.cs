@@ -53,16 +53,32 @@ namespace Fabric.Identity.API.Services
                 var results = ldapConnection.Search(_ldapConnectionProvider.BaseDn, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
                 while (results.hasMore())
                 {
-                    var next = results.next();
-                    var attributeSet = next.getAttributeSet();
-                    var user = new ExternalUser
+                    try
                     {
-                        LastName = attributeSet.getAttribute("SN") == null ? string.Empty : attributeSet.getAttribute("SN").StringValue,
-                        FirstName = attributeSet.getAttribute("GIVENNAME") == null ? string.Empty : attributeSet.getAttribute("GIVENNAME").StringValue,
-                        MiddleName = attributeSet.getAttribute("MIDDLENAME") == null ? string.Empty : attributeSet.getAttribute("MIDDLENAME").StringValue,
-                        SubjectId = GetSubjectId(attributeSet.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
-                    };
-                    users.Add(user);
+                        var next = results.next();
+                        _logger.Debug("Found entry with DN: {DN}", next.DN);
+                        var attributeSet = next.getAttributeSet();
+                        var user = new ExternalUser
+                        {
+                            LastName = attributeSet.getAttribute("SN") == null
+                                ? string.Empty
+                                : attributeSet.getAttribute("SN").StringValue,
+                            FirstName = attributeSet.getAttribute("GIVENNAME") == null
+                                ? string.Empty
+                                : attributeSet.getAttribute("GIVENNAME").StringValue,
+                            MiddleName = attributeSet.getAttribute("MIDDLENAME") == null
+                                ? string.Empty
+                                : attributeSet.getAttribute("MIDDLENAME").StringValue,
+                            SubjectId = GetSubjectId(attributeSet.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
+                        };
+                        users.Add(user);
+                        _logger.Debug("User: {@user}", user);
+                    }
+                    catch (LdapReferralException ex)
+                    {
+                        //log error but don't throw as this is not a fatal error.
+                        _logger.Debug(ex, "Error querying LDAP, referral exception: {failedReferral}, {@data}", ex.FailedReferral, ex.Data);
+                    }
                 }
                 return users;
             }

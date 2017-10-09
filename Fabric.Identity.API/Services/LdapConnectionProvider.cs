@@ -24,7 +24,8 @@ namespace Fabric.Identity.API.Services
             {
                 return null;
             }
-            var connection = new LdapConnection() { SecureSocketLayer = _ldapSettings.UseSsl };
+            var constraints = new LdapConstraints { ReferralFollowing = true };
+            var connection = new LdapConnection() { SecureSocketLayer = _ldapSettings.UseSsl, Constraints = constraints };
             connection.Connect(_ldapSettings.Server, _ldapSettings.Port);
             connection.Bind(_ldapSettings.Username, _ldapSettings.Password);
             return connection;
