@@ -55,6 +55,19 @@ try{
 	throw $_.Exception
 }
 
+if((Test-Path $zipPackage))
+{
+	$path = [System.IO.Path]::GetDirectoryName($zipPackage)
+	if(!$path)
+	{
+		$zipPackage = [System.IO.Path]::Combine($workingDirectory, $zipPackage)
+		Write-Host "zipPackage: $zipPackage"
+	}
+}else{
+	Write-Host "Could not find file or directory $zipPackage, please verify that the zipPackage configuration setting in install.config is the path to a valid zip file that exists."
+	exit 1
+}
+
 
 if(!(Test-Prerequisite '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
 {
