@@ -25,14 +25,14 @@ function Test-RegistrationComplete($authUrl)
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
 }
-Import-Module -Name .\Fabric-Install-Utilities.psm1
+Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
 $webroot = $installSettings.webroot
 $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
-$primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint
+$primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $couchDbServer = $installSettings.couchDbServer
 $couchDbUsername = $installSettings.couchDbUsername
 $couchDbPassword = $installSettings.couchDbPassword 
@@ -47,6 +47,14 @@ $ldapUseSsl = $installSettings.ldapUseSsl
 $ldapBaseDn = $installSettings.ldapBaseDn
 
 $workingDirectory = Get-CurrentScriptDirectory
+
+try{
+	$signingCert = Get-EncryptionCertificate $primarySigningCertificateThumbprint
+}catch{
+	Write-Host "Could not get signing certificte with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
+	throw $_.Exception
+}
+
 
 if(!(Test-Prerequisite '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
 {
@@ -88,7 +96,7 @@ Publish-WebSite $zipPackage $appDirectory $appName
 #Write environment variables
 Write-Host "Loading up environment variables..."
 $environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
-$signingCert = Get-Item Cert:\LocalMachine\My\$primarySigningCertificateThumbprint
+
 
 if($clientName){
 	$environmentVariables.Add("ClientName", $clientName)
