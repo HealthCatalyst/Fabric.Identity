@@ -51,7 +51,7 @@ $workingDirectory = Get-CurrentScriptDirectory
 try{
 	$signingCert = Get-Certificate $primarySigningCertificateThumbprint
 }catch{
-	Write-Host "Could not get signing certificte with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
+	Write-Host "Could not get signing certificate with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
 	throw $_.Exception
 }
 
