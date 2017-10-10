@@ -23,7 +23,7 @@ function Test-RegistrationComplete($authUrl)
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
-	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
+	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
@@ -49,7 +49,7 @@ $ldapBaseDn = $installSettings.ldapBaseDn
 $workingDirectory = Get-CurrentScriptDirectory
 
 try{
-	$signingCert = Get-EncryptionCertificate $primarySigningCertificateThumbprint
+	$signingCert = Get-Certificate $primarySigningCertificateThumbprint
 }catch{
 	Write-Host "Could not get signing certificte with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
 	throw $_.Exception
