@@ -25,12 +25,12 @@ namespace Fabric.Identity.UnitTests
                 new DocumentDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object),
                 new Mock<ILogger>().Object);
 
-            var userId = "HealthCatalyst\\foo.bar";
+            var userId = "HealthCatalyst\\foo.baz";
             var provider = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
             var clientId = "sampleApp";
-            var userName = "foo bar";
+            var userName = "foo baz";
             var firstName = "foo";
-            var lastName = "bar";
+            var lastName = "baz";
             var middleName = "dot";
             var claims = new List<Claim>
             {
