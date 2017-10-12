@@ -33,6 +33,7 @@ $webroot = $installSettings.webroot
 $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
 $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
+$encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $couchDbServer = $installSettings.couchDbServer
 $couchDbUsername = $installSettings.couchDbUsername
 $couchDbPassword = $installSettings.couchDbPassword 
@@ -52,6 +53,13 @@ try{
 	$signingCert = Get-Certificate $primarySigningCertificateThumbprint
 }catch{
 	Write-Host "Could not get signing certificate with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
+	throw $_.Exception
+}
+
+try{
+	$encryptionCert = Get-Certificate $encryptionCertificateThumbprint
+}catch{
+	Write-Host "Could not get encryption certificate with thumbprint $encryptionCertificateThumbprint. Please verify that the encryptionCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
 	throw $_.Exception
 }
 
@@ -120,6 +128,10 @@ if ($primarySigningCertificateThumbprint){
 	$environmentVariables.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
 }
 
+if ($encryptionCertificateThumbprint){
+	$environmentVariables.Add("SigningCertificateSettings__EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+}
+
 if ($couchDbServer){
 	$environmentVariables.Add("CouchDbSettings__Server", $couchDbServer)
 }
@@ -129,7 +141,7 @@ if ($couchDbUsername){
 }
 
 if ($couchDbPassword){
-	$encryptedCouchDbPassword = Get-EncryptedString $signingCert $couchDbPassword
+	$encryptedCouchDbPassword = Get-EncryptedString $encryptionCert $couchDbPassword
 	$environmentVariables.Add("CouchDbSettings__Password", $encryptedCouchDbPassword)
 }
 
@@ -153,7 +165,7 @@ if($ldapUserName){
 }
 
 if($ldapPassword){
-	$encryptedLdapPassword = Get-EncryptedString $signingCert $ldapPassword
+	$encryptedLdapPassword = Get-EncryptedString $encryptionCert $ldapPassword
 	$environmentVariables.Add("LdapSettings__Password", $encryptedLdapPassword)
 }
 
