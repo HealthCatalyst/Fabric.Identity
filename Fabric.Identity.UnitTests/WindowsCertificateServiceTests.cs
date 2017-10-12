@@ -1,11 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Exceptions;
-using IdentityModel;
-using Moq;
-using Serilog;
 using Xunit;
 
 namespace Fabric.Identity.UnitTests
@@ -17,7 +13,7 @@ namespace Fabric.Identity.UnitTests
         public void GetCertificate_WithoutThumbprint_ThrowsException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
             var certificateService = new WindowsCertificateService();
-            Assert.Throws<FabricConfigurationException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
+            Assert.Throws<FabricConfigurationException>(() => certificateService.GetSigningCertificate(signingCertificateSettings, isPrimary));
         }
 
         public static IEnumerable<object[]> SigningCredentialSettings => new[]
