@@ -1,18 +1,16 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using Fabric.Identity.API.Configuration;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityModel;
-using Serilog;
 
 namespace Fabric.Identity.API.Services
 {
     public class WindowsCertificateService : ICertificateService
     {
 
-        public X509Certificate2 GetCertificate(SigningCertificateSettings certificateSettings, bool isPrimary = true)
+        public X509Certificate2 GetSigningCertificate(SigningCertificateSettings certificateSettings, bool isPrimary = true)
         {
             if (isPrimary && string.IsNullOrEmpty(certificateSettings.PrimaryCertificateThumbprint))
             {

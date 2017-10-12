@@ -1,16 +1,14 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Fabric.Identity.API.Configuration;
 using Fabric.Platform.Shared.Exceptions;
 using RestSharp.Extensions;
-using Serilog;
 
 namespace Fabric.Identity.API.Services
 {
     public class LinuxCertificateService : ICertificateService
     {
-        public X509Certificate2 GetCertificate(SigningCertificateSettings certificateSettings, bool isPrimary)
+        public X509Certificate2 GetSigningCertificate(SigningCertificateSettings certificateSettings, bool isPrimary)
         {
             if (isPrimary && string.IsNullOrEmpty(certificateSettings.PrimaryCertificatePath))
             {

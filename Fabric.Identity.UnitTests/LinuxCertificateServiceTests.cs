@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Exceptions;
-using Moq;
-using Serilog;
 using Xunit;
 
 namespace Fabric.Identity.UnitTests
@@ -18,14 +14,22 @@ namespace Fabric.Identity.UnitTests
         public void GetCertificate_WithoutCertPath_ThrowsFabricConfigurationException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
             var certificateService = new LinuxCertificateService();
-            Assert.Throws<FabricConfigurationException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
+            Assert.Throws<FabricConfigurationException>(() => certificateService.GetSigningCertificate(signingCertificateSettings, isPrimary));
         }
 
         [Theory, MemberData(nameof(SigningCredentialSettingsNotFoundException))]
         public void GetCertificate_WithoutCertPath_ThrowsFileNotFoundException(SigningCertificateSettings signingCertificateSettings, bool isPrimary)
         {
             var certificateService = new LinuxCertificateService();
-            Assert.Throws<FileNotFoundException>(() => certificateService.GetCertificate(signingCertificateSettings, isPrimary));
+            Assert.Throws<FileNotFoundException>(() => certificateService.GetSigningCertificate(signingCertificateSettings, isPrimary));
+        }
+
+        [Fact]
+        public void GetEncryptionCertificate_ThrowsFabricConfigurationException()
+        {
+            var certificateService = new LinuxCertificateService();
+            Assert.Throws<FabricConfigurationException>(
+                () => certificateService.GetEncryptionCertificate(new SigningCertificateSettings()));
         }
 
         public static IEnumerable<object[]> SigningCredentialSettingsConfigurationException => new[]

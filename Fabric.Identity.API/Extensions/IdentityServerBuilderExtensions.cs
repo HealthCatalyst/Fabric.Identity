@@ -1,9 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using IdentityServer4.Quickstart.UI;
-using IdentityServer4.Test;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -34,11 +32,11 @@ namespace Fabric.Identity.API.Extensions
 
             var isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
-            identityServerBuilder.AddSigningCredential(certificateService.GetCertificate(certificateSettings));
+            identityServerBuilder.AddSigningCredential(certificateService.GetSigningCertificate(certificateSettings));
             if (HasSecondarySigningKeys(certificateSettings, isLinux))
             {
                 identityServerBuilder.AddValidationKeys(
-                    new X509SecurityKey(certificateService.GetCertificate(certificateSettings, isPrimary: false)));
+                    new X509SecurityKey(certificateService.GetSigningCertificate(certificateSettings, isPrimary: false)));
             }
 
             return identityServerBuilder;
