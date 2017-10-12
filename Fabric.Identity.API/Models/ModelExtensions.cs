@@ -31,17 +31,51 @@ namespace Fabric.Identity.API.Models
 
         public static Client ToClientViewModel(this IS4.Client client)
         {
-            var newClient = new Client()
+            var newClient = new Client
             {
+                // Basic
+                Enabled = client.Enabled,
                 ClientId = client.ClientId,
-                ClientName = client.ClientName,
-                AllowedScopes = client.AllowedScopes,
+                RequireClientSecret = client.RequireClientSecret,
                 AllowedGrantTypes = client.AllowedGrantTypes,
-                AllowedCorsOrigins = client.AllowedCorsOrigins,
-                AllowOfflineAccess = client.AllowOfflineAccess,
-                RequireConsent = client.RequireConsent,
+                RequirePkce = client.RequirePkce,
+                AllowPlainTextPkce = client.AllowPlainTextPkce,
                 RedirectUris = client.RedirectUris,
-                PostLogoutRedirectUris = client.PostLogoutRedirectUris
+                AllowedScopes = client.AllowedScopes,
+                AllowOfflineAccess = client.AllowOfflineAccess,
+                AllowAccessTokensViaBrowser = client.AllowAccessTokensViaBrowser,
+                ProtocolType = client.ProtocolType,
+
+                // Authentication / Logout
+                PostLogoutRedirectUris = client.PostLogoutRedirectUris,
+                EnableLocalLogin = client.EnableLocalLogin,
+                IdentityProviderRestrictions = client.IdentityProviderRestrictions,
+                LogoutUri = client.LogoutUri,
+                LogoutSessionRequired = client.LogoutSessionRequired,
+                
+                // Token
+                IdentityTokenLifetime = client.IdentityTokenLifetime,
+                AccessTokenLifetime = client.AccessTokenLifetime,
+                AuthorizationCodeLifetime = client.AuthorizationCodeLifetime,
+                AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
+                SlidingRefreshTokenLifetime = client.SlidingRefreshTokenLifetime,
+                RefreshTokenUsage = client.RefreshTokenUsage,
+                RefreshTokenExpiration = client.RefreshTokenExpiration,
+                UpdateAccessTokenClaimsOnRefresh = client.UpdateAccessTokenClaimsOnRefresh,
+                AccessTokenType = client.AccessTokenType,
+                IncludeJwtId = client.IncludeJwtId,
+                AllowedCorsOrigins = client.AllowedCorsOrigins,
+                Claims = client.Claims,
+                AlwaysSendClientClaims = client.AlwaysSendClientClaims,
+                AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
+                PrefixClientClaims = client.PrefixClientClaims,
+
+                // Consent
+                RequireConsent = client.RequireConsent,
+                AllowRememberConsent = client.AllowRememberConsent,
+                ClientName = client.ClientName,
+                ClientUri = client.ClientUri,
+                LogoUri = client.LogoUri
             };
 
             return newClient;

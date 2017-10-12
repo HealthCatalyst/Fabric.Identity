@@ -50,7 +50,7 @@ namespace Fabric.Identity.API.Management
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
 
-            if (client == null || string.IsNullOrEmpty(client.ClientId))
+            if (string.IsNullOrEmpty(client?.ClientId))
             {
                 return CreateFailureResponse($"The specified client with id: {id} was not found",
                     HttpStatusCode.NotFound);
