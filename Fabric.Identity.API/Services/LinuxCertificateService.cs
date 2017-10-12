@@ -37,6 +37,11 @@ namespace Fabric.Identity.API.Services
                     certificateSettings.SecondaryCertificatePasswordPath);
         }
 
+        public X509Certificate2 GetEncryptionCertificate(SigningCertificateSettings certificateSettings)
+        {
+            throw new FabricConfigurationException("Do not encrypt settings when running on a Linux container, instead use Docker Secrets to protect sensitive configuration settings.");
+        }
+
         private X509Certificate2 GetCertFromFile(string certPath, string passwordPath)
         {
             using (var certStream = new FileStream(certPath, FileMode.Open, FileAccess.Read))

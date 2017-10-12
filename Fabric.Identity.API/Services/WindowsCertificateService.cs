@@ -27,6 +27,17 @@ namespace Fabric.Identity.API.Services
             return X509.LocalMachine.My.Thumbprint.Find(thumbprint, validOnly: false).FirstOrDefault();
         }
 
+        public X509Certificate2 GetEncryptionCertificate(SigningCertificateSettings certificateSettings)
+        {
+            if (string.IsNullOrWhiteSpace(certificateSettings?.EncryptionCertificateThumbprint))
+            {
+                throw new FabricConfigurationException("You must specify an EncryptionCertificateThumprint if you are encrypting configuration settings.");
+            }
+            return X509.LocalMachine.My.Thumbprint
+                .Find(CleanThumbprint(certificateSettings.EncryptionCertificateThumbprint), false)
+                .FirstOrDefault();
+        }
+
         private string CleanThumbprint(string thumbprint)
         {
             

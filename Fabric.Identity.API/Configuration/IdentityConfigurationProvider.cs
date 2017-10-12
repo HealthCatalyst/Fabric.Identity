@@ -59,7 +59,7 @@ namespace Fabric.Identity.API.Configuration
         private string DecryptString(string encryptedString, ICertificateService certificateService, IAppConfiguration appConfiguration)
         {
 
-            var cert = certificateService.GetCertificate(appConfiguration.SigningCertificateSettings);
+            var cert = certificateService.GetEncryptionCertificate(appConfiguration.SigningCertificateSettings);
             var encryptedPasswordAsBytes =
                 System.Convert.FromBase64String(
                     encryptedString.TrimStart(EncryptionPrefix.ToCharArray()));
