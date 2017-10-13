@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System.Linq;
 using System.Collections.Generic;
+using Fabric.Identity.API.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -99,22 +100,30 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Post([FromBody] Client client)
         {
-            var is4Client = client.ToIs4ClientModel();
-            return ValidateAndExecute(is4Client, () =>
+            try
             {
-                var id = is4Client.ClientId;
+                var is4Client = client.ToIs4ClientModel();
+                return ValidateAndExecute(is4Client, () =>
+                {
+                    var id = is4Client.ClientId;
 
-                // override any secret in the request.
-                // TODO: we need to implement a salt strategy, either at the controller level or store level.
-                var clientSecret = this.GeneratePassword();
-                is4Client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
-                 _documentDbService.AddDocument(id, is4Client);
+                    // override any secret in the request.
+                    // TODO: we need to implement a salt strategy, either at the controller level or store level.
+                    var clientSecret = this.GeneratePassword();
+                    is4Client.ClientSecrets =
+                        new List<IS4.Secret>() {new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret))};
+                    _documentDbService.AddDocument(id, is4Client);
 
-                var viewClient = is4Client.ToClientViewModel();
-                viewClient.ClientSecret = clientSecret;
+                    var viewClient = is4Client.ToClientViewModel();
+                    viewClient.ClientSecret = clientSecret;
 
-                return CreatedAtAction("Get", new { id }, viewClient);
-            });
+                    return CreatedAtAction("Get", new {id}, viewClient);
+                });
+            }
+            catch (BadRequestException<Client> ex)
+            {
+                return CreateFailureResponse(ex.Message, HttpStatusCode.BadRequest);
+            }
         }
 
         /// <summary>
