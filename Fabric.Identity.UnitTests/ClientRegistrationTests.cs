@@ -16,37 +16,37 @@ namespace Fabric.Identity.UnitTests
 {
     public class ClientRegistrationTests
     {
-        private static readonly Random rand = new Random(DateTime.Now.Millisecond);
+        private static readonly Random Random = new Random(DateTime.Now.Millisecond);
 
-        private static readonly Func<IS4.Client> GetOnlineTestClient = () => new IS4.Client()
+        private static readonly Func<Client> GetOnlineTestClient = () => new Client
         {
-            ClientId = rand.Next().ToString(),
-            ClientName = rand.Next().ToString(),
-            RequireConsent = rand.Next() % 2 == 0,
+            ClientId = Random.Next().ToString(),
+            ClientName = Random.Next().ToString(),
+            RequireConsent = Random.Next() % 2 == 0,
             AllowOfflineAccess = false,
-            AllowedScopes = new List<string>() { rand.Next().ToString() },
-            AllowedGrantTypes = new List<string>() { IS4.GrantType.Implicit },
-            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
-            RedirectUris = new List<string>() { rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
-            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+            AllowedScopes = new List<string> { Random.Next().ToString() },
+            AllowedGrantTypes = new List<string> { IS4.GrantType.Implicit },
+            ClientSecret = Random.Next().ToString(),
+            RedirectUris = new List<string> { Random.Next().ToString() },
+            AllowedCorsOrigins = new List<string> { Random.Next().ToString() },
+            PostLogoutRedirectUris = new List<string> { Random.Next().ToString() },
         };
 
-        private static readonly Func<IS4.Client> GetOfflineTestClient = () => new IS4.Client()
+        private static readonly Func<Client> GetOfflineTestClient = () => new Client
         {
-            ClientId = rand.Next().ToString(),
-            ClientName = rand.Next().ToString(),
-            RequireConsent = rand.Next() % 2 == 0,
+            ClientId = Random.Next().ToString(),
+            ClientName = Random.Next().ToString(),
+            RequireConsent = Random.Next() % 2 == 0,
             AllowOfflineAccess = true,
-            AllowedScopes = new List<string>() { rand.Next().ToString() },
-            AllowedGrantTypes = new List<string>() { IS4.GrantType.ClientCredentials },
-            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
-            RedirectUris = new List<string>() { rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
-            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+            AllowedScopes = new List<string> { Random.Next().ToString() },
+            AllowedGrantTypes = new List<string> { IS4.GrantType.ClientCredentials },
+            ClientSecret = Random.Next().ToString(),
+            RedirectUris = new List<string> { Random.Next().ToString() },
+            AllowedCorsOrigins = new List<string> { Random.Next().ToString() },
+            PostLogoutRedirectUris = new List<string> { Random.Next().ToString() },
         };
 
-        private static readonly Func<IS4.Client> GetTestClient = rand.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
+        private static readonly Func<Client> GetTestClient = Random.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
 
         /// <summary>
         /// A collection of valid clients.
@@ -58,31 +58,37 @@ namespace Fabric.Identity.UnitTests
         /// </summary>
         public static IEnumerable<object[]> GetInvalidClients()
         {
-            yield return new object[] { new IS4.Client(), "Please specify an Id for this client" };
-            yield return new object[] { new IS4.Client(), "Please specify a Name for this client" };
-            yield return new object[] { new IS4.Client(), "Please specify at least one Allowed Scope for this client" };
-            yield return new object[] { new IS4.Client(), "Please specify at least one Allowed Cors Origin when using Implicit grant type" };
+            yield return new object[] {null, "is nonexistent or malformed"};
+            yield return new object[] {new Client { AllowedGrantTypes = IS4.GrantTypes.Implicit }, "Please specify an Id for this client"};
+            yield return new object[] {new Client { AllowedGrantTypes = IS4.GrantTypes.Implicit }, "Please specify a Name for this client"};
+            yield return new object[] {new Client { AllowedGrantTypes = IS4.GrantTypes.Implicit }, "Please specify at least one Allowed Scope for this client"};
+            yield return new object[]
+                {new Client { AllowedGrantTypes = IS4.GrantTypes.Implicit }, "Please specify at least one Allowed Cors Origin when using Implicit grant type"};
 
             yield return new object[]
             {
-                new IS4.Client() { AllowOfflineAccess = true },
+                new Client {AllowOfflineAccess = true, AllowedGrantTypes = IS4.GrantTypes.Implicit},
                 "Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword"
             };
             yield return new object[]
             {
-                new IS4.Client() {AllowOfflineAccess = true, AllowedGrantTypes = new List<string>() { IS4.GrantType.ResourceOwnerPassword } },
+                new Client
+                {
+                    AllowOfflineAccess = true,
+                    AllowedGrantTypes = new List<string> {IS4.GrantType.ResourceOwnerPassword}
+                },
                 "Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword"
             };
 
             yield return new object[]
             {
-                new IS4.Client() { AllowedGrantTypes = new List<string>() { "Grant2" }},
+                new Client {AllowedGrantTypes = new List<string> {"Grant2"}},
                 "Grant type not allowed"
             };
 
             yield return new object[]
             {
-                new IS4.Client() { AllowedGrantTypes = new List<string>() { string.Empty }},
+                new Client {AllowedGrantTypes = new List<string> {string.Empty}},
                 "Grant type not allowed"
             };
         }
@@ -97,20 +103,22 @@ namespace Fabric.Identity.UnitTests
         }
 
         [Theory]
-        [InlineData(null, "is nonexistent or malformed")]
         [MemberData(nameof(GetInvalidClients))]
-        public void TestCreateNewClient_Failures(IS4.Client client, string errorMessage)
+        public void TestCreateNewClient_Failures(Client client, string errorMessage)
         {
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
-            var result = controller.Post(client?.ToClientViewModel());
-            Assert.True(result is BadRequestObjectResult);
-            Assert.True((result as BadRequestObjectResult).Value is Error);
-            var error = (result as BadRequestObjectResult).Value as Error;
+            var result = controller.Post(client);
+
+            var badRequestObjectResult = result as BadRequestObjectResult;
+            Assert.NotNull(badRequestObjectResult);
+
+            var error = badRequestObjectResult.Value as Error;
+            Assert.NotNull(error);
 
             if (error.Details != null)
             {
-                Assert.True(error.Details.Any(e => e.Message.Contains(errorMessage)), $"error message not found in error stiring. returned error message: {String.Join(",", error.Details.Select(e => e.Message)) }");
+                Assert.True(error.Details.Any(e => e.Message.Contains(errorMessage)), $"error message not found in error string. returned error message: {string.Join(",", error.Details.Select(e => e.Message)) }");
             }
             else
             {
@@ -124,32 +132,37 @@ namespace Fabric.Identity.UnitTests
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
             var testClient = GetTestClient();
-            var submittedSecret = testClient.ClientSecrets.First().Value;
-            var result = controller.Post(testClient.ToClientViewModel());
-            Assert.True(result is CreatedAtActionResult);
-            Assert.True((result as CreatedAtActionResult).Value is Client);
+            var submittedSecret = testClient.ClientSecret;
+            var result = controller.Post(testClient);
 
-            var client = (result as CreatedAtActionResult).Value as Client;
-            Assert.NotNull(client.ClientSecret);
-            Assert.NotEmpty(client.ClientSecret);
+            var createdAtActionResult = result as CreatedAtActionResult;
+            Assert.NotNull(createdAtActionResult);
+
+            var clientResult = createdAtActionResult.Value as Client;
+            Assert.NotNull(clientResult);
+
+            Assert.NotNull(clientResult.ClientSecret);
+            Assert.NotEmpty(clientResult.ClientSecret);
 
             // Password must be generated for the client.
-            Assert.NotEqual(submittedSecret, client.ClientSecret);
+            Assert.NotEqual(submittedSecret, clientResult.ClientSecret);
         }
 
         [Theory]
         [MemberData(nameof(GetValidClients))]
-        public void TestCreateNewClient_DBCall(IS4.Client testClient)
+        public void TestCreateNewClient_DBCall(Client testClient)
         {
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
-            var result = controller.Post(testClient.ToClientViewModel());
-            Assert.True(result is CreatedAtActionResult);
-            Assert.True((result as CreatedAtActionResult).Value is Client);
+            var result = controller.Post(testClient);
+            var createdAtActionResult = result as CreatedAtActionResult;
+            Assert.NotNull(createdAtActionResult);
 
-            var client = (result as CreatedAtActionResult).Value as Client;
-            Assert.Equal(testClient.ClientId, client.ClientId);
-            Assert.Equal(testClient.ClientName, client.ClientName);
+            var clientResult = createdAtActionResult.Value as Client;
+            Assert.NotNull(clientResult);
+
+            Assert.Equal(testClient.ClientId, clientResult.ClientId);
+            Assert.Equal(testClient.ClientName, clientResult.ClientName);
 
             mockDocumentDbService.Verify(m =>
                 m.AddDocument<IS4.Client>(
@@ -163,18 +176,21 @@ namespace Fabric.Identity.UnitTests
             var testClient = GetTestClient();
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
             mockDocumentDbService.Setup(m =>
-                m.GetDocument<IS4.Client>(It.Is<string>(id => id == testClient.ClientId))).Returns(Task.FromResult(testClient));
+                m.GetDocument<IS4.Client>(It.Is<string>(id => id == testClient.ClientId))).Returns(Task.FromResult(testClient.ToIs4ClientModel()));
 
             var result = controller.Get(testClient.ClientId);
-            Assert.True(result is OkObjectResult);
-            Assert.True((result as OkObjectResult).Value is Client);
 
-            var client = (result as OkObjectResult).Value as Client;
-            Assert.Equal(testClient.ClientId, client.ClientId);
-            Assert.Equal(testClient.ClientName, client.ClientName);
+            var okObjectResult = result as OkObjectResult;
+            Assert.NotNull(okObjectResult);
+
+            var clientResult = okObjectResult.Value as Client;
+            Assert.NotNull(clientResult);
+
+            Assert.Equal(testClient.ClientId, clientResult.ClientId);
+            Assert.Equal(testClient.ClientName, clientResult.ClientName);
 
             // Password must never be returned
-            Assert.Null(client.ClientSecret);
+            Assert.Null(clientResult.ClientSecret);
         }
 
         [Theory]
@@ -209,7 +225,7 @@ namespace Fabric.Identity.UnitTests
                 }));
 
             var testClient = GetTestClient();
-            var result = controller.Put(clientId, testClient.ToClientViewModel());
+            var result = controller.Put(clientId, testClient);
             Assert.True(result is NoContentResult);
 
             mockDocumentDbService.Verify(m =>

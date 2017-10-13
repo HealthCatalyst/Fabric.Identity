@@ -5,6 +5,7 @@ using System.Net.Http;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using IdentityModel;
 using IdentityModel.Client;
@@ -22,12 +23,12 @@ namespace Fabric.Identity.IntegrationTests
     {
         private readonly TestServer _identityTestServer;
         private readonly TestServer _apiTestServer;
-        private static IS4.Client Client;
-        private static readonly string ClientSecret = "secret";
-        private static readonly string IdentityServerUrl = "http://localhost:5001";
-        private static readonly string RegistrationApiServerUrl = "http://localhost:5000";
+        private static IS4.Client _client;
+        private const string ClientSecret = "secret";
+        private const string IdentityServerUrl = "http://localhost:5001";
+        private const string RegistrationApiServerUrl = "http://localhost:5000";
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
-        private static readonly string RegistrationApiName = "registration-api";
+        private const string RegistrationApiName = "registration-api";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
@@ -45,8 +46,8 @@ namespace Fabric.Identity.IntegrationTests
             Server = "http://127.0.0.1:5984"
         });
         
-
         private static IDocumentDbService _dbService;
+
         protected static IDocumentDbService CouchDbService
         {
             get
@@ -77,9 +78,9 @@ namespace Fabric.Identity.IntegrationTests
                     bootstrapper.Setup();
 
                     var api = GetTestApiResource();
-                    Client = GetTestClient();
+                    _client = GetTestClient();
                     couchDbService.AddDocument(api.Name, api);
-                    couchDbService.AddDocument(Client.ClientId, Client);
+                    couchDbService.AddDocument(_client.ClientId, _client);
 
                     _dbService = couchDbService;
                 }
@@ -90,9 +91,9 @@ namespace Fabric.Identity.IntegrationTests
         static IntegrationTestsFixture()
         {                
             var api = GetTestApiResource();
-            Client = GetTestClient();
+            _client = GetTestClient();
             InMemoryDocumentDbService.AddDocument(api.Name, api);
-            InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
+            InMemoryDocumentDbService.AddDocument(_client.ClientId, _client);
         }
 
         public IntegrationTestsFixture(bool useInMemoryDbService = true)
@@ -158,7 +159,7 @@ namespace Fabric.Identity.IntegrationTests
         protected HttpClient GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret, $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope}"));
+            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret, $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
             return httpClient;
         }
@@ -182,7 +183,6 @@ namespace Fabric.Identity.IntegrationTests
 
         private static IS4.Client GetTestClient()
         {
-
             return new IS4.Client
             {
                 ClientId = TestClientName,
