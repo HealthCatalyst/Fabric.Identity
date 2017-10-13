@@ -1,9 +1,7 @@
 #!/bin/bash		
 version=$1		
-artifactPath=$2		
 echo "current directory: ${PWD}"		
 echo "version set to: $version"		
-echo "path to artifacts: $artifactPath"		
 cat > Fabric.Identity.API.nuspec << EOF		
 <?xml version="1.0" encoding="utf-8"?>		
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">		
@@ -17,10 +15,10 @@ cat > Fabric.Identity.API.nuspec << EOF
         <description>Install package for Fabric.Identity</description>		
     </metadata>		
     <files>		
-        <file src="$artifactPath/Fabric.Identity.API.zip" target="build" />
-	<file src="$artifactPath/Install-Identity-Windows.ps1" target="build" />
-	<file src="$artifactPath/Fabric-Install-Utilities.psm1" target="build" />
-	<file src="$artifactPath/install.config" target="build" />
+        <file src="Fabric.Identity.API.zip" target="build" />
+	<file src="Install-Identity-Windows.ps1" target="build" />
+	<file src="Fabric-Install-Utilities.psm1" target="build" />
+	<file src="install.config" target="build" />
     </files>		
 </package>		
 EOF
