@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Fabric.Identity.API.Exceptions;
 using FluentValidation.Results;
 using IdentityServer4.Test;
 using Newtonsoft.Json;
@@ -36,54 +37,61 @@ namespace Fabric.Identity.API.Models
                 return null;
             }
 
-            var newClient = new IS4.Client
+            try
             {
-                // Basic
-                Enabled = client.Enabled,
-                ClientId = client.ClientId,
-                RequireClientSecret = client.RequireClientSecret,
-                AllowedGrantTypes = client.AllowedGrantTypes,
-                RequirePkce = client.RequirePkce,
-                AllowPlainTextPkce = client.AllowPlainTextPkce,
-                RedirectUris = client.RedirectUris,
-                AllowedScopes = client.AllowedScopes,
-                AllowOfflineAccess = client.AllowOfflineAccess,
-                AllowAccessTokensViaBrowser = client.AllowAccessTokensViaBrowser,
-                ProtocolType = client.ProtocolType,
+                var newClient = new IS4.Client
+                {
+                    // Basic
+                    Enabled = client.Enabled,
+                    ClientId = client.ClientId,
+                    RequireClientSecret = client.RequireClientSecret,
+                    AllowedGrantTypes = client.AllowedGrantTypes,
+                    RequirePkce = client.RequirePkce,
+                    AllowPlainTextPkce = client.AllowPlainTextPkce,
+                    RedirectUris = client.RedirectUris,
+                    AllowedScopes = client.AllowedScopes,
+                    AllowOfflineAccess = client.AllowOfflineAccess,
+                    AllowAccessTokensViaBrowser = client.AllowAccessTokensViaBrowser,
+                    ProtocolType = client.ProtocolType,
 
-                // Authentication / Logout
-                PostLogoutRedirectUris = client.PostLogoutRedirectUris,
-                EnableLocalLogin = client.EnableLocalLogin,
-                IdentityProviderRestrictions = client.IdentityProviderRestrictions,
-                LogoutUri = client.LogoutUri,
-                LogoutSessionRequired = client.LogoutSessionRequired,
+                    // Authentication / Logout
+                    PostLogoutRedirectUris = client.PostLogoutRedirectUris,
+                    EnableLocalLogin = client.EnableLocalLogin,
+                    IdentityProviderRestrictions = client.IdentityProviderRestrictions,
+                    LogoutUri = client.LogoutUri,
+                    LogoutSessionRequired = client.LogoutSessionRequired,
 
-                // Token
-                IdentityTokenLifetime = client.IdentityTokenLifetime,
-                AccessTokenLifetime = client.AccessTokenLifetime,
-                AuthorizationCodeLifetime = client.AuthorizationCodeLifetime,
-                AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
-                SlidingRefreshTokenLifetime = client.SlidingRefreshTokenLifetime,
-                RefreshTokenUsage = client.RefreshTokenUsage,
-                RefreshTokenExpiration = client.RefreshTokenExpiration,
-                UpdateAccessTokenClaimsOnRefresh = client.UpdateAccessTokenClaimsOnRefresh,
-                AccessTokenType = client.AccessTokenType,
-                IncludeJwtId = client.IncludeJwtId,
-                AllowedCorsOrigins = client.AllowedCorsOrigins,
-                Claims = client.Claims,
-                AlwaysSendClientClaims = client.AlwaysSendClientClaims,
-                AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
-                PrefixClientClaims = client.PrefixClientClaims,
+                    // Token
+                    IdentityTokenLifetime = client.IdentityTokenLifetime,
+                    AccessTokenLifetime = client.AccessTokenLifetime,
+                    AuthorizationCodeLifetime = client.AuthorizationCodeLifetime,
+                    AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
+                    SlidingRefreshTokenLifetime = client.SlidingRefreshTokenLifetime,
+                    RefreshTokenUsage = client.RefreshTokenUsage,
+                    RefreshTokenExpiration = client.RefreshTokenExpiration,
+                    UpdateAccessTokenClaimsOnRefresh = client.UpdateAccessTokenClaimsOnRefresh,
+                    AccessTokenType = client.AccessTokenType,
+                    IncludeJwtId = client.IncludeJwtId,
+                    AllowedCorsOrigins = client.AllowedCorsOrigins,
+                    Claims = client.Claims,
+                    AlwaysSendClientClaims = client.AlwaysSendClientClaims,
+                    AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
+                    PrefixClientClaims = client.PrefixClientClaims,
 
-                // Consent
-                RequireConsent = client.RequireConsent,
-                AllowRememberConsent = client.AllowRememberConsent,
-                ClientName = client.ClientName,
-                ClientUri = client.ClientUri,
-                LogoUri = client.LogoUri
-            };
+                    // Consent
+                    RequireConsent = client.RequireConsent,
+                    AllowRememberConsent = client.AllowRememberConsent,
+                    ClientName = client.ClientName,
+                    ClientUri = client.ClientUri,
+                    LogoUri = client.LogoUri
+                };
 
-            return newClient;
+                return newClient;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new BadRequestException<Client>(client, ex.Message);
+            }
         }
 
         public static Client ToClientViewModel(this IS4.Client client)
