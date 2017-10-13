@@ -17,8 +17,8 @@ namespace Fabric.Identity.API.Models
         public IEnumerable<string> AllowedGrantTypes { get; set; }
         public bool RequirePkce { get; set; }
         public bool AllowPlainTextPkce { get; set; }
-        public IEnumerable<string> RedirectUris { get; set; }
-        public IEnumerable<string> AllowedScopes { get; set; }
+        public ICollection<string> RedirectUris { get; set; }
+        public ICollection<string> AllowedScopes { get; set; }
         public bool AllowOfflineAccess { get; set; }
         public bool AllowAccessTokensViaBrowser { get; set; }
         public string ProtocolType { get; set; }

@@ -39,7 +39,7 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings()
         {
-            DatabaseName = "integration-" + DateTime.UtcNow.Ticks.ToString(),
+            DatabaseName = "integration-" + DateTime.UtcNow.Ticks,
             Username = "",
             Password = "",
             Server = "http://127.0.0.1:5984"

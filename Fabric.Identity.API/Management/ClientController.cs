@@ -72,7 +72,7 @@ namespace Fabric.Identity.API.Management
         {
             var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
 
-            if (client == null || string.IsNullOrEmpty(client.ClientId))
+            if (string.IsNullOrEmpty(client?.ClientId))
             {
                 return CreateFailureResponse($"The specified client with id: {id} was not found",
                     HttpStatusCode.NotFound);
@@ -97,19 +97,20 @@ namespace Fabric.Identity.API.Management
         [HttpPost]
         [SwaggerResponse(201, typeof(Client), "The client was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        public IActionResult Post([FromBody] IS4.Client client)
+        public IActionResult Post([FromBody] Client client)
         {
-            return ValidateAndExecute(client, () =>
+            var is4Client = client.ToIs4Client();
+            return ValidateAndExecute(is4Client, () =>
             {
-                var id = client.ClientId;
+                var id = is4Client.ClientId;
 
                 // override any secret in the request.
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var clientSecret = this.GeneratePassword();
-                client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
-                 _documentDbService.AddDocument(id, client);
+                is4Client.ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(IS4.HashExtensions.Sha256(clientSecret)) };
+                 _documentDbService.AddDocument(id, is4Client);
 
-                Client viewClient = client.ToClientViewModel();
+                var viewClient = is4Client.ToClientViewModel();
                 viewClient.ClientSecret = clientSecret;
 
                 return CreatedAtAction("Get", new { id }, viewClient);
@@ -126,24 +127,25 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        public IActionResult Put(string id, [FromBody] IS4.Client client)
+        public IActionResult Put(string id, [FromBody] Client client)
         {
-            return ValidateAndExecute(client, () =>
+            var is4Client = client.ToIs4Client();
+            return ValidateAndExecute(is4Client, () =>
             {
                 var storedClient = _documentDbService.GetDocument<IS4.Client>(id).Result;
 
-                if (storedClient == null || string.IsNullOrEmpty(storedClient.ClientId))
+                if (string.IsNullOrEmpty(storedClient?.ClientId))
                 {
                     return CreateFailureResponse($"The specified client with id: {id} was not found",
                         HttpStatusCode.NotFound);
                 }
 
                 // Prevent from changing secrets.
-                client.ClientSecrets = storedClient.ClientSecrets;
+                is4Client.ClientSecrets = storedClient.ClientSecrets;
                 // Prevent from changing payload ClientId.
-                client.ClientId = id; 
+                is4Client.ClientId = id; 
 
-                _documentDbService.UpdateDocument(id, client);
+                _documentDbService.UpdateDocument(id, is4Client);
                 return NoContent();
             });
         }
