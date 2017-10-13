@@ -99,7 +99,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Post([FromBody] Client client)
         {
-            var is4Client = client.ToIs4Client();
+            var is4Client = client.ToIs4ClientModel();
             return ValidateAndExecute(is4Client, () =>
             {
                 var id = is4Client.ClientId;
@@ -129,7 +129,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Put(string id, [FromBody] Client client)
         {
-            var is4Client = client.ToIs4Client();
+            var is4Client = client.ToIs4ClientModel();
             return ValidateAndExecute(is4Client, () =>
             {
                 var storedClient = _documentDbService.GetDocument<IS4.Client>(id).Result;

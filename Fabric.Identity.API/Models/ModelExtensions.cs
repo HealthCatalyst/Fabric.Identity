@@ -29,7 +29,7 @@ namespace Fabric.Identity.API.Models
             return error;
         }
 
-        public static IS4.Client ToIs4Client(this Client client)
+        public static IS4.Client ToIs4ClientModel(this Client client)
         {
             if (client == null)
             {
