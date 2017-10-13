@@ -103,7 +103,7 @@ namespace Fabric.Identity.UnitTests
         {
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
-            var result = controller.Post(client);
+            var result = controller.Post(client?.ToClientViewModel());
             Assert.True(result is BadRequestObjectResult);
             Assert.True((result as BadRequestObjectResult).Value is Error);
             var error = (result as BadRequestObjectResult).Value as Error;
@@ -125,7 +125,7 @@ namespace Fabric.Identity.UnitTests
 
             var testClient = GetTestClient();
             var submittedSecret = testClient.ClientSecrets.First().Value;
-            var result = controller.Post(testClient);
+            var result = controller.Post(testClient.ToClientViewModel());
             Assert.True(result is CreatedAtActionResult);
             Assert.True((result as CreatedAtActionResult).Value is Client);
 
@@ -143,7 +143,7 @@ namespace Fabric.Identity.UnitTests
         {
             GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
 
-            var result = controller.Post(testClient);
+            var result = controller.Post(testClient.ToClientViewModel());
             Assert.True(result is CreatedAtActionResult);
             Assert.True((result as CreatedAtActionResult).Value is Client);
 
@@ -209,7 +209,7 @@ namespace Fabric.Identity.UnitTests
                 }));
 
             var testClient = GetTestClient();
-            var result = controller.Put(clientId, testClient);
+            var result = controller.Put(clientId, testClient.ToClientViewModel());
             Assert.True(result is NoContentResult);
 
             mockDocumentDbService.Verify(m =>
