@@ -27,7 +27,7 @@ namespace Fabric.Identity.API.Exceptions
 
         public override string ToString()
         {
-            return $"Exeption => {this} --------------- Model => {_model}";
+            return $"Exception => {this} --------------- Model => {_model}";
         }
     }
 }
