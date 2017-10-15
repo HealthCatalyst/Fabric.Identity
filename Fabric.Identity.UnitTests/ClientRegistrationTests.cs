@@ -91,15 +91,6 @@ namespace Fabric.Identity.UnitTests
                 new Client {AllowedGrantTypes = new List<string> {string.Empty}},
                 "Grant type not allowed"
             };
-            yield return new object[]
-            {
-                new Client
-                {
-                    ClientId = "client-id",
-                    ClientName = "client-id"
-                },
-                "Grant types list is empty"
-            };
         }
 
         private static void GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller)
