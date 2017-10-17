@@ -8,6 +8,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.CouchDb;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
 using Microsoft.AspNetCore.Builder;
@@ -95,11 +96,13 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
-            services.AddMvc()
-                .AddJsonOptions(x =>
-                {                    
-                    x.SerializerSettings.ReferenceLoopHandling = new SerializationSettings().JsonSettings.ReferenceLoopHandling;
-                });
+            services.AddMvc(options => {
+                options.Conventions.Add(new CommaSeparatedQueryStringConvention());
+            })                
+            .AddJsonOptions(x =>
+            {                    
+                x.SerializerSettings.ReferenceLoopHandling = new SerializationSettings().JsonSettings.ReferenceLoopHandling;
+            });
 
             services.AddApiVersioning(options =>
             {

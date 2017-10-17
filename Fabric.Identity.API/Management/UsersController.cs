@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
@@ -43,7 +44,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
-        public async Task<IActionResult> Get(string clientId, IEnumerable<string> userIds)
+        public async Task<IActionResult> Get(string clientId, [CommaSeparated] IEnumerable<string> userIds)
         {
             return await ProcessSearchRequest(clientId, userIds).ConfigureAwait(false);
         }
@@ -97,7 +98,7 @@ namespace Fabric.Identity.API.Management
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
         {
             var docIds = userIds.Select(id => id.ToLower()).ToList();
-            if (!docIds.Any())
+            if (!docIds.Any() || docIds.All(d => string.IsNullOrEmpty(d)))
             {
                 return CreateFailureResponse("No userIds were included in the request",
                     HttpStatusCode.BadRequest);
