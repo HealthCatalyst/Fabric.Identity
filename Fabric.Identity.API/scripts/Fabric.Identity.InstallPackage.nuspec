@@ -9,7 +9,7 @@
     <description>Install package for Fabric.Identity</description>
   </metadata>
   <files>
-    <file src="Fabric.Identity.zip" target="build" />
-    <file src="Fabric.Identity.targets" target="build" />
+    <file src="Fabric.Identity.InstallPackage.zip" target="build" />
+    <file src="Fabric.Identity.InstallPackage.targets" target="build" />
   </files>
 </package>
