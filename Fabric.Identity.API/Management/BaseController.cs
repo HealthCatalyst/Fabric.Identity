@@ -1,6 +1,7 @@
 ﻿using Fabric.Identity.API.Models;
 using FluentValidation;
 using FluentValidation.Results;
+using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
@@ -15,6 +16,11 @@ namespace Fabric.Identity.API.Management
         public Func<string> GeneratePassword { get; set; } = () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
         protected readonly AbstractValidator<T> Validator;
         protected readonly ILogger Logger;
+
+        protected Secret GetNewSecret(string password)
+        {            
+            return new Secret(HashExtensions.Sha256(password));
+        }
 
         protected BaseController(AbstractValidator<T> validator, ILogger logger)
         {
