@@ -48,7 +48,7 @@ namespace Fabric.Identity.IntegrationTests
 
         private string CreateUsersAndQuery(int numberToCreate, string clientId, bool halfWithoutLoginForClient = false)
         {
-            var queryBuilder = new StringBuilder($"?clientId={clientId}");
+            var queryBuilder = new StringBuilder($"?clientId={clientId}&userIds=");
 
             for (int i = 1; i <= numberToCreate; i++)
             {
@@ -69,7 +69,8 @@ namespace Fabric.Identity.IntegrationTests
                 }
 
                 CreateNewUser(user);
-                queryBuilder.Append($"&userIds={user.SubjectId}:{user.ProviderName}");
+                var seperator = i == numberToCreate ? string.Empty : ",";
+                queryBuilder.Append($"{user.SubjectId}:{user.ProviderName}{seperator}");
             }
 
             return queryBuilder.ToString();
