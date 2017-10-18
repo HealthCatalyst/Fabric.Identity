@@ -205,6 +205,26 @@ describe("identity tests", function () {
         });
     });
 
+    describe("update client", function(){
+        it("should be able to reset a clients password and get new access token", function(){
+            //call reset password for the func-test client
+            return chakram.get(baseIdentityUrl + "/api/client/func-test/resetPassword", authRequestOptions)
+                .then(function(clientResponse){
+                    expect(clientResponse).to.have.status(200);
+                    expect(clientResponse).to.comprise.of.json({ clientId: "func-test" });
+                    return clientResponse.body.clientSecret;
+                })
+                 //take the new client secret and try to get an access token
+                .then(function(updatedClientSecret){
+                    return getAccessTokenForFuncTestClient(updatedClientSecret);
+                })
+                .then(function(accessToken){
+                     expect(accessToken).to.not.be.null;
+                });  
+           
+        });
+    });
+
     describe("register api", function () {
         it("should register an api", function () {
             return chakram.post(baseIdentityUrl + "/api/apiresource", patientApi, authRequestOptions)
