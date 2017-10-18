@@ -10,8 +10,7 @@ namespace Fabric.Identity.API.Infrastructure.QueryStringBinding
     public class SeparatedQueryStringValueProvider : QueryStringValueProvider
     {
         private readonly string _key;
-        private readonly string _separator;
-        private readonly IQueryCollection _values;
+        private readonly string _separator;        
 
         public SeparatedQueryStringValueProvider(IQueryCollection values, string separator)
             : this(null, values, separator)
@@ -21,8 +20,7 @@ namespace Fabric.Identity.API.Infrastructure.QueryStringBinding
         public SeparatedQueryStringValueProvider(string key, IQueryCollection values, string separator)
             : base(BindingSource.Query, values, CultureInfo.InvariantCulture)
         {
-            _key = key;
-            _values = values;
+            _key = key;            
             _separator = separator;
         }
 

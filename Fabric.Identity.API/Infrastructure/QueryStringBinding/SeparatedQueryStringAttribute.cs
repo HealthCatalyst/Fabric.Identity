@@ -24,6 +24,7 @@ namespace Fabric.Identity.API.Infrastructure.QueryStringBinding
 
         public void OnResourceExecuted(ResourceExecutedContext context)
         {
+            //nothing to do here. part of IResourceFilter implementation
         }
 
         public void OnResourceExecuting(ResourceExecutingContext context)
