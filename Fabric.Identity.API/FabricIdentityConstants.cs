@@ -7,6 +7,7 @@
         public static readonly string ManagementApiBasePath = "/api";
         public static readonly string IdentityRegistrationScope = "fabric/identity.manageresources";
         public static readonly string IdentityReadScope = "fabric/identity.read";
+        public static readonly string IdentitySearchUsersScope = "fabric/identity.searchusers";
         public static readonly string AuditEventCategory = "Audit";
 
         public static class DocumentTypes
@@ -71,6 +72,14 @@
         {
             public const string Windows = "Windows";
             public const string Oidc = "OIDC";
+        }
+
+        public static class AuthorizationPolicyNames
+        {
+            public const string RegistrationThreshold = "RegistrationThreshold";
+            public const string ReadScopeClaim = "ReadScopeClaim";
+            public const string SearchUsersScopeClaim = "SearchUsersScopeClaim";
+
         }
     }
 }

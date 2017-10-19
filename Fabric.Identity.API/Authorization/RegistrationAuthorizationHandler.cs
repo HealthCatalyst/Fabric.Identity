@@ -10,17 +10,16 @@ using Serilog;
 
 namespace Fabric.Identity.API.Authorization
 {
-    public class RegistrationAuthorizationHandler : AuthorizationHandler<RegisteredClientThresholdRequirement>
+    public class RegistrationAuthorizationHandler : BaseAuthorizationHandler<RegisteredClientThresholdRequirement>
     {
         private readonly IDocumentDbService _documentDbService;
-        private readonly IAppConfiguration _appConfiguration;
-        private readonly ILogger _logger;
+      
         public RegistrationAuthorizationHandler(IDocumentDbService documentDbService, IAppConfiguration appConfiguration, ILogger logger)
+            : base(appConfiguration, logger)
         {
-            _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));
-            _appConfiguration = appConfiguration ?? throw new ArgumentNullException(nameof(appConfiguration));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));           
         }
+
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, RegisteredClientThresholdRequirement requirement)
         {
             var clientCount = GetClientDocumentCount();
@@ -55,26 +54,6 @@ namespace Fabric.Identity.API.Authorization
                 .Result;
         }
 
-        private bool HasRequiredGroupClaim(ClaimsPrincipal user)
-        {
-            if (string.IsNullOrEmpty(_appConfiguration.RegistrationAdminGroup))
-            {
-                return false;
-            }
-
-            var hasGroupClaim = user.Claims.Any(c => (c.Type == ClaimTypes.Role ||
-                                                      c.Type == FabricIdentityConstants.FabricClaimTypes.Groups) &&
-                                                     c.Value == _appConfiguration.RegistrationAdminGroup &&
-                                                     c.Issuer == _appConfiguration.IssuerUri);
-            return hasGroupClaim;
-        }
-
-        private bool HasRequiredScopeClaim(ClaimsPrincipal user, string claimType)
-        {
-            var hasScopeClaim = user.Claims.Any(c => c.Type == JwtClaimTypes.Scope &&
-                                                     c.Value == claimType &&
-                                                     c.Issuer == _appConfiguration.IssuerUri);
-            return hasScopeClaim;
-        }
+        
     }
 }
