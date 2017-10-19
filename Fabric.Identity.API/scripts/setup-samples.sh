@@ -10,7 +10,7 @@ fi
 
 # register registration api
 echo "registering Fabric.Registration..."
-registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}, { \"name\": \"fabric/identity.read\"}]}" $identitybaseurl/api/apiresource)
+registrationapiresponse=$(curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"registration-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/identity.manageresources\"}, { \"name\": \"fabric/identity.read\"}, { \"name\": \"fabric/identity.searchusers\"}]}" $identitybaseurl/api/apiresource)
 echo $registrationapiresponse
 echo ""
 
@@ -36,7 +36,7 @@ echo ""
 
 # register the fabric authorization client
 echo "registering Fabric.Authorization client..."
-authorizationclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-authorization-client\", \"clientName\": \"Fabric Authorization Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.read\"]}" $identitybaseurl/api/client)
+authorizationclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-authorization-client\", \"clientName\": \"Fabric Authorization Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.read\", \"fabric/identity.searchusers\"]}" $identitybaseurl/api/client)
 echo $authorizationclientresponse
 authorizationclientsecret=$(echo $authorizationclientresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""

@@ -193,7 +193,7 @@ $body = @'
 {
     "name":"registration-api",
     "userClaims":["name","email","role","groups"],
-    "scopes":[{"name":"fabric/identity.manageresources"}, {"name":"fabric/identity.read"}]
+    "scopes":[{"name":"fabric/identity.manageresources"}, {"name":"fabric/identity.read"}, {"name":"fabric/identity.searchusers"}]
 }
 '@
 
