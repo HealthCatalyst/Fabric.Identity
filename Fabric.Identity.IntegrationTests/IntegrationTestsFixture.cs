@@ -159,7 +159,7 @@ namespace Fabric.Identity.IntegrationTests
         protected HttpClient GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret, $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope}"));
+            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret, $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
             return httpClient;
         }
@@ -190,7 +190,12 @@ namespace Fabric.Identity.IntegrationTests
                 ClientSecrets = new List<IS4.Secret> { new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret)) },
                 RequireConsent = false,
                 AllowedGrantTypes = IS4.GrantTypes.ClientCredentials,
-                AllowedScopes = new List<string> { FabricIdentityConstants.IdentityRegistrationScope, FabricIdentityConstants.IdentityReadScope }
+                AllowedScopes = new List<string>
+                                    {
+                                        FabricIdentityConstants.IdentityRegistrationScope,
+                                        FabricIdentityConstants.IdentityReadScope,
+                                        FabricIdentityConstants.IdentitySearchUsersScope
+                                    }
             };
         }
 
@@ -210,7 +215,8 @@ namespace Fabric.Identity.IntegrationTests
                 {
                     new IS4.Scope(FabricIdentityConstants.IdentityRegistrationScope),
                     new IS4.Scope(TestScope),
-                    new IS4.Scope(FabricIdentityConstants.IdentityReadScope)
+                    new IS4.Scope(FabricIdentityConstants.IdentityReadScope),
+                    new IS4.Scope(FabricIdentityConstants.IdentitySearchUsersScope)
                 }
             };
         }
