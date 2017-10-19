@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.Management
     /// <summary>
     /// Manage client applications.
     /// </summary>
-    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold, ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/client")]
     [Route("api/v{version:apiVersion}/client")]

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+
+using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.EventSinks;
@@ -9,6 +11,8 @@ using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
 using IdentityServer4.Stores;
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -136,6 +140,26 @@ namespace Fabric.Identity.API.Extensions
             {
                 serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration, certificateService, logger);
             }
+
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddAuthorizationServices(this IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
+            serviceCollection.AddSingleton<IAuthorizationHandler, ReadAuthorizationHandler>();
+            serviceCollection.AddSingleton<IAuthorizationHandler, SearchUserAuthorizationHandler>();
+
+            serviceCollection.AddAuthorization(options =>
+                {
+                    options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
+                        policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
+                    options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.ReadScopeClaim,
+                        policy => policy.Requirements.Add(new ReadScopeRequirement()));
+                    options.AddPolicy(
+                        FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim,
+                        policy => policy.Requirements.Add(new SearchUserScopeRequirement()));
+                });
 
             return serviceCollection;
         }

@@ -17,7 +17,7 @@ namespace Fabric.Identity.API.Management
     /// <summary>
     /// Manage metadata for APIs protected by the Identity API.
     /// </summary>
-    [Authorize(Policy = "RegistrationThreshold", ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold, ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/apiresource")]
     [Route("api/v{version:apiVersion}/apiresource")]

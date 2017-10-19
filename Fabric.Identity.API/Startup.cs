@@ -71,8 +71,7 @@ namespace Fabric.Identity.API
             services.AddFluentValidations();
             services.AddIdentityServer(_appConfig, _certificateService, _logger);
             services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
-            services.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
-            services.AddSingleton<IAuthorizationHandler, ReadAuthorizationHandler>();
+            services.AddAuthorizationServices();
             services.AddScoped<IUserResolveService, UserResolverService>();
             services.AddSingleton<ISerializationSettings, SerializationSettings>();
             services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
@@ -109,14 +108,6 @@ namespace Fabric.Identity.API
                 options.AssumeDefaultVersionWhenUnspecified = true;
                 options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.ReportApiVersions = true;
-            });
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("RegistrationThreshold",
-                    policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
-                options.AddPolicy("ReadScopeClaim",
-                    policy => policy.Requirements.Add(new ReadScopeRequirement()));
             });
 
             // Swagger
