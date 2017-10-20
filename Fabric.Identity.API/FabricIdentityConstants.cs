@@ -76,10 +76,9 @@
 
         public static class AuthorizationPolicyNames
         {
-            public static readonly string RegistrationThreshold = "RegistrationThreshold";
-            public static readonly string ReadScopeClaim = "ReadScopeClaim";
-            public static readonly string SearchUsersScopeClaim = "SearchUsersScopeClaim";
-
+            internal const string RegistrationThreshold = "RegistrationThreshold";
+            internal const string ReadScopeClaim = "ReadScopeClaim";
+            internal const string SearchUsersScopeClaim = "SearchUsersScopeClaim";
         }
     }
 }
