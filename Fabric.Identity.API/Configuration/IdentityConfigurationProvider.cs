@@ -49,6 +49,12 @@ namespace Fabric.Identity.API.Configuration
             {
                 appConfiguration.CouchDbSettings.Password = DecryptString(appConfiguration.CouchDbSettings.Password, certificateService, appConfiguration);
             }
+
+            if (appConfiguration.LdapSettings != null && IsEncrypted(appConfiguration.LdapSettings.Password))
+            {
+                appConfiguration.LdapSettings.Password = DecryptString(appConfiguration.LdapSettings.Password,
+                    certificateService, appConfiguration);
+            }
         }
 
         private static bool IsEncrypted(string value)
