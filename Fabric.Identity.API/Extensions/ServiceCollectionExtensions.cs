@@ -40,7 +40,6 @@ namespace Fabric.Identity.API.Extensions
 
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
-            serviceCollection.AddSingleton<IEventSink, CouchDbEventSink>();
             serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
             serviceCollection.AddIdentityServer(options =>
                 {

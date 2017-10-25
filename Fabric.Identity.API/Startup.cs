@@ -62,10 +62,8 @@ namespace Fabric.Identity.API
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
             var eventLogger = Logging.LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             var serilogEventSink = new SerilogEventSink(eventLogger);
-            var innerEventSink = new Decorator<IEventSink>(serilogEventSink);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton(innerEventSink);
-            services.AddSingleton(serilogEventSink);
+            services.AddSingleton<IEventSink>(serilogEventSink);
             services.AddSingleton(_appConfig);
             services.AddSingleton(_logger);
             services.AddFluentValidations();
