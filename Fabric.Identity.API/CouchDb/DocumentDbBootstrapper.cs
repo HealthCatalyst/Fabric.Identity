@@ -3,7 +3,6 @@ using Fabric.Identity.API.Services;
 
 namespace Fabric.Identity.API.CouchDb
 {
-    [System.Obsolete]
     public class DocumentDbBootstrapper
     {
         protected readonly IDocumentDbService DocumentDbService;
