@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using MyCouch;
@@ -31,6 +33,7 @@ namespace Fabric.Identity.API.CouchDb
             {
                 CircuitBreaker.Execute(base.Setup);
             }
+            CircuitBreaker.Execute(SetupDefaultUser);
             CircuitBreaker.Execute(SetupDesignDocuments);
         }
 
@@ -103,6 +106,24 @@ namespace Fabric.Identity.API.CouchDb
                 throw new CouchDbSetupException($"unable to create design document: {designDocName}, reason: {result.Reason}");
             }
         }
+
+        private void SetupDefaultUser()
+        {
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.BaseAddress = new Uri(_couchDbSettings.Server);
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(HttpContentTypes.Json));
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", _dbConnectionInfo.BasicAuth.Value);
+                var response = httpClient.PutAsync($"{_couchDbSettings.DatabaseName}/_security",
+                        GetCouchDbUserPayload())
+                    .Result;
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new CouchDbSetupException($"unable to create the {_couchDbSettings.DatabaseName}_user in {_couchDbSettings.DatabaseName}, response: {response.Content.ReadAsStringAsync().Result}, responseStatusCode: {response.StatusCode}.");
+                }
+            }
+        }
         
         private DbConnectionInfo MakeDbConnectionInfo()
         {
@@ -116,6 +137,12 @@ namespace Fabric.Identity.API.CouchDb
             }
 
             return connectionInfo;
+        }
+
+        private JsonContent GetCouchDbUserPayload()
+        {
+            return new JsonContent(
+                $"{{\"admins\": {{ \"names\": [], \"roles\": [] }}, \"members\": {{ \"names\": [\"{_couchDbSettings.DatabaseName}_user\"], \"roles\": [] }} }}");
         }
     }
 }
