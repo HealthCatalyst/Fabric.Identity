@@ -106,6 +106,8 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
+            Get(id);
+
             _documentDbService.DeleteDocument<IdentityResource>(id);
 
             return NoContent();
