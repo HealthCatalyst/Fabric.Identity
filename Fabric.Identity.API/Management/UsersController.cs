@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Services;
@@ -88,7 +89,7 @@ namespace Fabric.Identity.API.Management
                 });
                 return Ok(apiUsers);
             }
-            catch (InvalidOperationException e)
+            catch (InvalidExternalIdentityProviderException e)
             {
                 return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
             }

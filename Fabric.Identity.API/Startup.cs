@@ -75,6 +75,7 @@ namespace Fabric.Identity.API
             services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
             services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();
             services.AddSingleton<LdapProviderService>();
+            services.AddSingleton<PolicyProvider>();
 
             // filter settings
             var filterSettings = _appConfig.FilterSettings ??

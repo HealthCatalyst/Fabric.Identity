@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Novell.Directory.Ldap;
+using Polly.CircuitBreaker;
 using Serilog;
 
 namespace Fabric.Identity.API.Services
@@ -12,11 +14,13 @@ namespace Fabric.Identity.API.Services
         private readonly ILdapConnectionProvider _ldapConnectionProvider;
         private readonly ILogger _logger;
         private const string DomainKey = "DC=";
+        private readonly PolicyProvider _policyProvider;
 
-        public LdapProviderService(ILdapConnectionProvider ldapConnectionProvider, ILogger logger)
+        public LdapProviderService(ILdapConnectionProvider ldapConnectionProvider, ILogger logger, PolicyProvider policyProvider)
         {
             _ldapConnectionProvider = ldapConnectionProvider;
             _logger = logger;
+            _policyProvider = policyProvider;
         }
         public ExternalUser FindUserBySubjectId(string subjectId)
         {
@@ -29,14 +33,35 @@ namespace Fabric.Identity.API.Services
             var subjectIdParts = subjectId.Split('\\');
             var accountName = subjectIdParts[subjectIdParts.Length - 1];
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}))";
-            var users = SearchLdap(ldapQuery);
+            var users = SearchLdapSafe(ldapQuery);
             return users.FirstOrDefault();
         }
 
         public ICollection<ExternalUser> SearchUsers(string searchText)
         {
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(|(sAMAccountName={searchText}*)(givenName={searchText}*)(sn={searchText}*)))";
-            return SearchLdap(ldapQuery);
+            return SearchLdapSafe(ldapQuery);
+        }
+
+        private ICollection<ExternalUser> SearchLdapSafe(string ldapQuery)
+        {
+            //use a circuit breaker here so we don't consistently try to hit a down/unreachable service
+            var users = new List<ExternalUser>();
+            try
+            {
+                users = _policyProvider.LdapErrorPolicy.Execute(() => SearchLdap(ldapQuery)).ToList();
+            }
+            catch (LdapException ex)
+            {
+                // catch and log the error so we degrade gracefully when we can't connect to LDAP
+                _logger.Error(ex, "LDAP Error when attempting to query LDAD with search: {searchText}", ldapQuery);
+            }
+            catch (BrokenCircuitException ex)
+            {
+                // catch and log the error so we degrade gracefully when we can't connect to LDAP
+                _logger.Error(ex, "LdapProviderService circuit breaker is in an open state, not attempting to connect to LDAP", ldapQuery);
+            }
+            return users;
         }
 
         private ICollection<ExternalUser> SearchLdap(string ldapQuery)

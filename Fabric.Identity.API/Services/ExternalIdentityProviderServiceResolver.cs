@@ -1,4 +1,5 @@
 ﻿using System;
+using Fabric.Identity.API.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Fabric.Identity.API.Services
@@ -17,7 +18,8 @@ namespace Fabric.Identity.API.Services
                 case FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows:
                     return _serviceProvider.GetRequiredService<LdapProviderService>();
                 default:
-                    throw new InvalidOperationException($"There is no search provider specified for the requested Identity Provider: {identityProviderName}.");
+                    throw new InvalidExternalIdentityProviderException(
+                        $"There is no search provider specified for the requested Identity Provider: {identityProviderName}.");
             }
         }
     }
