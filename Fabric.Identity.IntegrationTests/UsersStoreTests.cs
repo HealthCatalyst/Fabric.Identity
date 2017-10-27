@@ -118,6 +118,16 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
+        public async Task UsersController_Get_FindUsersByDocumentId_NoClientId_BadRequest()
+        {
+            var numberOfUsers = 1;
+            var usersQuery = CreateUsersAndQuery(numberOfUsers, string.Empty);
+            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task UsersController_Get_FindUsersByDocumentId_NoDocumentIds_NotFound()
         {
             var numberOfUsers = 0;

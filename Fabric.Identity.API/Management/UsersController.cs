@@ -98,8 +98,15 @@ namespace Fabric.Identity.API.Management
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
         {
+            if (string.IsNullOrEmpty(clientId))
+            {
+                return CreateFailureResponse(
+                    "No client id was included in the request. Please specify a client id",
+                    HttpStatusCode.BadRequest);
+            }
+
             var docIds = userIds.Select(id => id?.ToLower()).ToList();
-            if (!docIds.Any() || docIds.All(d => string.IsNullOrEmpty(d)))
+            if (!docIds.Any() || docIds.All(string.IsNullOrEmpty))
             {
                 return CreateFailureResponse("No userIds were included in the request",
                     HttpStatusCode.BadRequest);
