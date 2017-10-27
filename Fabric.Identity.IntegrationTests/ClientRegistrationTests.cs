@@ -102,6 +102,13 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
+        public async Task TestGetClient_NotFound()
+        {
+            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/client-that-does-not-exist"));
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
         public async Task TestResetPassword_Success()
         {
             var testClient = GetTestClient();
@@ -136,6 +143,13 @@ namespace Fabric.Identity.IntegrationTests
 
             // Confirm it's deleted.
             response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task TestDeleteClient_NotFound()
+        {
+            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/client-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 

@@ -112,5 +112,19 @@ namespace Fabric.Identity.IntegrationTests
             response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+
+        [Fact]
+        public async Task TestDeleteApiResource_NotFound()
+        {
+            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/resource-that-does-not-exist"));
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task TestDeleteIdentityResource_NotFound()
+        {
+            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
     }
 }
