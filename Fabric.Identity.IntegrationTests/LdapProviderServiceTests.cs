@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
 using Moq;
+using Polly.CircuitBreaker;
 using Serilog;
 using Xunit;
 
@@ -18,7 +20,7 @@ namespace Fabric.Identity.IntegrationTests
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var newUser = LdapTestHelper.CreateTestUser("test", "user", settings.BaseDn, ldapConnectionProvider);
-            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
             var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\{newUser.getAttribute("cn").StringValue}");
             LdapTestHelper.RemoveEntry(newUser, ldapConnectionProvider);
             Assert.NotNull(externalUser);
@@ -35,13 +37,13 @@ namespace Fabric.Identity.IntegrationTests
             var settings = LdapTestHelper.GetLdapSettings();
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
-            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
-            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistant.user");
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
+            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
             Assert.Null(externalUser);
         }
 
         [Fact]
-        public void FindUser_ReturnsNull_WithNoConnection()
+        public void FindUser_ReturnsNull_WithNoConnectionInfo()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = new LdapSettings
@@ -54,9 +56,30 @@ namespace Fabric.Identity.IntegrationTests
             };
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
-            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
-            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistant.user");
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
+            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
             Assert.Null(externalUser);
+        }
+
+        [Fact]
+        public void FindUsers_ReturnsNull_WithBadConnection()
+        {
+            var ldapProviderService = GetLdapProviderSerivce(GetBadConnectionSettings(), new PolicyProvider());
+            var externalUser = ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistent.user");
+            Assert.Null(externalUser);
+        }
+
+        [Fact]
+        public void FindUsers_TripsBreaker_WithBadConnection()
+        {
+            var policyProvider = new PolicyProvider();
+            var ldapProviderService = GetLdapProviderSerivce(GetBadConnectionSettings(), policyProvider); 
+            for (var i = 0; i < 6; i++)
+            {
+                var externalUser = ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistant.user");
+                Assert.Null(externalUser);
+            }
+            Assert.Equal(CircuitState.Open, policyProvider.LdapErrorPolicy.CircuitState);
         }
 
         [Theory]
@@ -77,7 +100,7 @@ namespace Fabric.Identity.IntegrationTests
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var ldapEntries = LdapTestHelper.CreateTestUsers(testUsers, settings.BaseDn, ldapConnectionProvider);
 
-            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger);
+            var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
             var searchResults = ldapProviderService.SearchUsers(searchText);
             LdapTestHelper.RemoveEntries(ldapEntries, ldapConnectionProvider);
 
@@ -94,6 +117,24 @@ namespace Fabric.Identity.IntegrationTests
             new object[] {"belt", 1},
             new object[] {"griffey", 0},
         };
-        
+
+        private LdapSettings GetBadConnectionSettings()
+        {
+            return new LdapSettings
+            {
+                Server = "nonexistent",
+                Port = 123,
+                Username = "test",
+                Password = "password",
+                UseSsl = false
+            };
+        }
+
+        private LdapProviderService GetLdapProviderSerivce(LdapSettings settings, PolicyProvider policyProvider)
+        {
+            var logger = new Mock<ILogger>().Object;
+            var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
+            return new LdapProviderService(ldapConnectionProvider, logger, policyProvider);
+        }
     }
 }
