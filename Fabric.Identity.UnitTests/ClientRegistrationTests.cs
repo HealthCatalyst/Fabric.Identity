@@ -96,7 +96,7 @@ namespace Fabric.Identity.UnitTests
         private static void GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller)
         {
             mockDocumentDbService = new Mock<IDocumentDbService>();
-            var validator = new ClientValidator();
+            var validator = new ClientValidator(mockDocumentDbService.Object);
             var mockLogger = new Mock<ILogger>();
 
             controller = new ClientController(mockDocumentDbService.Object, validator, mockLogger.Object);
@@ -110,7 +110,7 @@ namespace Fabric.Identity.UnitTests
 
             var result = controller.Post(client);
 
-            var badRequestObjectResult = result as BadRequestObjectResult;
+            var badRequestObjectResult = result as ObjectResult;
             Assert.NotNull(badRequestObjectResult);
 
             var error = badRequestObjectResult.Value as Error;
@@ -191,21 +191,6 @@ namespace Fabric.Identity.UnitTests
 
             // Password must never be returned
             Assert.Null(clientResult.ClientSecret);
-        }
-
-        [Theory]
-        [InlineData("1234")]
-        [InlineData("")]
-        [InlineData("randomId")]
-        public void TestDeleteClient_DBCall(string clientId)
-        {
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
-
-            var result = controller.Delete(clientId);
-            Assert.True(result is NoContentResult);
-
-            mockDocumentDbService.Verify(m =>
-                m.DeleteDocument<IS4.Client>(It.Is<string>(id => id == clientId)));
         }
 
         [Theory]

@@ -104,23 +104,23 @@ namespace Fabric.Identity.API.Management
             try
             {
                 var is4Client = client.ToIs4ClientModel();
-                return ValidateAndExecute(is4Client, () =>
-                {
-                    var id = is4Client.ClientId;
+                return ValidateAndExecute(is4Client,
+                    () =>
+                        {
+                            var id = is4Client.ClientId;
 
-                    // override any secret in the request.
-                    // TODO: we need to implement a salt strategy, either at the controller level or store level.
-                    var clientSecret = this.GeneratePassword();
-                    is4Client.ClientSecrets =
-                        new List<IS4.Secret>() { GetNewSecret(clientSecret) };
-                    _documentDbService.AddDocument(id, is4Client);
+                            // override any secret in the request.
+                            // TODO: we need to implement a salt strategy, either at the controller level or store level.
+                            var clientSecret = this.GeneratePassword();
+                            is4Client.ClientSecrets = new List<IS4.Secret>() { GetNewSecret(clientSecret) };
+                            _documentDbService.AddDocument(id, is4Client);
 
-                    var viewClient = is4Client.ToClientViewModel();
-                    viewClient.ClientSecret = clientSecret;
+                            var viewClient = is4Client.ToClientViewModel();
+                            viewClient.ClientSecret = clientSecret;
 
-                    return CreatedAtAction("Get", new {id}, viewClient);
-                });
-            }
+                            return CreatedAtAction("Get", new { id }, viewClient);
+                        });
+            }           
             catch (BadRequestException<Client> ex)
             {
                 return CreateFailureResponse(ex.Message, HttpStatusCode.BadRequest);
@@ -170,7 +170,13 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            Get(id);
+            var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
+
+            if (string.IsNullOrEmpty(client?.ClientId))
+            {
+                return CreateFailureResponse($"The specified client with id: {id} was not found",
+                    HttpStatusCode.NotFound);
+            }
 
             _documentDbService.DeleteDocument<IS4.Client>(id);
             return NoContent();

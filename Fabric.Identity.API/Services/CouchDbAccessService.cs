@@ -10,6 +10,7 @@ using MyCouch.Responses;
 using Newtonsoft.Json;
 using Serilog;
 using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
 
 namespace Fabric.Identity.API.Services
@@ -152,7 +153,7 @@ namespace Fabric.Identity.API.Services
 
                 if (!string.IsNullOrEmpty(existingDoc.Id))
                 {
-                    throw new ResourceOperationException($"Document with id {documentId} already exists.", ResourceOperationType.Add);
+                    throw new AlreadyExistsException<T>($"Document with id {documentId} already exists.");
                 }
 
                 var response = client.Documents.PutAsync(fullDocumentId, docJson).Result;

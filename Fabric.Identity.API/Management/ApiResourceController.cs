@@ -106,6 +106,14 @@ namespace Fabric.Identity.API.Management
             {
                 var id = resource.Name;
 
+                var existingResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+                if (existingResource != null)
+                {
+                    return CreateFailureResponse(
+                        $"Api resource {id} already exists. Please provide a new name",
+                        HttpStatusCode.Conflict);
+                }
+
                 // override any secret in the request.
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var resourceSecret = this.GeneratePassword();
@@ -160,8 +168,14 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            Get(id);
-            
+            var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+
+            if (apiResource == null)
+            {
+                return CreateFailureResponse($"The specified api resource with id: {id} was not found",
+                    HttpStatusCode.NotFound);
+            }
+
             _documentDbService.DeleteDocument<IS4.ApiResource>(id);
             return NoContent();
         }
