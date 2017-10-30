@@ -45,11 +45,6 @@ namespace Fabric.Identity.API.Validation
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) || client.AllowedGrantTypes.Contains(GrantType.ResourceOwnerPassword))
                 .WithMessage("Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");
 
-            RuleFor(client => client.AllowedGrantTypes)
-                .NotNull()            
-                .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) && client.AllowedGrantTypes.Contains(GrantType.Hybrid))
-                .WithMessage("Hybrid and implicit are conflicting grant types and cannot both be included in the same client");
-
             var grantTypes = typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.FieldType == typeof(string))
                 .Select(f => f.GetValue(null).ToString());
