@@ -8,6 +8,7 @@ using Serilog;
 using System.Linq;
 using System.Collections.Generic;
 using Fabric.Identity.API.Exceptions;
+using Fabric.Identity.API.Stores;
 using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -23,19 +24,18 @@ namespace Fabric.Identity.API.Management
     public class ClientController : BaseController<IS4.Client>
     {
         private const string NotFoundErrorMsg = "The specified client id could not be found.";
-
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IClientManagementStore _clientManagementStore;
 
         /// <summary>
         /// Manage client applications (aka relying parties) in Fabric.Identity. 
         /// </summary>
-        /// <param name="documentDbService"></param>
+        /// <param name="clientManagementStore"></param>
         /// <param name="validator"></param>
         /// <param name="logger"></param>
-        public ClientController(IDocumentDbService documentDbService, ClientValidator validator, ILogger logger)
+        public ClientController(IClientManagementStore clientManagementStore, ClientValidator validator, ILogger logger)
             : base(validator, logger)
         {
-            _documentDbService = documentDbService;
+            _clientManagementStore = clientManagementStore;
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
-            var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
+            var client = _clientManagementStore.FindClientByIdAsync(id).Result;
 
             if (string.IsNullOrEmpty(client?.ClientId))
             {
@@ -71,7 +71,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
         {
-            var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
+            var client = _clientManagementStore.FindClientByIdAsync(id).Result;
 
             if (string.IsNullOrEmpty(client?.ClientId))
             {
@@ -82,7 +82,7 @@ namespace Fabric.Identity.API.Management
             // Update password
             var newPassword = GeneratePassword();
             client.ClientSecrets = new List<IS4.Secret>() { GetNewSecret(newPassword) };
-            _documentDbService.UpdateDocument(id, client);
+            _clientManagementStore.UpdateClient(id, client);
 
             // Prepare return values
             var viewClient = client.ToClientViewModel();
@@ -114,14 +114,14 @@ namespace Fabric.Identity.API.Management
                             // TODO: we need to implement a salt strategy, either at the controller level or store level.
                             var clientSecret = this.GeneratePassword();
                             is4Client.ClientSecrets = new List<IS4.Secret>() { GetNewSecret(clientSecret) };
-                            _documentDbService.AddDocument(id, is4Client);
+                            _clientManagementStore.AddClient(is4Client);
 
                             var viewClient = is4Client.ToClientViewModel();
                             viewClient.ClientSecret = clientSecret;
 
                             return CreatedAtAction("Get", new { id }, viewClient);
                         });
-            }           
+            }
             catch (BadRequestException<Client> ex)
             {
                 return CreateFailureResponse(ex.Message, HttpStatusCode.BadRequest);
@@ -144,7 +144,7 @@ namespace Fabric.Identity.API.Management
             var is4Client = client.ToIs4ClientModel();
             return ValidateAndExecute(is4Client, () =>
             {
-                var storedClient = _documentDbService.GetDocument<IS4.Client>(id).Result;
+                var storedClient = _clientManagementStore.FindClientByIdAsync(id).Result;
 
                 if (string.IsNullOrEmpty(storedClient?.ClientId))
                 {
@@ -155,9 +155,9 @@ namespace Fabric.Identity.API.Management
                 // Prevent from changing secrets.
                 is4Client.ClientSecrets = storedClient.ClientSecrets;
                 // Prevent from changing payload ClientId.
-                is4Client.ClientId = id; 
+                is4Client.ClientId = id;
 
-                _documentDbService.UpdateDocument(id, is4Client);
+                _clientManagementStore.UpdateClient(id, is4Client);
                 return NoContent();
             });
         }
@@ -172,7 +172,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            var client = _documentDbService.GetDocument<IS4.Client>(id).Result;
+            var client = _clientManagementStore.FindClientByIdAsync(id).Result;
 
             if (string.IsNullOrEmpty(client?.ClientId))
             {
@@ -180,7 +180,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            _documentDbService.DeleteDocument<IS4.Client>(id);
+            _clientManagementStore.DeleteClient(id);
             return NoContent();
         }
     }
