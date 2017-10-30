@@ -1,5 +1,8 @@
 ﻿using System.Linq;
 using System.Reflection;
+
+using Fabric.Identity.API.Services;
+
 using FluentValidation;
 using IdentityServer4.Models;
 
@@ -7,7 +10,13 @@ namespace Fabric.Identity.API.Validation
 {
     public class ClientValidator : AbstractValidator<Client>
     {
-        public ClientValidator() => ConfigureRules();
+        private readonly IDocumentDbService _documentDbService;
+
+        public ClientValidator(IDocumentDbService documentDbService)
+        {
+            _documentDbService = documentDbService;
+            this.ConfigureRules();
+        }
 
         private void ConfigureRules()
         {
@@ -36,6 +45,11 @@ namespace Fabric.Identity.API.Validation
                 .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) || client.AllowedGrantTypes.Contains(GrantType.ResourceOwnerPassword))
                 .WithMessage("Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");
 
+            RuleFor(client => client.AllowedGrantTypes)
+                .NotNull()            
+                .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) && client.AllowedGrantTypes.Contains(GrantType.Hybrid))
+                .WithMessage("Hybrid and implicit are conflicting grant types and cannot both be included in the same client");
+
             var grantTypes = typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.FieldType == typeof(string))
                 .Select(f => f.GetValue(null).ToString());
@@ -45,6 +59,17 @@ namespace Fabric.Identity.API.Validation
                 .NotEmpty()
                 .Must(xs => xs.All(x => grantTypes.Contains(x)))
                 .WithMessage("Grant type not allowed. Allowed values: " + grantTypes.Aggregate((acc, x) => $"{acc} ,{x}"));
+
+            RuleFor(client => client.ClientId)
+                .Must(BeUnique)
+                .When(client => !string.IsNullOrEmpty(client.ClientId))
+                .WithMessage(c => $"Client {c.ClientId} already exists. Please provide a new client id")
+                .WithState(c => FabricIdentityEnums.ValidationState.Duplicate);
+        }
+
+        private bool BeUnique(string clientId)
+        {
+            return _documentDbService.GetDocument<Client>(clientId).Result == null;
         }
     }
 }

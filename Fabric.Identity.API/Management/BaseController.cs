@@ -5,7 +5,11 @@ using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
+
+using IdentityModel.Client;
 
 namespace Fabric.Identity.API.Management
 {
@@ -59,8 +63,16 @@ namespace Fabric.Identity.API.Management
 
         protected IActionResult CreateValidationFailureResponse(ValidationResult validationResult)
         {
-            var error = ErrorFactory.CreateError<T>(validationResult, HttpStatusCode.BadRequest);
-            return BadRequest(error);
+            var statusCode = HttpStatusCode.BadRequest;
+        
+            if (validationResult.Errors.Any(e => e.CustomState != null && e.CustomState.Equals(FabricIdentityEnums.ValidationState.Duplicate)))
+            {
+                statusCode = HttpStatusCode.Conflict;
+            }
+
+            var error = ErrorFactory.CreateError<T>(validationResult, statusCode);
+
+            return new ObjectResult(error){ StatusCode = (int)statusCode};
         }
 
         protected IActionResult CreateFailureResponse(string message, HttpStatusCode statusCode)

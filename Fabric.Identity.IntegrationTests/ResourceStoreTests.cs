@@ -31,6 +31,21 @@ namespace Fabric.Identity.IntegrationTests
             return response;
         }
 
+        private static readonly Func<IS4.IdentityResource> GetTestIdentityResource = () =>
+            new IS4.IdentityResource
+                {
+                    Name = rand.Next().ToString(),
+                    DisplayName = "Test Identity Resource",
+                    UserClaims = new List<string>() { rand.Next().ToString() },
+                };
+
+        private async Task<HttpResponseMessage> CreateNewIdentityResource(IS4.IdentityResource identityResource)
+        {
+            var stringContent = new StringContent(JsonConvert.SerializeObject(identityResource), Encoding.UTF8, "application/json");
+            var response = await this.HttpClient.PostAsync("/api/identityresource", stringContent);
+            return response;
+        }
+
         [Fact]
         public async Task TestCreateApiResource_Success()
         {
@@ -56,7 +71,7 @@ namespace Fabric.Identity.IntegrationTests
             // Send POST with same Name
             Console.WriteLine("calling create for test client 2");
             response = await CreateNewResource(testApiResource);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [Fact]
@@ -117,14 +132,25 @@ namespace Fabric.Identity.IntegrationTests
         public async Task TestDeleteApiResource_NotFound()
         {
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/resource-that-does-not-exist"));
-            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task TestAddIdentityResource_DuplicateIdFailure()
+        {
+            var identityResource = GetTestIdentityResource();
+            var response = await CreateNewIdentityResource(identityResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            response = await CreateNewIdentityResource(identityResource);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [Fact]
         public async Task TestDeleteIdentityResource_NotFound()
         {
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
-            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
     }
 }

@@ -1,12 +1,17 @@
-﻿using FluentValidation;
+﻿using Fabric.Identity.API.Services;
+
+using FluentValidation;
 using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Validation
 {
     public class IdentityResourceValidator : AbstractValidator<IdentityResource>
-    { 
-        public IdentityResourceValidator()
+    {
+        private readonly IDocumentDbService _documentDbService;
+
+        public IdentityResourceValidator(IDocumentDbService documentDbService)
         {
+            this._documentDbService = documentDbService;
             ConfigureRules();
         }
 
@@ -23,6 +28,17 @@ namespace Fabric.Identity.API.Validation
             RuleForEach(identityResource => identityResource.UserClaims)
                 .NotEmpty()
                 .WithMessage("Please ensure all User Claim items have a value for this Identity Resource");
+
+            RuleFor(identityResource => identityResource.Name)
+                .Must(BeUnique)
+                .When(identityResource => !string.IsNullOrEmpty(identityResource.Name))
+                .WithMessage(i => $"Identity resource {i.Name} already exists. Please provide a new name")
+                .WithState(i => FabricIdentityEnums.ValidationState.Duplicate);
+        }
+
+        private bool BeUnique(string name)
+        {
+            return _documentDbService.GetDocument<IdentityResource>(name).Result == null;
         }
     }
 }

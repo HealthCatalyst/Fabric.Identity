@@ -81,7 +81,7 @@ namespace Fabric.Identity.IntegrationTests
 
             // Send POST with same clientId
             response = await CreateNewClient(testClient);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [Fact]

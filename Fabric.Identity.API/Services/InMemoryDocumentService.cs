@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Fabric.Identity.API.Exceptions;
+
 namespace Fabric.Identity.API.Services
 {
     public class InMemoryDocumentService : IDocumentDbService
@@ -53,11 +55,9 @@ namespace Fabric.Identity.API.Services
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
             if(!Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings)))
-            {
-                //TODO: Use non standard exception or change to TryAddDocument.
-                throw new ArgumentException($"Document with id {documentId} already exists.");
+            {               
+                throw new AlreadyExistsException<T>($"Document with id {documentId} already exists.");
             }
-            
         }
 
         public void UpdateDocument<T>(string documentId, T documentObject)

@@ -44,7 +44,7 @@ namespace Fabric.Identity.UnitTests
             yield return new object[] { new SuccessValidator(), null, null, typeof(BadRequestObjectResult) };
 
             // Failed validation
-            yield return new object[] { new FailValidator(), "model", null, typeof(BadRequestObjectResult) };
+            yield return new object[] { new FailValidator(), "model", null, typeof(ObjectResult) };
 
             // Broken functor
             yield return new object[] { new SuccessValidator(), "model", null, typeof(BadRequestObjectResult) };

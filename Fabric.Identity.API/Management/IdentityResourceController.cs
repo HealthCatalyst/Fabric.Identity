@@ -51,7 +51,7 @@ namespace Fabric.Identity.API.Management
 
             if (identityResource == null)
             {
-                return CreateFailureResponse($"The specified client with id: {id} was not found",
+                return CreateFailureResponse($"The specified identity resource with id: {id} was not found",
                     HttpStatusCode.NotFound);
             }
             return Ok(identityResource);
@@ -71,6 +71,15 @@ namespace Fabric.Identity.API.Management
             return ValidateAndExecute(value, () =>
             {
                 var id = value.Name;
+
+                var existingResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+                if (existingResource != null)
+                {
+                    return CreateFailureResponse(
+                        $"Identity resource {id} already exists. Please provide a new name",
+                        HttpStatusCode.Conflict);
+                }
+
                 _documentDbService.AddDocument(id, value);
                 return CreatedAtAction("Get", new { id }, value);
             });
@@ -106,7 +115,13 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            Get(id);
+            var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+
+            if (identityResource == null)
+            {
+                return CreateFailureResponse($"The specified identity resource with id: {id} was not found",
+                    HttpStatusCode.NotFound);
+            }
 
             _documentDbService.DeleteDocument<IdentityResource>(id);
 
