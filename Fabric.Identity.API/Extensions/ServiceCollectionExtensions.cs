@@ -7,6 +7,7 @@ using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
@@ -41,6 +42,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
             serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
+            serviceCollection.AddTransient<IClientManagementStore, DocumentDbClientStore>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;
