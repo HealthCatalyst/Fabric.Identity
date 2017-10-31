@@ -12,6 +12,7 @@ namespace Fabric.Identity.API.Management
     public abstract class BaseController<T> : Controller where T : class
     {
         protected const string BadRequestErrorMsg = "The request has invalid or missing values.";
+        protected const string DuplicateErrorMsg = "A duplicate resource is attempting to be added";
 
         public Func<string> GeneratePassword { get; set; } = () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
         protected readonly AbstractValidator<T> Validator;
