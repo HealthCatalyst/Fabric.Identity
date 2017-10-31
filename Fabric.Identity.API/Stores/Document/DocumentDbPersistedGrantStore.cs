@@ -6,7 +6,7 @@ using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.DocumentDbStores
+namespace Fabric.Identity.API.Stores.Document
 {
     public class DocumentDbPersistedGrantStore : IPersistedGrantStore
     {

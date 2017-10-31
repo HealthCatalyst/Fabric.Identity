@@ -24,6 +24,8 @@ using ILogger = Serilog.ILogger;
 using System.Runtime.InteropServices;
 using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Services.Databases;
+using Fabric.Identity.API.Services.Databases.Document;
 using IdentityServer4.Models;
 using IdentityServer4.Quickstart.UI;
 using Microsoft.AspNetCore.Mvc;

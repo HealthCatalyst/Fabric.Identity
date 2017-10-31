@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -99,20 +100,19 @@ namespace Fabric.Identity.UnitTests
             };
         }
 
-        private static void GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller)
+        private static void GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller)
         {
-            mockDocumentDbService = new Mock<IDocumentDbService>();
-            var validator = new ClientValidator(mockDocumentDbService.Object);
+            mockClientManagementStore = new Mock<IClientManagementStore>();
+            var validator = new ClientValidator(mockClientManagementStore.Object);
             var mockLogger = new Mock<ILogger>();
-
-            controller = new ClientController(mockDocumentDbService.Object, validator, mockLogger.Object);
+            controller = new ClientController(mockClientManagementStore.Object, validator, mockLogger.Object);
         }
 
         [Theory]
         [MemberData(nameof(GetInvalidClients))]
         public void TestCreateNewClient_Failures(Client client, string errorMessage)
         {
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
 
             var result = controller.Post(client);
 
@@ -135,7 +135,7 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void TestCreateNewClient_GeneratePassword()
         {
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
 
             var testClient = GetTestClient();
             var submittedSecret = testClient.ClientSecret;
@@ -158,7 +158,7 @@ namespace Fabric.Identity.UnitTests
         [MemberData(nameof(GetValidClients))]
         public void TestCreateNewClient_DBCall(Client testClient)
         {
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
 
             var result = controller.Post(testClient);
             var createdAtActionResult = result as CreatedAtActionResult;
@@ -170,19 +170,17 @@ namespace Fabric.Identity.UnitTests
             Assert.Equal(testClient.ClientId, clientResult.ClientId);
             Assert.Equal(testClient.ClientName, clientResult.ClientName);
 
-            mockDocumentDbService.Verify(m =>
-                m.AddDocument<IS4.Client>(
-                    It.Is<string>(id => id == testClient.ClientId),
-                    It.IsAny<IS4.Client>()));
+            mockClientManagementStore.Verify(m =>
+                m.AddClient(It.IsAny<IS4.Client>()));
         }
 
         [Fact]
         public void TestGetClient_DBCall()
         {
             var testClient = GetTestClient();
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
-            mockDocumentDbService.Setup(m =>
-                m.GetDocument<IS4.Client>(It.Is<string>(id => id == testClient.ClientId))).Returns(Task.FromResult(testClient.ToIs4ClientModel()));
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
+            mockClientManagementStore.Setup(m =>
+                m.FindClientByIdAsync(It.Is<string>(id => id == testClient.ClientId))).Returns(Task.FromResult(testClient.ToIs4ClientModel()));
 
             var result = controller.Get(testClient.ClientId);
 
@@ -201,15 +199,29 @@ namespace Fabric.Identity.UnitTests
 
         [Theory]
         [InlineData("1234")]
+        [InlineData("")]
+        [InlineData("randomId")]
+        public void TestDeleteClient_DBCall(string clientId)
+        {
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
+
+            var result = controller.Delete(clientId);
+            Assert.True(result is NoContentResult);
+
+            mockClientManagementStore.Verify(m => m.DeleteClient(It.Is<string>(id => id == clientId)));
+        }
+
+        [Theory]
+        [InlineData("1234")]
         [InlineData("randomId")]
         public void TestUpdateClient_DBCall(string clientId)
         {
             var secrets = new List<IS4.Secret>() { new IS4.Secret("secret") };
 
-            GetDefaultController(out Mock<IDocumentDbService> mockDocumentDbService, out ClientController controller);
+            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
 
-            mockDocumentDbService.Setup(m => m.GetDocument<IS4.Client>(It.Is<string>(id => id == clientId)))
-                .Returns(Task.FromResult(new IS4.Client()
+            mockClientManagementStore.Setup(m => m.FindClientByIdAsync(It.Is<string>(id => id == clientId)))
+                .Returns(Task.FromResult(new IS4.Client
                 {
                     ClientId = clientId,
                     ClientSecrets = secrets
@@ -219,11 +231,11 @@ namespace Fabric.Identity.UnitTests
             var result = controller.Put(clientId, testClient);
             Assert.True(result is NoContentResult);
 
-            mockDocumentDbService.Verify(m =>
-                m.UpdateDocument<IS4.Client>(It.Is<string>(id => id == clientId), It.IsAny<IS4.Client>()));
+            mockClientManagementStore.Verify(m =>
+                m.UpdateClient(It.Is<string>(id => id == clientId), It.IsAny<IS4.Client>()));
 
-            mockDocumentDbService.Verify(m =>
-                m.UpdateDocument<IS4.Client>(
+            mockClientManagementStore.Verify(m =>
+                m.UpdateClient(
                     It.Is<string>(id => id == clientId),
                     It.Is<IS4.Client>(c => c.ClientId == clientId && c.ClientSecrets.Equals(secrets))));
         }

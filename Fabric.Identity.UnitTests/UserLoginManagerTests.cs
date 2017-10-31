@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
-using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Management;
-using Fabric.Identity.API.Services;
-using Fabric.Identity.UnitTests.ClassFixtures;
+using Fabric.Identity.API.Services.Databases.Document;
+using Fabric.Identity.API.Stores.Document;
 using IdentityModel;
 using Moq;
 using Serilog;

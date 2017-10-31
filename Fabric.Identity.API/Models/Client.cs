@@ -17,12 +17,12 @@ namespace Fabric.Identity.API.Models
         public string ClientSecret { get; set; }
         public bool RequireClientSecret { get; set; } = true;
         public IEnumerable<string> AllowedGrantTypes { get; set; } = GrantTypes.Implicit;
-        public bool RequirePkce { get; set; } = false;
-        public bool AllowPlainTextPkce { get; set; } = false;
+        public bool RequirePkce { get; set; }
+        public bool AllowPlainTextPkce { get; set; }
         public ICollection<string> RedirectUris { get; set; } = new HashSet<string>();
         public ICollection<string> AllowedScopes { get; set; } = new HashSet<string>();
-        public bool AllowOfflineAccess { get; set; } = false;
-        public bool AllowAccessTokensViaBrowser { get; set; } = false;
+        public bool AllowOfflineAccess { get; set; }
+        public bool AllowAccessTokensViaBrowser { get; set; }
         public string ProtocolType { get; set; } = IdentityServerConstants.ProtocolTypes.OpenIdConnect;
 
         // Authentication/Logout
@@ -40,13 +40,13 @@ namespace Fabric.Identity.API.Models
         public int SlidingRefreshTokenLifetime { get; set; } = 1296000;
         public TokenUsage RefreshTokenUsage { get; set; } = TokenUsage.OneTimeOnly;
         public TokenExpiration RefreshTokenExpiration { get; set; } = TokenExpiration.Absolute;
-        public bool UpdateAccessTokenClaimsOnRefresh { get; set; } = false;
+        public bool UpdateAccessTokenClaimsOnRefresh { get; set; }
         public AccessTokenType AccessTokenType { get; set; } = AccessTokenType.Jwt;
-        public bool IncludeJwtId { get; set; } = false;
+        public bool IncludeJwtId { get; set; }
         public ICollection<string> AllowedCorsOrigins { get; set; } = new HashSet<string>();
         public ICollection<Claim> Claims { get; set; } = new HashSet<Claim>(new ClaimComparer());
-        public bool AlwaysSendClientClaims { get; set; } = false;
-        public bool AlwaysIncludeUserClaimsInIdToken { get; set; } = false;
+        public bool AlwaysSendClientClaims { get; set; }
+        public bool AlwaysIncludeUserClaimsInIdToken { get; set; }
         public bool PrefixClientClaims { get; set; } = true;
 
         // Consent fields

@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Stores;
 using IdentityServer4.Models;
 
-namespace Fabric.Identity.API.DocumentDbStores
+namespace Fabric.Identity.API.Stores.Document
 {
     public class DocumentDbClientStore : IClientManagementStore
     {

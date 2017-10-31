@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +24,7 @@ namespace Fabric.Identity.API.Management
     {
         private const string NotFoundErrorMsg = "The specified API resource id could not be found.";
 
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IApiResourceStore _apiResourceStore;
 
         /// <summary>
         /// Constructor
@@ -33,10 +32,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="documentDbService">IDocumentDbService</param>
         /// <param name="validator">ApiResourceValidator</param>
         /// <param name="logger">ILogger</param>
-        public ApiResourceController(IDocumentDbService documentDbService, ApiResourceValidator validator, ILogger logger)
+        public ApiResourceController(IApiResourceStore apiResourceStore, ApiResourceValidator validator, ILogger logger)
             : base(validator, logger)
         {
-            _documentDbService = documentDbService;
+            _apiResourceStore = apiResourceStore;
         }
 
         /// <summary>
@@ -50,7 +49,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
-            var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+            var apiResource = _apiResourceStore.GetResource(id);
 
             if (apiResource == null)
             {
@@ -72,7 +71,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
         {
-            var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+            var apiResource = _apiResourceStore.GetResource(id);
 
             if (apiResource == null || string.IsNullOrEmpty(apiResource.Name))
             {
@@ -83,7 +82,7 @@ namespace Fabric.Identity.API.Management
             // Update password
             var resourceSecret = this.GeneratePassword();
             apiResource.ApiSecrets = new List<IS4.Secret>() { GetNewSecret(resourceSecret) };
-            _documentDbService.UpdateDocument(id, apiResource);
+            _apiResourceStore.UpdateResource(id, apiResource);
 
             // Prepare return values
             var viewApiResource = apiResource.ToApiResourceViewModel();
@@ -107,7 +106,7 @@ namespace Fabric.Identity.API.Management
             {
                 var id = resource.Name;
 
-                var existingResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+                var existingResource = _apiResourceStore.GetResource(id);
                 if (existingResource != null)
                 {
                     return CreateFailureResponse(
@@ -119,7 +118,7 @@ namespace Fabric.Identity.API.Management
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var resourceSecret = this.GeneratePassword();
                 resource.ApiSecrets = new List<IS4.Secret>() { GetNewSecret(resourceSecret) };
-                _documentDbService.AddDocument(id, resource);
+                _apiResourceStore.AddResource(resource);
 
                 var viewResource = resource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
@@ -142,7 +141,7 @@ namespace Fabric.Identity.API.Management
         {
             return ValidateAndExecute(apiResource, () =>
             {
-                var storedApiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+                var storedApiResource = _apiResourceStore.GetResource(id);
 
                 if (storedApiResource == null || string.IsNullOrEmpty(storedApiResource.Name))
                 {
@@ -155,7 +154,7 @@ namespace Fabric.Identity.API.Management
                 // Prevent from changing payload Name.
                 apiResource.Name = id;
 
-                _documentDbService.UpdateDocument(id, apiResource);
+                _apiResourceStore.UpdateResource(id, apiResource);
                 return NoContent();
             });
         }
@@ -170,7 +169,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            var apiResource = _documentDbService.GetDocument<IS4.ApiResource>(id).Result;
+            var apiResource = _apiResourceStore.GetResource(id);
 
             if (apiResource == null)
             {
@@ -178,7 +177,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            _documentDbService.DeleteDocument<IS4.ApiResource>(id);
+            _apiResourceStore.DeleteResource(id);
             return NoContent();
         }
     }

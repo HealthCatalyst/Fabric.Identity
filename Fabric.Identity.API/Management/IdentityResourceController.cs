@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +23,7 @@ namespace Fabric.Identity.API.Management
     {
         private const string NotFoundErrorMsg = "The specified Identity resource id could not be found.";
 
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IIdentityResourceStore _identityResourceStore;
 
         /// <summary>
         /// Constructor
@@ -31,10 +31,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="documentDbService">IDocumentDbService</param>
         /// <param name="validator">IdentityResourceValidator</param>
         /// <param name="logger">ILogger</param>
-        public IdentityResourceController(IDocumentDbService documentDbService, IdentityResourceValidator validator, ILogger logger) 
+        public IdentityResourceController(IIdentityResourceStore identityResourceStore, IdentityResourceValidator validator, ILogger logger) 
             : base(validator, logger)
         {
-            _documentDbService = documentDbService;
+            _identityResourceStore = identityResourceStore;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
-            var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+            var identityResource = _identityResourceStore.GetResource(id);
 
             if (identityResource == null)
             {
@@ -71,8 +71,7 @@ namespace Fabric.Identity.API.Management
             return ValidateAndExecute(value, () =>
             {
                 var id = value.Name;
-
-                var existingResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+                var existingResource = _identityResourceStore.GetResource(id);
                 if (existingResource != null)
                 {
                     return CreateFailureResponse(
@@ -80,7 +79,7 @@ namespace Fabric.Identity.API.Management
                         HttpStatusCode.Conflict);
                 }
 
-                _documentDbService.AddDocument(id, value);
+                _identityResourceStore.AddResource(value);
                 return CreatedAtAction("Get", new { id }, value);
             });
         }
@@ -100,7 +99,7 @@ namespace Fabric.Identity.API.Management
         {
             return ValidateAndExecute(value, () =>
             {
-                _documentDbService.UpdateDocument(id, value);
+                _identityResourceStore.UpdateResource(id, value);
                 return NoContent();
             });
         }
@@ -115,7 +114,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            var identityResource = _documentDbService.GetDocument<IdentityResource>(id).Result;
+            var identityResource = _identityResourceStore.GetResource(id);
 
             if (identityResource == null)
             {
@@ -123,8 +122,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            _documentDbService.DeleteDocument<IdentityResource>(id);
-
+            _identityResourceStore.DeleteResource(id);
             return NoContent();
         }
     }
