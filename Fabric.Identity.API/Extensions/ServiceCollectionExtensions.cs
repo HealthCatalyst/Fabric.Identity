@@ -8,6 +8,7 @@ using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Stores.InMemory;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
@@ -64,6 +65,7 @@ namespace Fabric.Identity.API.Extensions
         public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, IAppConfiguration appConfiguration)
         {
             serviceCollection.TryAddSingleton<IDocumentDbService, InMemoryDocumentService>();
+            serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;
