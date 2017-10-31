@@ -65,6 +65,7 @@ namespace Fabric.Identity.API.Management
         [HttpPost]
         [SwaggerResponse(201, typeof(IdentityResource), "The identity resource was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Post([FromBody] IdentityResource value)
         {
             return ValidateAndExecute(value, () =>
@@ -85,6 +86,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(204, null, "The identity resource was updated.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Put(string id, [FromBody] IdentityResource value)
         {
             return ValidateAndExecute(value, () =>

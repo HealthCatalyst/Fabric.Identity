@@ -100,6 +100,7 @@ namespace Fabric.Identity.API.Management
         [HttpPost]
         [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Post([FromBody] IS4.ApiResource resource)
         {
             return ValidateAndExecute(resource, () =>
@@ -128,6 +129,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(204, null, "No Content")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Put(string id, [FromBody] IS4.ApiResource apiResource)
         {
             return ValidateAndExecute(apiResource, () =>

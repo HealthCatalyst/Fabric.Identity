@@ -99,6 +99,7 @@ namespace Fabric.Identity.API.Management
         [HttpPost]
         [SwaggerResponse(201, typeof(Client), "The client was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Post([FromBody] Client client)
         {
             try
@@ -137,6 +138,7 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Put(string id, [FromBody] Client client)
         {
             var is4Client = client.ToIs4ClientModel();
