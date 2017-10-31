@@ -39,7 +39,7 @@ namespace Fabric.Identity.UnitTests.ClassFixtures
 
         public void Dispose()
         {
-            DocumentService.Clean();
+           // DocumentService.Clean();
         }
     }   
 }
