@@ -2,7 +2,7 @@
 using System.Reflection;
 
 using Fabric.Identity.API.Services;
-
+using Fabric.Identity.API.Stores;
 using FluentValidation;
 using IdentityServer4.Models;
 
@@ -10,11 +10,11 @@ namespace Fabric.Identity.API.Validation
 {
     public class ClientValidator : AbstractValidator<Client>
     {
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IClientManagementStore _clientManagementStore;
 
-        public ClientValidator(IDocumentDbService documentDbService)
+        public ClientValidator(IClientManagementStore clientManagementStore)
         {
-            _documentDbService = documentDbService;
+            _clientManagementStore = clientManagementStore;
             this.ConfigureRules();
         }
 
@@ -64,7 +64,7 @@ namespace Fabric.Identity.API.Validation
 
         private bool BeUnique(string clientId)
         {
-            return _documentDbService.GetDocument<Client>(clientId).Result == null;
+            return _clientManagementStore.FindClientByIdAsync(clientId).Result == null;
         }
     }
 }

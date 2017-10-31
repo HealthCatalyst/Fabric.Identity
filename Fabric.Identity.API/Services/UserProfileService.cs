@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Stores.Document;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
@@ -13,8 +11,8 @@ namespace Fabric.Identity.API.Services
 {
     public class UserProfileService : IProfileService
     {
-        private readonly DocumentDbUserStore _userStore;
         private readonly ILogger _logger;
+        private readonly DocumentDbUserStore _userStore;
 
         public UserProfileService(DocumentDbUserStore userStore, ILogger logger)
         {
@@ -23,7 +21,8 @@ namespace Fabric.Identity.API.Services
         }
 
         /// <summary>
-        /// This method is called whenever claims about the user are requested (e.g. during token creation or via the userinfo endpoint)
+        ///     This method is called whenever claims about the user are requested (e.g. during token creation or via the userinfo
+        ///     endpoint)
         /// </summary>
         /// <param name="context">The context.</param>
         /// <returns></returns>
@@ -44,8 +43,9 @@ namespace Fabric.Identity.API.Services
         }
 
         /// <summary>
-        /// This method gets called whenever identity server needs to determine if the user is valid or active (e.g. if the user's account has been deactivated since they logged in).
-        /// (e.g. during token issuance or validation).
+        ///     This method gets called whenever identity server needs to determine if the user is valid or active (e.g. if the
+        ///     user's account has been deactivated since they logged in).
+        ///     (e.g. during token issuance or validation).
         /// </summary>
         /// <param name="context">The context.</param>
         /// <returns></returns>
@@ -53,7 +53,7 @@ namespace Fabric.Identity.API.Services
         {
             var sub = context.Subject.GetSubjectId();
             _logger.Debug($"found sub from IsActiveContext: {sub}");
-            var user = await _userStore.FindBySubjectId(sub);            
+            var user = await _userStore.FindBySubjectId(sub);
             context.IsActive = user != null;
         }
     }

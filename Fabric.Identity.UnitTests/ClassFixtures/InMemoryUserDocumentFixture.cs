@@ -1,20 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Services.Databases.Document;
 
 namespace Fabric.Identity.UnitTests.ClassFixtures
 {
     public class InMemoryUserDocumentFixture
     {
-        public InMemoryDocumentService DocumentService { get; }
-
-        public InMemoryUserDocumentFixture()
-        {
-            DocumentService = new InMemoryDocumentService();            
-            _users.ForEach(u => DocumentService.AddDocument($"{u.SubjectId}:{u.ProviderName}", u));
-        }
-
         private readonly List<User> _users = new List<User>
         {
             new User
@@ -36,5 +27,18 @@ namespace Fabric.Identity.UnitTests.ClassFixtures
                 Username = "User Three"
             }
         };
-    }   
+
+        public InMemoryUserDocumentFixture()
+        {
+            DocumentService = new InMemoryDocumentService();
+            _users.ForEach(u => DocumentService.AddDocument($"{u.SubjectId}:{u.ProviderName}", u));
+        }
+
+        public InMemoryDocumentService DocumentService { get; }
+
+        public void Dispose()
+        {
+            DocumentService.Clean();
+        }
+    }
 }

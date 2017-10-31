@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
+﻿using System.Collections.Generic;
 using IdentityServer4.Events;
 using IdentityServer4.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Fabric.Identity.API.Events
 {
@@ -12,7 +9,8 @@ namespace Fabric.Identity.API.Events
     {
         private readonly ISerializationSettings _serializationSettings;
 
-        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category, string name, int id, ISerializationSettings serializationSettings) 
+        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category,
+            string name, int id, ISerializationSettings serializationSettings)
             : base(category, name, EventTypes.Information, id)
         {
             _serializationSettings = serializationSettings;
@@ -23,7 +21,8 @@ namespace Fabric.Identity.API.Events
             EntityType = typeof(T).FullName;
         }
 
-        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category, string name,
+        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category,
+            string name,
             int id, T entity, ISerializationSettings serializationSettings)
             : this(username, clientId, subject, documentId, category, name, id, serializationSettings)
         {

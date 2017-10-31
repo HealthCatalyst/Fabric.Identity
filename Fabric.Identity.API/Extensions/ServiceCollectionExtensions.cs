@@ -3,11 +3,11 @@ using System.Linq;
 
 using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
-using Fabric.Identity.API.DocumentDbStores;
-using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Services.Databases.Document;
 using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Stores.Document;
 using Fabric.Identity.API.Stores.InMemory;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;

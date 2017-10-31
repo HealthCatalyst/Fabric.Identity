@@ -3,8 +3,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Fabric.Identity.API.DocumentDbStores;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Stores.Document;
 using IdentityModel;
 using Serilog;
 

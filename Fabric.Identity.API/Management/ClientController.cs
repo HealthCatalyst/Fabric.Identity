@@ -1,23 +1,22 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
+using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
-using IS4 = IdentityServer4.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using System.Linq;
-using System.Collections.Generic;
-using Fabric.Identity.API.Exceptions;
-using Fabric.Identity.API.Stores;
-using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Management
 {
     /// <summary>
-    /// Manage client applications.
+    ///     Manage client applications.
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
+        ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/client")]
     [Route("api/v{version:apiVersion}/client")]
@@ -27,7 +26,7 @@ namespace Fabric.Identity.API.Management
         private readonly IClientManagementStore _clientManagementStore;
 
         /// <summary>
-        /// Manage client applications (aka relying parties) in Fabric.Identity. 
+        ///     Manage client applications (aka relying parties) in Fabric.Identity.
         /// </summary>
         /// <param name="clientManagementStore"></param>
         /// <param name="validator"></param>
@@ -39,7 +38,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Find a client by id
+        ///     Find a client by id
         /// </summary>
         /// <param name="id">The unique identifier of the client.</param>
         /// <returns></returns>
@@ -61,7 +60,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Reset a client secret
+        ///     Reset a client secret
         /// </summary>
         /// <param name="id">The unique id of the client to reset.</param>
         /// <returns></returns>
@@ -81,7 +80,7 @@ namespace Fabric.Identity.API.Management
 
             // Update password
             var newPassword = GeneratePassword();
-            client.ClientSecrets = new List<IS4.Secret>() { GetNewSecret(newPassword) };
+            client.ClientSecrets = new List<IS4.Secret> {GetNewSecret(newPassword)};
             _clientManagementStore.UpdateClient(id, client);
 
             // Prepare return values
@@ -92,9 +91,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Add a client
+        ///     Add a client
         /// </summary>
-        /// <param name="client">The <see cref="IS4.Client"/> object to add.</param>
+        /// <param name="client">The <see cref="IS4.Client" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(Client), "The client was created.")]
@@ -105,22 +104,21 @@ namespace Fabric.Identity.API.Management
             try
             {
                 var is4Client = client.ToIs4ClientModel();
-                return ValidateAndExecute(is4Client,
-                    () =>
-                        {
-                            var id = is4Client.ClientId;
+                return ValidateAndExecute(is4Client, () =>
+                {
+                    var id = is4Client.ClientId;
 
-                            // override any secret in the request.
-                            // TODO: we need to implement a salt strategy, either at the controller level or store level.
-                            var clientSecret = this.GeneratePassword();
-                            is4Client.ClientSecrets = new List<IS4.Secret>() { GetNewSecret(clientSecret) };
-                            _clientManagementStore.AddClient(is4Client);
+                    // override any secret in the request.
+                    var clientSecret = GeneratePassword();
+                    is4Client.ClientSecrets =
+                        new List<IS4.Secret> {GetNewSecret(clientSecret)};
+                    _clientManagementStore.AddClient(is4Client);
 
-                            var viewClient = is4Client.ToClientViewModel();
-                            viewClient.ClientSecret = clientSecret;
+                    var viewClient = is4Client.ToClientViewModel();
+                    viewClient.ClientSecret = clientSecret;
 
-                            return CreatedAtAction("Get", new { id }, viewClient);
-                        });
+                    return CreatedAtAction("Get", new {id}, viewClient);
+                });
             }
             catch (BadRequestException<Client> ex)
             {
@@ -129,10 +127,10 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Update a client
+        ///     Update a client
         /// </summary>
         /// <param name="id">The unique id of the client to update.</param>
-        /// <param name="client">The <see cref="IS4.Client"/> object to update.</param>
+        /// <param name="client">The <see cref="IS4.Client" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
@@ -163,7 +161,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Delete a client
+        ///     Delete a client
         /// </summary>
         /// <param name="id">The unique id of the client to delete.</param>
         /// <returns></returns>
@@ -185,4 +183,3 @@ namespace Fabric.Identity.API.Management
         }
     }
 }
-
