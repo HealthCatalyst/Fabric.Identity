@@ -5,7 +5,7 @@ using Fabric.Identity.API.Services;
 
 namespace Fabric.Identity.UnitTests.ClassFixtures
 {
-    public class InMemoryUserDocumentFixture : IDisposable
+    public class InMemoryUserDocumentFixture
     {
         public InMemoryDocumentService DocumentService { get; }
 
@@ -36,10 +36,5 @@ namespace Fabric.Identity.UnitTests.ClassFixtures
                 Username = "User Three"
             }
         };
-
-        public void Dispose()
-        {
-           // DocumentService.Clean();
-        }
     }   
 }
