@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using IdentityServer4.Models;
 using Moq;
 using Xunit;
-using Fabric.Identity.API.Stores.Document;
 
 namespace Fabric.Identity.UnitTests
 {
@@ -95,7 +95,7 @@ namespace Fabric.Identity.UnitTests
                 .SetupGetDocument(_identityResources)
                 .Create();
 
-            var documentDbResourceStore = new DocumentDbResourceStore(mockDbService);
+            var documentDbResourceStore = new CouchDbResourceStore(mockDbService);
 
             var identityResources = documentDbResourceStore.FindIdentityResourcesByScopeAsync(scopeNames).Result;
             Assert.Equal(expectedResultCount, identityResources.Count());
@@ -109,7 +109,7 @@ namespace Fabric.Identity.UnitTests
                 .SetupGetDocument(_apiResources)
                 .Create();
 
-            var documentDbResourceStore = new DocumentDbResourceStore(mockDbService);
+            var documentDbResourceStore = new CouchDbResourceStore(mockDbService);
 
             var apiResources = documentDbResourceStore.FindApiResourcesByScopeAsync(scopeNames).Result;
             Assert.Equal(expectedResultCount, apiResources.Count());

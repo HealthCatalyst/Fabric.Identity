@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Validation;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -13,9 +13,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Fabric.Identity.API.Management
 {
     /// <summary>
-    /// 
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
+        ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/identityresource")]
     [Route("api/v{version:apiVersion}/identityresource")]
@@ -26,19 +26,20 @@ namespace Fabric.Identity.API.Management
         private readonly IIdentityResourceStore _identityResourceStore;
 
         /// <summary>
-        /// Constructor
+        ///     Constructor
         /// </summary>
         /// <param name="documentDbService">IDocumentDbService</param>
         /// <param name="validator">IdentityResourceValidator</param>
         /// <param name="logger">ILogger</param>
-        public IdentityResourceController(IIdentityResourceStore identityResourceStore, IdentityResourceValidator validator, ILogger logger) 
+        public IdentityResourceController(IIdentityResourceStore identityResourceStore,
+            IdentityResourceValidator validator, ILogger logger)
             : base(validator, logger)
         {
             _identityResourceStore = identityResourceStore;
         }
 
         /// <summary>
-        /// Retrieve Identity resource by <paramref name="id"/>.
+        ///     Retrieve Identity resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the identity resource</param>
         /// <returns></returns>
@@ -58,9 +59,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Creates an Identity resource.
+        ///     Creates an Identity resource.
         /// </summary>
-        /// <param name="value">The <see cref="IdentityResource"/> object to add.</param>
+        /// <param name="value">The <see cref="IdentityResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IdentityResource), "The identity resource was created.")]
@@ -80,15 +81,15 @@ namespace Fabric.Identity.API.Management
                 }
 
                 _identityResourceStore.AddResource(value);
-                return CreatedAtAction("Get", new { id }, value);
+                return CreatedAtAction("Get", new {id}, value);
             });
         }
 
         /// <summary>
-        /// Modifies the Identity resource by <paramref name="id"/>.
+        ///     Modifies the Identity resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the identity resource</param>
-        /// <param name="value">The <see cref="IdentityResource"/> object to update.</param>
+        /// <param name="value">The <see cref="IdentityResource" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, null, "The identity resource was updated.")]
@@ -105,7 +106,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Deletes the Identity resource by <paramref name="id"/>.
+        ///     Deletes the Identity resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the identity resource.</param>
         /// <returns></returns>

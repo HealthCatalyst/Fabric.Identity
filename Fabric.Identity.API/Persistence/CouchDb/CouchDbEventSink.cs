@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Infrastructure;
-using Fabric.Identity.API.Services;
 using IdentityServer4.Events;
 using IdentityServer4.Services;
 
-namespace Fabric.Identity.API.EventSinks
+namespace Fabric.Identity.API.Persistence.CouchDb
 {
     public class CouchDbEventSink : IEventSink
     {
@@ -17,6 +16,7 @@ namespace Fabric.Identity.API.EventSinks
             _documentDbService = documentDbService.Instance;
             _innerEventSink = innerEventSink.Instance;
         }
+
         public Task PersistAsync(Event evt)
         {
             _innerEventSink.PersistAsync(evt);

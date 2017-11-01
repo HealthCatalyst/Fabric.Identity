@@ -2,17 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
-using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.Stores.Document
+namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 {
-    public class DocumentDbPersistedGrantStore : IPersistedGrantStore
+    public class CouchDbPersistedGrantStore : IPersistedGrantStore
     {
         private readonly IDocumentDbService _documentDbService;
 
-        public DocumentDbPersistedGrantStore(IDocumentDbService documentDbService)
+        public CouchDbPersistedGrantStore(IDocumentDbService documentDbService)
         {
             _documentDbService = documentDbService;
         }
@@ -31,9 +29,11 @@ namespace Fabric.Identity.API.Stores.Document
 
         public Task<IEnumerable<PersistedGrant>> GetAllAsync(string subjectId)
         {
-            var persistedGrants = _documentDbService.GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
+            var persistedGrants = _documentDbService
+                .GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
 
-            var matchingGrants = persistedGrants.Where(p => p.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
+            var matchingGrants =
+                persistedGrants.Where(p => p.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             return Task.FromResult(matchingGrants);
         }
@@ -46,7 +46,8 @@ namespace Fabric.Identity.API.Stores.Document
 
         public Task RemoveAllAsync(string subjectId, string clientId)
         {
-            var persistedGrants = _documentDbService.GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
+            var persistedGrants = _documentDbService
+                .GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
             var matchingGrants = persistedGrants.Where(
                 g => g.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                      && g.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase));
@@ -61,7 +62,8 @@ namespace Fabric.Identity.API.Stores.Document
 
         public Task RemoveAllAsync(string subjectId, string clientId, string type)
         {
-            var persistedGrants = _documentDbService.GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
+            var persistedGrants = _documentDbService
+                .GetDocuments<PersistedGrant>(FabricIdentityConstants.DocumentTypes.PersistedGrantDocumentType).Result;
             var matchingGrants = persistedGrants.Where(
                 g => g.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                      && g.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase)

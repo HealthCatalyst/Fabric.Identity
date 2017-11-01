@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Extensions;
-using Fabric.Identity.API.Stores.Document;
+using Fabric.Identity.API.Persistence;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
@@ -12,9 +12,9 @@ namespace Fabric.Identity.API.Services
     public class UserProfileService : IProfileService
     {
         private readonly ILogger _logger;
-        private readonly DocumentDbUserStore _userStore;
+        private readonly IUserStore _userStore;
 
-        public UserProfileService(DocumentDbUserStore userStore, ILogger logger)
+        public UserProfileService(IUserStore userStore, ILogger logger)
         {
             _userStore = userStore;
             _logger = logger;

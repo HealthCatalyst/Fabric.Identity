@@ -1,13 +1,11 @@
-﻿using Fabric.Identity.API.Services;
-using IdentityServer4.Models;
+﻿using IdentityServer4.Models;
 
-namespace Fabric.Identity.API.Stores.Document
+namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 {
-    public class DocumentDbApiResourceStore : BaseResourceStore, IApiResourceStore
+    public class CouchDbApiResourceStore : BaseResourceStore, IApiResourceStore
     {
-        public DocumentDbApiResourceStore(IDocumentDbService documentDbService) : base(documentDbService)
+        public CouchDbApiResourceStore(IDocumentDbService documentDbService) : base(documentDbService)
         {
-            
         }
 
         public ApiResource GetResource(string id)

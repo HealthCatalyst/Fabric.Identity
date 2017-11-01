@@ -1,6 +1,6 @@
 ﻿using IdentityServer4.Models;
 
-namespace Fabric.Identity.API.Stores
+namespace Fabric.Identity.API.Persistence
 {
     public interface IIdentityResourceStore : IResourceStore<IdentityResource>
     {

@@ -3,47 +3,50 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
-using Fabric.Identity.API.CouchDb;
+using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
+using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Services;
+using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
+using IdentityServer4.Models;
+using IdentityServer4.Quickstart.UI;
+using IdentityServer4.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using IdentityServer4.Services;
+using Microsoft.Extensions.PlatformAbstractions;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using ILogger = Serilog.ILogger;
-using System.Runtime.InteropServices;
-using Fabric.Identity.API.Documentation;
-using Fabric.Identity.API.Infrastructure;
-using Fabric.Identity.API.Services.Databases;
-using Fabric.Identity.API.Services.Databases.Document;
-using IdentityServer4.Models;
-using IdentityServer4.Quickstart.UI;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using ILogger = Serilog.ILogger;
+using LogFactory = Fabric.Identity.API.Logging.LogFactory;
 
 namespace Fabric.Identity.API
 {
     public class Startup
     {
+        private static readonly string ChallengeDirectory = @".well-known";
         private readonly IAppConfiguration _appConfig;
+        private readonly ICertificateService _certificateService;
+        private readonly ICouchDbSettings _couchDbSettings;
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
-        private readonly ICouchDbSettings _couchDbSettings;
-        private readonly ICertificateService _certificateService;
-        private static readonly string ChallengeDirectory = @".well-known";
 
         public Startup(IHostingEnvironment env)
         {
@@ -51,8 +54,18 @@ namespace Fabric.Identity.API
             _appConfig =
                 new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
-            _logger = Logging.LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
+            _logger = LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             _couchDbSettings = _appConfig.CouchDbSettings;
+        }
+
+        private static string XmlCommentsFilePath
+        {
+            get
+            {
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
+                return Path.Combine(basePath, fileName);
+            }
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -60,7 +73,7 @@ namespace Fabric.Identity.API
         public void ConfigureServices(IServiceCollection services)
         {
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
-            var eventLogger = Logging.LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
+            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             var serilogEventSink = new SerilogEventSink(eventLogger);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IEventSink>(serilogEventSink);
@@ -82,7 +95,7 @@ namespace Fabric.Identity.API
                                  new FilterSettings {GroupFilterSettings = new GroupFilterSettings()};
             filterSettings.GroupFilterSettings = filterSettings.GroupFilterSettings ?? new GroupFilterSettings();
             services.TryAddSingleton(filterSettings.GroupFilterSettings);
-            
+
             services.AddSingleton<GroupFilterService>();
             services.TryAddSingleton(_appConfig.LdapSettings);
             services.TryAddSingleton(new IdentityServerAuthenticationOptions
@@ -94,13 +107,12 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
-            services.AddMvc(options => {
-                options.Conventions.Add(new CommaSeparatedQueryStringConvention());
-            })                
-            .AddJsonOptions(x =>
-            {                    
-                x.SerializerSettings.ReferenceLoopHandling = new SerializationSettings().JsonSettings.ReferenceLoopHandling;
-            });
+            services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
+                .AddJsonOptions(x =>
+                {
+                    x.SerializerSettings.ReferenceLoopHandling =
+                        new SerializationSettings().JsonSettings.ReferenceLoopHandling;
+                });
 
             services.AddApiVersioning(options =>
             {
@@ -121,7 +133,7 @@ namespace Fabric.Identity.API
                         Description =
                             "Fabric.Identity contains a set of APIs that provides authentication for applications based on the OpenID Connect protocol. If you don't include the version in the URL you will get the v1 API."
                     });
-                
+
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
                     var versions = apiDesc.ControllerAttributes()
@@ -133,18 +145,19 @@ namespace Fabric.Identity.API
 
                 c.AddSecurityDefinition("oauth2", new OAuth2Scheme
                 {
-                    Description = "The Fabric.Identity management API requires authentication using oath2 and requires the below scopes.",
+                    Description =
+                        "The Fabric.Identity management API requires authentication using oath2 and requires the below scopes.",
                     Type = "oauth2",
                     AuthorizationUrl = identityServerApiSettings.Authority,
                     Flow = "hybrid, implicit, client_credentials",
-                    Scopes = new Dictionary<string, string>()
+                    Scopes = new Dictionary<string, string>
                     {
                         {"fabric/identity.manageresources", "Access to manage Client, API, and Identity resources."}
                     }
                 });
-                
 
-                c.CustomSchemaIds((type) => type.FullName);
+
+                c.CustomSchemaIds(type => type.FullName);
 
                 c.OperationFilter<VersionRemovalOperationFilter>();
                 c.OperationFilter<ParamMetadataOperationFilter>();
@@ -154,18 +167,7 @@ namespace Fabric.Identity.API
                 c.DocumentFilter<TagFilter>();
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
-
             });
-        }
-
-        private static string XmlCommentsFilePath
-        {
-            get
-            {
-                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
-                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
-                return Path.Combine(basePath, fileName);
-            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -218,8 +220,9 @@ namespace Fabric.Identity.API
             {
                 documentDbService = new CouchDbAccessService(_couchDbSettings, _logger, new SerializationSettings());
             }
-            var identityResources = await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants
-                .DocumentTypes.IdentityResourceDocumentType);
+            var identityResources =
+                await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes
+                    .IdentityResourceDocumentType);
             return identityResources.Any();
         }
 
@@ -232,8 +235,9 @@ namespace Fabric.Identity.API
             }
             else
             {
-                var couchDbBootStrapper = new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger, serializationSettings),
-                    _couchDbSettings, _logger);
+                var couchDbBootStrapper =
+                    new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger, serializationSettings),
+                        _couchDbSettings, _logger);
                 couchDbBootStrapper.Setup();
             }
         }

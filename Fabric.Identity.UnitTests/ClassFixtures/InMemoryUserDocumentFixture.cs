@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services.Databases.Document;
+using Fabric.Identity.API.Persistence.InMemory.Services;
 
 namespace Fabric.Identity.UnitTests.ClassFixtures
 {

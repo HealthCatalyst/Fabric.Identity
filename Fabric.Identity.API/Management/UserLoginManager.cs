@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Stores.Document;
+using Fabric.Identity.API.Persistence;
 using IdentityModel;
 using Serilog;
 
@@ -12,10 +12,10 @@ namespace Fabric.Identity.API.Management
 {
     public class UserLoginManager
     {
-        private readonly DocumentDbUserStore _userStore;
         private readonly ILogger _logger;
+        private readonly IUserStore _userStore;
 
-        public UserLoginManager(DocumentDbUserStore userStore, ILogger logger)
+        public UserLoginManager(IUserStore userStore, ILogger logger)
         {
             _userStore = userStore;
             _logger = logger;
@@ -32,11 +32,11 @@ namespace Fabric.Identity.API.Management
                 _userStore.AddUser(user);
                 return user;
             }
-            
+
             //update certain user information on every login       
             user.Claims = FilterClaims(claims);
             SetNamePropertiesFromClaims(user);
-            user.SetLastLoginDateForClient(clientId);       
+            user.SetLastLoginDateForClient(clientId);
             _userStore.UpdateUser(user);
 
             return user;
@@ -68,10 +68,10 @@ namespace Fabric.Identity.API.Management
         private User CreateNewUser(string provider, string subjectId, IEnumerable<Claim> claims, string clientId)
         {
             var filteredClaims = FilterClaims(claims);
-           
+
             var user = new User
             {
-                SubjectId = subjectId,            
+                SubjectId = subjectId,
                 ProviderName = provider,
                 Claims = filteredClaims
             };
@@ -95,7 +95,8 @@ namespace Fabric.Identity.API.Management
                 // if the JWT handler has an outbound mapping to an OIDC claim use that
                 else if (JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.ContainsKey(claim.Type))
                 {
-                    filtered.Add(new Claim(JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[claim.Type], claim.Value));
+                    filtered.Add(
+                        new Claim(JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[claim.Type], claim.Value));
                 }
                 // copy the claim as-is
                 else
@@ -129,6 +130,6 @@ namespace Fabric.Identity.API.Management
             {
                 filtered.Add(new Claim(JwtClaimTypes.Name, last));
             }
-        }        
+        }
     }
 }

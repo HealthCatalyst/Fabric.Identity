@@ -1,7 +1,7 @@
 ﻿using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.Stores
+namespace Fabric.Identity.API.Persistence
 {
     public interface IClientManagementStore : IClientStore
     {

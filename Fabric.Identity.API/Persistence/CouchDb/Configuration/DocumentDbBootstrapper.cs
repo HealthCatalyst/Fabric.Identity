@@ -1,7 +1,6 @@
 ﻿using System;
-using Fabric.Identity.API.Services;
 
-namespace Fabric.Identity.API.CouchDb
+namespace Fabric.Identity.API.Persistence.CouchDb.Configuration
 {
     public class DocumentDbBootstrapper
     {

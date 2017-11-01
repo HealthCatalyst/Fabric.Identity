@@ -4,14 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Stores;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Serilog;
 using Xunit;
 using IS4 = IdentityServer4.Models;
+using Fabric.Identity.API.Persistence;
 
 namespace Fabric.Identity.UnitTests
 {

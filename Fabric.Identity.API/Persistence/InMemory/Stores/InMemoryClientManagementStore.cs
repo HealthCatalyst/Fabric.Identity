@@ -1,21 +1,23 @@
 ﻿using System.Threading.Tasks;
-using Fabric.Identity.API.Services;
 using IdentityServer4.Models;
+using IdentityServer4.Stores;
 
-namespace Fabric.Identity.API.Stores.Document
+namespace Fabric.Identity.API.Persistence.InMemory.Stores
 {
-    public class DocumentDbClientStore : IClientManagementStore
+    public class InMemoryClientManagementStore : IClientManagementStore
     {
+        private readonly IClientStore _clientStore;
         private readonly IDocumentDbService _documentDbService;
 
-        public DocumentDbClientStore(IDocumentDbService documentDbService)
+        public InMemoryClientManagementStore(IClientStore innerClientStore, IDocumentDbService documentDbService)
         {
+            _clientStore = innerClientStore;
             _documentDbService = documentDbService;
         }
 
         public Task<Client> FindClientByIdAsync(string clientId)
         {
-            return _documentDbService.GetDocument<Client>(clientId);
+            return _clientStore.FindClientByIdAsync(clientId);
         }
 
         public void AddClient(Client client)

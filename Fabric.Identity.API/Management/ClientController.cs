@@ -2,7 +2,7 @@
 using System.Net;
 using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

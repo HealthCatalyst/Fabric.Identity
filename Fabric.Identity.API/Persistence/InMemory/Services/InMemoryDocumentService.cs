@@ -6,13 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Fabric.Identity.API.Services.Databases.Document
+namespace Fabric.Identity.API.Persistence.InMemory.Services
 {
     public class InMemoryDocumentService : IDocumentDbService
     {
         private static readonly ConcurrentDictionary<string, string> Documents = new ConcurrentDictionary<string, string>();
 
-        private string GetFullDocumentId<T>(string documentId)
+        private static string GetFullDocumentId<T>(string documentId)
         {
             return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
         }
