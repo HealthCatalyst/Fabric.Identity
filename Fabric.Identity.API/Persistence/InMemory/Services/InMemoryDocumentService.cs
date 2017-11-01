@@ -1,27 +1,23 @@
-﻿using Fabric.Identity.API.Models;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Models;
+using Newtonsoft.Json;
 
 namespace Fabric.Identity.API.Persistence.InMemory.Services
 {
     public class InMemoryDocumentService : IDocumentDbService
     {
-        private static readonly ConcurrentDictionary<string, string> Documents = new ConcurrentDictionary<string, string>();
-
-        private static string GetFullDocumentId<T>(string documentId)
-        {
-            return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
-        }
+        private static readonly ConcurrentDictionary<string, string> Documents =
+            new ConcurrentDictionary<string, string>();
 
         public Task<T> GetDocument<T>(string documentId)
         {
             string documentJson;
-            return Task.FromResult(Documents.TryGetValue(GetFullDocumentId<T>(documentId), out documentJson) 
-                ? JsonConvert.DeserializeObject<T>(documentJson, new SerializationSettings().JsonSettings) 
+            return Task.FromResult(Documents.TryGetValue(GetFullDocumentId<T>(documentId), out documentJson)
+                ? JsonConvert.DeserializeObject<T>(documentJson, new SerializationSettings().JsonSettings)
                 : default(T));
         }
 
@@ -52,12 +48,12 @@ namespace Fabric.Identity.API.Persistence.InMemory.Services
         public void AddDocument<T>(string documentId, T documentObject)
         {
             var fullDocumentId = GetFullDocumentId<T>(documentId);
-            if(!Documents.TryAdd(fullDocumentId, JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings)))
+            if (!Documents.TryAdd(fullDocumentId,
+                JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings)))
             {
                 //TODO: Use non standard exception or change to TryAddDocument.
                 throw new ArgumentException($"Document with id {documentId} already exists.");
             }
-            
         }
 
         public void UpdateDocument<T>(string documentId, T documentObject)
@@ -65,7 +61,8 @@ namespace Fabric.Identity.API.Persistence.InMemory.Services
             var fullDocumentId = GetFullDocumentId<T>(documentId);
             var currentValue = Documents[fullDocumentId]; //TODO: support legitimate conditional updates ?
 
-            if (!Documents.TryUpdate(fullDocumentId, JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings), currentValue))
+            if (!Documents.TryUpdate(fullDocumentId,
+                JsonConvert.SerializeObject(documentObject, new SerializationSettings().JsonSettings), currentValue))
             {
                 //TODO: Use non standard exception or change to TryUpdateDocument.
                 throw new ArgumentException($"Failed to update document with id {documentId}.");
@@ -76,6 +73,11 @@ namespace Fabric.Identity.API.Persistence.InMemory.Services
         {
             string document;
             Documents.TryRemove(GetFullDocumentId<T>(documentId), out document);
+        }
+
+        private static string GetFullDocumentId<T>(string documentId)
+        {
+            return $"{typeof(T).Name.ToLowerInvariant()}:{documentId}";
         }
 
         public void Clean()

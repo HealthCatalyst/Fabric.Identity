@@ -13,11 +13,13 @@ using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
+using IdentityServer4.Stores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
+using IPersistedGrantStore = Fabric.Identity.API.Persistence.IPersistedGrantStore;
 
 namespace Fabric.Identity.API.Extensions
 {
@@ -66,6 +68,9 @@ namespace Fabric.Identity.API.Extensions
             IAppConfiguration appConfiguration)
         {
             serviceCollection.TryAddSingleton<IDocumentDbService, InMemoryDocumentService>();
+            serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
+            serviceCollection.AddTransient<IApiResourceStore, InMemoryApiResourceStore>();
+            serviceCollection.AddTransient<IIdentityResourceStore, InMemoryIdentityResourceStore>();
             serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
             serviceCollection.AddIdentityServer(options =>
                 {
@@ -134,6 +139,8 @@ namespace Fabric.Identity.API.Extensions
         public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
             IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
+            serviceCollection.AddSingleton<IApiResourceStore, CouchDbApiResourceStore>();
+            serviceCollection.AddSingleton<IIdentityResourceStore, CouchDbIdentityResourceStore>();
             serviceCollection.AddSingleton<IUserStore, CouchDbUserStore>();
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
