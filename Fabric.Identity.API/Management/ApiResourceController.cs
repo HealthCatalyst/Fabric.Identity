@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +14,10 @@ using IS4 = IdentityServer4.Models;
 namespace Fabric.Identity.API.Management
 {
     /// <summary>
-    /// Manage metadata for APIs protected by the Identity API.
+    ///     Manage metadata for APIs protected by the Identity API.
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
+        ActiveAuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/apiresource")]
     [Route("api/v{version:apiVersion}/apiresource")]
@@ -27,7 +28,7 @@ namespace Fabric.Identity.API.Management
         private readonly IApiResourceStore _apiResourceStore;
 
         /// <summary>
-        /// Constructor
+        ///     Constructor
         /// </summary>
         /// <param name="documentDbService">IDocumentDbService</param>
         /// <param name="validator">ApiResourceValidator</param>
@@ -39,10 +40,12 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Retrieve API resource by <paramref name="id"/>.
+        ///     Retrieve API resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
-        /// <returns><see cref="IS4.ApiResource"/></returns>
+        /// <returns>
+        ///     <see cref="IS4.ApiResource" />
+        /// </returns>
         [HttpGet("{id}")]
         [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
@@ -61,7 +64,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Reset the api secret by API resource <paramref name="id"/>.
+        ///     Reset the api secret by API resource <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
@@ -80,8 +83,8 @@ namespace Fabric.Identity.API.Management
             }
 
             // Update password
-            var resourceSecret = this.GeneratePassword();
-            apiResource.ApiSecrets = new List<IS4.Secret>() { GetNewSecret(resourceSecret) };
+            var resourceSecret = GeneratePassword();
+            apiResource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
             _apiResourceStore.UpdateResource(id, apiResource);
 
             // Prepare return values
@@ -92,9 +95,9 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Creates an API resource.
+        ///     Creates an API resource.
         /// </summary>
-        /// <param name="resource">The <see cref="IS4.ApiResource"/> object to add.</param>
+        /// <param name="resource">The <see cref="IS4.ApiResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
@@ -116,21 +119,21 @@ namespace Fabric.Identity.API.Management
 
                 // override any secret in the request.
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
-                var resourceSecret = this.GeneratePassword();
-                resource.ApiSecrets = new List<IS4.Secret>() { GetNewSecret(resourceSecret) };
+                var resourceSecret = GeneratePassword();
+                resource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
                 _apiResourceStore.AddResource(resource);
 
                 var viewResource = resource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
-                return CreatedAtAction("Get", new { id }, viewResource);
+                return CreatedAtAction("Get", new {id}, viewResource);
             });
         }
 
         /// <summary>
-        /// Modifies the API resource by <paramref name="id"/>.
+        ///     Modifies the API resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
-        /// <param name="apiResource">The <see cref="IS4.ApiResource"/> object to update.</param>
+        /// <param name="apiResource">The <see cref="IS4.ApiResource" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, null, "No Content")]
@@ -160,7 +163,7 @@ namespace Fabric.Identity.API.Management
         }
 
         /// <summary>
-        /// Deletes the API resource by <paramref name="id"/>.
+        ///     Deletes the API resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>

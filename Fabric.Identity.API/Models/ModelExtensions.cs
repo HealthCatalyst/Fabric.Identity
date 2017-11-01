@@ -14,11 +14,11 @@ namespace Fabric.Identity.API.Models
         public static Error ToError(this ValidationResult validationResult)
         {
             var details = validationResult.Errors.Select(validationResultError => new Error
-            {
-                Code = validationResultError.ErrorCode,
-                Message = validationResultError.ErrorMessage,
-                Target = validationResultError.PropertyName
-            })
+                {
+                    Code = validationResultError.ErrorCode,
+                    Message = validationResultError.ErrorMessage,
+                    Target = validationResultError.PropertyName
+                })
                 .ToList();
 
             var error = new Error
@@ -122,7 +122,7 @@ namespace Fabric.Identity.API.Models
                 IdentityProviderRestrictions = client.IdentityProviderRestrictions,
                 LogoutUri = client.LogoutUri,
                 LogoutSessionRequired = client.LogoutSessionRequired,
-                
+
                 // Token
                 IdentityTokenLifetime = client.IdentityTokenLifetime,
                 AccessTokenLifetime = client.AccessTokenLifetime,
@@ -153,7 +153,7 @@ namespace Fabric.Identity.API.Models
 
         public static ApiResource ToApiResourceViewModel(this IS4.ApiResource resource)
         {
-            var newResource = new ApiResource()
+            var newResource = new ApiResource
             {
                 Name = resource.Name,
                 DisplayName = resource.DisplayName,
@@ -168,7 +168,7 @@ namespace Fabric.Identity.API.Models
 
         public static Scope ToScopeViewModel(this IS4.Scope scope)
         {
-            var newScope = new Scope()
+            var newScope = new Scope
             {
                 Name = scope.Name,
                 DisplayName = scope.DisplayName,
@@ -189,7 +189,7 @@ namespace Fabric.Identity.API.Models
                 SubjectId = testUser.SubjectId,
                 ProviderName = testUser.ProviderName,
                 Username = testUser.Username,
-                Claims = testUser.Claims,
+                Claims = testUser.Claims
             };
         }
 
@@ -205,7 +205,7 @@ namespace Fabric.Identity.API.Models
                 dateToSet = lastLoginDate;
             }
 
-            return new UserApiModel()
+            return new UserApiModel
             {
                 SubjectId = user.SubjectId,
                 FirstName = user.FirstName,

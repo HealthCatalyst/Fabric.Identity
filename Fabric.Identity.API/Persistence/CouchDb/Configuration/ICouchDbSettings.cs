@@ -1,4 +1,4 @@
-﻿namespace Fabric.Identity.API.Configuration
+﻿namespace Fabric.Identity.API.Persistence.Couchdb.Configuration
 {
     public interface ICouchDbSettings
     {

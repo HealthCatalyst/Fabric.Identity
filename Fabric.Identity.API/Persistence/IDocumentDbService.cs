@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Fabric.Identity.API.Services
+namespace Fabric.Identity.API.Persistence
 {
     public interface IDocumentDbService
     {

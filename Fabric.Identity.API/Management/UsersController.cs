@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;

@@ -18,8 +18,8 @@ using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Management;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Stores.Document;
 using Microsoft.AspNetCore.Authentication;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
@@ -51,7 +51,7 @@ namespace IdentityServer4.Quickstart.UI
             IHttpContextAccessor httpContextAccessor,
             IEventService events,
             IAppConfiguration appConfiguration,
-            DocumentDbUserStore documentDbUserStore,
+            IUserStore userStore,
             ILogger logger,
             IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver,
             AccountService accountService,
@@ -66,7 +66,7 @@ namespace IdentityServer4.Quickstart.UI
             _logger = logger;
             _accountService = accountService;
             _groupFilterService = groupFilterService;
-            _userLoginManager = new UserLoginManager(documentDbUserStore, _logger);
+            _userLoginManager = new UserLoginManager(userStore, _logger);
             _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver;
         }
 

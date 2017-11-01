@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Linq;
-
 using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Services;
+using Fabric.Identity.API.Persistence.CouchDb.Stores;
+using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.API.Persistence.InMemory.Stores;
 using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Services.Databases.Document;
-using Fabric.Identity.API.Stores;
-using Fabric.Identity.API.Stores.Document;
-using Fabric.Identity.API.Stores.InMemory;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
-using IdentityServer4.Stores;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,17 +32,17 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<ExternalProviderApiModelValidator>();
         }
 
-        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection, 
-            ICouchDbSettings couchDbSettings, 
+        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection,
+            ICouchDbSettings couchDbSettings,
             IAppConfiguration appConfiguration,
             ICertificateService certificateService,
             ILogger logger)
         {
-
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
             serviceCollection.AddSingleton(couchDbSettings);
             serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
-            serviceCollection.AddTransient<IClientManagementStore, DocumentDbClientStore>();
+            serviceCollection.AddTransient<IClientManagementStore, CouchDbClientStore>();
+            serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
             serviceCollection.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;
@@ -52,17 +51,20 @@ namespace Fabric.Identity.API.Extensions
                     options.Events.RaiseInformationEvents = true;
                     options.IssuerUri = appConfiguration.IssuerUri;
                 })
-                .AddSigningCredentialAndValidationKeys(appConfiguration.SigningCertificateSettings, certificateService, logger)
+                .AddSigningCredentialAndValidationKeys(appConfiguration.SigningCertificateSettings, certificateService,
+                    logger)
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
-                .AddResourceStore<DocumentDbResourceStore>()
-                .AddClientStore<DocumentDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, DocumentDbPersistedGrantStore>();
+                .AddResourceStore<CouchDbApiResourceStore>()
+                .AddResourceStore<CouchDbIdentityResourceStore>()
+                .AddClientStore<CouchDbClientStore>()
+                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
 
             return serviceCollection;
         }
 
-        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection, IAppConfiguration appConfiguration)
+        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection,
+            IAppConfiguration appConfiguration)
         {
             serviceCollection.TryAddSingleton<IDocumentDbService, InMemoryDocumentService>();
             serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
@@ -77,16 +79,17 @@ namespace Fabric.Identity.API.Extensions
                 .AddTemporarySigningCredential()
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
-                .AddResourceStore<DocumentDbResourceStore>()
-                .AddClientStore<DocumentDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, DocumentDbPersistedGrantStore>();
+                .AddResourceStore<CouchDbResourceStore>()
+                .AddClientStore<CouchDbClientStore>()
+                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
 
-            
 
             return serviceCollection;
         }
 
-        public static IServiceCollection AddScopedDecorator<TService, TImplementation>(this IServiceCollection serviceCollection) where TService: class where TImplementation : class, TService
+        public static IServiceCollection
+            AddScopedDecorator<TService, TImplementation>(this IServiceCollection serviceCollection)
+            where TService : class where TImplementation : class, TService
         {
             //since the asp .net core built in dependency injection does not provide
             //a mechanism for registering decorators, we have to do it ourselves
@@ -108,7 +111,8 @@ namespace Fabric.Identity.API.Extensions
             var registration = serviceCollection.FirstOrDefault(r => r.ServiceType == typeof(TService));
             if (registration == null)
             {
-                throw new FabricConfigurationException($"Service {typeof(TService).Name} is not yet registered, please register before trying to decorate it.");
+                throw new FabricConfigurationException(
+                    $"Service {typeof(TService).Name} is not yet registered, please register before trying to decorate it.");
             }
             return registration;
         }
@@ -128,11 +132,10 @@ namespace Fabric.Identity.API.Extensions
             throw new FabricConfigurationException("No IDocumentDbService is registered");
         }
 
-
         public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
             IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
         {
-            serviceCollection.AddSingleton<DocumentDbUserStore, DocumentDbUserStore>();
+            serviceCollection.AddSingleton<CouchDbUserStore, CouchDbUserStore>();
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
             if (appConfiguration.HostingOptions.UseInMemoryStores)
@@ -141,7 +144,8 @@ namespace Fabric.Identity.API.Extensions
             }
             else
             {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration, certificateService, logger);
+                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration,
+                    certificateService, logger);
             }
 
             return serviceCollection;
@@ -154,15 +158,15 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddSingleton<IAuthorizationHandler, SearchUserAuthorizationHandler>();
 
             serviceCollection.AddAuthorization(options =>
-                {
-                    options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
-                        policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
-                    options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.ReadScopeClaim,
-                        policy => policy.Requirements.Add(new ReadScopeRequirement()));
-                    options.AddPolicy(
-                        FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim,
-                        policy => policy.Requirements.Add(new SearchUserScopeRequirement()));
-                });
+            {
+                options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
+                    policy => policy.Requirements.Add(new RegisteredClientThresholdRequirement(1)));
+                options.AddPolicy(FabricIdentityConstants.AuthorizationPolicyNames.ReadScopeClaim,
+                    policy => policy.Requirements.Add(new ReadScopeRequirement()));
+                options.AddPolicy(
+                    FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim,
+                    policy => policy.Requirements.Add(new SearchUserScopeRequirement()));
+            });
 
             return serviceCollection;
         }

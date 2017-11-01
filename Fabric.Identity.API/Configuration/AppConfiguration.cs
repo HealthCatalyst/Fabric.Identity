@@ -1,4 +1,5 @@
-﻿using Fabric.Platform.Shared.Configuration;
+﻿using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.API.Configuration
 {

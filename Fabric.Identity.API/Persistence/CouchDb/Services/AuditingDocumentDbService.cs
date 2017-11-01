@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Services;
 using IdentityServer4.Services;
 
-namespace Fabric.Identity.API.Services.Databases
+namespace Fabric.Identity.API.Persistence.CouchDb.Services
 {
+    /// <summary>
+    /// TODO: break out ISerializationSettings and IUserResolveService into separate DLL before splitting CouchDb code into a separate DLL.
+    /// </summary>
     public class AuditingDocumentDbService : IDocumentDbService
     {
         private readonly ISerializationSettings _serializationSettings;

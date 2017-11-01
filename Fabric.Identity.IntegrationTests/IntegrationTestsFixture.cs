@@ -4,9 +4,11 @@ using System.IO;
 using System.Net.Http;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
-using Fabric.Identity.API.CouchDb;
-using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Services.Databases.Document;
+using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Services;
+using Fabric.Identity.API.Persistence.InMemory.Services;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;
@@ -21,14 +23,12 @@ namespace Fabric.Identity.IntegrationTests
 {
     public class IntegrationTestsFixture : IDisposable
     {
-        private readonly TestServer _identityTestServer;
-        private readonly TestServer _apiTestServer;
-        private static IS4.Client _client;
         private const string ClientSecret = "secret";
         private const string IdentityServerUrl = "http://localhost:5001";
         private const string RegistrationApiServerUrl = "http://localhost:5000";
-        private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         private const string RegistrationApiName = "registration-api";
+        private static IS4.Client _client;
+        private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
@@ -38,21 +38,40 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
-        private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings()
+
+        private static IDocumentDbService _dbService;
+        private readonly TestServer _apiTestServer;
+        private readonly TestServer _identityTestServer;
+
+        static IntegrationTestsFixture()
+        {
+            var api = GetTestApiResource();
+            _client = GetTestClient();
+            InMemoryDocumentDbService.AddDocument(api.Name, api);
+            InMemoryDocumentDbService.AddDocument(_client.ClientId, _client);
+        }
+
+        public IntegrationTestsFixture(bool useInMemoryDbService = true)
+        {
+            var dbService = GetDocumentDbService(useInMemoryDbService);
+
+            _identityTestServer = CreateIdentityTestServer(dbService);
+            _apiTestServer = CreateRegistrationApiTestServer(dbService);
+            HttpClient = GetHttpClient();
+        }
+
+        private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
         {
             DatabaseName = "integration-" + DateTime.UtcNow.Ticks,
             Username = "",
             Password = "",
             Server = "http://127.0.0.1:5984"
         });
-        
-        private static IDocumentDbService _dbService;
 
         protected static IDocumentDbService CouchDbService
         {
             get
             {
-
                 if (_dbService == null)
                 {
                     var couchDbServer = Environment.GetEnvironmentVariable(CouchDbServerEnvironmentVariable);
@@ -88,22 +107,7 @@ namespace Fabric.Identity.IntegrationTests
             }
         }
 
-        static IntegrationTestsFixture()
-        {                
-            var api = GetTestApiResource();
-            _client = GetTestClient();
-            InMemoryDocumentDbService.AddDocument(api.Name, api);
-            InMemoryDocumentDbService.AddDocument(_client.ClientId, _client);
-        }
-
-        public IntegrationTestsFixture(bool useInMemoryDbService = true)
-        {
-            var dbService = GetDocumentDbService(useInMemoryDbService);    
-
-            _identityTestServer = CreateIdentityTestServer(dbService);
-            _apiTestServer = CreateRegistrationApiTestServer(dbService);
-            HttpClient = GetHttpClient();
-        }
+        public HttpClient HttpClient { get; }
 
         private IDocumentDbService GetDocumentDbService(bool useInMemoryDbService)
         {
@@ -115,14 +119,14 @@ namespace Fabric.Identity.IntegrationTests
             var builder = new WebHostBuilder();
             builder.ConfigureServices(c =>
                 c.AddSingleton(LdapSettings)
-                .AddSingleton(CouchDbSettings)
-                .AddSingleton<IDocumentDbService>(documentDbService)
+                    .AddSingleton(CouchDbSettings)
+                    .AddSingleton(documentDbService)
             );
-            
+
 
             builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<API.Startup>()                
+                .UseStartup<Startup>()
                 .UseUrls(IdentityServerUrl);
 
             return new TestServer(builder);
@@ -145,12 +149,12 @@ namespace Fabric.Identity.IntegrationTests
             apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
                 .AddSingleton(options)
                 .AddSingleton(CouchDbSettings)
-                .AddSingleton<IDocumentDbService>(documentDbService)
-                );
+                .AddSingleton(documentDbService)
+            );
 
             apiBuilder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<API.Startup>()                
+                .UseStartup<Startup>()
                 .UseUrls(RegistrationApiServerUrl);
 
             return new TestServer(apiBuilder);
@@ -159,7 +163,8 @@ namespace Fabric.Identity.IntegrationTests
         protected HttpClient GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret, $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
+            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret,
+                $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
             return httpClient;
         }
@@ -187,15 +192,15 @@ namespace Fabric.Identity.IntegrationTests
             {
                 ClientId = TestClientName,
                 ClientName = TestClientName,
-                ClientSecrets = new List<IS4.Secret> { new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret)) },
+                ClientSecrets = new List<IS4.Secret> {new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret))},
                 RequireConsent = false,
                 AllowedGrantTypes = IS4.GrantTypes.ClientCredentials,
                 AllowedScopes = new List<string>
-                                    {
-                                        FabricIdentityConstants.IdentityRegistrationScope,
-                                        FabricIdentityConstants.IdentityReadScope,
-                                        FabricIdentityConstants.IdentitySearchUsersScope
-                                    }
+                {
+                    FabricIdentityConstants.IdentityRegistrationScope,
+                    FabricIdentityConstants.IdentityReadScope,
+                    FabricIdentityConstants.IdentitySearchUsersScope
+                }
             };
         }
 
@@ -221,8 +226,6 @@ namespace Fabric.Identity.IntegrationTests
             };
         }
 
-        public HttpClient HttpClient { get; }
-
         #region IDisposable implementation
 
         // Dispose() calls Dispose(true)
@@ -244,7 +247,7 @@ namespace Fabric.Identity.IntegrationTests
             if (disposing)
             {
                 // free managed resources
-                this.HttpClient.Dispose();
+                HttpClient.Dispose();
                 _identityTestServer.Dispose();
                 _apiTestServer.Dispose();
             }

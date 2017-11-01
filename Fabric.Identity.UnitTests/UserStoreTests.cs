@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Fabric.Identity.API.Stores.Document;
+using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using Fabric.Identity.UnitTests.ClassFixtures;
 using Moq;
 using Serilog;
@@ -36,7 +36,7 @@ namespace Fabric.Identity.UnitTests
         [MemberData(nameof(SubjectIdData))]
         public void UserStore_CanFindBySubjectId(string subjectId, bool shouldBeFound)
         {
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
+            var userStore = new CouchDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
             var user = userStore.FindBySubjectId(subjectId).Result;
             if (user != null)
@@ -50,7 +50,7 @@ namespace Fabric.Identity.UnitTests
         [MemberData(nameof(ProviderSubjectIdData))]
         public void UserStore_CanFindByExternalProvider(string subjectId, string provider, bool shouldBeFound)
         {
-            var userStore = new DocumentDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
+            var userStore = new CouchDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
             var user = userStore.FindByExternalProvider(provider, subjectId).Result;
             Assert.Equal(shouldBeFound, user != null);

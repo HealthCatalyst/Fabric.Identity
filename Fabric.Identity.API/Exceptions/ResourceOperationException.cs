@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Fabric.Identity.API.CouchDb
+namespace Fabric.Identity.API.Exceptions
 {
     public class ResourceOperationException : Exception
     {
