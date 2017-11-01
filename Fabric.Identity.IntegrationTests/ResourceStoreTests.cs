@@ -15,19 +15,20 @@ namespace Fabric.Identity.IntegrationTests
     {
         private static readonly Random rand = new Random(DateTime.Now.Millisecond);
 
-        private static readonly Func<IS4.ApiResource> GetTestApiResource = () => new IS4.ApiResource()
+        private static readonly Func<IS4.ApiResource> GetTestApiResource = () => new IS4.ApiResource
         {
             Name = rand.Next().ToString(),
             DisplayName = "ApiResourceName",
-            Scopes = new List<IS4.Scope>() { new IS4.Scope(rand.Next().ToString()) },
+            Scopes = new List<IS4.Scope> {new IS4.Scope(rand.Next().ToString())},
             Enabled = true,
-            UserClaims = new List<string>() { rand.Next().ToString() }
+            UserClaims = new List<string> {rand.Next().ToString()}
         };
 
         private async Task<HttpResponseMessage> CreateNewResource(IS4.ApiResource testApiResource)
         {
-            var stringContent = new StringContent(JsonConvert.SerializeObject(testApiResource), Encoding.UTF8, "application/json");
-            var response = await this.HttpClient.PostAsync("/api/ApiResource", stringContent);
+            var stringContent = new StringContent(JsonConvert.SerializeObject(testApiResource), Encoding.UTF8,
+                "application/json");
+            var response = await HttpClient.PostAsync("/api/ApiResource", stringContent);
             return response;
         }
 
@@ -47,45 +48,69 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
+        public async Task TestCreateApiResource_DuplicateIdFailure()
+        {
+            var testApiResource = GetTestApiResource();
+            Console.WriteLine("calling create for test client 1");
+            var response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            // Send POST with same Name
+            Console.WriteLine("calling create for test client 2");
+            response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task TestCreateApiResource_Success()
         {
             var testApiResource = GetTestApiResource();
-            HttpResponseMessage response = await CreateNewResource(testApiResource);
+            var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
-            var resource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
+            var resource = (ApiResource) JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             Assert.Equal(testApiResource.Name, resource.Name);
             Assert.NotNull(resource.ApiSecret);
         }
 
         [Fact]
-        public async Task TestCreateApiResource_DuplicateIdFailure()
+        public async Task TestDeleteApiResource_Success()
         {
             var testApiResource = GetTestApiResource();
-            Console.WriteLine("calling create for test client 1");
-            HttpResponseMessage response = await CreateNewResource(testApiResource);
+            var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
+<<<<<<< HEAD
             // Send POST with same Name
             Console.WriteLine("calling create for test client 2");
             response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+=======
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
+                $"/api/ApiResource/{testApiResource.Name}"));
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+            response = await HttpClient.SendAsync(
+                new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+>>>>>>> fe66633... moved CouchDb store registrations to appropriate method
         }
 
         [Fact]
         public async Task TestGetApiResource_Success()
         {
             var testApiResource = GetTestApiResource();
-            HttpResponseMessage response = await CreateNewResource(testApiResource);
+            var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
+            response = await HttpClient.SendAsync(
+                new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
-            var resource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
+            var resource = (ApiResource) JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             Assert.Equal(testApiResource.Name, resource.Name);
             Assert.Null(resource.ApiSecret);
@@ -95,24 +120,26 @@ namespace Fabric.Identity.IntegrationTests
         public async Task TestResetPassword_Success()
         {
             var testApiResource = GetTestApiResource();
-            HttpResponseMessage response = await CreateNewResource(testApiResource);
+            var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
-            var resource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
+            var resource = (ApiResource) JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             var name = resource.Name;
             var password = resource.ApiSecret;
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}/resetPassword"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                $"/api/ApiResource/{testApiResource.Name}/resetPassword"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             content = await response.Content.ReadAsStringAsync();
-            resource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
+            resource = (ApiResource) JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             Assert.Equal(name, resource.Name);
             Assert.NotEqual(password, resource.ApiSecret);
         }
+<<<<<<< HEAD
 
         [Fact]
         public async Task TestDeleteApiResource_Success()
@@ -152,5 +179,7 @@ namespace Fabric.Identity.IntegrationTests
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+=======
+>>>>>>> fe66633... moved CouchDb store registrations to appropriate method
     }
 }
