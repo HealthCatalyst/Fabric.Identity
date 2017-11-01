@@ -2,7 +2,7 @@
 
 namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 {
-    public class CouchDbIdentityResourceStore : BaseResourceStore, IIdentityResourceStore
+    public class CouchDbIdentityResourceStore : CouchDbResourceStore, IIdentityResourceStore
     {
         public CouchDbIdentityResourceStore(IDocumentDbService documentDbService) : base(documentDbService)
         {

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
+using IPersistedGrantStore = IdentityServer4.Stores.IPersistedGrantStore;
 
 namespace Fabric.Identity.API.Extensions
 {
@@ -60,8 +61,7 @@ namespace Fabric.Identity.API.Extensions
                     logger)
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyDocumentDbService>()
-                .AddResourceStore<CouchDbApiResourceStore>()
-                .AddResourceStore<CouchDbIdentityResourceStore>()
+                .AddResourceStore<CouchDbResourceStore>()
                 .AddClientStore<CouchDbClientStore>()
                 .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
 
