@@ -198,20 +198,6 @@ namespace Fabric.Identity.UnitTests
 
         [Theory]
         [InlineData("1234")]
-        [InlineData("")]
-        [InlineData("randomId")]
-        public void TestDeleteClient_DBCall(string clientId)
-        {
-            GetDefaultController(out Mock<IClientManagementStore> mockClientManagementStore, out ClientController controller);
-
-            var result = controller.Delete(clientId);
-            Assert.True(result is NoContentResult);
-
-            mockClientManagementStore.Verify(m => m.DeleteClient(It.Is<string>(id => id == clientId)));
-        }
-
-        [Theory]
-        [InlineData("1234")]
         [InlineData("randomId")]
         public void TestUpdateClient_DBCall(string clientId)
         {

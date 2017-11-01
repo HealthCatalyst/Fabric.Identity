@@ -1,8 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
-
-using Fabric.Identity.API.Services;
-using Fabric.Identity.API.Stores;
+using Fabric.Identity.API.Persistence;
 using FluentValidation;
 using IdentityServer4.Models;
 
@@ -15,7 +13,7 @@ namespace Fabric.Identity.API.Validation
         public ClientValidator(IClientManagementStore clientManagementStore)
         {
             _clientManagementStore = clientManagementStore;
-            this.ConfigureRules();
+            ConfigureRules();
         }
 
         private void ConfigureRules()
@@ -42,8 +40,10 @@ namespace Fabric.Identity.API.Validation
             RuleFor(client => client.AllowOfflineAccess)
                 .NotNull()
                 .Must(v => !v)
-                .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) || client.AllowedGrantTypes.Contains(GrantType.ResourceOwnerPassword))
-                .WithMessage("Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");
+                .When(client => client.AllowedGrantTypes.Contains(GrantType.Implicit) ||
+                                client.AllowedGrantTypes.Contains(GrantType.ResourceOwnerPassword))
+                .WithMessage(
+                    "Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");
 
             var grantTypes = typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.FieldType == typeof(string))
@@ -53,7 +53,8 @@ namespace Fabric.Identity.API.Validation
                 .NotNull()
                 .NotEmpty()
                 .Must(xs => xs.All(x => grantTypes.Contains(x)))
-                .WithMessage("Grant type not allowed. Allowed values: " + grantTypes.Aggregate((acc, x) => $"{acc} ,{x}"));
+                .WithMessage("Grant type not allowed. Allowed values: " +
+                             grantTypes.Aggregate((acc, x) => $"{acc} ,{x}"));
 
             RuleFor(client => client.ClientId)
                 .Must(BeUnique)
