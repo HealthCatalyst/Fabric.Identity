@@ -3,7 +3,7 @@ using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Persistence.InMemory.Stores
 {
-    public class InMemoryIdentityResourceStore : BaseResourceStore, IIdentityResourceStore
+    public class InMemoryIdentityResourceStore : CouchDbResourceStore, IIdentityResourceStore
     {
         public InMemoryIdentityResourceStore(IDocumentDbService documentDbService) : base(documentDbService)
         {
