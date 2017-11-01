@@ -1,5 +1,4 @@
-﻿using Fabric.Identity.API.Services;
-
+﻿using Fabric.Identity.API.Persistence;
 using FluentValidation;
 using IdentityServer4.Models;
 
@@ -7,11 +6,11 @@ namespace Fabric.Identity.API.Validation
 {
     public class IdentityResourceValidator : AbstractValidator<IdentityResource>
     {
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IIdentityResourceStore _identityResourceStore;
 
-        public IdentityResourceValidator(IDocumentDbService documentDbService)
+        public IdentityResourceValidator(IIdentityResourceStore identityResourceStore)
         {
-            this._documentDbService = documentDbService;
+            _identityResourceStore = identityResourceStore;
             ConfigureRules();
         }
 
@@ -38,7 +37,7 @@ namespace Fabric.Identity.API.Validation
 
         private bool BeUnique(string name)
         {
-            return _documentDbService.GetDocument<IdentityResource>(name).Result == null;
+            return _identityResourceStore.GetResource(name) == null;
         }
     }
 }

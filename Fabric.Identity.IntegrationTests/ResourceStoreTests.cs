@@ -58,7 +58,7 @@ namespace Fabric.Identity.IntegrationTests
             // Send POST with same Name
             Console.WriteLine("calling create for test client 2");
             response = await CreateNewResource(testApiResource);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [Fact]
@@ -73,29 +73,6 @@ namespace Fabric.Identity.IntegrationTests
 
             Assert.Equal(testApiResource.Name, resource.Name);
             Assert.NotNull(resource.ApiSecret);
-        }
-
-        [Fact]
-        public async Task TestDeleteApiResource_Success()
-        {
-            var testApiResource = GetTestApiResource();
-            var response = await CreateNewResource(testApiResource);
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-<<<<<<< HEAD
-            // Send POST with same Name
-            Console.WriteLine("calling create for test client 2");
-            response = await CreateNewResource(testApiResource);
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-=======
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
-                $"/api/ApiResource/{testApiResource.Name}"));
-            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-
-            response = await HttpClient.SendAsync(
-                new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
->>>>>>> fe66633... moved CouchDb store registrations to appropriate method
         }
 
         [Fact]
@@ -139,19 +116,25 @@ namespace Fabric.Identity.IntegrationTests
             Assert.Equal(name, resource.Name);
             Assert.NotEqual(password, resource.ApiSecret);
         }
-<<<<<<< HEAD
 
         [Fact]
         public async Task TestDeleteApiResource_Success()
         {
             var testApiResource = GetTestApiResource();
-            HttpResponseMessage response = await CreateNewResource(testApiResource);
+            var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/{testApiResource.Name}"));
+            // Send POST with same Name
+            Console.WriteLine("calling create for test client 2");
+            response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
+                $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
+            response = await HttpClient.SendAsync(
+                new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -179,7 +162,5 @@ namespace Fabric.Identity.IntegrationTests
             var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-=======
->>>>>>> fe66633... moved CouchDb store registrations to appropriate method
     }
 }
