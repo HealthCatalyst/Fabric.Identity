@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.Extensions
                 .AddSigningCredentialAndValidationKeys(appConfiguration.SigningCertificateSettings, certificateService,
                     logger)
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
-                .AddCorsPolicyService<CorsPolicyDocumentDbService>()
+                .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourceStore>()
                 .AddClientStore<CouchDbClientStore>()
                 .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
@@ -87,7 +87,7 @@ namespace Fabric.Identity.API.Extensions
                 })
                 .AddTemporarySigningCredential()
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
-                .AddCorsPolicyService<CorsPolicyDocumentDbService>()
+                .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourceStore>()
                 .AddClientStore<CouchDbClientStore>()
                 .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
