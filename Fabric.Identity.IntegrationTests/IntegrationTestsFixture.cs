@@ -5,7 +5,6 @@ using System.Net.Http;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.Couchdb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;

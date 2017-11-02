@@ -12,7 +12,6 @@ using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.Couchdb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
@@ -168,19 +167,21 @@ namespace Fabric.Identity.API
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
             });
+            
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IDbBootstrapper dbBootstrapper)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
-
-            var serializationSettings = app.ApplicationServices.GetService<ISerializationSettings>();
-            InitializeStores(_appConfig.HostingOptions.UseInMemoryStores, serializationSettings);
+            
+            InitializeDatabase(dbBootstrapper);
+            
 
             loggerFactory.AddSerilog(_logger);
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
@@ -226,19 +227,11 @@ namespace Fabric.Identity.API
             return identityResources.Any();
         }
 
-        private void InitializeStores(bool useInMemoryStores, ISerializationSettings serializationSettings)
+        private void InitializeDatabase(IDbBootstrapper dbBootstrapper)
         {
-            if (useInMemoryStores)
+            if (dbBootstrapper.Setup())
             {
-                var inMemoryBootStrapper = new DocumentDbBootstrapper(new InMemoryDocumentService());
-                inMemoryBootStrapper.Setup();
-            }
-            else
-            {
-                var couchDbBootStrapper =
-                    new CouchDbBootstrapper(new CouchDbAccessService(_couchDbSettings, _logger, serializationSettings),
-                        _couchDbSettings, _logger);
-                couchDbBootStrapper.Setup();
+                dbBootstrapper.AddResources(Config.GetIdentityResources());
             }
         }
 

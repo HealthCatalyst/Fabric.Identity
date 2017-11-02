@@ -4,7 +4,7 @@ using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using Fabric.Identity.API.Persistence.InMemory.Services;
@@ -44,6 +44,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IApiResourceStore, CouchDbApiResourceStore>();
             serviceCollection.AddTransient<IIdentityResourceStore, CouchDbIdentityResourceStore>();
             serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
+            serviceCollection.AddTransient<IDbBootstrapper, CouchDbBootstrapper>();
 
             serviceCollection.AddSingleton(couchDbSettings);
 
@@ -76,6 +77,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IIdentityResourceStore, InMemoryIdentityResourceStore>();
             serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
             serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
+            serviceCollection.AddTransient<IDbBootstrapper, InMemoryDbBootstrapper>();
 
             serviceCollection.AddIdentityServer(options =>
                 {
