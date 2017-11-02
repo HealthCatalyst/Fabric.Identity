@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using Serilog;
 using Fabric.Identity.API.Exceptions;
 using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 
 namespace Fabric.Identity.API.Persistence.CouchDb.Services
 {

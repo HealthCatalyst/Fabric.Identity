@@ -1,43 +1,60 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Fabric.Identity.API.CouchDb;
-using Fabric.Identity.API.Persistence.Couchdb.Configuration;
+using Fabric.Identity.API.Exceptions;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
+using IdentityServer4.Models;
 using MyCouch;
 using MyCouch.Net;
 using MyCouch.Responses;
 using Polly;
 using Serilog;
 
-namespace Fabric.Identity.API.Persistence.CouchDb.Configuration
+namespace Fabric.Identity.API.Persistence.CouchDb.Services
 {
-    public class CouchDbBootstrapper : DocumentDbBootstrapper
+    public class CouchDbBootstrapper : IDbBootstrapper
     {
         private static readonly Policy CircuitBreaker =
             Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
 
+        private readonly IDocumentDbService _documentDbService;
         private readonly ICouchDbSettings _couchDbSettings;
         private readonly DbConnectionInfo _dbConnectionInfo;
         private readonly ILogger _logger;
 
         public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings,
             ILogger logger)
-            : base(documentDbService)
         {
             _couchDbSettings = couchDbSettings;
             _dbConnectionInfo = MakeDbConnectionInfo();
+            _documentDbService = documentDbService;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public override void Setup()
+        public bool Setup()
         {
             var dbCreated = CircuitBreaker.Execute(CreateDb);
-            if (dbCreated)
-            {
-                CircuitBreaker.Execute(base.Setup);
-            }
             CircuitBreaker.Execute(SetupDefaultUser);
             CircuitBreaker.Execute(SetupDesignDocuments);
+            return dbCreated;
+        }
+
+        public void AddResources(IEnumerable<IdentityResource> resources)
+        {
+            foreach (var identityResource in resources)
+            {
+                try
+                {
+                    _documentDbService.AddDocument(identityResource.Name, identityResource);
+                }
+                catch (ResourceOperationException ex)
+                {
+                    //catch and log exception when resource being added already exists.
+                    _logger.Warning(ex, ex.Message);
+                }
+            }
         }
 
         private bool CreateDb()
