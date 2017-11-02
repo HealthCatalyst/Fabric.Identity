@@ -45,5 +45,20 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
         {
             _documentDbService.DeleteDocument<Client>(id);
         }
+
+        public Task AddClientAsync(Client client)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task UpdateClientAsync(string clientId, Client client)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task DeleteClientAsync(string id)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

@@ -29,7 +29,7 @@ namespace Fabric.Identity.API.Management
             {
                 _logger.Information($"user was not found. subjectId: {subjectId} provider: {provider}");
                 user = CreateNewUser(provider, subjectId, claims, clientId);
-                _userStore.AddUser(user);
+                await _userStore.AddUser(user);
                 return user;
             }
 
