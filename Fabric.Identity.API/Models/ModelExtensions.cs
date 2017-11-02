@@ -151,6 +151,37 @@ namespace Fabric.Identity.API.Models
             return newClient;
         }
 
+        public static IS4.ApiResource ToIs4ApiResource(this ApiResource apiResource)
+        {
+            var newResource = new IS4.ApiResource
+            {
+                Enabled = apiResource.Enabled,
+                Name = apiResource.Name,
+                DisplayName = apiResource.DisplayName,
+                Description = apiResource.Description,
+                UserClaims = new List<string>(apiResource.UserClaims),
+                Scopes = apiResource.Scopes.Select(s => s.ToIs4Scope()).ToList()
+            };
+
+            return newResource;
+        }
+
+        public static IS4.Scope ToIs4Scope(this Scope scope)
+        {
+            var newScope = new IS4.Scope
+            {
+                Name = scope.Name,
+                DisplayName = scope.DisplayName,
+                Description = scope.Description,
+                Required = scope.Required,
+                Emphasize = scope.Emphasize,
+                ShowInDiscoveryDocument = scope.ShowInDiscoveryDocument,
+                UserClaims = new List<string>(scope.UserClaims)
+            };
+
+            return newScope;
+        }
+
         public static ApiResource ToApiResourceViewModel(this IS4.ApiResource resource)
         {
             var newResource = new ApiResource
@@ -182,35 +213,38 @@ namespace Fabric.Identity.API.Models
             return newScope;
         }
 
-        public static IS4.ApiResource ToIs4ApiResource(this ApiResource apiResource)
+        public static IS4.IdentityResource ToIs4IdentityResource(this IdentityResource identityResource)
         {
-            var newResource = new IS4.ApiResource
+            var newResource = new IS4.IdentityResource
             {
-                Enabled = apiResource.Enabled,
-                Name = apiResource.Name,
-                DisplayName = apiResource.DisplayName,
-                Description = apiResource.Description,
-                UserClaims = new List<string>(apiResource.UserClaims),
-                Scopes = apiResource.Scopes.Select(s => s.ToIs4Scope()).ToList()
+                Enabled = identityResource.Enabled,
+                Name = identityResource.Name,
+                DisplayName = identityResource.DisplayName,
+                Description = identityResource.Description,
+                Required = identityResource.Required,
+                Emphasize = identityResource.Emphasize,
+                ShowInDiscoveryDocument = identityResource.ShowInDiscoveryDocument,
+                UserClaims = new List<string>(identityResource.UserClaims)
             };
 
             return newResource;
         }
 
-        public static IS4.Scope ToIs4Scope(this Scope scope)
+        public static IdentityResource ToIdentityResourceViewModel(this IS4.IdentityResource identityResource)
         {
-            var newScope = new IS4.Scope
+            var newResource = new IdentityResource
             {
-                Name = scope.Name,
-                DisplayName = scope.DisplayName,
-                Description = scope.Description,
-                Required = scope.Required,
-                Emphasize = scope.Emphasize,
-                ShowInDiscoveryDocument = scope.ShowInDiscoveryDocument,
-                UserClaims = new List<string>(scope.UserClaims)
+                Enabled = identityResource.Enabled,
+                Name = identityResource.Name,
+                DisplayName = identityResource.DisplayName,
+                Description = identityResource.Description,
+                Required = identityResource.Required,
+                Emphasize = identityResource.Emphasize,
+                ShowInDiscoveryDocument = identityResource.ShowInDiscoveryDocument,
+                UserClaims = new List<string>(identityResource.UserClaims)
             };
 
-            return newScope;
+            return newResource;
         }
 
         public static User ToUser(this TestUser testUser)
