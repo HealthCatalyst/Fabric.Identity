@@ -95,24 +95,22 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         ///     Creates an API resource.
         /// </summary>
-        /// <param name="resource">The <see cref="ApiResource" /> object to add.</param>
+        /// <param name="apiResource">The <see cref="ApiResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
-        public IActionResult Post([FromBody] ApiResource resource)
+        public IActionResult Post([FromBody] ApiResource apiResource)
         {
-            var is4ApiResource = resource.ToIs4ApiResource();
+            var is4ApiResource = apiResource.ToIs4ApiResource();
             return ValidateAndExecute(is4ApiResource, () =>
             {
-                var id = resource.Name;
-
-                var existingResource = _apiResourceStore.GetResource(id);
+                var existingResource = _apiResourceStore.GetResource(apiResource.Name);
                 if (existingResource != null)
                 {
                     return CreateFailureResponse(
-                        $"Api resource {id} already exists. Please provide a new name",
+                        $"Api resource {apiResource.Name} already exists. Please provide a new name",
                         HttpStatusCode.Conflict);
                 }
 
@@ -124,7 +122,7 @@ namespace Fabric.Identity.API.Management
 
                 var viewResource = is4ApiResource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
-                return CreatedAtAction("Get", new {id}, viewResource);
+                return CreatedAtAction("Get", new { apiResource.Name }, viewResource);
             });
         }
 
@@ -145,8 +143,7 @@ namespace Fabric.Identity.API.Management
             return ValidateAndExecute(is4ApiResource, () =>
             {
                 var storedApiResource = _apiResourceStore.GetResource(id);
-
-                if (storedApiResource == null || string.IsNullOrEmpty(storedApiResource.Name))
+                if (string.IsNullOrEmpty(storedApiResource?.Name))
                 {
                     return CreateFailureResponse($"The specified api resource with id:{id} was not found",
                         HttpStatusCode.NotFound);
@@ -173,7 +170,6 @@ namespace Fabric.Identity.API.Management
         public IActionResult Delete(string id)
         {
             var is4ApiResource = _apiResourceStore.GetResource(id);
-
             if (is4ApiResource == null)
             {
                 return CreateFailureResponse($"The specified api resource with id: {id} was not found",

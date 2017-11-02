@@ -1,11 +1,11 @@
 ﻿using IdentityModel;
-using IdentityServer4.Models;
+using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Models
 {
     public static class FabricIdentityResources
     {
-        public class FabricProfile : IdentityResource
+        public class FabricProfile : IS4.IdentityResource
         {
             public FabricProfile()
             {

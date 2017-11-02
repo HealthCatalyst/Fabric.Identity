@@ -28,7 +28,7 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         ///     Manage client applications (aka relying parties) in Fabric.Identity.
         /// </summary>
-        /// <param name="clientManagementStore"></param>
+        /// <param name="clientManagementStore">IClientManagementStore</param>
         /// <param name="validator"></param>
         /// <param name="logger"></param>
         public ClientController(IClientManagementStore clientManagementStore, ClientValidator validator, ILogger logger)
