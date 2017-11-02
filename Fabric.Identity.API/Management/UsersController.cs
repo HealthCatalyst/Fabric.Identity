@@ -25,13 +25,16 @@ namespace Fabric.Identity.API.Management
     [Route("api/v{version:apiVersion}/users")]
     public class UsersController : BaseController<UserApiModel>
     {
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IClientManagementStore _clientManagementStore;
+        private readonly IUserStore _userStore;
         private readonly IExternalIdentityProviderServiceResolver _externalIdentityProviderServiceResolver;
 
-        public UsersController(IDocumentDbService documentDbService, IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver, UserApiModelValidator validator, ILogger logger) 
+        public UsersController(IClientManagementStore clientManagementStore, IUserStore userStore, IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver, UserApiModelValidator validator, ILogger logger) 
             : base(validator, logger)
         {
-            _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));
+            _clientManagementStore = clientManagementStore ??
+                                     throw new ArgumentNullException(nameof(clientManagementStore));
+            _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
             _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver ??
                                                throw new ArgumentNullException(nameof(externalIdentityProviderServiceResolver));
         }
@@ -113,7 +116,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.BadRequest);
             }
 
-            var client = _documentDbService.GetDocument<IdentityServer4.Models.Client>(clientId).Result;
+            var client = _clientManagementStore.FindClientByIdAsync(clientId).Result;
 
             if (string.IsNullOrEmpty(client?.ClientId))
             {
@@ -121,7 +124,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            var users = await _documentDbService.GetDocumentsById<User>(docIds);
+            var users = await _userStore.GetUsersBySubjectId(docIds);
 
             return Ok(users.Select(u => u.ToUserViewModel(clientId)));
         }

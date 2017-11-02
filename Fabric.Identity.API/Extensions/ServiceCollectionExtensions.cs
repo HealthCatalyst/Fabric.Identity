@@ -75,6 +75,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IApiResourceStore, InMemoryApiResourceStore>();
             serviceCollection.AddTransient<IIdentityResourceStore, InMemoryIdentityResourceStore>();
             serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
+            serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
 
             serviceCollection.AddIdentityServer(options =>
                 {
