@@ -30,7 +30,7 @@ namespace Fabric.Identity.API.Management
         /// <summary>
         ///     Constructor
         /// </summary>
-        /// <param name="documentDbService">IDocumentDbService</param>
+        /// <param name="apiResourceStore">IApiResourceStore</param>
         /// <param name="validator">ApiResourceValidator</param>
         /// <param name="logger">ILogger</param>
         public ApiResourceController(IApiResourceStore apiResourceStore, ApiResourceValidator validator, ILogger logger)
@@ -52,15 +52,15 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
         {
-            var apiResource = _apiResourceStore.GetResource(id);
+            var is4ApiResource = _apiResourceStore.GetResource(id);
 
-            if (apiResource == null)
+            if (is4ApiResource == null)
             {
                 return CreateFailureResponse($"The specified api resource with id: {id} was not found",
                     HttpStatusCode.NotFound);
             }
 
-            return Ok(apiResource.ToApiResourceViewModel());
+            return Ok(is4ApiResource.ToApiResourceViewModel());
         }
 
         /// <summary>
@@ -69,43 +69,42 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
         [HttpGet("{id}/resetPassword")]
-        [SwaggerResponse(200, typeof(IS4.ApiResource), "The password was reset.")]
+        [SwaggerResponse(200, typeof(ApiResource), "The password was reset.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult ResetPassword(string id)
         {
-            var apiResource = _apiResourceStore.GetResource(id);
+            var is4ApiResource = _apiResourceStore.GetResource(id);
 
-            if (apiResource == null || string.IsNullOrEmpty(apiResource.Name))
+            if (string.IsNullOrEmpty(is4ApiResource?.Name))
             {
                 return CreateFailureResponse($"The specified api resource with id: {id} was not found",
                     HttpStatusCode.NotFound);
             }
 
-            // Update password
+            // update password
             var resourceSecret = GeneratePassword();
-            apiResource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
-            _apiResourceStore.UpdateResource(id, apiResource);
+            is4ApiResource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
+            _apiResourceStore.UpdateResource(id, is4ApiResource);
 
-            // Prepare return values
-            var viewApiResource = apiResource.ToApiResourceViewModel();
+            var viewApiResource = is4ApiResource.ToApiResourceViewModel();
             viewApiResource.ApiSecret = resourceSecret;
-
             return Ok(viewApiResource);
         }
 
         /// <summary>
         ///     Creates an API resource.
         /// </summary>
-        /// <param name="resource">The <see cref="IS4.ApiResource" /> object to add.</param>
+        /// <param name="resource">The <see cref="ApiResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
         [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
-        public IActionResult Post([FromBody] IS4.ApiResource resource)
+        public IActionResult Post([FromBody] ApiResource resource)
         {
-            return ValidateAndExecute(resource, () =>
+            var is4ApiResource = resource.ToIs4ApiResource();
+            return ValidateAndExecute(is4ApiResource, () =>
             {
                 var id = resource.Name;
 
@@ -120,10 +119,10 @@ namespace Fabric.Identity.API.Management
                 // override any secret in the request.
                 // TODO: we need to implement a salt strategy, either at the controller level or store level.
                 var resourceSecret = GeneratePassword();
-                resource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
-                _apiResourceStore.AddResource(resource);
+                is4ApiResource.ApiSecrets = new List<IS4.Secret> {GetNewSecret(resourceSecret)};
+                _apiResourceStore.AddResource(is4ApiResource);
 
-                var viewResource = resource.ToApiResourceViewModel();
+                var viewResource = is4ApiResource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
                 return CreatedAtAction("Get", new {id}, viewResource);
             });
@@ -133,16 +132,17 @@ namespace Fabric.Identity.API.Management
         ///     Modifies the API resource by <paramref name="id" />.
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
-        /// <param name="apiResource">The <see cref="IS4.ApiResource" /> object to update.</param>
+        /// <param name="apiResource">The <see cref="ApiResource" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
         [SwaggerResponse(204, null, "No Content")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
-        public IActionResult Put(string id, [FromBody] IS4.ApiResource apiResource)
+        public IActionResult Put(string id, [FromBody] ApiResource apiResource)
         {
-            return ValidateAndExecute(apiResource, () =>
+            var is4ApiResource = apiResource.ToIs4ApiResource();
+            return ValidateAndExecute(is4ApiResource, () =>
             {
                 var storedApiResource = _apiResourceStore.GetResource(id);
 
@@ -153,11 +153,11 @@ namespace Fabric.Identity.API.Management
                 }
 
                 // Prevent from changing secrets.
-                apiResource.ApiSecrets = storedApiResource.ApiSecrets;
+                is4ApiResource.ApiSecrets = storedApiResource.ApiSecrets;
                 // Prevent from changing payload Name.
                 apiResource.Name = id;
 
-                _apiResourceStore.UpdateResource(id, apiResource);
+                _apiResourceStore.UpdateResource(id, is4ApiResource);
                 return NoContent();
             });
         }
@@ -172,9 +172,9 @@ namespace Fabric.Identity.API.Management
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         public IActionResult Delete(string id)
         {
-            var apiResource = _apiResourceStore.GetResource(id);
+            var is4ApiResource = _apiResourceStore.GetResource(id);
 
-            if (apiResource == null)
+            if (is4ApiResource == null)
             {
                 return CreateFailureResponse($"The specified api resource with id: {id} was not found",
                     HttpStatusCode.NotFound);
