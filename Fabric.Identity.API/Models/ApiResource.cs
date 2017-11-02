@@ -2,14 +2,9 @@
 
 namespace Fabric.Identity.API.Models
 {
-    public class ApiResource
+    public class ApiResource : BaseResource
     {
-        public bool Enabled { get; set; }
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
-        public string Description { get; set; }
         public string ApiSecret { get; set; }
-        public ICollection<string> UserClaims { get; set; }
         public ICollection<Scope> Scopes { get; set; }
     }
 
