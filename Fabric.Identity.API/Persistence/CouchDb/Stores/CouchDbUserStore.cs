@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Newtonsoft.Json;
@@ -32,6 +33,11 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
                 $"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{GetUserDocumentId(subjectId, provider)}");
 
             return user?.FirstOrDefault();
+        }
+
+        public Task<IEnumerable<User>> GetUsersBySubjectId(IEnumerable<string> subjectIds)
+        {
+            return _documentDbService.GetDocumentsById<User>(subjectIds);
         }
 
         public Task<User> AddUser(User user)
