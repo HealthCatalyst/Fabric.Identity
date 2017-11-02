@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Fabric.Identity.API.Models
+namespace Fabric.Identity.API.Persistence.SqlServer.Models
 {
     public interface ITrackable
     {

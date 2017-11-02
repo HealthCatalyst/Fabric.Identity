@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Fabric.Identity.API.Models.Domain;
+using Fabric.Identity.API.Persistence.SqlServer.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
