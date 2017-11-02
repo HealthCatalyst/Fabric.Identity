@@ -28,24 +28,24 @@ namespace Fabric.Identity.UnitTests
         private readonly ILogger _logger = new Mock<ILogger>().Object;
 
         private RegistrationAuthorizationHandler GetRegistrationAuthorizationHandler(
-            IDocumentDbService documentDbService)
+            IClientManagementStore clientManagementStore)
         {
-            return new RegistrationAuthorizationHandler(documentDbService, _appConfiguration, _logger);
+            return new RegistrationAuthorizationHandler(clientManagementStore, _appConfiguration, _logger);
         }
 
-        private IDocumentDbService GetDocumentDbService(IList<Client> clients)
+        private IClientManagementStore GetClientManagementStore(IList<Client> clients)
         {
-            var mockDocumentDbService = new Mock<IDocumentDbService>();
-            mockDocumentDbService
-                .Setup(documentDbService => documentDbService.GetDocumentCount(It.IsAny<string>()))
-                .Returns(Task.FromResult(clients.Count));
-            return mockDocumentDbService.Object;
+            var mockClientManagementStore = new Mock<IClientManagementStore>();
+            mockClientManagementStore.Setup(clientManagementStore => clientManagementStore.GetClientCount())
+                .Returns(clients.Count);
+
+            return mockClientManagementStore.Object;
         }
 
         [Fact]
         public void HandleRequirementAsync_ExceedsThreshold_Fails()
         {
-            var documentDbService = GetDocumentDbService(new List<Client>
+            var documentDbService = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
@@ -67,7 +67,7 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_ExceedsThresholdButHasGroupClaim_Succeeds()
         {
-            var documentDbService = GetDocumentDbService(new List<Client>
+            var documentDbService = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
@@ -91,7 +91,7 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_ExceedsThresholdButHasScopeClaim_Succeeds()
         {
-            var documentDbService = GetDocumentDbService(new List<Client>
+            var documentDbService = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
@@ -115,7 +115,7 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_UnderThreshold_Succeeds()
         {
-            var documentDbService = GetDocumentDbService(new List<Client>());
+            var documentDbService = GetClientManagementStore(new List<Client>());
             var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(documentDbService);
             var requirement = new RegisteredClientThresholdRequirement(1);
             var context = new AuthorizationHandlerContext(new[] {requirement},

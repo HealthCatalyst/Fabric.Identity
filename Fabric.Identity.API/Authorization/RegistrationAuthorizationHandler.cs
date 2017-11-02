@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.InMemory.Stores;
 using Microsoft.AspNetCore.Authorization;
 using Serilog;
 
@@ -9,13 +10,14 @@ namespace Fabric.Identity.API.Authorization
 {
     public class RegistrationAuthorizationHandler : BaseAuthorizationHandler<RegisteredClientThresholdRequirement>
     {
-        private readonly IDocumentDbService _documentDbService;
+        private readonly IClientManagementStore _clientManagementStore;
 
-        public RegistrationAuthorizationHandler(IDocumentDbService documentDbService,
+        public RegistrationAuthorizationHandler(IClientManagementStore clientManagementStore,
             IAppConfiguration appConfiguration, ILogger logger)
             : base(appConfiguration, logger)
         {
-            _documentDbService = documentDbService ?? throw new ArgumentNullException(nameof(documentDbService));
+            _clientManagementStore = clientManagementStore ??
+                                     throw new ArgumentNullException(nameof(clientManagementStore));
         }
 
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context,
@@ -51,8 +53,7 @@ namespace Fabric.Identity.API.Authorization
 
         private int GetClientDocumentCount()
         {
-            return _documentDbService.GetDocumentCount(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
-                .Result;
+            return _clientManagementStore.GetClientCount();
         }
     }
 }

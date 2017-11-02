@@ -17,6 +17,12 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
             return _documentDbService.GetDocument<Client>(clientId);
         }
 
+        public int GetClientCount()
+        {
+            return _documentDbService.GetDocumentCount(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
+                .Result;
+        }
+
         public void AddClient(Client client)
         {
             _documentDbService.AddDocument(client.ClientId, client);

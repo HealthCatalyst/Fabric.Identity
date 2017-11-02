@@ -20,6 +20,12 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
             return _clientStore.FindClientByIdAsync(clientId);
         }
 
+        public int GetClientCount()
+        {
+            return _documentDbService.GetDocumentCount(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
+                .Result;
+        }
+
         public void AddClient(Client client)
         {
             _documentDbService.AddDocument(client.ClientId, client);
