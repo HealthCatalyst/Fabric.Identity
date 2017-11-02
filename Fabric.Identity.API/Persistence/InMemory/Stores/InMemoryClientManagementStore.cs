@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 
@@ -18,6 +20,12 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
         public Task<Client> FindClientByIdAsync(string clientId)
         {
             return _clientStore.FindClientByIdAsync(clientId);
+        }
+
+        public IEnumerable<Client> GetAllClients()
+        {
+            return _documentDbService.GetDocuments<Client>(FabricIdentityConstants.DocumentTypes.ClientDocumentType)
+                .Result.ToList();
         }
 
         public int GetClientCount()
