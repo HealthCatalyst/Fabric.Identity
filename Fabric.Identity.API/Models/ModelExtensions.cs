@@ -155,10 +155,10 @@ namespace Fabric.Identity.API.Models
         {
             var newResource = new ApiResource
             {
+                Enabled = resource.Enabled,
                 Name = resource.Name,
                 DisplayName = resource.DisplayName,
                 Description = resource.Description,
-                Enabled = resource.Enabled,
                 UserClaims = new List<string>(resource.UserClaims),
                 Scopes = resource.Scopes.Select(s => s.ToScopeViewModel()).ToList()
             };
@@ -173,10 +173,41 @@ namespace Fabric.Identity.API.Models
                 Name = scope.Name,
                 DisplayName = scope.DisplayName,
                 Description = scope.Description,
-                Emphasize = scope.Emphasize,
                 Required = scope.Required,
-                UserClaims = new List<string>(scope.UserClaims),
-                ShowInDiscoveryDocument = scope.ShowInDiscoveryDocument
+                Emphasize = scope.Emphasize,
+                ShowInDiscoveryDocument = scope.ShowInDiscoveryDocument,
+                UserClaims = new List<string>(scope.UserClaims)
+            };
+
+            return newScope;
+        }
+
+        public static IS4.ApiResource ToIs4ApiResource(this ApiResource apiResource)
+        {
+            var newResource = new IS4.ApiResource
+            {
+                Enabled = apiResource.Enabled,
+                Name = apiResource.Name,
+                DisplayName = apiResource.DisplayName,
+                Description = apiResource.Description,
+                UserClaims = new List<string>(apiResource.UserClaims),
+                Scopes = apiResource.Scopes.Select(s => s.ToIs4Scope()).ToList()
+            };
+
+            return newResource;
+        }
+
+        public static IS4.Scope ToIs4Scope(this Scope scope)
+        {
+            var newScope = new IS4.Scope
+            {
+                Name = scope.Name,
+                DisplayName = scope.DisplayName,
+                Description = scope.Description,
+                Required = scope.Required,
+                Emphasize = scope.Emphasize,
+                ShowInDiscoveryDocument = scope.ShowInDiscoveryDocument,
+                UserClaims = new List<string>(scope.UserClaims)
             };
 
             return newScope;
