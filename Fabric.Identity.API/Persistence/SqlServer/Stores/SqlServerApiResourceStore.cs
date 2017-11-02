@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.SqlServer.Models;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -18,20 +22,49 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public void AddResource(ApiResource resource)
         {
-            throw new NotImplementedException();
+            AddResourceAsync(resource).Wait();
         }
 
         public void UpdateResource(string id, ApiResource resource)
         {
-            throw new NotImplementedException();
+            UpdateResourceAsync(id, resource).Wait();
         }
 
         public ApiResource GetResource(string id)
         {
-            throw new NotImplementedException();
+            return GetResourceAsync(id).Result;
         }
 
         public void DeleteResource(string id)
+        {
+            DeleteResourceAsync(id).Wait();
+        }
+
+        public async Task AddResourceAsync(ApiResource resource)
+        {
+            var resourceDomainModel = resource.ToDomainModel();
+
+            //TODO: set domain model properties
+
+            await _identityDbContext.ApiResources.AddAsync(resourceDomainModel);
+        }
+
+        public async Task UpdateResourceAsync(string id, ApiResource resource)
+        {
+            var apiResourceDomainModelDomainModel = resource.ToDomainModel();
+
+            //TODO: set domain model properties
+
+            _identityDbContext.ApiResources.Update(apiResourceDomainModelDomainModel);
+            await _identityDbContext.SaveChangesAsync();
+        }
+
+        public async Task<ApiResource> GetResourceAsync(string id)
+        {
+            return await FindApiResourceAsync(id);
+        }
+
+        public async Task DeleteResourceAsync(string id)
         {
             throw new NotImplementedException();
         }
@@ -41,19 +74,50 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
+        public async Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
         {
-            throw new NotImplementedException();
+            var scopes = scopeNames.ToArray();
+
+            var apiResources = await _identityDbContext.ApiResources
+                .Where(r => scopes.Contains(r.Name))
+                .Include(x => x.UserClaims)
+                .ToArrayAsync();
+
+            return apiResources.Select(r => r.ToModel());
         }
 
-        public Task<ApiResource> FindApiResourceAsync(string name)
+        public async Task<ApiResource> FindApiResourceAsync(string name)
         {
-            throw new NotImplementedException();
+            var apiResource = await _identityDbContext.ApiResources
+                .Where(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                .Include(x => x.Secrets)
+                .Include(x => x.Scopes)
+                    .ThenInclude(s => s.UserClaims)
+                .Include(x => x.UserClaims)
+                .FirstOrDefaultAsync();
+
+            return apiResource.ToModel();
         }
 
-        public Task<Resources> GetAllResources()
+        public async Task<Resources> GetAllResources()
         {
-            throw new NotImplementedException();
+            var identity = _identityDbContext.IdentityResources
+                .Include(x => x.UserClaims);
+
+            var apis = _identityDbContext.ApiResources
+                .Include(x => x.Secrets)
+                .Include(x => x.Scopes)
+                .ThenInclude(s => s.UserClaims)
+                .Include(x => x.UserClaims);
+
+            var identityResources = await identity.ToArrayAsync();
+            var apiResources = await apis.ToArrayAsync();
+
+            var result = new Resources(
+                identityResources.Select(x => x.ToModel()),
+                apiResources.Select(x => x.ToModel()));
+
+            return result;
         }
     }
 }

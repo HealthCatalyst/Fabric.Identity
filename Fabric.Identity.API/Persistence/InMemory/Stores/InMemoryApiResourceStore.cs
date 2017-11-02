@@ -1,4 +1,5 @@
-﻿using Fabric.Identity.API.Persistence.CouchDb.Stores;
+﻿using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Persistence.InMemory.Stores
@@ -27,6 +28,26 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
         public void DeleteResource(string id)
         {
             DocumentDbService.DeleteDocument<ApiResource>(id);
+        }
+
+        public Task AddResourceAsync(ApiResource resource)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task UpdateResourceAsync(string id, ApiResource resource)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task<ApiResource> GetResourceAsync(string id)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task DeleteResourceAsync(string id)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }
