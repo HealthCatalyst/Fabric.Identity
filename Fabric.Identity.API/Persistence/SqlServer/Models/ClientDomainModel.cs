@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Fabric.Identity.API.Models.Domain
+namespace Fabric.Identity.API.Persistence.SqlServer.Models
 {
     public class ClientDomainModel : IdentityServer4.EntityFramework.Entities.Client, ISoftDelete, ITrackable
     {
@@ -10,6 +10,5 @@ namespace Fabric.Identity.API.Models.Domain
         public DateTime? ModifiedDateTimeUtc { get; set; }
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
-
     }
 }

@@ -1,6 +1,6 @@
 ﻿using IdentityServer4.EntityFramework.Mappers;
 
-namespace Fabric.Identity.API.Models.Domain
+namespace Fabric.Identity.API.Persistence.SqlServer.Models
 {
     public static class DomainModelExtensions
     {
