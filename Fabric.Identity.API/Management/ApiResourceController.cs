@@ -152,7 +152,7 @@ namespace Fabric.Identity.API.Management
                 // Prevent from changing secrets.
                 is4ApiResource.ApiSecrets = storedApiResource.ApiSecrets;
                 // Prevent from changing payload Name.
-                apiResource.Name = id;
+                is4ApiResource.Name = id;
 
                 _apiResourceStore.UpdateResource(id, is4ApiResource);
                 return NoContent();
