@@ -15,7 +15,7 @@ namespace Fabric.Identity.API.Models
         public string Description { get; set; }
         public bool Required { get; set; }
         public bool Emphasize { get; set; }
-        public bool ShowInDiscoveryDocument { get; set; }
-        public ICollection<string> UserClaims { get; set; }
+        public bool ShowInDiscoveryDocument { get; set; } = true;
+        public ICollection<string> UserClaims { get; set; } = new HashSet<string>();
     }
 }
