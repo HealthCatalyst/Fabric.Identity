@@ -45,14 +45,14 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementAsync_ExceedsThreshold_Fails()
         {
-            var documentDbService = GetClientManagementStore(new List<Client>
+            var clientManagementStore = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
                     ClientId = "test-client"
                 }
             });
-            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(documentDbService);
+            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
             var context = new AuthorizationHandlerContext(new[] {requirement},
                 new TestPrincipal(), null);
@@ -67,14 +67,14 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_ExceedsThresholdButHasGroupClaim_Succeeds()
         {
-            var documentDbService = GetClientManagementStore(new List<Client>
+            var clientManagementStore = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
                     ClientId = "test-client"
                 }
             });
-            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(documentDbService);
+            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
             var roleClaim = new Claim(ClaimTypes.Role, _appConfiguration.RegistrationAdminGroup, "claim",
                 _appConfiguration.IssuerUri);
@@ -91,14 +91,14 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_ExceedsThresholdButHasScopeClaim_Succeeds()
         {
-            var documentDbService = GetClientManagementStore(new List<Client>
+            var clientManagementStore = GetClientManagementStore(new List<Client>
             {
                 new Client
                 {
                     ClientId = "test-client"
                 }
             });
-            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(documentDbService);
+            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
             var scopeClaim = new Claim(ClaimTypes.Role, _appConfiguration.RegistrationAdminGroup, "claim",
                 _appConfiguration.IssuerUri);
@@ -115,8 +115,8 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public void HandleRequirementsAsync_UnderThreshold_Succeeds()
         {
-            var documentDbService = GetClientManagementStore(new List<Client>());
-            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(documentDbService);
+            var clientManagementStore = GetClientManagementStore(new List<Client>());
+            var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
             var context = new AuthorizationHandlerContext(new[] {requirement},
                 new TestPrincipal(), null);
