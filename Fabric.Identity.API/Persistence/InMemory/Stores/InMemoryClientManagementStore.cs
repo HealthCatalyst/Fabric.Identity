@@ -8,18 +8,16 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
 {
     public class InMemoryClientManagementStore : IClientManagementStore
     {
-        private readonly IClientStore _clientStore;
         private readonly IDocumentDbService _documentDbService;
 
-        public InMemoryClientManagementStore(IClientStore innerClientStore, IDocumentDbService documentDbService)
+        public InMemoryClientManagementStore(IDocumentDbService documentDbService)
         {
-            _clientStore = innerClientStore;
             _documentDbService = documentDbService;
         }
 
         public Task<Client> FindClientByIdAsync(string clientId)
         {
-            return _clientStore.FindClientByIdAsync(clientId);
+            return _documentDbService.GetDocument<Client>(clientId);
         }
 
         public IEnumerable<Client> GetAllClients()

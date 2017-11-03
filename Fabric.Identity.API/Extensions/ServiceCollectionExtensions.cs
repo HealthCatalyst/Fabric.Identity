@@ -76,7 +76,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IApiResourceStore, InMemoryApiResourceStore>();
             serviceCollection.AddTransient<IIdentityResourceStore, InMemoryIdentityResourceStore>();
             serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
-            serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
+            serviceCollection.AddTransient<IUserStore, InMemoryUserStore>();
             serviceCollection.AddTransient<IDbBootstrapper, InMemoryDbBootstrapper>();
 
             serviceCollection.AddIdentityServer(options =>
@@ -90,9 +90,9 @@ namespace Fabric.Identity.API.Extensions
                 .AddTemporarySigningCredential()
                 .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
-                .AddResourceStore<CouchDbResourceStore>()
-                .AddClientStore<CouchDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
+                .AddResourceStore<InMemoryResourceStore>()
+                .AddClientStore<InMemoryClientManagementStore>()
+                .Services.AddTransient<IPersistedGrantStore, InMemoryPersistedGrantStore>();
 
 
             return serviceCollection;

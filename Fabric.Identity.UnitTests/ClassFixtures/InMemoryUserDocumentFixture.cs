@@ -1,6 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Moq;
 
 namespace Fabric.Identity.UnitTests.ClassFixtures
 {
@@ -30,15 +35,22 @@ namespace Fabric.Identity.UnitTests.ClassFixtures
 
         public InMemoryUserDocumentFixture()
         {
-            DocumentService = new InMemoryDocumentService();
-            _users.ForEach(u => DocumentService.AddDocument($"{u.SubjectId}:{u.ProviderName}", u));
+            var mockDocumentDbService = new Mock<IDocumentDbService>();
+            mockDocumentDbService
+                .Setup(documentDbService => documentDbService.GetDocuments<User>(It.IsAny<string>()))
+                .Returns((string subjectId) =>
+                {
+                    return Task.FromResult(_users.Where(
+                        u =>
+                            $"{FabricIdentityConstants.DocumentTypes.UserDocumentType.ToLower()}{u.SubjectId.ToLower()}" ==
+                            subjectId.ToLower()
+                            ||
+                            $"{FabricIdentityConstants.DocumentTypes.UserDocumentType.ToLower()}{u.SubjectId.ToLower()}:{u.ProviderName.ToLower()}" ==
+                            subjectId.ToLower()));
+                });
+            DocumentService = mockDocumentDbService.Object;
         }
 
-        public InMemoryDocumentService DocumentService { get; }
-
-        public void Dispose()
-        {
-            DocumentService.Clean();
-        }
+        public IDocumentDbService DocumentService { get; }
     }
 }

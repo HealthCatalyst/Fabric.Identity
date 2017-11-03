@@ -1,9 +1,8 @@
-﻿using Fabric.Identity.API.Persistence.CouchDb.Stores;
-using IdentityServer4.Models;
+﻿using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Persistence.InMemory.Stores
 {
-    public class InMemoryIdentityResourceStore : CouchDbResourceStore, IIdentityResourceStore
+    public class InMemoryIdentityResourceStore : InMemoryResourceStore, IIdentityResourceStore
     {
         public InMemoryIdentityResourceStore(IDocumentDbService documentDbService) : base(documentDbService)
         {
