@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
-    public class ClaimEntity
+    public class UserClaimEntity
     {
-        public int Id { get; set; }
+        public int UserId { get; set; }
         public string Type { get; set; }
+        public IdentityResourceEntity IdentityResource { get; set; }
     }
 }
