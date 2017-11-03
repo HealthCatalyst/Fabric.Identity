@@ -1,6 +1,6 @@
 ﻿namespace Fabric.Identity.API.Services
 {
-    public interface IUserResolveService
+    public interface IUserResolverService
     {
         string Username { get; }
         string ClientId { get; }

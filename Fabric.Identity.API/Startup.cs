@@ -82,7 +82,7 @@ namespace Fabric.Identity.API
             services.AddIdentityServer(_appConfig, _certificateService, _logger);
             services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             services.AddAuthorizationServices();
-            services.AddScoped<IUserResolveService, UserResolverService>();
+            services.AddScoped<IUserResolverService, UserResolverService>();
             services.AddSingleton<ISerializationSettings, SerializationSettings>();
             services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
             services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();

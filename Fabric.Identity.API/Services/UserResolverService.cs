@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Fabric.Identity.API.Services
 {
-    public class UserResolverService : IUserResolveService
+    public class UserResolverService : IUserResolverService
     {
         private readonly HttpContext _context;
         public UserResolverService(IHttpContextAccessor contextAccessor)
