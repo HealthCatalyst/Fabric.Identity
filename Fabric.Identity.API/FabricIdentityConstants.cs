@@ -10,6 +10,13 @@
         public static readonly string IdentitySearchUsersScope = "fabric/identity.searchusers";
         public static readonly string AuditEventCategory = "Audit";
 
+        public static class StorageProviders
+        {
+            public const string InMemory = "inmemory";
+            public const string CouchDb = "couchdb";
+            public const string SqlServer = "sqlserver";
+        }
+
         public static class DocumentTypes
         {
             public static readonly string IdentityResourceDocumentType = "identityresource:";

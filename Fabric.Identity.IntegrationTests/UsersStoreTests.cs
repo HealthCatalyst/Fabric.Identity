@@ -20,7 +20,7 @@ namespace Fabric.Identity.IntegrationTests
 {
     public class UsersStoreTests : IntegrationTestsFixture
     {
-        public UsersStoreTests() : base(FabricIdentityEnums.StoreOptions.CouchDb)
+        public UsersStoreTests() : base(FabricIdentityConstants.StorageProviders.CouchDb)
         {
             var documentDbService = CouchDbService;
             _userStore = new CouchDbUserStore(documentDbService, _logger);
