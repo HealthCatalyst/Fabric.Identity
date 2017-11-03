@@ -193,7 +193,7 @@ namespace Fabric.Identity.API
             app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
 
-            var healthCheckService = app.ApplicationServices.GetService<IHealthCheckerService>();
+            var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
                 .UseFabricMonitoring(healthCheckService.CheckHealth, _loggingLevelSwitch);
 
