@@ -40,6 +40,7 @@ namespace Fabric.Identity.API.Extensions
             ILogger logger)
         {
             serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
+            serviceCollection.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             serviceCollection.AddTransient<IClientManagementStore, CouchDbClientStore>();
             serviceCollection.AddTransient<IApiResourceStore, CouchDbApiResourceStore>();
             serviceCollection.AddTransient<IIdentityResourceStore, CouchDbIdentityResourceStore>();

@@ -74,7 +74,6 @@ namespace Fabric.Identity.API
                 .AddSingleton(_appConfig)
                 .AddSingleton(_logger)
                 .AddIdentityServer(_appConfig, _certificateService, _logger)
-                .AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>()
                 .AddAuthorizationServices()
                 .AddScoped<IUserResolverService, UserResolverService>()
                 .AddSingleton<ISerializationSettings, SerializationSettings>()
