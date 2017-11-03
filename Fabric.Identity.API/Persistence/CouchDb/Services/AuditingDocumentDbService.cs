@@ -16,9 +16,9 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Services
         private readonly ISerializationSettings _serializationSettings;
         private readonly IEventService _eventService;
         private readonly IDocumentDbService _innerDocumentDbService;
-        private readonly IUserResolveService _userResolveService;
+        private readonly IUserResolverService _userResolveService;
 
-        public AuditingDocumentDbService(IUserResolveService userResolverService, IEventService eventService, Decorator<IDocumentDbService> decorator, ISerializationSettings serializationSettings)
+        public AuditingDocumentDbService(IUserResolverService userResolverService, IEventService eventService, Decorator<IDocumentDbService> decorator, ISerializationSettings serializationSettings)
         {
             _serializationSettings = serializationSettings;
             _eventService = eventService ?? throw new ArgumentNullException(nameof(eventService));
