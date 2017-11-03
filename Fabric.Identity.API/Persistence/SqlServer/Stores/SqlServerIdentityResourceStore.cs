@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Models;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
@@ -40,7 +38,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task AddResourceAsync(IdentityResource resource)
         {
-            var resourceEntity = resource.ToDomainModel();
+            var resourceEntity = resource.ToFabricEntity();
 
             //TODO: set entity properties
 
@@ -49,7 +47,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
         {
-            var identityResourceEntity = resource.ToDomainModel();
+            var identityResourceEntity = resource.ToFabricEntity();
 
             //TODO: set entity properties
 
@@ -71,7 +69,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 await IdentityDbContext.IdentityResources.FirstOrDefaultAsync(a =>
                     a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-            //TODO: set other domain model properties
+            //TODO: set other entity properties
 
             identityResourceToDelete.IsDeleted = true;
 

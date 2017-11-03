@@ -38,20 +38,20 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task AddResourceAsync(ApiResource resource)
         {
-            var resourceDomainModel = resource.ToDomainModel();
+            var resourceEntity = resource.ToFabricEntity();
 
-            //TODO: set domain model properties
+            //TODO: set entity properties
 
-            await IdentityDbContext.ApiResources.AddAsync(resourceDomainModel);
+            await IdentityDbContext.ApiResources.AddAsync(resourceEntity);
         }
 
         public async Task UpdateResourceAsync(string id, ApiResource resource)
         {
-            var apiResourceDomainModelDomainModel = resource.ToDomainModel();
+            var resourceEntity = resource.ToFabricEntity();
 
-            //TODO: set domain model properties
+            //TODO: set entity properties
 
-            IdentityDbContext.ApiResources.Update(apiResourceDomainModelDomainModel);
+            IdentityDbContext.ApiResources.Update(resourceEntity);
             await IdentityDbContext.SaveChangesAsync();
         }
 
@@ -74,7 +74,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 await IdentityDbContext.ApiResources.FirstOrDefaultAsync(a =>
                     a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-            //TODO: set other domain model properties
+            //TODO: set other entity properties
 
             apiResourceToDelete.IsDeleted = true;
 

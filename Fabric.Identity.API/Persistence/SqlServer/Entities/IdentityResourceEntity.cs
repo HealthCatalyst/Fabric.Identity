@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Models
 {
-    public class ApiResourceDomainModel : IdentityServer4.EntityFramework.Entities.ApiResource, ITrackable, ISoftDelete
+    public class IdentityResourceEntity : IdentityServer4.EntityFramework.Entities.IdentityResource, ITrackable, ISoftDelete
     {
         public DateTime CreatedDateTimeUtc { get; set; }
         public DateTime? ModifiedDateTimeUtc { get; set; }
