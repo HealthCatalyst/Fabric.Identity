@@ -7,5 +7,12 @@
             Duplicate,
             MissingRequiredField            
         }
+
+        public enum StoreOptions
+        {
+            InMemory,
+            CouchDb,
+            SqlServer
+        }
     }
 }
