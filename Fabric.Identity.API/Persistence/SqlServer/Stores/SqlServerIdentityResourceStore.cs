@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Models;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;

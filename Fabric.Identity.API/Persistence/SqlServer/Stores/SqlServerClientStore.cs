@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Models;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
@@ -70,7 +70,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var domainModelClient = client.ToFabricEntity();
 
-            //TODO: set domain model properties
+            //TODO: set entity model properties
 
             await _identityDbContext.Clients.AddAsync(domainModelClient);
         }
@@ -79,7 +79,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var clientDomainModel = client.ToFabricEntity();
 
-            //TODO: set domain model properties
+            //TODO: set entity model properties
 
             _identityDbContext.Clients.Update(clientDomainModel);
             await _identityDbContext.SaveChangesAsync();
@@ -91,7 +91,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
                     c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-            //TODO: set other domain model properties
+            //TODO: set entity domain model properties
 
             clientToDelete.IsDeleted = true;
 

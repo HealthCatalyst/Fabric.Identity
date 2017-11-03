@@ -1,13 +1,13 @@
 ﻿using IdentityServer4.EntityFramework.Mappers;
 
-namespace Fabric.Identity.API.Persistence.SqlServer.Models
+namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
     public static class EntityExtensions
     {
-        public static ClientDomainModel ToFabricEntity(this IdentityServer4.Models.Client is4Client)
+        public static ClientEntity ToFabricEntity(this IdentityServer4.Models.Client is4Client)
         {
             var entityModel = is4Client.ToEntity();
-            return (ClientDomainModel)entityModel;
+            return (ClientEntity)entityModel;
         }
 
         public static ApiResourceEntity ToFabricEntity(this IdentityServer4.Models.ApiResource is4ApiResource)

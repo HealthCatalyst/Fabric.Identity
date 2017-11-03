@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Fabric.Identity.API.Persistence.SqlServer.Models
+namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
-    public class ClientDomainModel : IdentityServer4.EntityFramework.Entities.Client, ISoftDelete, ITrackable
+    public class ClientEntity : IdentityServer4.EntityFramework.Entities.Client, ISoftDelete, ITrackable
     {
         public bool IsDeleted { get; set; }
 

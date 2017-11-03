@@ -1,12 +1,12 @@
 ﻿using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Models;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {
     public interface IIdentityDbContext
     {
-        DbSet<ClientDomainModel> Clients { get; set; }
+        DbSet<ClientEntity> Clients { get; set; }
         DbSet<ApiResourceEntity> ApiResources { get; set; }
         DbSet<IdentityResourceEntity> IdentityResources { get; set; }
 
