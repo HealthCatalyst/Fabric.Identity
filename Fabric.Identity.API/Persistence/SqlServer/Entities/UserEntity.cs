@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using IdentityServer4.EntityFramework.Entities;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
@@ -15,7 +14,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 
         public ICollection<UserClaimEntity> Claims { get; set; }
         public ICollection<UserLoginEntity> LastLoginDatesByClient { get; set; }
-
 
         public DateTime CreatedDateTimeUtc { get; set; }
         public DateTime? ModifiedDateTimeUtc { get; set; }

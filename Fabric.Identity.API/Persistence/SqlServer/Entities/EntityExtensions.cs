@@ -1,9 +1,5 @@
-﻿using System.Linq;
-using System.Security.Claims;
-using Fabric.Identity.API.Models;
-using IdentityServer4.EntityFramework.Entities;
+﻿using Fabric.Identity.API.Models;
 using IdentityServer4.EntityFramework.Mappers;
-using Microsoft.AspNetCore.Server.Kestrel.Internal.Networking;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
@@ -12,7 +8,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public static ClientEntity ToFabricEntity(this IdentityServer4.Models.Client is4Client)
         {
             var entityModel = is4Client.ToEntity();
-            return (ClientEntity)entityModel;
+            return (ClientEntity) entityModel;
         }
 
         public static ApiResourceEntity ToFabricEntity(this IdentityServer4.Models.ApiResource is4ApiResource)
@@ -24,7 +20,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public static IdentityResourceEntity ToFabricEntity(this IdentityServer4.Models.IdentityResource is4IdentityResource)
         {
             var entityModel = is4IdentityResource.ToEntity();
-            return (IdentityResourceEntity)entityModel;
+            return (IdentityResourceEntity) entityModel;
         }
 
         public static UserEntity ToFabricEntity(this User user)
@@ -40,6 +36,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
             };
 
             return entityModel;
+        }
+
+        public static PersistedGrantEntity ToFabricEntity(this IdentityServer4.Models.PersistedGrant is4PersistedGrant)
+        {
+            var entityModel = is4PersistedGrant.ToEntity();
+            return (PersistedGrantEntity) entityModel;
         }
     }
 }
