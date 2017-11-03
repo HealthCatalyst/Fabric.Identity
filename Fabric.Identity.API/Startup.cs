@@ -76,7 +76,7 @@ namespace Fabric.Identity.API
                 .AddSingleton<IEventSink>(serilogEventSink)
                 .AddSingleton(_appConfig)
                 .AddSingleton(_logger)
-                .AddIdentityServer(_appConfig, _certificateService, _logger, hostingOptions);
+                .AddIdentityServer(_appConfig, _certificateService, _logger, hostingOptions)
                 .AddAuthorizationServices()
                 .AddScoped<IUserResolverService, UserResolverService>()
                 .AddSingleton<ISerializationSettings, SerializationSettings>()

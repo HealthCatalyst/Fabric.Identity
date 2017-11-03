@@ -52,10 +52,10 @@ namespace Fabric.Identity.IntegrationTests
             CouchDbService.AddDocument(_client.ClientId, _client);
         }
 
-        public IntegrationTestsFixture(FabricIdentityEnums.StoreOptions storeOptions = FabricIdentityEnums.StoreOptions.InMemory)
+        public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
-            _identityTestServer = CreateIdentityTestServer(storeOptions);
-            _apiTestServer = CreateRegistrationApiTestServer(storeOptions);
+            _identityTestServer = CreateIdentityTestServer(storageProvider);
+            _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
             HttpClient = GetHttpClient();
         }
 
@@ -103,13 +103,13 @@ namespace Fabric.Identity.IntegrationTests
 
         public HttpClient HttpClient { get; }
 
-        private TestServer CreateIdentityTestServer(FabricIdentityEnums.StoreOptions storeOptions)
+        private TestServer CreateIdentityTestServer(string storageProvider)
         {
             var hostingOptions = new HostingOptions
             {
                 UseIis = false,
                 UseTestUsers = true,
-                UseInMemoryStores = storeOptions == FabricIdentityEnums.StoreOptions.InMemory
+                StorageProvider = storageProvider
             };
 
             var builder = new WebHostBuilder();
@@ -128,7 +128,7 @@ namespace Fabric.Identity.IntegrationTests
             return new TestServer(builder);
         }
 
-        private TestServer CreateRegistrationApiTestServer(FabricIdentityEnums.StoreOptions storeOptions)
+        private TestServer CreateRegistrationApiTestServer(string storageProvider)
         {
             var options = new IdentityServerAuthenticationOptions
             {
@@ -144,7 +144,7 @@ namespace Fabric.Identity.IntegrationTests
             {
                 UseIis = false,
                 UseTestUsers = true,
-                UseInMemoryStores = storeOptions == FabricIdentityEnums.StoreOptions.InMemory
+                StorageProvider = storageProvider
             };
 
             var apiBuilder = new WebHostBuilder();

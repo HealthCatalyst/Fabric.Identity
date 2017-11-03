@@ -149,7 +149,8 @@ namespace Fabric.Identity.API.Extensions
         {
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
-            if (hostingOptions.UseInMemoryStores)
+            if (string.Equals(hostingOptions.StorageProvider,
+                FabricIdentityConstants.StorageProviders.InMemory, StringComparison.OrdinalIgnoreCase))
             {
                 serviceCollection.AddInMemoryIdentityServer(appConfiguration);
             }
