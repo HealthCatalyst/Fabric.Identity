@@ -4,20 +4,17 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.EventSinks;
 using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Infrastructure.Monitoring;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
-using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
-using IdentityServer4.Models;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Builder;
@@ -43,7 +40,6 @@ namespace Fabric.Identity.API
         private static readonly string ChallengeDirectory = @".well-known";
         private readonly IAppConfiguration _appConfig;
         private readonly ICertificateService _certificateService;
-        private readonly ICouchDbSettings _couchDbSettings;
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
 
@@ -54,7 +50,6 @@ namespace Fabric.Identity.API
                 new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, _certificateService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
-            _couchDbSettings = _appConfig.CouchDbSettings;
         }
 
         private static string XmlCommentsFilePath
@@ -74,20 +69,21 @@ namespace Fabric.Identity.API
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
             var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             var serilogEventSink = new SerilogEventSink(eventLogger);
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IEventSink>(serilogEventSink);
-            services.AddSingleton(_appConfig);
-            services.AddSingleton(_logger);
-            services.AddFluentValidations();
-            services.AddIdentityServer(_appConfig, _certificateService, _logger);
-            services.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
-            services.AddAuthorizationServices();
-            services.AddScoped<IUserResolverService, UserResolverService>();
-            services.AddSingleton<ISerializationSettings, SerializationSettings>();
-            services.AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>();
-            services.AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>();
-            services.AddSingleton<LdapProviderService>();
-            services.AddSingleton<PolicyProvider>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
+                .AddSingleton<IEventSink>(serilogEventSink)
+                .AddSingleton(_appConfig)
+                .AddSingleton(_logger)
+                .AddIdentityServer(_appConfig, _certificateService, _logger)
+                .AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>()
+                .AddAuthorizationServices()
+                .AddScoped<IUserResolverService, UserResolverService>()
+                .AddSingleton<ISerializationSettings, SerializationSettings>()
+                .AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>()
+                .AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>()
+                .AddSingleton<LdapProviderService>()
+                .AddSingleton<PolicyProvider>()
+                .AddSingleton<IHealthCheckerService, HealthCheckerService>()
+                .AddFluentValidations();
 
             // filter settings
             var filterSettings = _appConfig.FilterSettings ??
@@ -155,7 +151,6 @@ namespace Fabric.Identity.API
                     }
                 });
 
-
                 c.CustomSchemaIds(type => type.FullName);
 
                 c.OperationFilter<VersionRemovalOperationFilter>();
@@ -167,21 +162,22 @@ namespace Fabric.Identity.API
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
             });
-            
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IDbBootstrapper dbBootstrapper)
+        public void Configure(
+            IApplicationBuilder app,
+            IHostingEnvironment env,
+            ILoggerFactory loggerFactory,
+            IDbBootstrapper dbBootstrapper)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
-            
+
             InitializeDatabase(dbBootstrapper);
-            
 
             loggerFactory.AddSerilog(_logger);
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
@@ -196,8 +192,10 @@ namespace Fabric.Identity.API
             var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
             app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
+
+            var healthCheckService = app.ApplicationServices.GetService<IHealthCheckerService>();
             app.UseOwin()
-                .UseFabricMonitoring(HealthCheck, _loggingLevelSwitch);
+                .UseFabricMonitoring(healthCheckService.CheckHealth, _loggingLevelSwitch);
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
@@ -210,24 +208,7 @@ namespace Fabric.Identity.API
             });
         }
 
-        public async Task<bool> HealthCheck()
-        {
-            IDocumentDbService documentDbService;
-            if (_appConfig.HostingOptions.UseInMemoryStores)
-            {
-                documentDbService = new InMemoryDocumentService();
-            }
-            else
-            {
-                documentDbService = new CouchDbAccessService(_couchDbSettings, _logger, new SerializationSettings());
-            }
-            var identityResources =
-                await documentDbService.GetDocuments<IdentityResource>(FabricIdentityConstants.DocumentTypes
-                    .IdentityResourceDocumentType);
-            return identityResources.Any();
-        }
-
-        private void InitializeDatabase(IDbBootstrapper dbBootstrapper)
+        private static void InitializeDatabase(IDbBootstrapper dbBootstrapper)
         {
             if (dbBootstrapper.Setup())
             {
@@ -235,7 +216,7 @@ namespace Fabric.Identity.API
             }
         }
 
-        private ICertificateService MakeCertificateService()
+        private static ICertificateService MakeCertificateService()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
