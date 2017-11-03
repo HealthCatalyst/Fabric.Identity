@@ -1,59 +1,84 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.SqlServer.Models;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
-using IdentityServer4.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerApiResourceStore : IApiResourceStore, IResourceStore
+    public class SqlServerApiResourceStore : SqlServerResourceStore, IApiResourceStore
     {
-        private readonly IIdentityDbContext _identityDbContext;
-
         public SqlServerApiResourceStore(IIdentityDbContext identityDbContext)
-        {
-            _identityDbContext = identityDbContext;
+            : base(identityDbContext)
+        {        
         }
 
         public void AddResource(ApiResource resource)
         {
-            throw new NotImplementedException();
+            AddResourceAsync(resource).Wait();
         }
 
         public void UpdateResource(string id, ApiResource resource)
         {
-            throw new NotImplementedException();
+            UpdateResourceAsync(id, resource).Wait();
         }
 
         public ApiResource GetResource(string id)
         {
-            throw new NotImplementedException();
+            return GetResourceAsync(id).Result;
         }
 
         public void DeleteResource(string id)
         {
-            throw new NotImplementedException();
+            DeleteResourceAsync(id).Wait();
         }
 
-        public Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
+        public async Task AddResourceAsync(ApiResource resource)
         {
-            throw new NotImplementedException();
+            var resourceEntity = resource.ToFabricEntity();
+
+            //TODO: set entity properties
+
+            await IdentityDbContext.ApiResources.AddAsync(resourceEntity);
         }
 
-        public Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
+        public async Task UpdateResourceAsync(string id, ApiResource resource)
         {
-            throw new NotImplementedException();
+            var resourceEntity = resource.ToFabricEntity();
+
+            //TODO: set entity properties
+
+            IdentityDbContext.ApiResources.Update(resourceEntity);
+            await IdentityDbContext.SaveChangesAsync();
         }
 
-        public Task<ApiResource> FindApiResourceAsync(string name)
+        public async Task<ApiResource> GetResourceAsync(string id)
         {
-            throw new NotImplementedException();
+            var apiResource = await IdentityDbContext.ApiResources
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase))
+                .Include(x => x.Secrets)
+                .Include(x => x.Scopes)
+                .ThenInclude(s => s.UserClaims)
+                .Include(x => x.UserClaims)
+                .FirstOrDefaultAsync();
+
+            return apiResource?.ToModel();
         }
 
-        public Task<Resources> GetAllResources()
+        public async Task DeleteResourceAsync(string id)
         {
-            throw new NotImplementedException();
+            var apiResourceToDelete =
+                await IdentityDbContext.ApiResources.FirstOrDefaultAsync(a =>
+                    a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+            //TODO: set other entity properties
+
+            apiResourceToDelete.IsDeleted = true;
+
+            await IdentityDbContext.SaveChangesAsync();
         }
     }
 }

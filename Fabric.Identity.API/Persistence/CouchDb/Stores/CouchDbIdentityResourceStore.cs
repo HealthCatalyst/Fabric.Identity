@@ -1,4 +1,5 @@
-﻿using IdentityServer4.Models;
+﻿using System.Threading.Tasks;
+using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 {
@@ -26,6 +27,26 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
         public void DeleteResource(string id)
         {
             DocumentDbService.DeleteDocument<IdentityResource>(id);
+        }
+
+        public Task AddResourceAsync(IdentityResource resource)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task UpdateResourceAsync(string id, IdentityResource resource)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task<IdentityResource> GetResourceAsync(string id)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public Task DeleteResourceAsync(string id)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -68,7 +68,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task AddClientAsync(Client client)
         {
-            var domainModelClient = client.ToDomainModel();
+            var domainModelClient = client.ToFabricEntity();
 
             //TODO: set domain model properties
 
@@ -77,7 +77,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateClientAsync(string clientId, Client client)
         {
-            var clientDomainModel = client.ToDomainModel();
+            var clientDomainModel = client.ToFabricEntity();
 
             //TODO: set domain model properties
 

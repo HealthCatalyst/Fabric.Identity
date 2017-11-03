@@ -7,6 +7,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
         public DbSet<ClientDomainModel> Clients { get; set; }
+        public DbSet<ApiResourceEntity> ApiResources { get; set; }
+        public DbSet<IdentityResourceEntity> IdentityResources { get; set; }
 
 
         public Task<int> SaveChangesAsync()
