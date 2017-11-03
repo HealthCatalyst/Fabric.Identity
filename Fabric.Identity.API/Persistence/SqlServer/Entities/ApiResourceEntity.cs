@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Fabric.Identity.API.Persistence.SqlServer.Models
+namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
     public class ApiResourceEntity : IdentityServer4.EntityFramework.Entities.ApiResource, ITrackable, ISoftDelete
     {

@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
-    public class IdentityResourceEntity : IdentityServer4.EntityFramework.Entities.IdentityResource, ITrackable, ISoftDelete
+    public class UserLoginEntity : ITrackable, ISoftDelete
     {
+        public int Id { get; set; }
+        public string ClientId { get; set; }
+        public DateTime LoginDate { get; set; }
         public DateTime CreatedDateTimeUtc { get; set; }
         public DateTime? ModifiedDateTimeUtc { get; set; }
         public string CreatedBy { get; set; }
