@@ -1,23 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Models;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
-using IdentityServer4.Stores;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerApiResourceStore : IApiResourceStore, IResourceStore
+    public class SqlServerApiResourceStore : SqlServerResourceStore, IApiResourceStore
     {
-        private readonly IIdentityDbContext _identityDbContext;
-
         public SqlServerApiResourceStore(IIdentityDbContext identityDbContext)
-        {
-            _identityDbContext = identityDbContext;
+            : base(identityDbContext)
+        {        
         }
 
         public void AddResource(ApiResource resource)
@@ -46,7 +42,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             //TODO: set domain model properties
 
-            await _identityDbContext.ApiResources.AddAsync(resourceDomainModel);
+            await IdentityDbContext.ApiResources.AddAsync(resourceDomainModel);
         }
 
         public async Task UpdateResourceAsync(string id, ApiResource resource)
@@ -55,69 +51,34 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             //TODO: set domain model properties
 
-            _identityDbContext.ApiResources.Update(apiResourceDomainModelDomainModel);
-            await _identityDbContext.SaveChangesAsync();
+            IdentityDbContext.ApiResources.Update(apiResourceDomainModelDomainModel);
+            await IdentityDbContext.SaveChangesAsync();
         }
 
         public async Task<ApiResource> GetResourceAsync(string id)
         {
-            return await FindApiResourceAsync(id);
+            var apiResource = await IdentityDbContext.ApiResources
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase))
+                .Include(x => x.Secrets)
+                .Include(x => x.Scopes)
+                .ThenInclude(s => s.UserClaims)
+                .Include(x => x.UserClaims)
+                .FirstOrDefaultAsync();
+
+            return apiResource?.ToModel();
         }
 
         public async Task DeleteResourceAsync(string id)
         {
-            throw new NotImplementedException();
-        }
+            var apiResourceToDelete =
+                await IdentityDbContext.ApiResources.FirstOrDefaultAsync(a =>
+                    a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-        public Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
-        {
-            throw new NotImplementedException();
-        }
+            //TODO: set other domain model properties
 
-        public async Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
-        {
-            var scopes = scopeNames.ToArray();
+            apiResourceToDelete.IsDeleted = true;
 
-            var apiResources = await _identityDbContext.ApiResources
-                .Where(r => scopes.Contains(r.Name))
-                .Include(x => x.UserClaims)
-                .ToArrayAsync();
-
-            return apiResources.Select(r => r.ToModel());
-        }
-
-        public async Task<ApiResource> FindApiResourceAsync(string name)
-        {
-            var apiResource = await _identityDbContext.ApiResources
-                .Where(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                .Include(x => x.Secrets)
-                .Include(x => x.Scopes)
-                    .ThenInclude(s => s.UserClaims)
-                .Include(x => x.UserClaims)
-                .FirstOrDefaultAsync();
-
-            return apiResource.ToModel();
-        }
-
-        public async Task<Resources> GetAllResources()
-        {
-            var identity = _identityDbContext.IdentityResources
-                .Include(x => x.UserClaims);
-
-            var apis = _identityDbContext.ApiResources
-                .Include(x => x.Secrets)
-                .Include(x => x.Scopes)
-                .ThenInclude(s => s.UserClaims)
-                .Include(x => x.UserClaims);
-
-            var identityResources = await identity.ToArrayAsync();
-            var apiResources = await apis.ToArrayAsync();
-
-            var result = new Resources(
-                identityResources.Select(x => x.ToModel()),
-                apiResources.Select(x => x.ToModel()));
-
-            return result;
+            await IdentityDbContext.SaveChangesAsync();
         }
     }
 }
