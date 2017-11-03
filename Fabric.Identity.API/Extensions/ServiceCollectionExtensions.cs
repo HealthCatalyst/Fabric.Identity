@@ -47,7 +47,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
             serviceCollection.AddTransient<IDbBootstrapper, CouchDbBootstrapper>();
 
-            serviceCollection.AddSingleton(couchDbSettings);
+            serviceCollection.TryAddSingleton(couchDbSettings);
 
             serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
 
@@ -145,11 +145,11 @@ namespace Fabric.Identity.API.Extensions
         }
 
         public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
-            IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger)
+            IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger, HostingOptions hostingOptions)
         {
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
-            if (appConfiguration.HostingOptions.UseInMemoryStores)
+            if (hostingOptions.UseInMemoryStores)
             {
                 serviceCollection.AddInMemoryIdentityServer(appConfiguration);
             }

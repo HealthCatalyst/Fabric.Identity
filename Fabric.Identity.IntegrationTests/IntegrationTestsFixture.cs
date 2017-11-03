@@ -27,13 +27,13 @@ namespace Fabric.Identity.IntegrationTests
         private const string RegistrationApiServerUrl = "http://localhost:5000";
         private const string RegistrationApiName = "registration-api";
         private static IS4.Client _client;
+        private static IS4.ApiResource _api;
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
         private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
-
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
@@ -44,18 +44,18 @@ namespace Fabric.Identity.IntegrationTests
 
         static IntegrationTestsFixture()
         {
-            var api = GetTestApiResource();
+            _api = GetTestApiResource();
             _client = GetTestClient();
-            InMemoryDocumentDbService.AddDocument(api.Name, api);
+            InMemoryDocumentDbService.AddDocument(_api.Name, _api);
             InMemoryDocumentDbService.AddDocument(_client.ClientId, _client);
+            CouchDbService.AddDocument(_api.Name, _api);
+            CouchDbService.AddDocument(_client.ClientId, _client);
         }
 
-        public IntegrationTestsFixture(bool useInMemoryDbService = true)
+        public IntegrationTestsFixture(FabricIdentityEnums.StoreOptions storeOptions = FabricIdentityEnums.StoreOptions.InMemory)
         {
-            var dbService = GetDocumentDbService(useInMemoryDbService);
-
-            _identityTestServer = CreateIdentityTestServer(dbService);
-            _apiTestServer = CreateRegistrationApiTestServer(dbService);
+            _identityTestServer = CreateIdentityTestServer(storeOptions);
+            _apiTestServer = CreateRegistrationApiTestServer(storeOptions);
             HttpClient = GetHttpClient();
         }
 
@@ -95,11 +95,6 @@ namespace Fabric.Identity.IntegrationTests
                         new CouchDbBootstrapper(couchDbService, CouchDbSettings, new Mock<ILogger>().Object);
                     bootstrapper.Setup();
 
-                    var api = GetTestApiResource();
-                    _client = GetTestClient();
-                    couchDbService.AddDocument(api.Name, api);
-                    couchDbService.AddDocument(_client.ClientId, _client);
-
                     _dbService = couchDbService;
                 }
                 return _dbService;
@@ -108,18 +103,20 @@ namespace Fabric.Identity.IntegrationTests
 
         public HttpClient HttpClient { get; }
 
-        private IDocumentDbService GetDocumentDbService(bool useInMemoryDbService)
+        private TestServer CreateIdentityTestServer(FabricIdentityEnums.StoreOptions storeOptions)
         {
-            return useInMemoryDbService ? InMemoryDocumentDbService : CouchDbService;
-        }
+            var hostingOptions = new HostingOptions
+            {
+                UseIis = false,
+                UseTestUsers = true,
+                UseInMemoryStores = storeOptions == FabricIdentityEnums.StoreOptions.InMemory
+            };
 
-        private TestServer CreateIdentityTestServer(IDocumentDbService documentDbService)
-        {
             var builder = new WebHostBuilder();
             builder.ConfigureServices(c =>
                 c.AddSingleton(LdapSettings)
                     .AddSingleton(CouchDbSettings)
-                    .AddSingleton(documentDbService)
+                    .AddSingleton(hostingOptions)
             );
 
 
@@ -131,7 +128,7 @@ namespace Fabric.Identity.IntegrationTests
             return new TestServer(builder);
         }
 
-        private TestServer CreateRegistrationApiTestServer(IDocumentDbService documentDbService)
+        private TestServer CreateRegistrationApiTestServer(FabricIdentityEnums.StoreOptions storeOptions)
         {
             var options = new IdentityServerAuthenticationOptions
             {
@@ -143,12 +140,19 @@ namespace Fabric.Identity.IntegrationTests
                 IntrospectionDiscoveryHandler = _identityTestServer.CreateHandler()
             };
 
+            var hostingOptions = new HostingOptions
+            {
+                UseIis = false,
+                UseTestUsers = true,
+                UseInMemoryStores = storeOptions == FabricIdentityEnums.StoreOptions.InMemory
+            };
+
             var apiBuilder = new WebHostBuilder();
 
             apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
                 .AddSingleton(options)
                 .AddSingleton(CouchDbSettings)
-                .AddSingleton(documentDbService)
+                .AddSingleton(hostingOptions)
             );
 
             apiBuilder.UseKestrel()
@@ -191,7 +195,7 @@ namespace Fabric.Identity.IntegrationTests
             {
                 ClientId = TestClientName,
                 ClientName = TestClientName,
-                ClientSecrets = new List<IS4.Secret> {new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret))},
+                ClientSecrets = new List<IS4.Secret> { new IS4.Secret(IS4.HashExtensions.Sha256(ClientSecret)) },
                 RequireConsent = false,
                 AllowedGrantTypes = IS4.GrantTypes.ClientCredentials,
                 AllowedScopes = new List<string>
