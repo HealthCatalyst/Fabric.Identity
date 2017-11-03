@@ -38,7 +38,7 @@ namespace Fabric.Identity.UnitTests
         {
             var userStore = new CouchDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
-            var user = userStore.FindBySubjectId(subjectId).Result;
+            var user = userStore.FindBySubjectIdAsync(subjectId).Result;
             if (user != null)
             {
                 Console.WriteLine($"user subject id: {user.SubjectId}");
@@ -52,7 +52,7 @@ namespace Fabric.Identity.UnitTests
         {
             var userStore = new CouchDbUserStore(_fixture.DocumentService, new Mock<ILogger>().Object);
 
-            var user = userStore.FindByExternalProvider(provider, subjectId).Result;
+            var user = userStore.FindByExternalProviderAsync(provider, subjectId).Result;
             Assert.Equal(shouldBeFound, user != null);
         }
     }

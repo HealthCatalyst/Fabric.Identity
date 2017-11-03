@@ -32,7 +32,7 @@ namespace Fabric.Identity.API.Services
 
             if (context.RequestedClaimTypes.Any())
             {
-                var user = await _userStore.FindBySubjectId(context.Subject.GetSubjectId());
+                var user = await _userStore.FindBySubjectIdAsync(context.Subject.GetSubjectId());
                 if (user != null)
                 {
                     context.AddRequestedClaims(user.Claims);
@@ -53,7 +53,7 @@ namespace Fabric.Identity.API.Services
         {
             var sub = context.Subject.GetSubjectId();
             _logger.Debug($"found sub from IsActiveContext: {sub}");
-            var user = await _userStore.FindBySubjectId(sub);
+            var user = await _userStore.FindBySubjectIdAsync(sub);
             context.IsActive = user != null;
         }
     }

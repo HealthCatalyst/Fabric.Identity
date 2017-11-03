@@ -18,7 +18,7 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
             _logger = logger;
         }
 
-        public async Task<User> FindBySubjectId(string subjectId)
+        public async Task<User> FindBySubjectIdAsync(string subjectId)
         {
             _logger.Debug($"finding user with subject id: {subjectId}");
             var user = await _documentDbService.GetDocuments<User>(
@@ -26,7 +26,7 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
             return user?.FirstOrDefault();
         }
 
-        public async Task<User> FindByExternalProvider(string provider, string subjectId)
+        public async Task<User> FindByExternalProviderAsync(string provider, string subjectId)
         {
             _logger.Debug($"finding user with subject id: {subjectId} and provider: {provider}");
             var user = await _documentDbService.GetDocuments<User>(
@@ -35,12 +35,12 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
             return user?.FirstOrDefault();
         }
 
-        public Task<IEnumerable<User>> GetUsersBySubjectId(IEnumerable<string> subjectIds)
+        public Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds)
         {
             return _documentDbService.GetDocumentsById<User>(subjectIds);
         }
 
-        public Task<User> AddUser(User user)
+        public Task<User> AddUserAsync(User user)
         {
             _documentDbService.AddDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
             _logger.Debug(
@@ -53,6 +53,11 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
             _documentDbService.UpdateDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
             _logger.Debug(
                 $"updated user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
+        }
+
+        public Task UpdateUserAsync(User user)
+        {
+            throw new System.NotImplementedException();
         }
 
         //id for a  user stored in documentDb = user:subjectid:provider

@@ -24,12 +24,12 @@ namespace Fabric.Identity.API.Management
         public async Task<User> UserLogin(string provider, string subjectId, List<Claim> claims, string clientId)
         {
             //check if the external user is already provisioned
-            var user = await _userStore.FindByExternalProvider(provider, subjectId);
+            var user = await _userStore.FindByExternalProviderAsync(provider, subjectId);
             if (user == null)
             {
                 _logger.Information($"user was not found. subjectId: {subjectId} provider: {provider}");
                 user = CreateNewUser(provider, subjectId, claims, clientId);
-                await _userStore.AddUser(user);
+                await _userStore.AddUserAsync(user);
                 return user;
             }
 
