@@ -11,4 +11,3 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public bool IsDeleted { get; set; }
     }
 }
-

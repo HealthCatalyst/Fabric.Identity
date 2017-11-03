@@ -9,6 +9,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         DbSet<ClientEntity> Clients { get; set; }
         DbSet<ApiResourceEntity> ApiResources { get; set; }
         DbSet<IdentityResourceEntity> IdentityResources { get; set; }
+        DbSet<PersistedGrantEntity> PersistedGrants { get; set; }
 
         Task<int> SaveChangesAsync();
     }
