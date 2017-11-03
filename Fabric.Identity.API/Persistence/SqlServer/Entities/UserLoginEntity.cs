@@ -4,7 +4,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
     public class UserLoginEntity : ITrackable, ISoftDelete
     {
-        public int Id { get; set; }
+        public int UserId { get; set; }
         public string ClientId { get; set; }
         public DateTime LoginDate { get; set; }
         public DateTime CreatedDateTimeUtc { get; set; }

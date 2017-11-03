@@ -13,7 +13,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public string LastName { get; set; }
         public string ProviderName { get; set; }
 
-        public ICollection<UserClaim> Claims { get; set; }
+        public ICollection<UserClaimEntity> Claims { get; set; }
         public ICollection<UserLoginEntity> LastLoginDatesByClient { get; set; }
 
 
