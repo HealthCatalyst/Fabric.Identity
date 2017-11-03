@@ -4,8 +4,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Management;
-using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.API.Persistence.InMemory.Stores;
 using IdentityModel;
 using Moq;
 using Serilog;
@@ -18,7 +18,7 @@ namespace Fabric.Identity.UnitTests
         [Fact]
         public async Task UserLoginManager_UserLogin_ExistingUser_HasPropertiesAndRoleClaimsUpdated()
         {
-            var documentDbUserStore = new CouchDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object);
+            var documentDbUserStore = new InMemoryUserStore(new InMemoryDocumentService());
 
             var userLoginManager = new UserLoginManager(documentDbUserStore, new Mock<ILogger>().Object);
 
@@ -75,7 +75,7 @@ namespace Fabric.Identity.UnitTests
         {
             //create a new user, ensure claims,  login date, provider, and name properties are set correctly
             var userLoginManager = new UserLoginManager(
-                new CouchDbUserStore(new InMemoryDocumentService(), new Mock<ILogger>().Object),
+                new InMemoryUserStore(new InMemoryDocumentService()), 
                 new Mock<ILogger>().Object);
 
             var userId = "HealthCatalyst\\foo.baz";
