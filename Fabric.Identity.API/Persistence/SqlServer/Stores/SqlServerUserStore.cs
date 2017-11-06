@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -16,29 +18,59 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             _identityDbContext = identityDbContext;
         }
 
-        public Task<User> FindBySubjectId(string subjectId)
+        public async Task<User> FindBySubjectIdAsync(string subjectId)
         {
-            throw new NotImplementedException();
+            var userEntity = await _identityDbContext.Users
+                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.Claims)
+                .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
+
+            return userEntity.ToModel();
         }
 
-        public Task<User> FindByExternalProvider(string provider, string subjectId)
+        public async Task<User> FindByExternalProviderAsync(string provider, string subjectId)
         {
-            throw new NotImplementedException();
+            var userEntity = await _identityDbContext.Users
+                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.Claims)
+                .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
+                                          && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
+
+            return userEntity.ToModel();
+
         }
 
-        public Task<IEnumerable<User>> GetUsersBySubjectId(IEnumerable<string> subjectIds)
+        public async Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds)
         {
-            throw new NotImplementedException();
+            var userEntities = await _identityDbContext.Users
+                .Where(u => subjectIds.Contains(u.SubjectId))
+                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.Claims)
+                .ToArrayAsync();
+
+            return userEntities.Select(u => u.ToModel());
         }
 
-        public Task<User> AddUser(User user)
+        public async Task<User> AddUserAsync(User user)
         {
-            throw new NotImplementedException();
+            var userEntity = user.ToFabricEntity();
+
+            await _identityDbContext.Users.AddAsync(userEntity);
+
+            return user;
         }
 
         public void UpdateUser(User user)
         {
-            throw new NotImplementedException();
+            UpdateUserAsync(user).Wait();
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            var userEntity = user.ToFabricEntity();
+
+            _identityDbContext.Users.Update(userEntity);
+            await _identityDbContext.SaveChangesAsync();
         }
     }
 }

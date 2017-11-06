@@ -124,7 +124,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.NotFound);
             }
 
-            var users = await _userStore.GetUsersBySubjectId(docIds);
+            var users = await _userStore.GetUsersBySubjectIdAsync(docIds);
 
             return Ok(users.Select(u => u.ToUserViewModel(clientId)));
         }
