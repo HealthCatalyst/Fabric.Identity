@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Fabric.Identity.API;
 using Fabric.Identity.API.Models;
 using Newtonsoft.Json;
 using Xunit;
@@ -14,37 +15,40 @@ namespace Fabric.Identity.IntegrationTests
 {
     public class ClientRegistrationTests : IntegrationTestsFixture
     {
-        private static readonly Random rand = new Random(DateTime.Now.Millisecond);
+        private static readonly Random Rand = new Random(DateTime.Now.Millisecond);
+
+        public ClientRegistrationTests(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory) : base(storageProvider)
+        { }
 
         private static readonly Func<IS4.Client> GetOnlineTestClient = () => new IS4.Client()
         {
-            ClientId = rand.Next().ToString(),
-            ClientName = rand.Next().ToString(),
-            RequireConsent = rand.Next() % 2 == 0,
+            ClientId = Rand.Next().ToString(),
+            ClientName = Rand.Next().ToString(),
+            RequireConsent = Rand.Next() % 2 == 0,
             AllowOfflineAccess = false,
-            AllowedScopes = new List<string>() { rand.Next().ToString() },
+            AllowedScopes = new List<string>() { Rand.Next().ToString() },
             AllowedGrantTypes = new List<string>() { IS4.GrantType.Implicit },
-            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
-            RedirectUris = new List<string>() { rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
-            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(Rand.Next().ToString()) },
+            RedirectUris = new List<string>() { Rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { Rand.Next().ToString() },
+            PostLogoutRedirectUris = new List<string>() { Rand.Next().ToString() },
         };
 
         private static readonly Func<IS4.Client> GetOfflineTestClient = () => new IS4.Client()
         {
-            ClientId = rand.Next().ToString(),
-            ClientName = rand.Next().ToString(),
-            RequireConsent = rand.Next() % 2 == 0,
+            ClientId = Rand.Next().ToString(),
+            ClientName = Rand.Next().ToString(),
+            RequireConsent = Rand.Next() % 2 == 0,
             AllowOfflineAccess = true,
-            AllowedScopes = new List<string>() { rand.Next().ToString() },
+            AllowedScopes = new List<string>() { Rand.Next().ToString() },
             AllowedGrantTypes = new List<string>() { IS4.GrantType.ClientCredentials },
-            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(rand.Next().ToString()) },
-            RedirectUris = new List<string>() { rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { rand.Next().ToString() },
-            PostLogoutRedirectUris = new List<string>() { rand.Next().ToString() },
+            ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(Rand.Next().ToString()) },
+            RedirectUris = new List<string>() { Rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { Rand.Next().ToString() },
+            PostLogoutRedirectUris = new List<string>() { Rand.Next().ToString() },
         };
 
-        private static readonly Func<IS4.Client> GetTestClient = rand.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
+        private static readonly Func<IS4.Client> GetTestClient = Rand.Next() % 2 == 0 ? GetOfflineTestClient : GetOnlineTestClient;
 
         /// <summary>
         /// A collection of valid clients.
@@ -54,7 +58,7 @@ namespace Fabric.Identity.IntegrationTests
         private async Task<HttpResponseMessage> CreateNewClient(IS4.Client testClient)
         {
             var stringContent = new StringContent(JsonConvert.SerializeObject(testClient), Encoding.UTF8, "application/json");
-            var response = await this.HttpClient.PostAsync("/api/Client", stringContent);
+            var response = await HttpClient.PostAsync("/api/Client", stringContent);
             return response;
         }
 
@@ -91,7 +95,7 @@ namespace Fabric.Identity.IntegrationTests
             HttpResponseMessage response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
@@ -104,7 +108,7 @@ namespace Fabric.Identity.IntegrationTests
         [Fact]
         public async Task TestGetClient_NotFound()
         {
-            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/client-that-does-not-exist"));
+            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/client-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -121,7 +125,7 @@ namespace Fabric.Identity.IntegrationTests
             var clientId = client.ClientId;
             var password = client.ClientSecret;
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}/resetPassword"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}/resetPassword"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             content = await response.Content.ReadAsStringAsync();
@@ -138,18 +142,18 @@ namespace Fabric.Identity.IntegrationTests
             HttpResponseMessage response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/{testClient.ClientId}"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/{testClient.ClientId}"));
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
             // Confirm it's deleted.
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [Fact]
         public async Task TestDeleteClient_NotFound()
         {
-            var response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/client-that-does-not-exist"));
+            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/client-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -163,11 +167,11 @@ namespace Fabric.Identity.IntegrationTests
             // Update it
             var updatedTestClient = GetTestClient();
             var stringContent = new StringContent(JsonConvert.SerializeObject(updatedTestClient), Encoding.UTF8, "application/json");
-            response = await this.HttpClient.PutAsync($"/api/Client/{testClient.ClientId}", stringContent);
+            response = await HttpClient.PutAsync($"/api/Client/{testClient.ClientId}", stringContent);
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
             // Fetch it => confirm it's persisted
-            response = await this.HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
@@ -192,7 +196,7 @@ namespace Fabric.Identity.IntegrationTests
         public async Task TestAuthorization_NoToken_Fails()
         {
             var testClient = GetTestClient();
-            this.HttpClient.DefaultRequestHeaders.Remove("Authorization");
+            HttpClient.DefaultRequestHeaders.Remove("Authorization");
             var response = await CreateNewClient(testClient).ConfigureAwait(false);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
