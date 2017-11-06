@@ -26,8 +26,7 @@ namespace Fabric.Identity.IntegrationTests
         private const string IdentityServerUrl = "http://localhost:5001";
         private const string RegistrationApiServerUrl = "http://localhost:5000";
         private const string RegistrationApiName = "registration-api";
-        private static IS4.Client _client;
-        private static IS4.ApiResource _api;
+        private static readonly IS4.Client Client;
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
@@ -44,12 +43,12 @@ namespace Fabric.Identity.IntegrationTests
 
         static IntegrationTestsFixture()
         {
-            _api = GetTestApiResource();
-            _client = GetTestClient();
-            InMemoryDocumentDbService.AddDocument(_api.Name, _api);
-            InMemoryDocumentDbService.AddDocument(_client.ClientId, _client);
-            CouchDbService.AddDocument(_api.Name, _api);
-            CouchDbService.AddDocument(_client.ClientId, _client);
+            var api = GetTestApiResource();
+            Client = GetTestClient();
+            InMemoryDocumentDbService.AddDocument(api.Name, api);
+            InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
+            CouchDbService.AddDocument(api.Name, api);
+            CouchDbService.AddDocument(Client.ClientId, Client);
         }
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
@@ -166,7 +165,7 @@ namespace Fabric.Identity.IntegrationTests
         protected HttpClient GetHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(_client.ClientId, ClientSecret,
+            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret,
                 $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
             return httpClient;

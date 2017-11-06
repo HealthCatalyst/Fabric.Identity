@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Fabric.Identity.API.CouchDb;
@@ -125,8 +126,17 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Services
                     return;
                 }
 
-                throw new CouchDbSetupException(
-                    $"unable to create design document: {designDocName}, reason: {result.Reason}");
+                var errorMessage =
+                    $"unable to create design document: {designDocName}, reason: {result.Reason}, statusCode: {result.StatusCode}";
+
+                if (result.StatusCode == HttpStatusCode.Conflict)
+                {
+                    _logger.Warning(errorMessage);
+                }
+                else
+                {
+                    throw new CouchDbSetupException(errorMessage);
+                }
             }
         }
 
