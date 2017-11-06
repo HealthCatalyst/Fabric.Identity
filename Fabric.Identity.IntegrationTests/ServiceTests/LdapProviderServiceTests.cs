@@ -8,7 +8,7 @@ using Polly.CircuitBreaker;
 using Serilog;
 using Xunit;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ServiceTests
 {
     public class LdapProviderServiceTests
     {

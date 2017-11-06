@@ -8,6 +8,7 @@ using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;

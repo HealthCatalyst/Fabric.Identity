@@ -8,7 +8,7 @@ using Fabric.Identity.API;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 {
     public class IdentityResourceControllerTests : IntegrationTestsFixture
     {

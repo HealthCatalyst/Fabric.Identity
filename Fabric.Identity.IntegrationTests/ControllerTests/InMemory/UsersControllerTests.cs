@@ -12,12 +12,13 @@ using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Persistence.InMemory.Stores;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.IntegrationTests.ServiceTests;
 using Moq;
 using Newtonsoft.Json;
 using Serilog;
 using Xunit;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 {
     public class UsersControllerTests : IntegrationTestsFixture
     {
