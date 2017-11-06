@@ -1,8 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using IdentityServer4.Models;
 using System.Collections.Generic;
+using System.Linq;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using IdentityServer4.EntityFramework.Mappers;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -17,32 +20,53 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public Task<IEnumerable<PersistedGrant>> GetAllAsync(string subjectId)
         {
-            throw new NotImplementedException();
+            var persistedGrants = _identityDbContext.PersistedGrants.Where(pg => pg.SubjectId == subjectId);
+            return Task.FromResult(persistedGrants.Select(pg => pg.ToModel()).AsEnumerable());
         }
 
-        public Task<PersistedGrant> GetAsync(string key)
+        public async Task<PersistedGrant> GetAsync(string key)
         {
-            throw new NotImplementedException();
+            var persistedGrantEntity = await _identityDbContext.PersistedGrants.FirstOrDefaultAsync(pg => pg.Key == key);
+            return persistedGrantEntity?.ToModel();
         }
 
-        public Task RemoveAllAsync(string subjectId, string clientId)
+        public async Task RemoveAllAsync(string subjectId, string clientId)
         {
-            throw new NotImplementedException();
+            var persistedGrantEntities = _identityDbContext.PersistedGrants
+                .Where(pg => pg.SubjectId == subjectId
+                             && pg.ClientId == clientId);
+
+            await DeletePersistedGrants(persistedGrantEntities);
         }
 
-        public Task RemoveAllAsync(string subjectId, string clientId, string type)
+        public async Task RemoveAllAsync(string subjectId, string clientId, string type)
         {
-            throw new NotImplementedException();
+            var persistedGrantEntities = _identityDbContext.PersistedGrants
+                .Where(pg => pg.SubjectId == subjectId
+                             && pg.ClientId == clientId
+                             && pg.Type == type);
+
+            await DeletePersistedGrants(persistedGrantEntities);
         }
 
-        public Task RemoveAsync(string key)
+        public async Task RemoveAsync(string key)
         {
-            throw new NotImplementedException();
+            var persistedGrantEntities = _identityDbContext.PersistedGrants
+                .Where(pg => pg.Key == key);
+
+            await DeletePersistedGrants(persistedGrantEntities);
+        }
+
+        private async Task DeletePersistedGrants(IQueryable<Entities.PersistedGrantEntity> persistedGrants)
+        {
+            await persistedGrants.ForEachAsync(pg => pg.IsDeleted = true);
+            await _identityDbContext.SaveChangesAsync();
         }
 
         public Task StoreAsync(PersistedGrant grant)
         {
-            throw new NotImplementedException();
+            var persistedGrantEntity = grant.ToFabricEntity();
+            return _identityDbContext.PersistedGrants.AddAsync(persistedGrantEntity);
         }
     }
 }
