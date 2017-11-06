@@ -156,7 +156,7 @@ namespace Fabric.Identity.IntegrationTests
         }
 
         [Fact]
-        public async Task UsersController_Search_ReturnsUsers()
+        public virtual async Task UsersController_Search_ReturnsUsers()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = LdapTestHelper.GetLdapSettings();
