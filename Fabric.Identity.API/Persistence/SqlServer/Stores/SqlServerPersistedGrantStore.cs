@@ -36,7 +36,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .Where(pg => pg.SubjectId == subjectId
                              && pg.ClientId == clientId);
 
-            await DeletePersistedGrants(persistedGrantEntities);
+            await DeletePersistedGrantsAsync(persistedGrantEntities);
         }
 
         public async Task RemoveAllAsync(string subjectId, string clientId, string type)
@@ -46,7 +46,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                              && pg.ClientId == clientId
                              && pg.Type == type);
 
-            await DeletePersistedGrants(persistedGrantEntities);
+            await DeletePersistedGrantsAsync(persistedGrantEntities);
         }
 
         public async Task RemoveAsync(string key)
@@ -54,10 +54,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var persistedGrantEntities = _identityDbContext.PersistedGrants
                 .Where(pg => pg.Key == key);
 
-            await DeletePersistedGrants(persistedGrantEntities);
+            await DeletePersistedGrantsAsync(persistedGrantEntities);
         }
 
-        private async Task DeletePersistedGrants(IQueryable<Entities.PersistedGrantEntity> persistedGrants)
+        private async Task DeletePersistedGrantsAsync(IQueryable<PersistedGrantEntity> persistedGrants)
         {
             await persistedGrants.ForEachAsync(pg => pg.IsDeleted = true);
             await _identityDbContext.SaveChangesAsync();
