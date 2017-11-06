@@ -25,6 +25,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
             return (IdentityResourceEntity)entityModel;
         }
 
+        public static PersistedGrantEntity ToFabricEntity(this IdentityServer4.Models.PersistedGrant is4PersistedGrant)
+        {
+            var entityModel = is4PersistedGrant.ToEntity();
+            return (PersistedGrantEntity)entityModel;
+        }
+
         public static UserEntity ToFabricEntity(this User user)
         {
             return new UserEntity
@@ -41,10 +47,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
                     new UserClaimEntity()
                     {
                         Type = c.Type,
-                        IdentityResource = new IdentityResourceEntity
-                        {
-                            
-                        }
+                        Value = c.Value
                     }).ToList()
             };
         }
@@ -59,7 +62,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
                 SubjectId = userEntity.SubjectId,
                 ProviderName = userEntity.ProviderName,
                 Username = userEntity.Username,
-                Claims = userEntity.Claims.Select(c => new Claim(c.Type, c.IdentityResource.Name)).ToList(),
+                Claims = userEntity.Claims.Select(c => new Claim(c.Type, c.Value)).ToList(),
                 LastLoginDatesByClient = userEntity.LastLoginDatesByClient.Where(l => !l.IsDeleted).ToDictionary(k => k.ClientId, v => v.LoginDate)
             };
         }
