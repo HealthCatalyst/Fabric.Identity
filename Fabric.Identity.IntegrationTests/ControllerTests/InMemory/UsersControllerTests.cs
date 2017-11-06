@@ -34,7 +34,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 
         private void CreateNewUser(User user)
         {
-            _userStore.AddUserAsync(user);
+            UserStore.AddUserAsync(user);
         }
 
         private static readonly Random Random = new Random();
@@ -199,7 +199,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             CreateNewUser(user);
 
             //find them using user 
-            var foundUser = await _userStore.FindByExternalProviderAsync(user.ProviderName, user.SubjectId);
+            var foundUser = await UserStore.FindByExternalProviderAsync(user.ProviderName, user.SubjectId);
 
             Assert.NotNull(foundUser);
         }
