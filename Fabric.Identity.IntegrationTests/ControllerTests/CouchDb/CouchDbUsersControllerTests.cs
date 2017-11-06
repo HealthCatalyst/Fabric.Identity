@@ -1,11 +1,12 @@
 ﻿using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Persistence.CouchDb.Stores;
+using Fabric.Identity.IntegrationTests.ControllerTests.InMemory;
 using Moq;
 using Serilog;
 using Xunit;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ControllerTests.CouchDb
 {
     public class CouchDbUsersControllerTests : UsersControllerTests
     {

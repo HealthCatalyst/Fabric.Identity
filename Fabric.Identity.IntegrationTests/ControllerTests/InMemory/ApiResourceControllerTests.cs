@@ -5,12 +5,12 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
-using Fabric.Identity.API.Models;
 using Newtonsoft.Json;
 using Xunit;
+using ApiResource = Fabric.Identity.API.Models.ApiResource;
 using IS4 = IdentityServer4.Models;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 {
     public class ApiResourceControllerTests : IntegrationTestsFixture
     {

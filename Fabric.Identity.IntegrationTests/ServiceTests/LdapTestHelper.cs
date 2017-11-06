@@ -5,7 +5,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Novell.Directory.Ldap;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ServiceTests
 {
     public static class LdapTestHelper
     {
