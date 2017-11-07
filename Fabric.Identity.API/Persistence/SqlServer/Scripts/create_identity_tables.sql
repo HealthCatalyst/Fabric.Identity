@@ -8,7 +8,7 @@ CREATE TABLE [ApiResources] (
 	[ModifiedDateTimeUtc] datetime	NULL,
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
-	[IsDeleted] bit default 0,
+	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_ApiResources] PRIMARY KEY ([Id])
 );
 
@@ -49,7 +49,7 @@ CREATE TABLE [Clients] (
 	[ModifiedDateTimeUtc] datetime	NULL,
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
-	[IsDeleted] bit default 0,
+	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_Clients] PRIMARY KEY ([Id])
 );
 
@@ -68,7 +68,7 @@ CREATE TABLE [IdentityResources] (
 	[ModifiedDateTimeUtc] datetime	NULL,
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
-	[IsDeleted] bit default 0,
+	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_IdentityResources] PRIMARY KEY ([Id])
 );
 
@@ -236,6 +236,7 @@ CREATE TABLE [UserLogins](
 	[UserId] int NOT NULL,
 	[ClientId] int NOT NULL,
 	[LoginDate] datetime NOT NULL,
+	CONSTRAINT [PK_[UserLogins] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_UserLogins_Clients_Id] FOREIGN KEY ([ClientId]) REFERENCES [Clients] ([Id]),
 	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
 );
