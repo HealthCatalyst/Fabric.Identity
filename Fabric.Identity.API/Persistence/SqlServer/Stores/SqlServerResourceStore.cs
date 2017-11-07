@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
-using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +25,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             var identityResources = await IdentityDbContext.IdentityResources
                 .Where(i => scopes.Contains(i.Name))
-                .Include(x => x.UserClaims)
+                .Include(x => x.IdentityClaims)
                 .ToArrayAsync();
 
             return identityResources.Select(i => i.ToModel());
@@ -37,7 +37,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             var apiResources = await IdentityDbContext.ApiResources
                 .Where(r => scopes.Contains(r.Name))
-                .Include(x => x.UserClaims)
+                .Include(x => x.ApiClaims)
                 .ToArrayAsync();
 
             return apiResources.Select(r => r.ToModel());
@@ -47,10 +47,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var apiResource = await IdentityDbContext.ApiResources
                 .Where(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                .Include(x => x.Secrets)
-                .Include(x => x.Scopes)
-                .ThenInclude(s => s.UserClaims)
-                .Include(x => x.UserClaims)
+                .Include(x => x.ApiSecrets)
+                .Include(x => x.ApiScopes)
+                .ThenInclude(s => s.ApiScopeClaims)
+                .Include(x => x.ApiClaims)
                 .FirstOrDefaultAsync();
 
             return apiResource?.ToModel();
@@ -59,13 +59,13 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<Resources> GetAllResources()
         {
             var identity = IdentityDbContext.IdentityResources
-                .Include(x => x.UserClaims);
+                .Include(x => x.IdentityClaims);
 
             var apis = IdentityDbContext.ApiResources
-                .Include(x => x.Secrets)
-                .Include(x => x.Scopes)
-                .ThenInclude(s => s.UserClaims)
-                .Include(x => x.UserClaims);
+                .Include(x => x.ApiSecrets)
+                .Include(x => x.ApiScopes)
+                .ThenInclude(s => s.ApiScopeClaims)
+                .Include(x => x.ApiClaims);
 
             var identityResources = await identity.ToArrayAsync();
             var apiResources = await apis.ToArrayAsync();

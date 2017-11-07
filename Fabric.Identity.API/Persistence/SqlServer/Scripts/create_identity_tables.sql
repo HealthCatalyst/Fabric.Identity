@@ -251,6 +251,11 @@ CREATE TABLE [PersistedGrants] (
     [Expiration] datetime2 NULL,
     [SubjectId] nvarchar(200) NULL,
     [Type] nvarchar(50) NOT NULL,
+	[CreatedDateTimeUtc] datetime NOT NULL,
+	[ModifiedDateTimeUtc] datetime	NULL,
+	[CreatedBy] nvarchar(100) NOT NULL,
+	[ModifiedBy] nvarchar(100) NULL,
+	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_PersistedGrants] PRIMARY KEY ([Key])
 );
 

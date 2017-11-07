@@ -7,7 +7,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
     {
         public User()
         {
-            UserLogins = new HashSet<UserLogin>();
+            Claims = new HashSet<IdentityClaim>();
+            UserLogins = new HashSet<UserLogin>();            
         }
 
         public int Id { get; set; }
@@ -22,6 +23,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
 
+        public virtual ICollection<IdentityClaim> Claims { get; set; }
         public virtual ICollection<UserLogin> UserLogins { get; set; }
     }
 }

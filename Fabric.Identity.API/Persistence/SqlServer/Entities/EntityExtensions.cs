@@ -1,60 +1,75 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using Fabric.Identity.API.Models;
-using IdentityServer4.EntityFramework.Entities;
-using IdentityServer4.EntityFramework.Mappers;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
     public static class EntityExtensions
     {
-        public static ClientEntity ToFabricEntity(this IdentityServer4.Models.Client is4Client)
+        public static EntityModels.Client ToFabricEntity(this IdentityServer4.Models.Client is4Client)
         {
-            var entityModel = is4Client.ToEntity();
-            return (ClientEntity)entityModel;
+           throw new NotImplementedException();
         }
 
-        public static ApiResourceEntity ToFabricEntity(this IdentityServer4.Models.ApiResource is4ApiResource)
+        public static EntityModels.ApiResource ToFabricEntity(this IdentityServer4.Models.ApiResource is4ApiResource)
         {
-            var entityModel = is4ApiResource.ToEntity();
-            return (ApiResourceEntity) entityModel;
+            throw new NotImplementedException();
         }
 
-        public static IdentityResourceEntity ToFabricEntity(this IdentityServer4.Models.IdentityResource is4IdentityResource)
+        public static EntityModels.IdentityResource ToFabricEntity(this IdentityServer4.Models.IdentityResource is4IdentityResource)
         {
-            var entityModel = is4IdentityResource.ToEntity();
-            return (IdentityResourceEntity)entityModel;
+            throw new NotImplementedException();
         }
 
-        public static PersistedGrantEntity ToFabricEntity(this IdentityServer4.Models.PersistedGrant is4PersistedGrant)
+        public static EntityModels.PersistedGrant ToFabricEntity(this IdentityServer4.Models.PersistedGrant is4PersistedGrant)
         {
-            var entityModel = is4PersistedGrant.ToEntity();
-            return (PersistedGrantEntity)entityModel;
+            throw new NotImplementedException();
         }
 
-        public static UserEntity ToFabricEntity(this User user)
+        public static EntityModels.User ToFabricEntity(this User user)
         {
-            return new UserEntity
+            return new EntityModels.User
             {
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 MiddleName = user.MiddleName,
                 SubjectId = user.SubjectId,
                 ProviderName = user.ProviderName,
-                Username = user.Username,                
+                Username = user.Username,
                 Claims = user.Claims.Select(c =>
-                    new IdentityClaim
+                    new EntityModels.IdentityClaim
                     {
                         Type = c.Type,
-                        IdentityResource = new IdentityServer4.EntityFramework.Entities.IdentityResource
-                        { 
+                        IdentityResource = new EntityModels.IdentityResource
+                        {
                             Name = c.Value
                         }
                     }).ToList()
             };
         }
 
-        public static User ToModel(this UserEntity userEntity)
+        public static IdentityServer4.Models.Client ToModel(this EntityModels.Client clientEntity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static IdentityServer4.Models.IdentityResource ToModel(this EntityModels.IdentityResource identityResourceEntity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static IdentityServer4.Models.ApiResource ToModel(this EntityModels.ApiResource apiResourceEntity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static IdentityServer4.Models.PersistedGrant ToModel(this EntityModels.PersistedGrant persistedGrantEntity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static User ToModel(this EntityModels.User userEntity)
         {
             return new User
             {
