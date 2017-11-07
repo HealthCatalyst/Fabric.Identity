@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
                 MiddleName = user.MiddleName,
                 SubjectId = user.SubjectId,
                 ProviderName = user.ProviderName,
-                Username = user.Username,
+                Username = user.Username,                
                 Claims = user.Claims.Select(c =>
                     new IdentityClaim
                     {
