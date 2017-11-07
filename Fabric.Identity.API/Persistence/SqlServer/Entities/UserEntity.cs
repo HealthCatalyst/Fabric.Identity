@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using IdentityServer4.EntityFramework.Entities;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using IdentityClaim = IdentityServer4.EntityFramework.Entities.IdentityClaim;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {

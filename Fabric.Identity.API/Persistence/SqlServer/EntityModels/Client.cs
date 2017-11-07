@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using IdentityServer4;
 using IdentityServer4.Models;
 
