@@ -12,7 +12,6 @@ using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Infrastructure.Monitoring;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
