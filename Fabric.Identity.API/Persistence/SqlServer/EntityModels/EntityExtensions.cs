@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Security.Claims;
-using Fabric.Identity.API.Models;
 
-namespace Fabric.Identity.API.Persistence.SqlServer.Entities
+namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
     public static class EntityExtensions
     {
@@ -27,7 +26,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
             throw new NotImplementedException();
         }
 
-        public static EntityModels.User ToFabricEntity(this User user)
+        public static EntityModels.User ToFabricEntity(this Models.User user)
         {
             return new EntityModels.User
             {
@@ -69,9 +68,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
             throw new NotImplementedException();
         }
 
-        public static User ToModel(this EntityModels.User userEntity)
+        public static Models.User ToModel(this EntityModels.User userEntity)
         {
-            return new User
+            return new Models.User
             {
                 FirstName = userEntity.FirstName,
                 LastName = userEntity.LastName,

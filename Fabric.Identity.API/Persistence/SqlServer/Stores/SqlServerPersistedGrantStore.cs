@@ -1,10 +1,9 @@
 ﻿using System.Threading.Tasks;
-using IdentityServer4.Models;
 using System.Collections.Generic;
 using System.Linq;
-using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
@@ -18,13 +17,13 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             _identityDbContext = identityDbContext;
         }
 
-        public Task<IEnumerable<PersistedGrant>> GetAllAsync(string subjectId)
+        public Task<IEnumerable<IdentityServer4.Models.PersistedGrant>> GetAllAsync(string subjectId)
         {
             var persistedGrants = _identityDbContext.PersistedGrants.Where(pg => pg.SubjectId == subjectId);
             return Task.FromResult(persistedGrants.Select(pg => pg.ToModel()).AsEnumerable());
         }
 
-        public async Task<PersistedGrant> GetAsync(string key)
+        public async Task<IdentityServer4.Models.PersistedGrant> GetAsync(string key)
         {
             var persistedGrantEntity = await _identityDbContext.PersistedGrants.FirstOrDefaultAsync(pg => pg.Key == key);
             return persistedGrantEntity?.ToModel();
@@ -57,13 +56,13 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             await DeletePersistedGrantsAsync(persistedGrantEntities);
         }
 
-        private async Task DeletePersistedGrantsAsync(IQueryable<EntityModels.PersistedGrant> persistedGrants)
+        private async Task DeletePersistedGrantsAsync(IQueryable<PersistedGrant> persistedGrants)
         {
             await persistedGrants.ForEachAsync(pg => pg.IsDeleted = true);
             await _identityDbContext.SaveChangesAsync();
         }
 
-        public Task StoreAsync(PersistedGrant grant)
+        public Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
         {
             var persistedGrantEntity = grant.ToFabricEntity();
             return _identityDbContext.PersistedGrants.AddAsync(persistedGrantEntity);
