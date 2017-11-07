@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
 using Microsoft.EntityFrameworkCore;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using IdentityResource = IdentityServer4.Models.IdentityResource;
+using ApiResource = IdentityServer4.Models.ApiResource;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {

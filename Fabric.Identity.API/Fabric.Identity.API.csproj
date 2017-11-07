@@ -25,6 +25,7 @@
   <ItemGroup>
     <Folder Include="Persistence\CouchDb\DependencyInjection\" />
     <Folder Include="Persistence\InMemory\DependencyInjection\" />
+    <Folder Include="Persistence\SqlServer\Entities\" />
     <Folder Include="Persistence\SqlServer\Services\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>

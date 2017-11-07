@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Models;
-using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using User = Fabric.Identity.API.Models.User;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
