@@ -1,4 +1,5 @@
 ﻿using System;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
