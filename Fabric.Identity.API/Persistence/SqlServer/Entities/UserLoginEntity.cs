@@ -15,5 +15,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
         public bool IsDeleted { get; set; }
+
+        public UserEntity User { get; set; }
+        public ClientEntity Client { get; set; }
     }
 }

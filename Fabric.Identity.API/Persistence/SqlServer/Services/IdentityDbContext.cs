@@ -9,8 +9,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
     {
         private readonly ConfigurationStoreOptions _storeOptions;
 
-        public IdentityDbContext(ConfigurationStoreOptions storeOptions)
-        {
+        public IdentityDbContext(DbContextOptions<IdentityDbContext> options, ConfigurationStoreOptions storeOptions)
+            : base(options)
+        {            
             _storeOptions = storeOptions;
         }
 
@@ -26,6 +27,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         {
             return base.SaveChangesAsync();
         }
+
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
