@@ -25,7 +25,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public virtual DbSet<IdentityResource> IdentityResources { get; set; }
         public virtual DbSet<UserLogin> UserLogins { get; set; }
         public virtual DbSet<User> Users { get; set; }
-      
+        public virtual DbSet<PersistedGrant> PersistedGrants { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ApiClaim>(entity =>
