@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
-using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,10 +58,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var apiResource = await IdentityDbContext.ApiResources
                 .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase))
-                .Include(x => x.Secrets)
-                .Include(x => x.Scopes)
-                .ThenInclude(s => s.UserClaims)
-                .Include(x => x.UserClaims)
+                .Include(x => x.ApiSecrets)
+                .Include(x => x.ApiScopes)
+                .ThenInclude(s => s.ApiScopeClaims)
+                .Include(x => x.ApiClaims)
                 .FirstOrDefaultAsync();
 
             return apiResource?.ToModel();

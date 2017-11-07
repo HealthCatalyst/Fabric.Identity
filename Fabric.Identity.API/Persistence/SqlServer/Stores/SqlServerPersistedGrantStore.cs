@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
-using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -57,7 +57,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             await DeletePersistedGrantsAsync(persistedGrantEntities);
         }
 
-        private async Task DeletePersistedGrantsAsync(IQueryable<PersistedGrantEntity> persistedGrants)
+        private async Task DeletePersistedGrantsAsync(IQueryable<EntityModels.PersistedGrant> persistedGrants)
         {
             await persistedGrants.ForEachAsync(pg => pg.IsDeleted = true);
             await _identityDbContext.SaveChangesAsync();

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Entities;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
-using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,15 +21,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<Client> FindClientByIdAsync(string clientId)
         {
             var client = await _identityDbContext.Clients
-                .Include(x => x.AllowedGrantTypes)
-                .Include(x => x.RedirectUris)
-                .Include(x => x.PostLogoutRedirectUris)
-                .Include(x => x.AllowedScopes)
+                .Include(x => x.ClientGrantTypes)
+                .Include(x => x.ClientRedirectUris)
+                .Include(x => x.ClientPostLogoutRedirectUris)
+                .Include(x => x.ClientScopes)
                 .Include(x => x.ClientSecrets)
-                .Include(x => x.Claims)
-                .Include(x => x.IdentityProviderRestrictions)
-                .Include(x => x.AllowedCorsOrigins)
-               // .Include(x => x.Properties)
+                .Include(x => x.ClientClaims)
+                .Include(x => x.ClientIdPrestrictions)
+                .Include(x => x.ClientCorsOrigins)
                 .FirstOrDefaultAsync(x => x.ClientId == clientId);
             var clientEntity = client?.ToModel();
 

@@ -21,7 +21,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<User> FindBySubjectIdAsync(string subjectId)
         {
             var userEntity = await _identityDbContext.Users
-                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
@@ -31,20 +31,19 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<User> FindByExternalProviderAsync(string provider, string subjectId)
         {
             var userEntity = await _identityDbContext.Users
-                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
             return userEntity.ToModel();
-
         }
 
         public async Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds)
         {
             var userEntities = await _identityDbContext.Users
                 .Where(u => subjectIds.Contains(u.SubjectId))
-                .Include(u => u.LastLoginDatesByClient)
+                .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
                 .ToArrayAsync();
 

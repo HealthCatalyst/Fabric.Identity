@@ -1,18 +1,16 @@
 ﻿using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Entities;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {
     public interface IIdentityDbContext
     {
-        DbSet<ClientEntity> Clients { get; set; }
-        DbSet<ApiResourceEntity> ApiResources { get; set; }
-        DbSet<IdentityResourceEntity> IdentityResources { get; set; }
-        DbSet<UserClaimEntity> UserClaims { get; set; }
-        DbSet<UserLoginEntity> UserLogins { get; set; }
-        DbSet<UserEntity> Users { get; set; }
-        DbSet<PersistedGrantEntity> PersistedGrants { get; set; }
+        DbSet<Client> Clients { get; set; }
+        DbSet<ApiResource> ApiResources { get; set; }
+        DbSet<IdentityResource> IdentityResources { get; set; }        
+        DbSet<User> Users { get; set; }
+        DbSet<PersistedGrant> PersistedGrants { get; set; }
 
         Task<int> SaveChangesAsync();
     }
