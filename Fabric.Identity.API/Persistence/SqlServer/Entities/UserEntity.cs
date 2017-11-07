@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using IdentityServer4.EntityFramework.Entities;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
 {
@@ -12,7 +13,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
         public string LastName { get; set; }
         public string ProviderName { get; set; }
 
-        public ICollection<UserClaimEntity> Claims { get; set; }
+        public ICollection<IdentityClaim> Claims { get; set; }
         public ICollection<UserLoginEntity> LastLoginDatesByClient { get; set; }
 
         public DateTime CreatedDateTimeUtc { get; set; }

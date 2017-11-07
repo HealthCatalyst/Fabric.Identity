@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Security.Claims;
 using Fabric.Identity.API.Models;
+using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.EntityFramework.Mappers;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Entities
@@ -41,13 +42,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
                 SubjectId = user.SubjectId,
                 ProviderName = user.ProviderName,
                 Username = user.Username,
-                LastLoginDatesByClient =
-                    user.LastLoginDatesByClient.Select(l => new UserLoginEntity(l.Key, l.Value)).ToList(),
                 Claims = user.Claims.Select(c =>
-                    new UserClaimEntity()
+                    new IdentityClaim
                     {
                         Type = c.Type,
-                        Value = c.Value
+                        IdentityResource = new IdentityServer4.EntityFramework.Entities.IdentityResource
+                        { 
+                            Name = c.Value
+                        }
                     }).ToList()
             };
         }
@@ -62,8 +64,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Entities
                 SubjectId = userEntity.SubjectId,
                 ProviderName = userEntity.ProviderName,
                 Username = userEntity.Username,
-                Claims = userEntity.Claims.Select(c => new Claim(c.Type, c.Value)).ToList(),
-                LastLoginDatesByClient = userEntity.LastLoginDatesByClient.Where(l => !l.IsDeleted).ToDictionary(k => k.ClientId, v => v.LoginDate)
+                Claims = userEntity.Claims.Select(c => new Claim(c.Type, c.IdentityResource.Name)).ToList(),                
             };
         }
     }
