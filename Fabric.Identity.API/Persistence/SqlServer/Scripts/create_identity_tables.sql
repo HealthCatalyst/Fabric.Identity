@@ -243,6 +243,19 @@ CREATE TABLE [UserLogins](
 
 GO
 
+CREATE TABLE [PersistedGrants] (
+    [Key] nvarchar(200) NOT NULL,
+    [ClientId] nvarchar(200) NOT NULL,
+    [CreationTime] datetime2 NOT NULL,
+    [Data] nvarchar(max) NOT NULL,
+    [Expiration] datetime2 NULL,
+    [SubjectId] nvarchar(200) NULL,
+    [Type] nvarchar(50) NOT NULL,
+    CONSTRAINT [PK_PersistedGrants] PRIMARY KEY ([Key])
+);
+
+GO
+
 CREATE INDEX [IX_ApiClaims_ApiResourceId] ON [ApiClaims] ([ApiResourceId]);
 
 GO
@@ -308,5 +321,9 @@ CREATE INDEX [IX_IdentityClaims_IdentityResourceId] ON [IdentityClaims] ([Identi
 GO
 
 CREATE UNIQUE INDEX [IX_IdentityResources_Name] ON [IdentityResources] ([Name]);
+
+GO
+
+CREATE INDEX [IX_PersistedGrants_SubjectId_ClientId_Type] ON [PersistedGrants] ([SubjectId], [ClientId], [Type]);
 
 GO
