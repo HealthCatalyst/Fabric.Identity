@@ -3,12 +3,6 @@ using System.Linq;
 using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
-using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.CouchDb.Configuration;
-using Fabric.Identity.API.Persistence.CouchDb.Services;
-using Fabric.Identity.API.Persistence.CouchDb.Stores;
-using Fabric.Identity.API.Persistence.InMemory.Services;
-using Fabric.Identity.API.Persistence.InMemory.Stores;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
@@ -18,7 +12,6 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
-using IPersistedGrantStore = IdentityServer4.Stores.IPersistedGrantStore;
 
 namespace Fabric.Identity.API.Extensions
 {
@@ -31,72 +24,6 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<ApiResourceValidator, ApiResourceValidator>();
             serviceCollection.AddTransient<UserApiModelValidator, UserApiModelValidator>();
             serviceCollection.AddTransient<ExternalProviderApiModelValidator>();
-        }
-
-        public static IServiceCollection AddCouchDbBackedIdentityServer(this IServiceCollection serviceCollection,
-            ICouchDbSettings couchDbSettings,
-            IAppConfiguration appConfiguration,
-            ICertificateService certificateService,
-            ILogger logger)
-        {
-            serviceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
-            serviceCollection.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
-            serviceCollection.AddTransient<IClientManagementStore, CouchDbClientStore>();
-            serviceCollection.AddTransient<IApiResourceStore, CouchDbApiResourceStore>();
-            serviceCollection.AddTransient<IIdentityResourceStore, CouchDbIdentityResourceStore>();
-            serviceCollection.AddTransient<IUserStore, CouchDbUserStore>();
-            serviceCollection.AddTransient<IDbBootstrapper, CouchDbBootstrapper>();
-
-            serviceCollection.TryAddSingleton(couchDbSettings);
-
-            serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
-
-            serviceCollection.AddIdentityServer(options =>
-                {
-                    options.Events.RaiseSuccessEvents = true;
-                    options.Events.RaiseFailureEvents = true;
-                    options.Events.RaiseErrorEvents = true;
-                    options.Events.RaiseInformationEvents = true;
-                    options.IssuerUri = appConfiguration.IssuerUri;
-                })
-                .AddSigningCredentialAndValidationKeys(appConfiguration.SigningCertificateSettings, certificateService,
-                    logger)
-                .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
-                .AddCorsPolicyService<CorsPolicyService>()
-                .AddResourceStore<CouchDbResourceStore>()
-                .AddClientStore<CouchDbClientStore>()
-                .Services.AddTransient<IPersistedGrantStore, CouchDbPersistedGrantStore>();
-
-            return serviceCollection;
-        }
-
-        public static IServiceCollection AddInMemoryIdentityServer(this IServiceCollection serviceCollection,
-            IAppConfiguration appConfiguration)
-        {
-            serviceCollection.TryAddSingleton<IDocumentDbService, InMemoryDocumentService>();
-            serviceCollection.AddTransient<IApiResourceStore, InMemoryApiResourceStore>();
-            serviceCollection.AddTransient<IIdentityResourceStore, InMemoryIdentityResourceStore>();
-            serviceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
-            serviceCollection.AddTransient<IUserStore, InMemoryUserStore>();
-            serviceCollection.AddTransient<IDbBootstrapper, InMemoryDbBootstrapper>();
-
-            serviceCollection.AddIdentityServer(options =>
-                {
-                    options.Events.RaiseSuccessEvents = true;
-                    options.Events.RaiseFailureEvents = true;
-                    options.Events.RaiseErrorEvents = true;
-                    options.Events.RaiseInformationEvents = true;
-                    options.IssuerUri = appConfiguration.IssuerUri;
-                })
-                .AddTemporarySigningCredential()
-                .AddTestUsersIfConfigured(appConfiguration.HostingOptions)
-                .AddCorsPolicyService<CorsPolicyService>()
-                .AddResourceStore<InMemoryResourceStore>()
-                .AddClientStore<InMemoryClientManagementStore>()
-                .Services.AddTransient<IPersistedGrantStore, InMemoryPersistedGrantStore>();
-
-
-            return serviceCollection;
         }
 
         public static IServiceCollection
@@ -144,21 +71,33 @@ namespace Fabric.Identity.API.Extensions
             throw new FabricConfigurationException("No IDocumentDbService is registered");
         }
 
-        public static IServiceCollection AddIdentityServer(this IServiceCollection serviceCollection,
-            IAppConfiguration appConfiguration, ICertificateService certificateService, ILogger logger, HostingOptions hostingOptions)
+        public static IServiceCollection AddIdentityServer(
+            this IServiceCollection serviceCollection,
+            IAppConfiguration appConfiguration,
+            ICertificateService certificateService,
+            ILogger logger,
+            HostingOptions hostingOptions)
         {
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
-            if (string.Equals(hostingOptions.StorageProvider,
-                FabricIdentityConstants.StorageProviders.InMemory, StringComparison.OrdinalIgnoreCase))
+            serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
+
+            var identityServerBuilder = serviceCollection.AddIdentityServer(options =>
             {
-                serviceCollection.AddInMemoryIdentityServer(appConfiguration);
-            }
-            else
-            {
-                serviceCollection.AddCouchDbBackedIdentityServer(appConfiguration.CouchDbSettings, appConfiguration,
-                    certificateService, logger);
-            }
+                options.Events.RaiseSuccessEvents = true;
+                options.Events.RaiseFailureEvents = true;
+                options.Events.RaiseErrorEvents = true;
+                options.Events.RaiseInformationEvents = true;
+                options.IssuerUri = appConfiguration.IssuerUri;
+            });
+
+            new IdentityServerInitializationService(
+                identityServerBuilder,
+                serviceCollection,
+                appConfiguration,
+                hostingOptions,
+                certificateService,
+                logger).Initialize();
 
             return serviceCollection;
         }
