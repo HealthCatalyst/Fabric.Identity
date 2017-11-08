@@ -1,3 +1,5 @@
+USE [Identity]
+
 CREATE TABLE [ApiResources] (
     [Id] int NOT NULL IDENTITY,
     [Description] nvarchar(1000) NULL,
