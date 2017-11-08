@@ -1,5 +1,6 @@
 ﻿using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.CouchDb.Stores;
 using Fabric.Identity.API.Services;
@@ -32,8 +33,8 @@ namespace Fabric.Identity.API.Persistence.CouchDb.DependencyInjection
             ServiceCollection.AddTransient<IUserStore, CouchDbUserStore>();
             ServiceCollection.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             ServiceCollection.AddTransient<IDbBootstrapper, CouchDbBootstrapper>();
-
-            ServiceCollection.TryAddSingleton(AppConfiguration.CouchDbSettings);
+            ServiceCollection.AddTransient<IdentityServer4.Stores.IPersistedGrantStore, CouchDbPersistedGrantStore>();
+            ServiceCollection.TryAddSingleton<ICouchDbSettings>(AppConfiguration.CouchDbSettings);
         }
 
         protected override void ConfigureIdentityServer()
@@ -46,8 +47,7 @@ namespace Fabric.Identity.API.Persistence.CouchDb.DependencyInjection
                 .AddTestUsersIfConfigured(AppConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourceStore>()
-                .AddClientStore<CouchDbClientStore>()
-                .Services.AddTransient<IdentityServer4.Stores.IPersistedGrantStore, CouchDbPersistedGrantStore>();
+                .AddClientStore<CouchDbClientStore>();
         }
     }
 }

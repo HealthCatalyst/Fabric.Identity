@@ -27,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Persistence\SqlServer\Services\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
   <ItemGroup>
