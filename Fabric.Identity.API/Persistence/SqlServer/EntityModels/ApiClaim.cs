@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
+﻿namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class ApiClaim
+    public class ApiClaim
     {
         public int Id { get; set; }
         public int ApiResourceId { get; set; }

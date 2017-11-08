@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
+﻿namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class ClientGrantType
+    public class ClientGrantType
     {
         public int Id { get; set; }
         public int ClientId { get; set; }
