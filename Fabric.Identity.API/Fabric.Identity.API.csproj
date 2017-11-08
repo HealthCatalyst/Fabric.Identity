@@ -17,15 +17,18 @@
 
   <ItemGroup>
     <Compile Remove="Documentation\build\**" />
+    <Compile Remove="Persistence\SqlServer\Entities\**" />
     <Content Remove="Documentation\build\**" />
+    <Content Remove="Persistence\SqlServer\Entities\**" />
     <EmbeddedResource Remove="Documentation\build\**" />
+    <EmbeddedResource Remove="Persistence\SqlServer\Entities\**" />
     <None Remove="Documentation\build\**" />
+    <None Remove="Persistence\SqlServer\Entities\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Persistence\CouchDb\DependencyInjection\" />
     <Folder Include="Persistence\InMemory\DependencyInjection\" />
-    <Folder Include="Persistence\SqlServer\Entities\" />
     <Folder Include="Persistence\SqlServer\Services\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>

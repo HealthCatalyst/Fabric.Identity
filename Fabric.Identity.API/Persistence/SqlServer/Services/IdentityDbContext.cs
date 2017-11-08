@@ -169,7 +169,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .HasForeignKey(d => d.ClientId);
             });
 
-            modelBuilder.Entity<ClientIdPrestriction>(entity =>
+            modelBuilder.Entity<ClientIdpRestriction>(entity =>
             {
                 entity.ToTable("ClientIdPRestrictions");
 
@@ -181,7 +181,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .HasMaxLength(200);
 
                 entity.HasOne(d => d.Client)
-                    .WithMany(p => p.ClientIdPrestrictions)
+                    .WithMany(p => p.ClientIdpRestrictions)
                     .HasForeignKey(d => d.ClientId);
             });
 

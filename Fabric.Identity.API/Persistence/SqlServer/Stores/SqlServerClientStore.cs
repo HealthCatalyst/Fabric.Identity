@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,7 +18,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             _identityDbContext = identityDbContext;            
         }
 
-        public async Task<IdentityServer4.Models.Client> FindClientByIdAsync(string clientId)
+        public async Task<Client> FindClientByIdAsync(string clientId)
         {
             var client = await _identityDbContext.Clients
                 .Include(x => x.ClientGrantTypes)
@@ -27,7 +27,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .Include(x => x.ClientScopes)
                 .Include(x => x.ClientSecrets)
                 .Include(x => x.ClientClaims)
-                .Include(x => x.ClientIdPrestrictions)
+                .Include(x => x.ClientIdpRestrictions)
                 .Include(x => x.ClientCorsOrigins)
                 .FirstOrDefaultAsync(x => x.ClientId == clientId);
             var clientEntity = client?.ToModel();
@@ -35,7 +35,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             return clientEntity;
         }
 
-        public IEnumerable<IdentityServer4.Models.Client> GetAllClients()
+        public IEnumerable<Client> GetAllClients()
         {
             var clients = _identityDbContext.Clients
                 .Where(c => !c.IsDeleted)
@@ -49,12 +49,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             return GetAllClients().Count();
         }
 
-        public void AddClient(IdentityServer4.Models.Client client)
+        public void AddClient(Client client)
         {
             AddClientAsync(client).Wait();
         }
 
-        public void UpdateClient(string clientId, IdentityServer4.Models.Client client)
+        public void UpdateClient(string clientId, Client client)
         {
             UpdateClientAsync(clientId, client).Wait();
         }
@@ -64,18 +64,18 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             DeleteClientAsync(id).Wait();
         }
 
-        public async Task AddClientAsync(IdentityServer4.Models.Client client)
+        public async Task AddClientAsync(Client client)
         {
-            var domainModelClient = client.ToFabricEntity();
+            var domainModelClient = client.ToEntity();
 
             //TODO: set entity model properties
 
             await _identityDbContext.Clients.AddAsync(domainModelClient);
         }
 
-        public async Task UpdateClientAsync(string clientId, IdentityServer4.Models.Client client)
+        public async Task UpdateClientAsync(string clientId, Client client)
         {
-            var clientDomainModel = client.ToFabricEntity();
+            var clientDomainModel = client.ToEntity();
 
             //TODO: set entity model properties
 

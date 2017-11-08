@@ -5,14 +5,14 @@ using IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class Client : ITrackable, ISoftDelete
+    public class Client : ITrackable, ISoftDelete
     {
         public Client()
         {
             ClientClaims = new HashSet<ClientClaim>();
             ClientCorsOrigins = new HashSet<ClientCorsOrigin>();
             ClientGrantTypes = new HashSet<ClientGrantType>();
-            ClientIdPrestrictions = new HashSet<ClientIdPrestriction>();
+            ClientIdpRestrictions = new HashSet<ClientIdpRestriction>();
             ClientPostLogoutRedirectUris = new HashSet<ClientPostLogoutRedirectUri>();
             ClientRedirectUris = new HashSet<ClientRedirectUri>();
             ClientScopes = new HashSet<ClientScope>();
@@ -59,7 +59,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public virtual ICollection<ClientClaim> ClientClaims { get; set; }
         public virtual ICollection<ClientCorsOrigin> ClientCorsOrigins { get; set; }
         public virtual ICollection<ClientGrantType> ClientGrantTypes { get; set; }
-        public virtual ICollection<ClientIdPrestriction> ClientIdPrestrictions { get; set; }
+        public virtual ICollection<ClientIdpRestriction> ClientIdpRestrictions { get; set; }
         public virtual ICollection<ClientPostLogoutRedirectUri> ClientPostLogoutRedirectUris { get; set; }
         public virtual ICollection<ClientRedirectUri> ClientRedirectUris { get; set; }
         public virtual ICollection<ClientScope> ClientScopes { get; set; }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
-using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using User = Fabric.Identity.API.Models.User;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
@@ -52,7 +52,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task<User> AddUserAsync(User user)
         {
-            var userEntity = user.ToFabricEntity();
+            var userEntity = user.ToEntity();
 
             await _identityDbContext.Users.AddAsync(userEntity);
 
@@ -66,7 +66,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateUserAsync(User user)
         {
-            var userEntity = user.ToFabricEntity();
+            var userEntity = user.ToEntity();
 
             _identityDbContext.Users.Update(userEntity);
             await _identityDbContext.SaveChangesAsync();
