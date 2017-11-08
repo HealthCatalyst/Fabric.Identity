@@ -323,12 +323,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
             {
                 entity.Property(e => e.LoginDate).HasColumnType("datetime");
 
-                entity.HasOne(d => d.Client)
-                    .WithMany(p => p.UserLogins)
-                    .HasForeignKey(d => d.ClientId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK_UserLogins_Clients_Id");
-
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.UserLogins)
                     .HasForeignKey(d => d.UserId)
@@ -365,6 +359,20 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 entity.Property(e => e.Username)
                     .IsRequired()
                     .HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<PersistedGrant>(grant =>
+            {
+                grant.Property(x => x.Key).HasMaxLength(200).ValueGeneratedNever();
+                grant.Property(x => x.Type).HasMaxLength(50).IsRequired();
+                grant.Property(x => x.SubjectId).HasMaxLength(200);
+                grant.Property(x => x.ClientId).HasMaxLength(200).IsRequired();
+                grant.Property(x => x.CreationTime).IsRequired();
+                grant.Property(x => x.Data).HasMaxLength(50000).IsRequired();
+
+                grant.HasKey(x => x.Key);
+
+                grant.HasIndex(x => new { x.SubjectId, x.ClientId, x.Type });
             });
         }
     }

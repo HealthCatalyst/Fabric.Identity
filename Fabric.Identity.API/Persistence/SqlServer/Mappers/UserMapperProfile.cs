@@ -12,9 +12,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
             //entity to model
             CreateMap<User, Models.User>(MemberList.Destination)
                 .ForMember(x => x.LastLoginDatesByClient,
-                    opt => opt.MapFrom(src => src.UserLogins
-                        .Where(l => !l.IsDeleted)
-                        .ToDictionary(l => l.Client.ClientId, l => l.LoginDate)))
+                    opt => opt.MapFrom(src => src.UserLogins                                                
+                        .ToDictionary(l => l.ClientId, l => l.LoginDate)))
                 .ForMember(x => x.Claims, opt => opt.MapFrom(src => src.Claims
                     .Select(x => new Claim(x.Type, x.IdentityResource.Name))));
 
@@ -23,7 +22,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
                 .ForMember(x => x.UserLogins, opt => opt.MapFrom(src => src.LastLoginDatesByClient
                     .Select(x => new UserLogin
                     {
-                        //TODO: get the client id string and not the identity column
+                        ClientId = x.Key,
+                        LoginDate = x.Value
                     })));
         }
 
