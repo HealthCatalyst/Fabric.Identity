@@ -4,6 +4,7 @@ using System.Linq;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
@@ -64,7 +65,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
         {
-            var persistedGrantEntity = grant.ToFabricEntity();
+            var persistedGrantEntity = grant.ToEntity();
             return _identityDbContext.PersistedGrants.AddAsync(persistedGrantEntity);
         }
     }

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
-using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using IdentityResource = IdentityServer4.Models.IdentityResource;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
@@ -37,7 +37,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task AddResourceAsync(IdentityResource resource)
         {
-            var resourceEntity = resource.ToFabricEntity();
+            var resourceEntity = resource.ToEntity();
 
             //TODO: set entity properties
 
@@ -46,7 +46,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
         {
-            var identityResourceEntity = resource.ToFabricEntity();
+            var identityResourceEntity = resource.ToEntity();
 
             //TODO: set entity properties
 
