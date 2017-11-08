@@ -4,15 +4,13 @@ using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
         private readonly ConfigurationStoreOptions _storeOptions;
 
-        public IdentityDbContext(DbContextOptions<IdentityDbContext> options, ConfigurationStoreOptions storeOptions)
-            : base(options)
+        public IdentityDbContext(ConfigurationStoreOptions storeOptions)
         {            
             _storeOptions = storeOptions;
         }
@@ -374,6 +372,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 grant.HasIndex(x => new { x.SubjectId, x.ClientId, x.Type });
             });
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer("");
         }
     }
 }
