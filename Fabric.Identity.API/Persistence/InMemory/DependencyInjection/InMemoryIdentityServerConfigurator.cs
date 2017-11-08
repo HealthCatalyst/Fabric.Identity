@@ -28,6 +28,7 @@ namespace Fabric.Identity.API.Persistence.InMemory.DependencyInjection
             ServiceCollection.AddTransient<IClientManagementStore, InMemoryClientManagementStore>();
             ServiceCollection.AddTransient<IUserStore, InMemoryUserStore>();
             ServiceCollection.AddTransient<IDbBootstrapper, InMemoryDbBootstrapper>();
+            ServiceCollection.AddTransient<IdentityServer4.Stores.IPersistedGrantStore, InMemoryPersistedGrantStore>();
         }
 
         protected override void ConfigureIdentityServer()
@@ -37,8 +38,7 @@ namespace Fabric.Identity.API.Persistence.InMemory.DependencyInjection
                 .AddTestUsersIfConfigured(AppConfiguration.HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<InMemoryResourceStore>()
-                .AddClientStore<InMemoryClientManagementStore>()
-                .Services.AddTransient<IdentityServer4.Stores.IPersistedGrantStore, InMemoryPersistedGrantStore>();
+                .AddClientStore<InMemoryClientManagementStore>();
         }
     }
 }
