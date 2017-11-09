@@ -32,6 +32,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             RedirectUris = new List<string>() { Rand.Next().ToString() },
             AllowedCorsOrigins = new List<string>() { Rand.Next().ToString() },
             PostLogoutRedirectUris = new List<string>() { Rand.Next().ToString() },
+            
         };
 
         private static readonly Func<IS4.Client> GetOfflineTestClient = () => new IS4.Client()

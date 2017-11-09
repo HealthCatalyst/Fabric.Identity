@@ -1,9 +1,12 @@
 ﻿using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Extensions;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.API.Persistence.SqlServer.Stores;
 using Fabric.Identity.API.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
@@ -25,6 +28,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
 
         protected override void ConfigureInternalStores()
         {
+            ServiceCollection.TryAddSingleton<IConnectionStrings>(AppConfiguration.ConnectionStrings);
+            ServiceCollection.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase));
             ServiceCollection.AddSingleton<IIdentityDbContext, IdentityDbContext>();
             ServiceCollection.AddTransient<IApiResourceStore, SqlServerApiResourceStore>();
             ServiceCollection.AddTransient<IIdentityResourceStore, SqlServerIdentityResourceStore>();
