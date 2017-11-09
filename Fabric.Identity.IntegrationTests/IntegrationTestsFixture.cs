@@ -8,12 +8,15 @@ using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Serilog;
@@ -36,6 +39,7 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
+        private static IIdentityDbContext _sqlServerDbContext;
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
         private static IDocumentDbService _dbService;
@@ -50,6 +54,9 @@ namespace Fabric.Identity.IntegrationTests
             InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
             CouchDbService.AddDocument(api.Name, api);
             CouchDbService.AddDocument(Client.ClientId, Client);
+            SqlServerService.ApiResources.Add(api.ToEntity());
+            SqlServerService.Clients.Add(Client.ToEntity());
+            SqlServerService.SaveChanges();
         }
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
@@ -59,11 +66,33 @@ namespace Fabric.Identity.IntegrationTests
             HttpClient = GetHttpClient();
         }
 
+        private static IIdentityDbContext SqlServerService
+        {
+            get
+            {
+                if (_sqlServerDbContext != null)
+                {
+                    return _sqlServerDbContext;
+                }
+
+                var serviceProvider = new ServiceCollection()
+                    .AddEntityFrameworkSqlServer()
+                    .BuildServiceProvider();
+
+                var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+
+                builder.UseSqlServer($"Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true")
+                    .UseInternalServiceProvider(serviceProvider);
+
+                return _sqlServerDbContext = new IdentityDbContext(builder.Options);
+            }
+        }
+
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
         {
             DatabaseName = "integration-" + DateTime.UtcNow.Ticks,
-            Username = "",
-            Password = "",
+            Username = "admin",
+            Password = "admin",
             Server = "http://127.0.0.1:5984"
         });
 

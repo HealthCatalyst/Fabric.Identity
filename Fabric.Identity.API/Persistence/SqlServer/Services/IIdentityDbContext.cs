@@ -13,5 +13,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         DbSet<PersistedGrant> PersistedGrants { get; set; }
 
         Task<int> SaveChangesAsync();
+        int SaveChanges();
     }
 }

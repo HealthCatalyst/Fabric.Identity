@@ -1,4 +1,5 @@
 ﻿using Fabric.Identity.API.Persistence.CouchDb.Configuration;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.API.Configuration
@@ -19,5 +20,7 @@ namespace Fabric.Identity.API.Configuration
         public ApplicationInsights ApplicationInsights { get; set; }
         public LdapSettings LdapSettings { get; set; }
         public FilterSettings FilterSettings { get; set; }
+        public ConnectionStrings ConnectionStrings { get; set; }
+        
     }
 }
