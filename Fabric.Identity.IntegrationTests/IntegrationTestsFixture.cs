@@ -8,6 +8,7 @@ using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
@@ -39,6 +40,7 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
+        private static IAppConfiguration _appConfiguration;
         private static IIdentityDbContext _sqlServerDbContext;
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
@@ -81,7 +83,7 @@ namespace Fabric.Identity.IntegrationTests
 
                 var builder = new DbContextOptionsBuilder<IdentityDbContext>();
 
-                builder.UseSqlServer($"Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true")
+                builder.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase)
                     .UseInternalServiceProvider(serviceProvider);
 
                 return _sqlServerDbContext = new IdentityDbContext(builder.Options);
@@ -95,6 +97,15 @@ namespace Fabric.Identity.IntegrationTests
             Password = "admin",
             Server = "http://127.0.0.1:5984"
         });
+
+        private static IAppConfiguration AppConfiguration => _appConfiguration ?? (_appConfiguration =
+                                                                 new AppConfiguration
+                                                                 {
+                                                                     ConnectionStrings = new ConnectionStrings
+                                                                     {
+                                                                         IdentityDatabase = $"Server =.;Database = Identity-{DateTime.UtcNow.Ticks};Trusted_Connection = True;MultipleActiveResultSets = true"
+                                                                     }
+                                                                 });
 
         protected static IDocumentDbService CouchDbService
         {
@@ -146,6 +157,7 @@ namespace Fabric.Identity.IntegrationTests
                 c.AddSingleton(LdapSettings)
                     .AddSingleton(CouchDbSettings)
                     .AddSingleton(hostingOptions)
+                    .AddSingleton(AppConfiguration)
             );
 
 
@@ -182,6 +194,7 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(options)
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
+                .AddSingleton(AppConfiguration)
             );
 
             apiBuilder.UseKestrel()
