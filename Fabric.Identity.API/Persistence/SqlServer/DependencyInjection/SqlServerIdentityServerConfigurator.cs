@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
 
         protected override void ConfigureIdentityServer()
         {
-            IdentityServerBuilder
+            IdentityServerBuilder?
                 .AddSigningCredentialAndValidationKeys(
                     AppConfiguration.SigningCertificateSettings,
                     _certificateService,
