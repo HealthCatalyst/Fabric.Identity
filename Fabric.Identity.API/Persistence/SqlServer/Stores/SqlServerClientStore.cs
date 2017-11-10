@@ -38,6 +38,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public IEnumerable<Client> GetAllClients()
         {
             var clients = _identityDbContext.Clients
+                .Include(x => x.ClientGrantTypes)
+                .Include(x => x.ClientRedirectUris)
+                .Include(x => x.ClientPostLogoutRedirectUris)
+                .Include(x => x.ClientScopes)
+                .Include(x => x.ClientSecrets)
+                .Include(x => x.ClientClaims)
+                .Include(x => x.ClientIdpRestrictions)
+                .Include(x => x.ClientCorsOrigins)
                 .Where(c => !c.IsDeleted)
                 .Select(c => c.ToModel());
 
@@ -68,16 +76,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var domainModelClient = client.ToEntity();
 
-            //TODO: set entity model properties
-
             await _identityDbContext.Clients.AddAsync(domainModelClient);
         }
 
         public async Task UpdateClientAsync(string clientId, Client client)
         {
             var clientDomainModel = client.ToEntity();
-
-            //TODO: set entity model properties
 
             _identityDbContext.Clients.Update(clientDomainModel);
             await _identityDbContext.SaveChangesAsync();
@@ -88,8 +92,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var clientToDelete =
                await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
                     c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
-
-            //TODO: set entity domain model properties
 
             clientToDelete.IsDeleted = true;
 
