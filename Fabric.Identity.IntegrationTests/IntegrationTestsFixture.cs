@@ -56,9 +56,7 @@ namespace Fabric.Identity.IntegrationTests
             InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
             CouchDbService.AddDocument(api.Name, api);
             CouchDbService.AddDocument(Client.ClientId, Client);
-            SqlServerService.ApiResources.Add(api.ToEntity());
-            SqlServerService.Clients.Add(Client.ToEntity());
-            SqlServerService.SaveChanges();
+            AddTestEntitiesToSql(Client, api);
         }
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
@@ -103,7 +101,7 @@ namespace Fabric.Identity.IntegrationTests
                                                                  {
                                                                      ConnectionStrings = new ConnectionStrings
                                                                      {
-                                                                         IdentityDatabase = $"Server =.;Database = Identity-{DateTime.UtcNow.Ticks};Trusted_Connection = True;MultipleActiveResultSets = true"
+                                                                         IdentityDatabase = $"Server =.;Database = Identity;Trusted_Connection = True;MultipleActiveResultSets = true"
                                                                      }
                                                                  });
 
@@ -153,13 +151,13 @@ namespace Fabric.Identity.IntegrationTests
             };
 
             var builder = new WebHostBuilder();
+
             builder.ConfigureServices(c =>
                 c.AddSingleton(LdapSettings)
                     .AddSingleton(CouchDbSettings)
                     .AddSingleton(hostingOptions)
                     .AddSingleton(AppConfiguration)
             );
-
 
             builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -269,6 +267,23 @@ namespace Fabric.Identity.IntegrationTests
                     new IS4.Scope(FabricIdentityConstants.IdentitySearchUsersScope)
                 }
             };
+        }
+
+        private static void AddTestEntitiesToSql(IS4.Client client, IS4.ApiResource apiResource)
+        {
+            var resources = SqlServerService.ApiResources;
+            foreach (var apiResourceToDelete in resources)
+            {
+                SqlServerService.ApiResources.Remove(apiResourceToDelete);
+            }
+            var clients = SqlServerService.Clients;
+            foreach (var clientToDelete in clients)
+            {
+                SqlServerService.Clients.Remove(clientToDelete);
+            }
+            SqlServerService.ApiResources.Add(apiResource.ToEntity());
+            SqlServerService.Clients.Add(client.ToEntity());
+            SqlServerService.SaveChanges();
         }
 
         #region IDisposable implementation
