@@ -8,14 +8,14 @@ namespace Fabric.Identity.API.Persistence
     {
         protected readonly IIdentityServerBuilder IdentityServerBuilder;
         protected readonly IServiceCollection ServiceCollection;
-        protected readonly IAppConfiguration AppConfiguration;
+        protected readonly HostingOptions HostingOptions;
         protected readonly ILogger Logger;
 
-        protected BaseIdentityServerConfigurator(IIdentityServerBuilder identityServerBuilder, IServiceCollection serviceCollection, IAppConfiguration appConfiguration, ILogger logger)
+        protected BaseIdentityServerConfigurator(IIdentityServerBuilder identityServerBuilder, IServiceCollection serviceCollection, HostingOptions hostingOptions, ILogger logger)
         {
             IdentityServerBuilder = identityServerBuilder;
             ServiceCollection = serviceCollection;
-            AppConfiguration = appConfiguration;
+            HostingOptions = hostingOptions;
             Logger = logger;
         }
 

@@ -42,18 +42,31 @@ namespace Fabric.Identity.API.Services
                 StringComparison.OrdinalIgnoreCase))
             {
                 identityServerConfigurator =
-                    new CouchDbIdentityServerConfigurator(_identityServerBuilder, _serviceCollection, _certificateService, _appConfiguration, _logger);
+                    new CouchDbIdentityServerConfigurator(_identityServerBuilder,
+                        _serviceCollection,
+                        _certificateService,
+                        _appConfiguration.SigningCertificateSettings,
+                        _appConfiguration.HostingOptions,
+                        _appConfiguration.CouchDbSettings,
+                        _logger);
             }
             else if (string.Equals(FabricIdentityConstants.StorageProviders.SqlServer, _hostingOptions.StorageProvider,
                 StringComparison.OrdinalIgnoreCase))
             {
                 identityServerConfigurator =
-                    new SqlServerIdentityServerConfigurator(_identityServerBuilder, _serviceCollection, _certificateService, _appConfiguration, _logger);
+                    new SqlServerIdentityServerConfigurator(
+                        _identityServerBuilder,
+                        _serviceCollection,
+                        _certificateService,
+                        _appConfiguration.SigningCertificateSettings,
+                        _appConfiguration.HostingOptions,
+                        _appConfiguration.ConnectionStrings,
+                        _logger);
             }
             else if (string.Equals(FabricIdentityConstants.StorageProviders.InMemory, _hostingOptions.StorageProvider,
                 StringComparison.OrdinalIgnoreCase))
             {
-                identityServerConfigurator = new InMemoryIdentityServerConfigurator(_identityServerBuilder, _serviceCollection, _appConfiguration, _logger);
+                identityServerConfigurator = new InMemoryIdentityServerConfigurator(_identityServerBuilder, _serviceCollection, _appConfiguration.HostingOptions, _logger);
             }
             else
             {
