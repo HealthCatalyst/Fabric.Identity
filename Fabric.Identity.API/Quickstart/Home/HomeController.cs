@@ -38,8 +38,6 @@ namespace IdentityServer4.Quickstart.UI
                 })
             {
                 var discoveryDocument = await discoClient.GetAsync();
-                model.IsError = discoveryDocument.IsError;
-                model.ErrorMessage = discoveryDocument.Error;
                 model.ScopesSupported = discoveryDocument?.ScopesSupported ?? new List<string>();
                 model.GrantsSupported = discoveryDocument?.GrantTypesSupported ?? new List<string>();
             }
