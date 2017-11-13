@@ -80,11 +80,14 @@ namespace Fabric.Identity.IntegrationTests
                     .BuildServiceProvider();
 
                 var builder = new DbContextOptionsBuilder<IdentityDbContext>();
-
                 builder.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase)
                     .UseInternalServiceProvider(serviceProvider);
 
-                return _sqlServerDbContext = new IdentityDbContext(builder.Options);
+                _sqlServerDbContext = new IdentityDbContext(builder.Options);
+
+                var bootstrapper = new SqlServerBootstrapper(_sqlServerDbContext, new Mock<ILogger>().Object);
+                bootstrapper.Setup();
+                return _sqlServerDbContext;
             }
         }
 
