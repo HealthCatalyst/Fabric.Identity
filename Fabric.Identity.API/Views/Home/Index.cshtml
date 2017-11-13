@@ -1,34 +1,40 @@
-﻿<div class="welcome-page">
-    <div class="row page-header">
-        <div class="col-sm-10">
-            <h1>
-                <img class="icon" src="~/icon.jpg">
-                Welcome to IdentityServer4
-                @*<small>(build {version})</small>*@
-            </h1>
-        </div>
-    </div>
-
+﻿@model Fabric.Identity.API.Models.IdentityStatusModel
+<div class="welcome-page">
     <div class="row">
-        <div class="col-sm-8">
+        <div class="col-sm-12 radiused">
+            <h1>
+                <img class="icon" src="~/images/TriFlameMultiColored.svg" width="28">
+                Welcome to Fabric.Identity
+            </h1>
             <p>
-                IdentityServer publishes a
+                Fabric.Identity publishes a
                 <a href="~/.well-known/openid-configuration">discovery document</a>
                 where you can find metadata and links to all the endpoints, key material, etc.
-            </p>
-        </div>
-        <div class="col-sm-8">
-            <p>
-                Click <a href="~/grants">here</a> to manage your stored grants.
+                Listed below are the current Scopes and Grants that are supported, in addition to the number of registered client applications.
             </p>
         </div>
     </div>
     <div class="row">
-        <div class="col-sm-8">
+        <div class="col-sm-12 radiused">
+            <h3>Scopes Supported:</h3>
+            <ul>
+            @foreach (var scope in Model.ScopesSupported)
+            {
+                <li>@scope</li> 
+            }
+            </ul>
+            <h3>Grants Supported:</h3>
+            <ul>
+            @foreach (var grant in Model.GrantsSupported)
+            {
+                <li>@grant</li>
+            }
+            </ul>
             <p>
-                Here are links to the
-                <a href="https://github.com/identityserver/IdentityServer4">source code repository</a>,
-                and <a href="https://github.com/identityserver/IdentityServer4.Samples">ready to use samples</a>.
+                <h3>Clients Registered: @Model.ClientCount</h3>
+            </p>
+            <p>
+                Click <a href="~/grants">here</a> to manage your stored grants.
             </p>
         </div>
     </div>
