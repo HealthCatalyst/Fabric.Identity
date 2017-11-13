@@ -19,6 +19,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
         public bool Setup()
         {
+            // TODO: generate DB here
             return true;
         }
 
