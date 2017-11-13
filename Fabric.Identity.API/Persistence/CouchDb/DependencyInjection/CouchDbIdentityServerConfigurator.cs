@@ -13,38 +13,44 @@ namespace Fabric.Identity.API.Persistence.CouchDb.DependencyInjection
     public class CouchDbIdentityServerConfigurator : BaseIdentityServerConfigurator
     {
         private readonly ICertificateService _certificateService;
+        private readonly ICouchDbSettings _couchDbSettings;
+        private readonly SigningCertificateSettings _signingCertificateSettings;
 
         public CouchDbIdentityServerConfigurator(
             IIdentityServerBuilder identityServerBuilder,
             IServiceCollection serviceCollection,
             ICertificateService certificateService,
-            IAppConfiguration appConfiguration,
-            ILogger logger) : base(identityServerBuilder, serviceCollection, appConfiguration, logger)
+            SigningCertificateSettings signingCertificateSettings,
+            HostingOptions hostingOptions,
+            ICouchDbSettings couchDbSettings,
+            ILogger logger) : base(identityServerBuilder, serviceCollection, hostingOptions, logger)
         {
             _certificateService = certificateService;
+            _signingCertificateSettings = signingCertificateSettings;
+            _couchDbSettings = couchDbSettings;
         }
 
         protected override void ConfigureInternalStores()
         {
+            ServiceCollection.TryAddSingleton(_couchDbSettings);
             ServiceCollection.AddSingleton<IDocumentDbService, CouchDbAccessService>();
+            ServiceCollection.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             ServiceCollection.AddTransient<IApiResourceStore, CouchDbApiResourceStore>();
             ServiceCollection.AddTransient<IIdentityResourceStore, CouchDbIdentityResourceStore>();
             ServiceCollection.AddTransient<IClientManagementStore, CouchDbClientStore>();
             ServiceCollection.AddTransient<IUserStore, CouchDbUserStore>();
-            ServiceCollection.AddScopedDecorator<IDocumentDbService, AuditingDocumentDbService>();
             ServiceCollection.AddTransient<IDbBootstrapper, CouchDbBootstrapper>();
             ServiceCollection.AddTransient<IdentityServer4.Stores.IPersistedGrantStore, CouchDbPersistedGrantStore>();
-            ServiceCollection.TryAddSingleton<ICouchDbSettings>(AppConfiguration.CouchDbSettings);
         }
 
         protected override void ConfigureIdentityServer()
         {
             IdentityServerBuilder
                 .AddSigningCredentialAndValidationKeys(
-                    AppConfiguration.SigningCertificateSettings,
+                    _signingCertificateSettings,
                     _certificateService,
                     Logger)
-                .AddTestUsersIfConfigured(AppConfiguration.HostingOptions)
+                .AddTestUsersIfConfigured(HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<CouchDbResourceStore>()
                 .AddClientStore<CouchDbClientStore>();

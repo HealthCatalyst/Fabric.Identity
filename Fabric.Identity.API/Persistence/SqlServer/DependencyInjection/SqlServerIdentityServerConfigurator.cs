@@ -14,22 +14,28 @@ namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
     public class SqlServerIdentityServerConfigurator : BaseIdentityServerConfigurator
     {
         private readonly ICertificateService _certificateService;
+        private readonly IConnectionStrings _connectionStrings;
+        private readonly SigningCertificateSettings _signingCertificateSettings;
 
         public SqlServerIdentityServerConfigurator(
             IIdentityServerBuilder identityServerBuilder,
             IServiceCollection serviceCollection,
             ICertificateService certificateService,
-            IAppConfiguration appConfiguration,
+            SigningCertificateSettings signingCertificateSettings,
+            HostingOptions hostingOptions,
+            IConnectionStrings connectionStrings,
             ILogger logger)
-            : base(identityServerBuilder, serviceCollection, appConfiguration, logger)
+            : base(identityServerBuilder, serviceCollection, hostingOptions, logger)
         {
             _certificateService = certificateService;
+            _signingCertificateSettings = signingCertificateSettings;
+            _connectionStrings = connectionStrings;
         }
 
         protected override void ConfigureInternalStores()
         {
-            ServiceCollection.TryAddSingleton<IConnectionStrings>(AppConfiguration.ConnectionStrings);
-            ServiceCollection.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase));
+            ServiceCollection.TryAddSingleton(_connectionStrings);
+            ServiceCollection.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(_connectionStrings.IdentityDatabase));
             ServiceCollection.AddSingleton<IIdentityDbContext, IdentityDbContext>();
             ServiceCollection.AddTransient<IApiResourceStore, SqlServerApiResourceStore>();
             ServiceCollection.AddTransient<IIdentityResourceStore, SqlServerIdentityResourceStore>();
@@ -43,10 +49,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
         {
             IdentityServerBuilder?
                 .AddSigningCredentialAndValidationKeys(
-                    AppConfiguration.SigningCertificateSettings,
+                    _signingCertificateSettings,
                     _certificateService,
                     Logger)
-                .AddTestUsersIfConfigured(AppConfiguration.HostingOptions)
+                .AddTestUsersIfConfigured(HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<SqlServerResourceStore>()
                 .AddClientStore<SqlServerClientStore>();
