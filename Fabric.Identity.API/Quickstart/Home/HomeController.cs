@@ -2,9 +2,14 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using System.Collections.Generic;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Persistence;
+using IdentityModel.Client;
 
 namespace IdentityServer4.Quickstart.UI
 {
@@ -12,15 +17,35 @@ namespace IdentityServer4.Quickstart.UI
     public class HomeController : Controller
     {
         private readonly IIdentityServerInteractionService _interaction;
+        private readonly IAppConfiguration _appConfiguration;
+        private readonly IClientManagementStore _clientManagementStore;
 
-        public HomeController(IIdentityServerInteractionService interaction)
+        public HomeController(IIdentityServerInteractionService interaction, IAppConfiguration appConfiguration, IClientManagementStore clientStore)
         {
             _interaction = interaction;
+            _appConfiguration = appConfiguration;
+            _clientManagementStore = clientStore;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var model = new IdentityStatusModel();
+            var discoPolicy = new DiscoveryPolicy { ValidateIssuerName = false };
+            using (var discoClient =
+                new DiscoveryClient(_appConfiguration.IdentityServerConfidentialClientSettings.Authority)
+                {
+                    Policy = discoPolicy
+                })
+            {
+                var discoveryDocument = await discoClient.GetAsync();
+                model.IsError = discoveryDocument.IsError;
+                model.ErrorMessage = discoveryDocument.Error;
+                model.ScopesSupported = discoveryDocument?.ScopesSupported ?? new List<string>();
+                model.GrantsSupported = discoveryDocument?.GrantTypesSupported ?? new List<string>();
+            }
+            model.ClientCount = _clientManagementStore.GetClientCount();
+
+            return View(model);
         }
 
         /// <summary>
