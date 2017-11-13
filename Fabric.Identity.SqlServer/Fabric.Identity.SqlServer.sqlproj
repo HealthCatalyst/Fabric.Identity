@@ -57,5 +57,27 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="Tables" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Tables\ApiResources.sql" />
+    <Build Include="Tables\Clients.sql" />
+    <Build Include="Tables\IdentityResources.sql" />
+    <Build Include="Tables\ApiClaims.sql" />
+    <Build Include="Tables\ApiScopes.sql" />
+    <Build Include="Tables\ApiSecrets.sql" />
+    <Build Include="Tables\ClientClaims.sql" />
+    <Build Include="Tables\ClientCorsOrigins.sql" />
+    <Build Include="Tables\ClientGrantTypes.sql" />
+    <Build Include="Tables\ClientIdPRestrictions.sql" />
+    <Build Include="Tables\ClientPostLogoutRedirectUris.sql" />
+    <Build Include="Tables\ClientRedirectUris.sql" />
+    <Build Include="Tables\ClientScopes.sql" />
+    <Build Include="Tables\ClientSecrets.sql" />
+    <Build Include="Tables\IdentityClaims.sql" />
+    <Build Include="Tables\ApiScopeClaims.sql" />
+    <Build Include="Tables\Users.sql" />
+    <Build Include="Tables\UserLogins.sql" />
+    <Build Include="Tables\PersistedGrants.sql" />
   </ItemGroup>
 </Project>
