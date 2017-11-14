@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {  
@@ -402,11 +403,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 entity.Property(e => e.LoginDate).HasColumnType("datetime");
 
-                //entity.HasOne(d => d.User)
-                //    .WithMany(p => p.UserLogins)                    
-                //    .HasForeignKey(d => d.UserId)                    
-                //    .OnDelete(DeleteBehavior.Restrict)
-                //    .HasConstraintName("FK_UserLogins_Users_Id");
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserLogins)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_UserLogins_Users_Id");
             });
 
             modelBuilder.Entity<User>(entity =>

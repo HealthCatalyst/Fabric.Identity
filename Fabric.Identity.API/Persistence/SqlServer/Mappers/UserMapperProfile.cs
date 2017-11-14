@@ -14,8 +14,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
                 .ForMember(x => x.LastLoginDatesByClient,
                     opt => opt.MapFrom(src => src.UserLogins                                                
                         .ToDictionary(l => l.ClientId, l => l.LoginDate)))
-                .ForMember(x => x.Claims, opt => opt.MapFrom(src => src.Claims
-                    .Select(x => new Claim(x.Type, x.IdentityResource.Name))));
+                //.ForMember(x => x.Claims, opt => opt.MapFrom(src => src.Claims
+                //    .Select(x => new Claim(x.Type, x.IdentityResource.Name))))
+                    ;
 
             //model to entity
             CreateMap<Models.User, User>(MemberList.Source)
