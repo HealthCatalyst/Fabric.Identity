@@ -18,53 +18,27 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public void AddResource(ApiResource resource)
         {
-            var resourceEntity = ApiResourceMapper.ToEntity(resource);
-
-            IdentityDbContext.ApiResources.Add(resourceEntity);
-            IdentityDbContext.SaveChanges();
+            AddResourceAsync(resource).Wait();
         }
 
         public void UpdateResource(string id, ApiResource resource)
         {
-            var savedResource = IdentityDbContext.ApiResources
-                .SingleOrDefault(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
-                            && !r.IsDeleted);
-
-            var resourceEntity = resource.ToEntity();
-            resourceEntity.CreatedDateTimeUtc = savedResource.CreatedDateTimeUtc;
-            resourceEntity.CreatedBy = savedResource.CreatedBy;
-            
-            IdentityDbContext.SaveChanges();
+            UpdateResourceAsync(id, resource).Wait();
         }
 
         public ApiResource GetResource(string id)
         {
-            var apiResource = IdentityDbContext.ApiResources
-                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
-                            && !r.IsDeleted)
-                .Include(x => x.ApiSecrets)
-                .Include(x => x.ApiScopes)
-                .ThenInclude(s => s.ApiScopeClaims)
-                .Include(x => x.ApiClaims)
-                .FirstOrDefault();
-
-            return apiResource?.ToModel();
+            return GetResourceAsync(id).Result;
         }
 
         public void DeleteResource(string id)
         {
-            var apiResourceToDelete =
-                IdentityDbContext.ApiResources.FirstOrDefault(a =>
-                    a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
-
-            apiResourceToDelete.IsDeleted = true;
-
-            IdentityDbContext.SaveChanges();
+            DeleteResourceAsync(id).Wait();
         }
 
         public async Task AddResourceAsync(ApiResource resource)
         {
-            var resourceEntity = ApiResourceMapper.ToEntity(resource);
+            var resourceEntity = resource.ToEntity();
             
             IdentityDbContext.ApiResources.Add(resourceEntity);
             await IdentityDbContext.SaveChangesAsync();
@@ -72,18 +46,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateResourceAsync(string id, ApiResource resource)
         {
-            
             var savedResource = await IdentityDbContext.ApiResources
                 .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
                             && !r.IsDeleted)
                            .SingleOrDefaultAsync();
 
-            //savedResource.ApiClaims = resource.UserClaims.Select(x => new ApiClaim {Type = x}).ToList();
-            
-
-
-
-
+           resource.ToEntity(savedResource);
 
             IdentityDbContext.ApiResources.Update(savedResource);
             await IdentityDbContext.SaveChangesAsync();

@@ -83,9 +83,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateClientAsync(string clientId, Client client)
         {
-            var clientDomainModel = client.ToEntity();
+            var existingClient = await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
+                c.ClientId.Equals(client.ClientId, StringComparison.OrdinalIgnoreCase));
 
-            _identityDbContext.Clients.Update(clientDomainModel);
+            client.ToEntity(existingClient);
+
+            _identityDbContext.Clients.Update(existingClient);
             await _identityDbContext.SaveChangesAsync();
         }
 

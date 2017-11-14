@@ -46,9 +46,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
         {
-            var identityResourceEntity = resource.ToEntity();
+            var existingResource = await IdentityDbContext.IdentityResources
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                            && !r.IsDeleted)
+                .SingleOrDefaultAsync();
 
-            IdentityDbContext.IdentityResources.Update(identityResourceEntity);
+           resource.ToEntity(existingResource);
+            
+            IdentityDbContext.IdentityResources.Update(existingResource);
             await IdentityDbContext.SaveChangesAsync();
         }
 

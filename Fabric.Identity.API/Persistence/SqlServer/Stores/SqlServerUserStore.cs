@@ -66,9 +66,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateUserAsync(User user)
         {
-            var userEntity = user.ToEntity();
+            var existingUser = await _identityDbContext.Users
+                .Where(u => u.SubjectId.Equals(user.SubjectId, StringComparison.OrdinalIgnoreCase)
+                            && u.ProviderName.Equals(user.ProviderName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefaultAsync();
 
-            _identityDbContext.Users.Update(userEntity);
+            user.ToEntity(existingUser);
+
+            _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
         }
     }
