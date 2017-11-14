@@ -254,7 +254,7 @@ namespace Fabric.Identity.IntegrationTests
 
             var builder = new DbContextOptionsBuilder<IdentityDbContext>();
 
-            builder.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase)
+            builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
                 .UseInternalServiceProvider(serviceProvider);
 
             using (var identityContext = new IdentityDbContext(builder.Options))
