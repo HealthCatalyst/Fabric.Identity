@@ -412,7 +412,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("Users");
+                entity.ToTable("Users")
+                .HasKey(e => e.Id);
 
                 entity.Property(e => e.CreatedBy)
                     .IsRequired()
@@ -441,6 +442,26 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 entity.Property(e => e.Username)
                     .IsRequired()
                     .HasMaxLength(200);
+
+                entity.Property(p => p.ComputedUserId)
+                    .HasComputedColumnSql("SubjectId + ':' + ProviderName")
+                    .HasColumnName("ComputedUserId");
+            });
+
+            modelBuilder.Entity<UserClaim>(entity =>
+            {
+                entity.ToTable("UserClaims");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("IX_UserClaims_UserId");
+
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(e => e.Claims)
+                    .HasForeignKey(e => e.UserId);
             });
 
             modelBuilder.Entity<PersistedGrant>(grant =>
