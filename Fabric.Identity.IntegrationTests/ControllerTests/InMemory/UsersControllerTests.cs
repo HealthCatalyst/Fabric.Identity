@@ -32,9 +32,9 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         private readonly string _usersSearchApiBaseUrl = "/api/users";
         private readonly string _identityProviderSearchBaseUrl = "/api/users/search";
 
-        private void CreateNewUser(User user)
+        private async Task CreateNewUser(User user)
         {
-            UserStore.AddUserAsync(user);
+           await UserStore.AddUserAsync(user);
         }
 
         private static readonly Random Random = new Random();
@@ -49,7 +49,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             return path.Substring(0, stringLength);
         }
 
-        private string CreateUsersAndQuery(int numberToCreate, string clientId, bool halfWithoutLoginForClient = false)
+        private async Task<string> CreateUsersAndQuery(int numberToCreate, string clientId, bool halfWithoutLoginForClient = false)
         {
             var queryBuilder = new StringBuilder($"?clientId={clientId}&userIds=");
 
@@ -71,7 +71,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
                     user.SetLastLoginDateForClient(clientId);
                 }
 
-                CreateNewUser(user);
+                await CreateNewUser(user);
                 var seperator = i == numberToCreate ? string.Empty : ",";
                 queryBuilder.Append($"{user.SubjectId}:{user.ProviderName}{seperator}");
             }
@@ -83,7 +83,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task UsersController_Get_FindsUsersByDocumentId_LastLoginForClientSet()
         {
             var numberOfUsers = 10;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName);
+            var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName);
             var response =
                 await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
@@ -102,7 +102,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task UsersController_Get_FindUsersByDocumentId_InvalidClientId_BadRequest()
         {
             var numberOfUsers = 1;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, "foo");
+            var usersQuery = await CreateUsersAndQuery(numberOfUsers, "foo");
             var response =
                 await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
@@ -114,7 +114,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task UsersController_Get_FindUsersByDocumentId_LastLoginForClientNotSet()
         {
             var numberOfUsers = 10;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName, true);
+            var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName, true);
             var response =
                 await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
@@ -130,7 +130,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task UsersController_Get_FindUsersByDocumentId_NoDocumentIds_NotFound()
         {
             var numberOfUsers = 0;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, TestClientName);
+            var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName);
             var response =
                 await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
@@ -142,7 +142,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task UsersController_Get_FindUsersByDocumentId_NoClientId_BadRequest()
         {
             var numberOfUsers = 1;
-            var usersQuery = CreateUsersAndQuery(numberOfUsers, string.Empty);
+            var usersQuery = await CreateUsersAndQuery(numberOfUsers, string.Empty);
             var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);

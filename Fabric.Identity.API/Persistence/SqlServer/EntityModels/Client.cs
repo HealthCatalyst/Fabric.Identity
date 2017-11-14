@@ -17,7 +17,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
             ClientRedirectUris = new HashSet<ClientRedirectUri>();
             ClientScopes = new HashSet<ClientScope>();
             ClientSecrets = new HashSet<ClientSecret>();
-            UserLogins = new HashSet<UserLogin>();
         }
 
         public int Id { get; set; }
@@ -64,6 +63,5 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public virtual ICollection<ClientRedirectUri> ClientRedirectUris { get; set; }
         public virtual ICollection<ClientScope> ClientScopes { get; set; }
         public virtual ICollection<ClientSecret> ClientSecrets { get; set; }
-        public virtual ICollection<UserLogin> UserLogins { get; set; }
     }
 }

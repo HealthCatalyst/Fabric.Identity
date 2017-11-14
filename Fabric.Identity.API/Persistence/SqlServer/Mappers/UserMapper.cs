@@ -7,7 +7,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
     {
         static UserMapper()
         {
-            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<ClientMapperProfile>())
+            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<UserMapperProfile>())
                 .CreateMapper();
         }
 

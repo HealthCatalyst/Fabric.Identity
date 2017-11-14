@@ -116,6 +116,23 @@ namespace Fabric.Identity.IntegrationTests
             }
         }
 
+        protected static IdentityDbContext IdentityDbContext
+        {
+            get
+            {
+                var serviceProvider = new ServiceCollection()
+                    .AddEntityFrameworkSqlServer()
+                    .BuildServiceProvider();
+
+                var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+
+                builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
+                    .UseInternalServiceProvider(serviceProvider);
+
+                return new IdentityDbContext(builder.Options);
+            }
+        }
+
         public HttpClient HttpClient { get; }
 
         private TestServer CreateIdentityTestServer(string storageProvider)
@@ -248,37 +265,22 @@ namespace Fabric.Identity.IntegrationTests
 
         private static void AddTestEntitiesToSql(IS4.Client client, IS4.ApiResource apiResource)
         {
-            var serviceProvider = new ServiceCollection()
-                .AddEntityFrameworkSqlServer()
-                .BuildServiceProvider();
-
-            var builder = new DbContextOptionsBuilder<IdentityDbContext>();
-
-            builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
-                .UseInternalServiceProvider(serviceProvider);
-
-            using (var identityContext = new IdentityDbContext(builder.Options))
+            using (var identityContext = IdentityDbContext)
             {
-                var resources = identityContext.ApiResources;
-                foreach (var apiResourceToDelete in resources)
-                {
-                    identityContext.ApiResources.Remove(apiResourceToDelete);
-                }
-                var clients = identityContext.Clients;
-                foreach (var clientToDelete in clients)
-                {
-                    identityContext.Clients.Remove(clientToDelete);
-                }
-                var identityResources = identityContext.IdentityResources;
-                foreach (var identityResourceToDelete in identityResources)
-                {
-                    identityContext.IdentityResources.Remove(identityResourceToDelete);
-                }
+                identityContext.Database.ExecuteSqlCommand(DeleteDataSql);
                 identityContext.ApiResources.Add(apiResource.ToEntity());
                 identityContext.Clients.Add(client.ToEntity());
                 identityContext.SaveChanges();
             }
         }
+
+        private static readonly string DeleteDataSql =
+            @"DELETE FROM ApiResources; 
+              DELETE FROM Clients;
+              DELETE FROM IdentityResources;
+              DELETE FROM UserLogins;
+              DELETE FROM UserClaims;
+              DELETE FROM Users";
 
         #region IDisposable implementation
 

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public class User
+    public class User : ITrackable
     {
         public User()
         {
-          //  Claims = new HashSet<IdentityClaim>();
+            Claims = new HashSet<UserClaim>();
             UserLogins = new HashSet<UserLogin>();            
         }
 
@@ -22,8 +22,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public DateTime? ModifiedDateTimeUtc { get; set; }
         public string CreatedBy { get; set; }
         public string ModifiedBy { get; set; }
+        public string ComputedUserId { get; set; }
 
-       // public virtual ICollection<IdentityClaim> Claims { get; set; }
+        public virtual ICollection<UserClaim> Claims { get; set; }
         public virtual ICollection<UserLogin> UserLogins { get; set; }
     }
 }

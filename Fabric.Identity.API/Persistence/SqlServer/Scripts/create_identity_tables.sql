@@ -230,8 +230,21 @@ CREATE TABLE [Users](
 	[ModifiedDateTimeUtc] datetime	NULL,
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
+	[ComputedUserId] AS SubjectId + ':' + ProviderName,
 	CONSTRAINT [PK_[Users] PRIMARY KEY ([Id]),
 );
+
+GO
+
+CREATE TABLE [UserClaims](
+	[Id] int NOT NULL IDENTITY,
+	[UserId] int NOT NULL,
+	[Type] nvarchar(200) NOT NULL,
+	CONSTRAINT [PK_UserClaims] PRIMARY KEY ([Id]),
+	CONSTRAINT [FK_UserClaims_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
+);
+
+GO
 
 CREATE TABLE [UserLogins](
 	[Id] int NOT NULL IDENTITY,

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
@@ -11,8 +9,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         {
             IdentityClaims = new HashSet<IdentityClaim>();
         }
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+      
         public int Id { get; set; }
         public string Description { get; set; }
         public string DisplayName { get; set; }
