@@ -27,7 +27,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             var query =
                 from identityResource in IdentityDbContext.IdentityResources
-                where scopes.Contains(identityResource.Name)
+                where scopes.Contains(identityResource.Name) && !identityResource.IsDeleted
                 select identityResource;
 
             var identityResources = await query
@@ -43,7 +43,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             var query =
                 from api in IdentityDbContext.ApiResources
-                where api.ApiScopes.Any(x => scopes.Contains(x.Name))
+                where api.ApiScopes.Any(x => scopes.Contains(x.Name)) && !api.IsDeleted
                 select api;
 
             var apiResources = await query
@@ -72,9 +72,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<Resources> GetAllResources()
         {
             var identity = IdentityDbContext.IdentityResources
+                .Where(i => !i.IsDeleted)
                 .Include(x => x.IdentityClaims);
 
             var apis = IdentityDbContext.ApiResources
+                .Where(i => !i.IsDeleted)
                 .Include(x => x.ApiSecrets)
                 .Include(x => x.ApiScopes)
                 .ThenInclude(s => s.ApiScopeClaims)

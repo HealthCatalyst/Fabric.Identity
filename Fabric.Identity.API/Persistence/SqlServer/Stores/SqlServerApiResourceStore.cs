@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
@@ -38,26 +39,29 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task AddResourceAsync(ApiResource resource)
         {
             var resourceEntity = resource.ToEntity();
-
-            //TODO: set entity properties
-
-            await IdentityDbContext.ApiResources.AddAsync(resourceEntity);
+            
+            IdentityDbContext.ApiResources.Add(resourceEntity);
+            await IdentityDbContext.SaveChangesAsync();
         }
 
         public async Task UpdateResourceAsync(string id, ApiResource resource)
         {
-            var resourceEntity = resource.ToEntity();
+            var savedResource = await IdentityDbContext.ApiResources
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                            && !r.IsDeleted)
+                           .SingleOrDefaultAsync();
 
-            //TODO: set entity properties
+           resource.ToEntity(savedResource);
 
-            IdentityDbContext.ApiResources.Update(resourceEntity);
+            IdentityDbContext.ApiResources.Update(savedResource);
             await IdentityDbContext.SaveChangesAsync();
         }
 
         public async Task<ApiResource> GetResourceAsync(string id)
         {
             var apiResource = await IdentityDbContext.ApiResources
-                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase))
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                            && !r.IsDeleted)
                 .Include(x => x.ApiSecrets)
                 .Include(x => x.ApiScopes)
                 .ThenInclude(s => s.ApiScopeClaims)
@@ -72,8 +76,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var apiResourceToDelete =
                 await IdentityDbContext.ApiResources.FirstOrDefaultAsync(a =>
                     a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
-
-            //TODO: set other entity properties
 
             apiResourceToDelete.IsDeleted = true;
 

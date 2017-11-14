@@ -34,9 +34,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.DependencyInjection
 
         protected override void ConfigureInternalStores()
         {
-            ServiceCollection.TryAddSingleton(_connectionStrings);
+            ServiceCollection.TryAddSingleton<IConnectionStrings>(_connectionStrings);
             ServiceCollection.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(_connectionStrings.IdentityDatabase));
-            ServiceCollection.AddSingleton<IIdentityDbContext, IdentityDbContext>();
+            ServiceCollection.AddTransient<IIdentityDbContext, IdentityDbContext>();
             ServiceCollection.AddTransient<IApiResourceStore, SqlServerApiResourceStore>();
             ServiceCollection.AddTransient<IIdentityResourceStore, SqlServerIdentityResourceStore>();
             ServiceCollection.AddTransient<IClientManagementStore, SqlServerClientStore>();

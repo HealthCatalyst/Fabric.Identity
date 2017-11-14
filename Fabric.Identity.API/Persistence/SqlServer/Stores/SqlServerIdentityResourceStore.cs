@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
@@ -39,24 +40,27 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var resourceEntity = resource.ToEntity();
 
-            //TODO: set entity properties
-
-            await IdentityDbContext.IdentityResources.AddAsync(resourceEntity);
+            IdentityDbContext.IdentityResources.Add(resourceEntity);
+            await IdentityDbContext.SaveChangesAsync();
         }
 
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
         {
-            var identityResourceEntity = resource.ToEntity();
+            var existingResource = await IdentityDbContext.IdentityResources
+                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                            && !r.IsDeleted)
+                .SingleOrDefaultAsync();
 
-            //TODO: set entity properties
-
-            IdentityDbContext.IdentityResources.Update(identityResourceEntity);
+           resource.ToEntity(existingResource);
+            
+            IdentityDbContext.IdentityResources.Update(existingResource);
             await IdentityDbContext.SaveChangesAsync();
         }
 
         public async Task<IdentityResource> GetResourceAsync(string id)
         {
             var identityResourceEntity = await IdentityDbContext.IdentityResources
+                .Where(i => !i.IsDeleted)
                 .FirstOrDefaultAsync(i => i.Name.Equals(id, StringComparison.CurrentCultureIgnoreCase));
 
             return identityResourceEntity?.ToModel();
@@ -67,8 +71,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var identityResourceToDelete =
                 await IdentityDbContext.IdentityResources.FirstOrDefaultAsync(a =>
                     a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
-
-            //TODO: set other entity properties
 
             identityResourceToDelete.IsDeleted = true;
 

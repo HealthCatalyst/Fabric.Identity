@@ -22,7 +22,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = await _identityDbContext.Users
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+              //  .Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             return userEntity.ToModel();
@@ -32,7 +32,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = await _identityDbContext.Users
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+                //.Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
@@ -44,7 +44,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntities = await _identityDbContext.Users
                 .Where(u => subjectIds.Contains(u.SubjectId))
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+                //.Include(u => u.Claims)
                 .ToArrayAsync();
 
             return userEntities.Select(u => u.ToModel());
@@ -66,9 +66,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateUserAsync(User user)
         {
-            var userEntity = user.ToEntity();
+            var existingUser = await _identityDbContext.Users
+                .Where(u => u.SubjectId.Equals(user.SubjectId, StringComparison.OrdinalIgnoreCase)
+                            && u.ProviderName.Equals(user.ProviderName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefaultAsync();
 
-            _identityDbContext.Users.Update(userEntity);
+            user.ToEntity(existingUser);
+
+            _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
         }
     }

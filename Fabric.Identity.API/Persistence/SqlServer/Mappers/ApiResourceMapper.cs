@@ -32,5 +32,16 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
         {
             return model == null ? null : Mapper.Map<ApiResource>(model);
         }
+
+        /// <summary>
+        /// Maps a model to an existing entity instance
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public static void ToEntity(this IdentityServer4.Models.ApiResource model, ApiResource entity)
+        {
+            Mapper.Map(model, entity);
+        }
     }
 }

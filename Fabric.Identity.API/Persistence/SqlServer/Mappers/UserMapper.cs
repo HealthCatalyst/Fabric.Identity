@@ -13,14 +13,34 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
 
         internal static IMapper Mapper { get; }
 
-        public static User ToModel(this EntityModels.User user)
+        /// <summary>
+        /// Maps an entity to a model
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public static User ToModel(this EntityModels.User entity)
         {
-            return Mapper.Map<User>(user);
+            return Mapper.Map<User>(entity);
         }
 
-        public static EntityModels.User ToEntity(this User user)
+        /// <summary>
+        /// Maps a model to an entity 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public static EntityModels.User ToEntity(this User model)
         {
-            return Mapper.Map<EntityModels.User>(user);
+            return Mapper.Map<EntityModels.User>(model);
+        }
+
+        /// <summary>
+        /// Maps a model to an existing entity instance
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="entity"></param>
+        public static void ToEntity(this User model, EntityModels.User entity)
+        {
+            Mapper.Map(model, entity);
         }
     }
 }

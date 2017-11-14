@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
-{
+{  
+
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
         public IdentityDbContext(DbContextOptions<IdentityDbContext> options)
@@ -20,9 +21,25 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         public DbSet<User> Users { get; set; }
         public DbSet<PersistedGrant> PersistedGrants { get; set; }
 
-        public Task<int> SaveChangesAsync()
+        public async Task<int> SaveChangesAsync()
         {
-            return base.SaveChangesAsync();
+            OnSaveChanges();
+
+            try
+            {
+                return await base.SaveChangesAsync();
+            }
+            catch (DbUpdateException e)
+            {
+                foreach (var entityEntry in e.Entries)
+                {
+
+                }
+
+                Console.WriteLine(e);
+                throw;
+            }          
+            
         }
 
         private void OnSaveChanges()
@@ -43,7 +60,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     trackableEntity.CreatedDateTimeUtc = DateTime.UtcNow;
                     trackableEntity.CreatedBy = "placeholder";
                 }
-                if (entityEntry.State == EntityState.Modified)
+                else if (entityEntry.State == EntityState.Modified)
                 {
                     trackableEntity.ModifiedDateTimeUtc = DateTime.UtcNow;
                 }
@@ -335,7 +352,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<IdentityClaim>(entity =>
             {
-                entity.ToTable("IdentityClaimss");
+                entity.ToTable("IdentityClaims");
 
                 entity.HasIndex(e => e.IdentityResourceId)
                     .HasName("IX_IdentityClaims_IdentityResourceId");
@@ -352,6 +369,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
             modelBuilder.Entity<IdentityResource>(entity =>
             {
                 entity.ToTable("IdentityResources");
+                entity.HasKey("Id");
 
                 entity.HasIndex(e => e.Name)
                     .HasName("IX_IdentityResources_Name")
@@ -361,6 +379,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .IsRequired()
                     .HasMaxLength(100);
 
+                
                 entity.Property(e => e.CreatedDateTimeUtc).HasColumnType("datetime");
 
                 entity.Property(e => e.Description).HasMaxLength(1000);
