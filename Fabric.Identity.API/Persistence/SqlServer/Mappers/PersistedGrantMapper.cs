@@ -35,11 +35,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
         }
 
         /// <summary>
-        /// Updates an entity from a model.
+        /// Maps a model to an existing entity instance.
         /// </summary>
         /// <param name="model">The model.</param>
         /// <param name="entity">The entity.</param>
-        public static void UpdateEntity(this PersistedGrant model, Entities.PersistedGrant entity)
+        public static void ToEntity(this PersistedGrant model, Entities.PersistedGrant entity)
         {
             Mapper.Map(model, entity);
         }
