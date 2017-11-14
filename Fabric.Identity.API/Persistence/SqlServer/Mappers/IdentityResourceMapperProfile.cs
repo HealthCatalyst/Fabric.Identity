@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using AutoMapper;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using IdentityResource = Fabric.Identity.API.Persistence.SqlServer.EntityModels.IdentityResource; 
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
@@ -11,11 +12,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
             // entity to model
             CreateMap<IdentityResource, IdentityServer4.Models.IdentityResource>(MemberList.Destination)
                 .ConstructUsing(src => new IdentityServer4.Models.IdentityResource())
-                .ForMember(x => x.UserClaims, opt => opt.MapFrom(src => src.IdentityClaims.Select(x => x)));
+                .ForMember(x => x.UserClaims, opt => opt.MapFrom(src => src.IdentityClaims.Select(x => x.Type)));
 
             // model to entity
             CreateMap<IdentityServer4.Models.IdentityResource, IdentityResource>(MemberList.Source)
-                .ForMember(x => x.IdentityClaims, opts => opts.MapFrom(src => src.UserClaims.Select(x => x)));
+                .ForMember(x => x.IdentityClaims, opts => opts.MapFrom(src => src.UserClaims.Select(x => new IdentityClaim() {Type = x})));
         }
     }
 }

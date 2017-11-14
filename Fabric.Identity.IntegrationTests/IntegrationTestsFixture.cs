@@ -9,6 +9,7 @@ using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
@@ -41,7 +42,7 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
         private static IConnectionStrings _connectionStrings;
-        private static IIdentityDbContext _sqlServerDbContext;
+        
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
         private static IDocumentDbService _dbService;
@@ -64,31 +65,6 @@ namespace Fabric.Identity.IntegrationTests
             _identityTestServer = CreateIdentityTestServer(storageProvider);
             _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
             HttpClient = GetHttpClient();
-        }
-
-        private static IIdentityDbContext SqlServerService
-        {
-            get
-            {
-                if (_sqlServerDbContext != null)
-                {
-                    return _sqlServerDbContext;
-                }
-
-                var serviceProvider = new ServiceCollection()
-                    .AddEntityFrameworkSqlServer()
-                    .BuildServiceProvider();
-
-                var builder = new DbContextOptionsBuilder<IdentityDbContext>();
-                builder.UseSqlServer(_connectionStrings.IdentityDatabase)
-                    .UseInternalServiceProvider(serviceProvider);
-
-                _sqlServerDbContext = new IdentityDbContext(builder.Options);
-
-                var bootstrapper = new SqlServerBootstrapper(_sqlServerDbContext, new Mock<ILogger>().Object);
-                bootstrapper.Setup();
-                return _sqlServerDbContext;
-            }
         }
 
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
@@ -272,19 +248,41 @@ namespace Fabric.Identity.IntegrationTests
 
         private static void AddTestEntitiesToSql(IS4.Client client, IS4.ApiResource apiResource)
         {
-            var resources = SqlServerService.ApiResources;
-            foreach (var apiResourceToDelete in resources)
+            var serviceProvider = new ServiceCollection()
+                .AddEntityFrameworkSqlServer()
+                .BuildServiceProvider();
+
+            var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+
+            builder.UseSqlServer(AppConfiguration.ConnectionStrings.IdentityDatabase)
+                .UseInternalServiceProvider(serviceProvider);
+
+            using (var identityContext = new IdentityDbContext(builder.Options))
             {
-                SqlServerService.ApiResources.Remove(apiResourceToDelete);
+                var resources = identityContext.ApiResources;
+                foreach (var apiResourceToDelete in resources)
+                {
+                    identityContext.ApiResources.Remove(apiResourceToDelete);
+                }
+                var clients = identityContext.Clients;
+                foreach (var clientToDelete in clients)
+                {
+                    identityContext.Clients.Remove(clientToDelete);
+                }
+
+                var identityresource = new IdentityServer4.Models.IdentityResource()
+                {
+                    Description = "test",
+                    Name = "testing..fdsfdsf",
+                    DisplayName = "bdfklsdjfkdlsf",
+                    UserClaims = new List<string>() { "blah blah"}
+                };
+
+                identityContext.IdentityResources.Add(identityresource.ToEntity());
+                identityContext.ApiResources.Add(apiResource.ToEntity());
+                identityContext.Clients.Add(client.ToEntity());
+                identityContext.SaveChanges();
             }
-            var clients = SqlServerService.Clients;
-            foreach (var clientToDelete in clients)
-            {
-                SqlServerService.Clients.Remove(clientToDelete);
-            }
-            SqlServerService.ApiResources.Add(apiResource.ToEntity());
-            SqlServerService.Clients.Add(client.ToEntity());
-            SqlServerService.SaveChanges();
         }
 
         #region IDisposable implementation
