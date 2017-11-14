@@ -269,16 +269,11 @@ namespace Fabric.Identity.IntegrationTests
                 {
                     identityContext.Clients.Remove(clientToDelete);
                 }
-
-                var identityresource = new IdentityServer4.Models.IdentityResource()
+                var identityResources = identityContext.IdentityResources;
+                foreach (var identityResourceToDelete in identityResources)
                 {
-                    Description = "test",
-                    Name = "testing..fdsfdsf",
-                    DisplayName = "bdfklsdjfkdlsf",
-                    UserClaims = new List<string>() { "blah blah"}
-                };
-
-                identityContext.IdentityResources.Add(identityresource.ToEntity());
+                    identityContext.IdentityResources.Remove(identityResourceToDelete);
+                }
                 identityContext.ApiResources.Add(apiResource.ToEntity());
                 identityContext.Clients.Add(client.ToEntity());
                 identityContext.SaveChanges();

@@ -5,14 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ControllerTests\SqlServer\SqlServerApiResourceControllerTests.cs" />
-    <Compile Remove="ControllerTests\SqlServer\SqlServerClientRegistrationTests.cs" />
-    <Compile Remove="ControllerTests\SqlServer\SqlServerIdentityProvidersControllerTests.cs" />
-    <Compile Remove="ControllerTests\SqlServer\SqlServerIdentityResourceControllerTests.cs" />
-    <Compile Remove="ControllerTests\SqlServer\SqlServerUsersControllerTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -37,10 +29,6 @@
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c359}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="ControllerTests\SqlServer\" />
   </ItemGroup>
 
 </Project>

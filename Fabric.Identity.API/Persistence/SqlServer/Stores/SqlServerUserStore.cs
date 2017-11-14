@@ -22,7 +22,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = await _identityDbContext.Users
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+              //  .Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             return userEntity.ToModel();
@@ -32,7 +32,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = await _identityDbContext.Users
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+                //.Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
@@ -44,7 +44,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntities = await _identityDbContext.Users
                 .Where(u => subjectIds.Contains(u.SubjectId))
                 .Include(u => u.UserLogins)
-                .Include(u => u.Claims)
+                //.Include(u => u.Claims)
                 .ToArrayAsync();
 
             return userEntities.Select(u => u.ToModel());
