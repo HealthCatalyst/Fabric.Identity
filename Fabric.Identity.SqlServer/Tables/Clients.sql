@@ -37,3 +37,9 @@
 	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_Clients] PRIMARY KEY ([Id])
 );
+
+GO
+
+CREATE UNIQUE INDEX [IX_Clients_ClientId] ON [Clients] ([ClientId]);
+
+GO

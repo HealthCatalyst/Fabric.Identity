@@ -9,3 +9,9 @@
     CONSTRAINT [PK_ApiSecrets] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_ApiSecrets_ApiResources_ApiResourceId] FOREIGN KEY ([ApiResourceId]) REFERENCES [ApiResources] ([Id]) ON DELETE CASCADE
 );
+
+GO
+
+CREATE INDEX [IX_ApiSecrets_ApiResourceId] ON [ApiSecrets] ([ApiResourceId]);
+
+GO

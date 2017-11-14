@@ -15,3 +15,9 @@
 	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_IdentityResources] PRIMARY KEY ([Id])
 );
+
+GO
+
+CREATE UNIQUE INDEX [IX_IdentityResources_Name] ON [IdentityResources] ([Name]);
+
+GO

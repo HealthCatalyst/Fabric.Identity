@@ -6,3 +6,9 @@
     CONSTRAINT [PK_ClientCorsOrigins] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_ClientCorsOrigins_Clients_ClientId] FOREIGN KEY ([ClientId]) REFERENCES [Clients] ([Id]) ON DELETE CASCADE
 );
+
+GO
+
+CREATE INDEX [IX_ClientCorsOrigins_ClientId] ON [ClientCorsOrigins] ([ClientId]);
+
+GO
