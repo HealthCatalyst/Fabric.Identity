@@ -12,3 +12,9 @@
 	[IsDeleted] bit default 0 NOT NULL,
     CONSTRAINT [PK_ApiResources] PRIMARY KEY ([Id])
 );
+
+GO
+
+CREATE UNIQUE INDEX [IX_ApiResources_Name] ON [ApiResources] ([Name]);
+
+GO

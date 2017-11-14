@@ -11,3 +11,13 @@
     CONSTRAINT [PK_ApiScopes] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_ApiScopes_ApiResources_ApiResourceId] FOREIGN KEY ([ApiResourceId]) REFERENCES [ApiResources] ([Id]) ON DELETE CASCADE
 );
+
+GO
+
+CREATE INDEX [IX_ApiScopes_ApiResourceId] ON [ApiScopes] ([ApiResourceId]);
+
+GO
+
+CREATE UNIQUE INDEX [IX_ApiScopes_Name] ON [ApiScopes] ([Name]);
+
+GO

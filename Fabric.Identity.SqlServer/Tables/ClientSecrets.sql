@@ -9,3 +9,9 @@
     CONSTRAINT [PK_ClientSecrets] PRIMARY KEY ([Id]),
     CONSTRAINT [FK_ClientSecrets_Clients_ClientId] FOREIGN KEY ([ClientId]) REFERENCES [Clients] ([Id]) ON DELETE CASCADE
 );
+
+GO
+
+CREATE INDEX [IX_ClientSecrets_ClientId] ON [ClientSecrets] ([ClientId]);
+
+GO
