@@ -196,7 +196,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
                 ProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows
             };
 
-            CreateNewUser(user);
+            await CreateNewUser(user);
 
             //find them using user 
             var foundUser = await UserStore.FindByExternalProviderAsync(user.ProviderName, user.SubjectId);
