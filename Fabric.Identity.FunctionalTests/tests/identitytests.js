@@ -292,7 +292,12 @@ describe("identity tests", function () {
 
             driver.manage().window().setSize(1024, 768);
             var encodedRedirectUri = encodeURIComponent(baseIdentityUrl);
-            return driver.get(baseIdentityUrl + "/account/login?returnUrl=%2Fconnect%2Fauthorize%2Flogin%3Fclient_id%3Dfunc-test%26redirect_uri%3D" + encodedRedirectUri + "%26response_type%3Did_token%2520token%26scope%3Dopenid%2520profile%2520fabric%252Fauthorization.read%2520fabric%252Fauthorization.write%26nonce%3Dd9bfc7af239b4e99b18cb08f69f77377")
+            var loginUrl = baseIdentityUrl +
+              "/account/login?returnUrl=%2Fconnect%2Fauthorize%2Flogin%3Fclient_id%3Dfunc-test%26redirect_uri%3D" +
+                encodedRedirectUri +
+              "%26response_type%3Did_token%2520token%26scope%3Dopenid%2520profile%2520fabric%252Fauthorization.read%2520fabric%252Fauthorization.write%26nonce%3Dd9bfc7af239b4e99b18cb08f69f77377";
+            console.log("Login Url: " + loginUrl);
+            return driver.get(loginUrl)
             .then(function(){  
 
                 //sign in using driver
@@ -303,7 +308,7 @@ describe("identity tests", function () {
             })
             .then(function(currentUrl){                   
                 expect(currentUrl).to.include(baseIdentityUrl);
-                
+                console.log("Current URL: " + currentUrl);
                 var authUrl = url.parse(currentUrl);    
                 var obj = qs.parse(authUrl.hash);
                 var token = obj["access_token"];
@@ -350,7 +355,12 @@ describe("identity tests", function () {
                 expect(postResponse).to.have.status(201);
                 expect(postResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
                 hybridClientSecret = postResponse.body.clientSecret;
-                return driver.get(baseIdentityUrl + "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri="+ baseIdentityUrl +"&state=abx&nonce=xyz");
+                var connectUrl = baseIdentityUrl +
+                    "/connect/authorize?client_id=func-test-hybrid&scope=openid profile offline_access fabric/identity.manageresources&response_type=code id_token&redirect_uri=" +
+                    baseIdentityUrl +
+                    "&state=abx&nonce=xyz";
+                console.log("Connect URL: " + connectUrl);
+                return driver.get(connectUrl);
             })            
             .then(function(){  
                 //sign in using driver
