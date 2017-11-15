@@ -298,8 +298,15 @@ describe("identity tests", function () {
               "%26response_type%3Did_token%2520token%26scope%3Dopenid%2520profile%2520fabric%252Fauthorization.read%2520fabric%252Fauthorization.write%26nonce%3Dd9bfc7af239b4e99b18cb08f69f77377";
             console.log("Login Url: " + loginUrl);
             return driver.get(loginUrl)
-            .then(function(){  
-
+              .then(function () {
+                    driver.getCurrentUrl()
+                        .then(function(ur) {
+                            console.log("CurrentUrl: " + url);
+                        });
+                    driver.getPageSource()
+                        .then(function(source) {
+                          console.log("PageSource: " + source);
+                        });
                 //sign in using driver
                 driver.findElement(By.id("Username")).sendKeys("bob");
                 driver.findElement(By.id("Password")).sendKeys("bob");
