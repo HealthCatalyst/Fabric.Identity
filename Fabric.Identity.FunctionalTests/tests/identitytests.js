@@ -300,7 +300,7 @@ describe("identity tests", function () {
             return driver.get(loginUrl)
               .then(function () {
                     driver.getCurrentUrl()
-                        .then(function(ur) {
+                        .then(function(url) {
                             console.log("CurrentUrl: " + url);
                         });
                     driver.getPageSource()
