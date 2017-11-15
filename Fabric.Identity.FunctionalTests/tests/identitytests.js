@@ -27,7 +27,7 @@ describe("identity tests", function () {
         headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Authorization": ""
+            "Authorization": "Bearer"
         }
     }
 
