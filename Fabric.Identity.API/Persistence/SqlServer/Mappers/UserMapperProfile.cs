@@ -23,7 +23,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
                     .Select(x => new UserLogin
                     {
                         ClientId = x.Key,
-                        LoginDate = x.Value
+                        LoginDate = x.Value,                        
                     })))
                 .ForMember(x => x.Claims, opt => opt.MapFrom(src => src.Claims
                 .Select(x => new UserClaim()

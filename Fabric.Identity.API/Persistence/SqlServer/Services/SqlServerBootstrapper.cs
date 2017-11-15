@@ -43,6 +43,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 catch (Exception ex)
                 {
                     _logger.Warning(ex, ex.Message);
+                    throw;
                 }
             }
 

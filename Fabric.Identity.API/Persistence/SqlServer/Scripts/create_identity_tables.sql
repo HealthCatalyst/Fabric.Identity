@@ -241,7 +241,7 @@ CREATE TABLE [UserClaims](
 	[UserId] int NOT NULL,
 	[Type] nvarchar(200) NOT NULL,
 	CONSTRAINT [PK_UserClaims] PRIMARY KEY ([Id]),
-	CONSTRAINT [FK_UserClaims_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
+	CONSTRAINT [FK_UserClaims_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
 );
 
 GO
@@ -252,7 +252,7 @@ CREATE TABLE [UserLogins](
 	[ClientId] nvarchar(200) NOT NULL,
 	[LoginDate] datetime NOT NULL,	
 	CONSTRAINT [PK_[UserLogins] PRIMARY KEY ([Id]),	
-	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
+	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
 );
 
 GO

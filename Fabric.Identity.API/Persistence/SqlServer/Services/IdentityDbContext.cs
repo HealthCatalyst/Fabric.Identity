@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {  
@@ -25,21 +24,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         {
             OnSaveChanges();
 
-            try
-            {
-                return await base.SaveChangesAsync();
-            }
-            catch (DbUpdateException e)
-            {
-                foreach (var entityEntry in e.Entries)
-                {
-
-                }
-
-                Console.WriteLine(e);
-                throw;
-            }          
-            
+            return await base.SaveChangesAsync();
         }
 
         private void OnSaveChanges()
@@ -405,8 +390,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.UserLogins)
-                    .HasForeignKey(d => d.UserId)
-                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasForeignKey(d => d.UserId)                    
                     .HasConstraintName("FK_UserLogins_Users_Id");
             });
 

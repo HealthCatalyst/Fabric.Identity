@@ -67,10 +67,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             await _identityDbContext.SaveChangesAsync();
         }
 
-        public Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
+        public async Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
         {
             var persistedGrantEntity = grant.ToEntity();
-            return _identityDbContext.PersistedGrants.AddAsync(persistedGrantEntity);
+            _identityDbContext.PersistedGrants.Add(persistedGrantEntity);
+            await _identityDbContext.SaveChangesAsync();
         }
     }
 }
