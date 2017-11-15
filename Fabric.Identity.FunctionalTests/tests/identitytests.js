@@ -284,6 +284,7 @@ describe("identity tests", function () {
             var phantomjsExe = require("phantomjs").path;
             var customPhantom = webdriver.Capabilities.phantomjs();
             customPhantom.set("phantomjs.binary.path", phantomjsExe);
+            customPhantom.set("phantomjs.cli.args", ["--ssl-protocol=any"]);
             //build custom phantomJS driver
             var driver = new webdriver.Builder().
                 withCapabilities(customPhantom).
@@ -348,6 +349,7 @@ describe("identity tests", function () {
             var phantomjsExe = require("phantomjs").path;
             var customPhantom = webdriver.Capabilities.phantomjs();
             customPhantom.set("phantomjs.binary.path", phantomjsExe);
+            customPhantom.set("phantomjs.cli.args", ["--ssl-protocol=any"]);
             //build custom phantomJS driver
             var driver = new webdriver.Builder().
                 withCapabilities(customPhantom).
