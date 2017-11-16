@@ -37,6 +37,7 @@ namespace Fabric.Identity.IntegrationTests
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly long DatabaseNameSuffix = DateTime.UtcNow.Ticks;
+        private static readonly string SqlServerEnvironmentVariable = "CONNECTIONSTRINGS__IDENTITYDATABASE";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
         private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
@@ -127,6 +128,13 @@ namespace Fabric.Identity.IntegrationTests
                     .BuildServiceProvider();
 
                 var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+
+                var sqlServerConnectionString = Environment.GetEnvironmentVariable(SqlServerEnvironmentVariable);
+
+                if (!string.IsNullOrEmpty(sqlServerConnectionString))
+                {
+                    ConnectionStrings.IdentityDatabase = sqlServerConnectionString;
+                }
 
                 builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
                     .UseInternalServiceProvider(serviceProvider);
