@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using Fabric.Identity.API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
@@ -9,9 +10,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
-        public IdentityDbContext(DbContextOptions<IdentityDbContext> options)
+        private readonly IUserResolverService _userResolverService;
+
+        public IdentityDbContext(DbContextOptions<IdentityDbContext> options, IUserResolverService userResolverService)
             : base(options)
-        {                    
+        {
+            _userResolverService = userResolverService;
         }
 
         public DbSet<Client> Clients { get; set; }
@@ -43,11 +47,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 if (entityEntry.State == EntityState.Added)
                 {
                     trackableEntity.CreatedDateTimeUtc = DateTime.UtcNow;
-                    trackableEntity.CreatedBy = "placeholder";
+                    trackableEntity.CreatedBy = (_userResolverService.Subject ?? _userResolverService.ClientId) ?? "anonymous";
                 }
                 else if (entityEntry.State == EntityState.Modified)
                 {
                     trackableEntity.ModifiedDateTimeUtc = DateTime.UtcNow;
+                    trackableEntity.ModifiedBy = (_userResolverService.Subject ?? _userResolverService.ClientId) ?? "anonymous";
                 }
             }
         }

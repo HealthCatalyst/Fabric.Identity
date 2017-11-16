@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
 using System.Net.Http;
+using System.Security.Claims;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
@@ -12,11 +13,13 @@ using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
+using Fabric.Identity.API.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -139,7 +142,18 @@ namespace Fabric.Identity.IntegrationTests
                 builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
                     .UseInternalServiceProvider(serviceProvider);
 
-                return new IdentityDbContext(builder.Options);
+                var testIdentity = new ClaimsIdentity();
+                testIdentity.AddClaim(new Claim(JwtClaimTypes.ClientId, "testing"));
+
+                var contextAccessor = new HttpContextAccessor()
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(testIdentity)
+                    }
+                };
+
+                return new IdentityDbContext(builder.Options, new UserResolverService(contextAccessor));
             }
         }
 

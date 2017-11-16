@@ -26,7 +26,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
         public async void AddResources(IEnumerable<IdentityResource> resources)
         {
-            /*foreach (var identityResource in resources)
+            foreach (var identityResource in resources)
             {
                 try
                 {
@@ -35,7 +35,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                     if (existingResource != null)
                     {
-                        continue;                        
+                        continue;
                     }
 
                     _identityDbContext.IdentityResources.Add(identityResource.ToEntity());
@@ -47,7 +47,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 }
             }
 
-            await _identityDbContext.SaveChangesAsync();*/
+            await _identityDbContext.SaveChangesAsync();
         }
     }
 }
