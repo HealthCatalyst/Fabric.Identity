@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Net.Http;
 using Fabric.Identity.API;
@@ -9,7 +10,6 @@ using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
-using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
@@ -36,6 +36,7 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
+        private static readonly long DatabaseNameSuffix = DateTime.UtcNow.Ticks;
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
         private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
@@ -57,6 +58,7 @@ namespace Fabric.Identity.IntegrationTests
             InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
             CouchDbService.AddDocument(api.Name, api);
             CouchDbService.AddDocument(Client.ClientId, Client);
+            CreateSqlServerDatabase();
             AddTestEntitiesToSql(Client, api);
         }
 
@@ -69,7 +71,7 @@ namespace Fabric.Identity.IntegrationTests
 
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
         {
-            DatabaseName = "integration-" + DateTime.UtcNow.Ticks,
+            DatabaseName = $"integration-{DatabaseNameSuffix}",
             Username = "admin",
             Password = "admin",
             Server = "http://127.0.0.1:5984"
@@ -79,7 +81,7 @@ namespace Fabric.Identity.IntegrationTests
                                                                   new ConnectionStrings
                                                                   {
                                                                       IdentityDatabase =
-                                                                          "Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true"
+                                                                          $"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
                                                                   });
 
         protected static IDocumentDbService CouchDbService
@@ -261,6 +263,85 @@ namespace Fabric.Identity.IntegrationTests
                     new IS4.Scope(FabricIdentityConstants.IdentitySearchUsersScope)
                 }
             };
+        }
+
+        private static void CreateSqlServerDatabase()
+        {
+            const string connection =
+                "Data Source=localhost;Initial Catalog=master;Trusted_Connection=True;MultipleActiveResultSets=True";
+            var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
+            var createDbScript = file.OpenText().ReadToEnd()
+                .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+            var splitter = new[] { "GO\r\n" };
+            var commandTexts = createDbScript.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
+
+            var x = 0;
+            using (var conn = new SqlConnection(connection))
+            {
+                conn.Open();
+                using (var command = new SqlCommand("query", conn))
+                {
+                    for (x = 0; x < commandTexts.Length; x++)
+                    {
+                        //command.CommandText = $"CREATE DATABASE [Identity-{DatabaseNameSuffix}] COLLATE SQL_Latin1_General_CP1_CI_AS";
+                        //command.ExecuteNonQuery();
+
+                        var commandText = commandTexts[x];
+
+                        // skip generated SqlPackage commands and comments
+                        if (commandText.StartsWith(":") || commandText.StartsWith("/*"))
+                        {
+                            continue;
+                        }
+                        command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+
+                        try
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+
+                        // break if we just created the Identity DB
+                        if (commandText.StartsWith("CREATE DATABASE"))
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // establish a connection to the newly created Identity DB
+            using (var conn = new SqlConnection(ConnectionStrings.IdentityDatabase))
+            {
+                conn.Open();
+
+                using (var command = new SqlCommand("query", conn))
+                {
+                    for (x = x + 1; x < commandTexts.Length; x++)
+                    {
+                        var commandText = commandTexts[x];
+
+                        // skip generated SqlPackage commands and comments
+                        if (commandText.StartsWith(":") || commandText.StartsWith("/*"))
+                        {
+                            continue;
+                        }
+                        command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+
+                        try
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+                    }
+                }
+            }
         }
 
         private static void AddTestEntitiesToSql(IS4.Client client, IS4.ApiResource apiResource)
