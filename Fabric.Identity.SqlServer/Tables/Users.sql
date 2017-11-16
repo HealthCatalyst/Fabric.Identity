@@ -3,6 +3,7 @@
 	[Id] int NOT NULL IDENTITY,
 	[SubjectId] nvarchar(200) NOT NULL,
 	[ProviderName] nvarchar(200) NOT NULL,
+	[ComputedUserId] AS SubjectId + ':' + ProviderName,
 	[FirstName] nvarchar(200) NULL,
 	[MiddleName] nvarchar(200) NULL,
 	[LastName] nvarchar(200) NULL,

@@ -81,6 +81,7 @@
     <Build Include="Tables\Users.sql" />
     <Build Include="Tables\UserLogins.sql" />
     <Build Include="Tables\PersistedGrants.sql" />
+    <Build Include="Tables\UserClaims.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PublishProfiles\Fabric.Identity.SqlServer.publish.xml">

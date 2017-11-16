@@ -81,7 +81,8 @@ namespace Fabric.Identity.IntegrationTests
                                                                   new ConnectionStrings
                                                                   {
                                                                       IdentityDatabase =
-                                                                          $"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
+                                                                          "Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true"
+                                                                          //$"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
                                                                   });
 
         protected static IDocumentDbService CouchDbService
@@ -271,11 +272,13 @@ namespace Fabric.Identity.IntegrationTests
                 "Data Source=localhost;Initial Catalog=master;Trusted_Connection=True;MultipleActiveResultSets=True";
             var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
             var createDbScript = file.OpenText().ReadToEnd()
-                .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+                .Replace("$(DatabaseName)", "Identity");
+                //.Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+
             var splitter = new[] { "GO\r\n" };
             var commandTexts = createDbScript.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
 
-            var x = 0;
+            int x;
             using (var conn = new SqlConnection(connection))
             {
                 conn.Open();
@@ -283,30 +286,13 @@ namespace Fabric.Identity.IntegrationTests
                 {
                     for (x = 0; x < commandTexts.Length; x++)
                     {
-                        //command.CommandText = $"CREATE DATABASE [Identity-{DatabaseNameSuffix}] COLLATE SQL_Latin1_General_CP1_CI_AS";
-                        //command.ExecuteNonQuery();
-
                         var commandText = commandTexts[x];
-
-                        // skip generated SqlPackage commands and comments
-                        if (commandText.StartsWith(":") || commandText.StartsWith("/*"))
-                        {
-                            continue;
-                        }
-                        command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
-
-                        try
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex);
-                        }
 
                         // break if we just created the Identity DB
                         if (commandText.StartsWith("CREATE DATABASE"))
                         {
+                            command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+                            command.ExecuteNonQuery();
                             break;
                         }
                     }
@@ -329,6 +315,7 @@ namespace Fabric.Identity.IntegrationTests
                         {
                             continue;
                         }
+
                         command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
 
                         try
