@@ -12,6 +12,7 @@ using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Infrastructure.Monitoring;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
@@ -71,11 +72,13 @@ namespace Fabric.Identity.API
 
             services.TryAddSingleton(_appConfig.HostingOptions);
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
+            var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
+
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                 .AddSingleton<IEventSink>(serilogEventSink)
                 .AddSingleton(_appConfig)
                 .AddSingleton(_logger)
-                .AddIdentityServer(_appConfig, _certificateService, _logger, hostingOptions)
+                .AddIdentityServer(_appConfig, _certificateService, _logger, hostingOptions, connectionStrings)
                 .AddAuthorizationServices()
                 .AddScoped<IUserResolverService, UserResolverService>()
                 .AddSingleton<ISerializationSettings, SerializationSettings>()

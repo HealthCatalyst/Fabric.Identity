@@ -81,8 +81,7 @@ namespace Fabric.Identity.IntegrationTests
                                                                   new ConnectionStrings
                                                                   {
                                                                       IdentityDatabase =
-                                                                          "Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true"
-                                                                          //$"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
+                                                                          $"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
                                                                   });
 
         protected static IDocumentDbService CouchDbService
@@ -153,8 +152,7 @@ namespace Fabric.Identity.IntegrationTests
                 c.AddSingleton(LdapSettings)
                     .AddSingleton(CouchDbSettings)
                     .AddSingleton(hostingOptions)
-                    .AddSingleton(ConnectionStrings)
-            );
+                    .AddSingleton(ConnectionStrings));
 
             builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -272,8 +270,7 @@ namespace Fabric.Identity.IntegrationTests
                 "Data Source=localhost;Initial Catalog=master;Trusted_Connection=True;MultipleActiveResultSets=True";
             var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
             var createDbScript = file.OpenText().ReadToEnd()
-                .Replace("$(DatabaseName)", "Identity");
-                //.Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+                .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
 
             var splitter = new[] { "GO\r\n" };
             var commandTexts = createDbScript.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
