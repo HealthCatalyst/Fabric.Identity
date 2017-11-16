@@ -71,9 +71,9 @@ namespace Fabric.Identity.API
             var serilogEventSink = new SerilogEventSink(eventLogger);
 
             services.TryAddSingleton(_appConfig.HostingOptions);
-            services.TryAddSingleton(_appConfig.ConnectionStrings);
+            services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
-            var connectionStrings = services.BuildServiceProvider().GetRequiredService<ConnectionStrings>();
+            var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                 .AddSingleton<IEventSink>(serilogEventSink)
