@@ -74,7 +74,7 @@ namespace Fabric.Identity.API
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
             var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
-
+            _logger.Information("Connection strings: {@connectionStrings}", connectionStrings);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                 .AddSingleton<IEventSink>(serilogEventSink)
                 .AddSingleton(_appConfig)

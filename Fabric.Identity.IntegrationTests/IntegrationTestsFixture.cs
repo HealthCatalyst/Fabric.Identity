@@ -110,6 +110,7 @@ namespace Fabric.Identity.IntegrationTests
                     IdentityDatabase =
                         $"Server={SqlServerHost};Database=Identity-{DatabaseNameSuffix};{SqlServerSecurityString};MultipleActiveResultSets=true"
                 };
+                Console.WriteLine($"Connection String for tests: {_connectionStrings.IdentityDatabase}");
                 return _connectionStrings;
             }
         }
