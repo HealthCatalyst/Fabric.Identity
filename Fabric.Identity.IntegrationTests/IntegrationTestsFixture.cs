@@ -40,7 +40,9 @@ namespace Fabric.Identity.IntegrationTests
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly long DatabaseNameSuffix = DateTime.UtcNow.Ticks;
-        private static readonly string SqlServerEnvironmentVariable = "CONNECTIONSTRINGS__IDENTITYDATABASE";
+        private static readonly string SqlServerEnvironmentVariable = "SQLSERVERSETTINGS__SERVER";
+        private static readonly string SqlServerUsernameEnvironmentVariable = "SQLSERVERSETTINGS__USERNAME";
+        private static readonly string SqlServerPassworEnvironmentVariable = "SQLSERVERSETTINGS__PASSWORD";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
         private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
@@ -81,12 +83,36 @@ namespace Fabric.Identity.IntegrationTests
             Server = "http://127.0.0.1:5984"
         });
 
-        private static IConnectionStrings ConnectionStrings => _connectionStrings ?? (_connectionStrings =
-                                                                  new ConnectionStrings
-                                                                  {
-                                                                      IdentityDatabase =
-                                                                          $"Server=.;Database=Identity-{DatabaseNameSuffix};Trusted_Connection=True;MultipleActiveResultSets=true"
-                                                                  });
+        private static string SqlServerHost => Environment.GetEnvironmentVariable(SqlServerEnvironmentVariable) ?? ".";
+
+        private static string SqlServerSecurityString
+        {
+            get
+            {
+                var sqlServerUserName = Environment.GetEnvironmentVariable(SqlServerUsernameEnvironmentVariable);
+                var sqlServerPassword = Environment.GetEnvironmentVariable(SqlServerPassworEnvironmentVariable);
+                var securityString = "Trusted_Connection=True";
+                if (!string.IsNullOrEmpty(sqlServerUserName) && !string.IsNullOrEmpty(sqlServerPassword))
+                {
+                    securityString = $"User Id={sqlServerUserName};Password={sqlServerPassword}";
+                }
+                return securityString;
+            }
+        }
+
+        private static IConnectionStrings ConnectionStrings
+        {
+            get
+            {
+                if (_connectionStrings != null) return _connectionStrings;
+                _connectionStrings = new ConnectionStrings
+                {
+                    IdentityDatabase =
+                        $"Server={SqlServerHost};Database=Identity-{DatabaseNameSuffix};{SqlServerSecurityString};MultipleActiveResultSets=true"
+                };
+                return _connectionStrings;
+            }
+        }
 
         protected static IDocumentDbService CouchDbService
         {
@@ -131,13 +157,6 @@ namespace Fabric.Identity.IntegrationTests
                     .BuildServiceProvider();
 
                 var builder = new DbContextOptionsBuilder<IdentityDbContext>();
-
-                var sqlServerConnectionString = Environment.GetEnvironmentVariable(SqlServerEnvironmentVariable);
-
-                if (!string.IsNullOrEmpty(sqlServerConnectionString))
-                {
-                    ConnectionStrings.IdentityDatabase = sqlServerConnectionString;
-                }
 
                 builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
                     .UseInternalServiceProvider(serviceProvider);
@@ -288,8 +307,8 @@ namespace Fabric.Identity.IntegrationTests
 
         private static void CreateSqlServerDatabase()
         {
-            const string connection =
-                "Data Source=localhost;Initial Catalog=master;Trusted_Connection=True;MultipleActiveResultSets=True";
+            var connection =
+                $"Data Source={SqlServerHost};Initial Catalog=master;{SqlServerSecurityString};MultipleActiveResultSets=True";
             var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
             var createDbScript = file.OpenText().ReadToEnd()
                 .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
