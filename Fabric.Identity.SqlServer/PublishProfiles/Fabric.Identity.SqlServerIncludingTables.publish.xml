@@ -8,6 +8,6 @@
     <BlockOnPossibleDataLoss>True</BlockOnPossibleDataLoss>
     <ProfileVersionNumber>1</ProfileVersionNumber>
     <AllowIncompatiblePlatform>False</AllowIncompatiblePlatform>
-    <ExcludeTables>True</ExcludeTables>
+    <ExcludeTables>False</ExcludeTables>
   </PropertyGroup>
 </Project>

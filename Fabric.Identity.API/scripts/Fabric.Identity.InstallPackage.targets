@@ -4,5 +4,17 @@
       <Link>SetupContent\Fabric.Identity.InstallPackage.zip</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="$(MSBuildThisFileDirectory)Fabric.Identity.SqlServer.dacpac">
+      <Link>SetupContent\Fabric.Identity.SqlServer.dacpac</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)Fabric.Identity.SqlServer.publish.xml">
+      <Link>SetupContent\Fabric.Identity.SqlServer.publish.xml</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)Fabric.Identity.SqlServerIncludeTables.publish.xml">
+      <Link>SetupContent\Fabric.Identity.SqlServerIncludeTables.publish.xml</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

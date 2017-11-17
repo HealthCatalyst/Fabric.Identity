@@ -87,5 +87,8 @@
     <None Include="PublishProfiles\Fabric.Identity.SqlServer.publish.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="PublishProfiles\Fabric.Identity.SqlServerIncludingTables.publish.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
