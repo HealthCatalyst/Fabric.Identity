@@ -1,6 +1,7 @@
 ﻿using Fabric.Identity.API.Configuration;
 using Serilog;
 using Serilog.Core;
+using Serilog.Events;
 
 namespace Fabric.Identity.API.Logging
 {
@@ -36,7 +37,8 @@ namespace Fabric.Identity.API.Logging
         {
             return new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(levelSwitch)
-                .Enrich.FromLogContext()
+                .Enrich.FromLogContext()        
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .WriteTo.ColoredConsole();
         }
     }
