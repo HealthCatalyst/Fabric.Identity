@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using IdentityServer4.Models;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
@@ -26,11 +27,17 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
         public async void AddResources(IEnumerable<IdentityResource> resources)
         {
+            var context = _identityDbContext as DbContext;
+            if (context != null)
+            {
+                _logger.Information("Connection String: " + context.Database.GetDbConnection().ConnectionString);
+            }
+            var existingResources = _identityDbContext.IdentityResources.ToList();
             foreach (var identityResource in resources)
             {
                 try
                 {
-                    var existingResource = _identityDbContext.IdentityResources.FirstOrDefault(i =>
+                    var existingResource = existingResources.FirstOrDefault(i =>
                         i.Name.Equals(identityResource.Name, StringComparison.OrdinalIgnoreCase));
 
                     if (existingResource != null)
