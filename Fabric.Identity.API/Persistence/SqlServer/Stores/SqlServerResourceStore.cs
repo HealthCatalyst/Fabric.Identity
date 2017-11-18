@@ -32,7 +32,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             var identityResources = await query
                 .Include(x => x.IdentityClaims)
-                .ToArrayAsync();
+                .ToArrayAsync().ConfigureAwait(false);
 
             return identityResources.Select(i => i.ToModel());
         }
