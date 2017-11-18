@@ -21,7 +21,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             IdentityDbContext = identityDbContext;
         }
 
-        public async Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
+        public Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
         {
             var scopes = scopeNames.ToArray();
 
@@ -30,11 +30,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 where scopes.Contains(identityResource.Name) && !identityResource.IsDeleted
                 select identityResource;
 
-            var identityResources = await query
+            var identityResources = query
                 .Include(x => x.IdentityClaims)
-                .ToArrayAsync().ConfigureAwait(false);
+                .ToArray();
 
-            return identityResources.Select(i => i.ToModel());
+            return Task.FromResult(identityResources.Select(i => i.ToModel()));
         }
 
         public async Task<IEnumerable<ApiResource>> FindApiResourcesByScopeAsync(IEnumerable<string> scopeNames)
