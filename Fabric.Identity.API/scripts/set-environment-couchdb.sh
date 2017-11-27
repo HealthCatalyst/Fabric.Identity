@@ -9,8 +9,3 @@ IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}
 echo "OpenLdap Container running on $IP"
 echo "##vso[task.setvariable variable=LdapSettings__Server;]$IP"
 echo "OpenLdap Server: $LDAPSETTINGS__SERVER"
-
-IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $SQLSERVERCONTAINERNAME)
-echo "SqlServer Container running on $IP"
-echo "##vso[task.setvariable variable=SqlServerSettings__Server;]$IP"
-echo "SqlServer: $SQLSERVERSETTINGS__SERVER"
