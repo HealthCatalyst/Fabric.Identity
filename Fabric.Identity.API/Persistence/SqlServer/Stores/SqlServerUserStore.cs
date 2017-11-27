@@ -42,7 +42,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds)
         {
             var userEntities = await _identityDbContext.Users
-                .Where(u => subjectIds.Contains(u.SubjectId))
+                .Where(u => subjectIds.Contains(u.ComputedUserId))
                 .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
                 .ToArrayAsync();
@@ -54,7 +54,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = user.ToEntity();
 
-            await _identityDbContext.Users.AddAsync(userEntity);
+            _identityDbContext.Users.Add(userEntity);
+            await _identityDbContext.SaveChangesAsync();
 
             return user;
         }
@@ -66,9 +67,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task UpdateUserAsync(User user)
         {
-            var userEntity = user.ToEntity();
+            var existingUser = await _identityDbContext.Users
+                .Where(u => u.SubjectId.Equals(user.SubjectId, StringComparison.OrdinalIgnoreCase)
+                            && u.ProviderName.Equals(user.ProviderName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefaultAsync();
 
-            _identityDbContext.Users.Update(userEntity);
+            user.ToEntity(existingUser);
+
+            _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
         }
     }

@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class ApiSecret
+    public class ApiSecret
     {
         public int Id { get; set; }
         public int ApiResourceId { get; set; }

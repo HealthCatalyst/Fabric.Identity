@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class ApiResource : ITrackable, ISoftDelete
+    public class ApiResource : ITrackable, ISoftDelete
     {
         public ApiResource()
         {

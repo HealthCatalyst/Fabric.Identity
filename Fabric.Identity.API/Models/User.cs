@@ -25,10 +25,12 @@ namespace Fabric.Identity.API.Models
 
             if (LastLoginDatesByClient.ContainsKey(clientIdToLog))
             {
-                LastLoginDatesByClient.Remove(clientIdToLog);
+                LastLoginDatesByClient[clientIdToLog] = DateTime.UtcNow;
             }
-
-            LastLoginDatesByClient.Add(clientIdToLog, DateTime.UtcNow);
+            else
+            {
+                LastLoginDatesByClient.Add(clientIdToLog, DateTime.UtcNow);
+            }
         }       
     }
 }

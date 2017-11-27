@@ -18,9 +18,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             _identityDbContext = identityDbContext;            
         }
 
-        public async Task<Client> FindClientByIdAsync(string clientId)
+        public Task<Client> FindClientByIdAsync(string clientId)
         {
-            var client = await _identityDbContext.Clients
+            var client = _identityDbContext.Clients
                 .Include(x => x.ClientGrantTypes)
                 .Include(x => x.ClientRedirectUris)
                 .Include(x => x.ClientPostLogoutRedirectUris)
@@ -29,15 +29,24 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .Include(x => x.ClientClaims)
                 .Include(x => x.ClientIdpRestrictions)
                 .Include(x => x.ClientCorsOrigins)
-                .FirstOrDefaultAsync(x => x.ClientId == clientId);
+                .Where(c => !c.IsDeleted)
+                .FirstOrDefault(x => x.ClientId == clientId);
             var clientEntity = client?.ToModel();
 
-            return clientEntity;
+            return Task.FromResult(clientEntity);
         }
 
         public IEnumerable<Client> GetAllClients()
         {
             var clients = _identityDbContext.Clients
+                .Include(x => x.ClientGrantTypes)
+                .Include(x => x.ClientRedirectUris)
+                .Include(x => x.ClientPostLogoutRedirectUris)
+                .Include(x => x.ClientScopes)
+                .Include(x => x.ClientSecrets)
+                .Include(x => x.ClientClaims)
+                .Include(x => x.ClientIdpRestrictions)
+                .Include(x => x.ClientCorsOrigins)
                 .Where(c => !c.IsDeleted)
                 .Select(c => c.ToModel());
 
@@ -68,18 +77,18 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var domainModelClient = client.ToEntity();
 
-            //TODO: set entity model properties
-
-            await _identityDbContext.Clients.AddAsync(domainModelClient);
+            _identityDbContext.Clients.Add(domainModelClient);
+            await _identityDbContext.SaveChangesAsync();
         }
 
         public async Task UpdateClientAsync(string clientId, Client client)
         {
-            var clientDomainModel = client.ToEntity();
+            var existingClient = await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
+                c.ClientId.Equals(client.ClientId, StringComparison.OrdinalIgnoreCase));
 
-            //TODO: set entity model properties
+            client.ToEntity(existingClient);
 
-            _identityDbContext.Clients.Update(clientDomainModel);
+            _identityDbContext.Clients.Update(existingClient);
             await _identityDbContext.SaveChangesAsync();
         }
 
@@ -88,8 +97,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var clientToDelete =
                await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
                     c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
-
-            //TODO: set entity domain model properties
 
             clientToDelete.IsDeleted = true;
 

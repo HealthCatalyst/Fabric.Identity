@@ -1,19 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Net.Http;
+using System.Security.Claims;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
 using Fabric.Identity.API.Persistence.InMemory.Services;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Persistence.SqlServer.Services;
+using Fabric.Identity.API.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Serilog;
@@ -31,11 +39,17 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
+        private static readonly long DatabaseNameSuffix = DateTime.UtcNow.Ticks;
+        private static readonly string SqlServerEnvironmentVariable = "SQLSERVERSETTINGS__SERVER";
+        private static readonly string SqlServerUsernameEnvironmentVariable = "SQLSERVERSETTINGS__USERNAME";
+        private static readonly string SqlServerPassworEnvironmentVariable = "SQLSERVERSETTINGS__PASSWORD";
         private static readonly string CouchDbServerEnvironmentVariable = "COUCHDBSETTINGS__SERVER";
         private static readonly string CouchDbUsernameEnvironmentVariable = "COUCHDBSETTINGS__USERNAME";
         private static readonly string CouchDbPasswordEnvironmentVariable = "COUCHDBSETTINGS__PASSWORD";
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
+        private static IConnectionStrings _connectionStrings;
+        
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
         private static IDocumentDbService _dbService;
@@ -50,6 +64,8 @@ namespace Fabric.Identity.IntegrationTests
             InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
             CouchDbService.AddDocument(api.Name, api);
             CouchDbService.AddDocument(Client.ClientId, Client);
+            CreateSqlServerDatabase();
+            AddTestEntitiesToSql(Client, api);
         }
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
@@ -61,11 +77,43 @@ namespace Fabric.Identity.IntegrationTests
 
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
         {
-            DatabaseName = "integration-" + DateTime.UtcNow.Ticks,
+            DatabaseName = $"integration-{DatabaseNameSuffix}",
             Username = "",
             Password = "",
             Server = "http://127.0.0.1:5984"
         });
+
+        private static string SqlServerHost => Environment.GetEnvironmentVariable(SqlServerEnvironmentVariable) ?? ".";
+
+        private static string SqlServerSecurityString
+        {
+            get
+            {
+                var sqlServerUserName = Environment.GetEnvironmentVariable(SqlServerUsernameEnvironmentVariable);
+                var sqlServerPassword = Environment.GetEnvironmentVariable(SqlServerPassworEnvironmentVariable);
+                var securityString = "Trusted_Connection=True";
+                if (!string.IsNullOrEmpty(sqlServerUserName) && !string.IsNullOrEmpty(sqlServerPassword))
+                {
+                    securityString = $"User Id={sqlServerUserName};Password={sqlServerPassword}";
+                }
+                return securityString;
+            }
+        }
+
+        private static IConnectionStrings ConnectionStrings
+        {
+            get
+            {
+                if (_connectionStrings != null) return _connectionStrings;
+                _connectionStrings = new ConnectionStrings
+                {
+                    IdentityDatabase =
+                        $"Server={SqlServerHost};Database=Identity-{DatabaseNameSuffix};{SqlServerSecurityString};MultipleActiveResultSets=true"
+                };
+                Console.WriteLine($"Connection String for tests: {_connectionStrings.IdentityDatabase}");
+                return _connectionStrings;
+            }
+        }
 
         protected static IDocumentDbService CouchDbService
         {
@@ -101,6 +149,34 @@ namespace Fabric.Identity.IntegrationTests
             }
         }
 
+        protected static IdentityDbContext IdentityDbContext
+        {
+            get
+            {
+                var serviceProvider = new ServiceCollection()
+                    .AddEntityFrameworkSqlServer()
+                    .BuildServiceProvider();
+
+                var builder = new DbContextOptionsBuilder<IdentityDbContext>();
+
+                builder.UseSqlServer(ConnectionStrings.IdentityDatabase)
+                    .UseInternalServiceProvider(serviceProvider);
+
+                var testIdentity = new ClaimsIdentity();
+                testIdentity.AddClaim(new Claim(JwtClaimTypes.ClientId, "testing"));
+
+                var contextAccessor = new HttpContextAccessor()
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(testIdentity)
+                    }
+                };
+
+                return new IdentityDbContext(builder.Options, new UserResolverService(contextAccessor));
+            }
+        }
+
         public HttpClient HttpClient { get; }
 
         private TestServer CreateIdentityTestServer(string storageProvider)
@@ -113,12 +189,12 @@ namespace Fabric.Identity.IntegrationTests
             };
 
             var builder = new WebHostBuilder();
+
             builder.ConfigureServices(c =>
                 c.AddSingleton(LdapSettings)
                     .AddSingleton(CouchDbSettings)
                     .AddSingleton(hostingOptions)
-            );
-
+                    .AddSingleton(ConnectionStrings));
 
             builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -153,6 +229,7 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(options)
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
+                .AddSingleton(ConnectionStrings)
             );
 
             apiBuilder.UseKestrel()
@@ -228,6 +305,89 @@ namespace Fabric.Identity.IntegrationTests
                 }
             };
         }
+
+        private static void CreateSqlServerDatabase()
+        {
+            var connection =
+                $"Data Source={SqlServerHost};Initial Catalog=master;{SqlServerSecurityString};MultipleActiveResultSets=True";
+            var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
+            var createDbScript = file.OpenText().ReadToEnd()
+                .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+
+            var splitter = new[] { "GO\r\n" };
+            var commandTexts = createDbScript.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
+
+            int x;
+            using (var conn = new SqlConnection(connection))
+            {
+                conn.Open();
+                using (var command = new SqlCommand("query", conn))
+                {
+                    for (x = 0; x < commandTexts.Length; x++)
+                    {
+                        var commandText = commandTexts[x];
+
+                        // break if we just created the Identity DB
+                        if (commandText.StartsWith("CREATE DATABASE"))
+                        {
+                            command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+                            command.ExecuteNonQuery();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // establish a connection to the newly created Identity DB
+            using (var conn = new SqlConnection(ConnectionStrings.IdentityDatabase))
+            {
+                conn.Open();
+
+                using (var command = new SqlCommand("query", conn))
+                {
+                    for (x = x + 1; x < commandTexts.Length; x++)
+                    {
+                        var commandText = commandTexts[x];
+
+                        // skip generated SqlPackage commands and comments
+                        if (commandText.StartsWith(":") || commandText.StartsWith("/*"))
+                        {
+                            continue;
+                        }
+
+                        command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+
+                        try
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void AddTestEntitiesToSql(IS4.Client client, IS4.ApiResource apiResource)
+        {
+            using (var identityContext = IdentityDbContext)
+            {
+                identityContext.Database.ExecuteSqlCommand(DeleteDataSql);
+                identityContext.ApiResources.Add(apiResource.ToEntity());
+                identityContext.Clients.Add(client.ToEntity());
+                identityContext.SaveChanges();
+            }
+        }
+
+        private static readonly string DeleteDataSql =
+            @"DELETE FROM ApiResources; 
+              DELETE FROM Clients;
+              DELETE FROM IdentityResources;
+              DELETE FROM UserLogins;
+              DELETE FROM UserClaims;
+              DELETE FROM Users";
 
         #region IDisposable implementation
 

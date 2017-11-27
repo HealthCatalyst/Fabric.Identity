@@ -1,3 +1,5 @@
+USE [Identity]
+
 CREATE TABLE [ApiResources] (
     [Id] int NOT NULL IDENTITY,
     [Description] nvarchar(1000) NULL,
@@ -228,8 +230,21 @@ CREATE TABLE [Users](
 	[ModifiedDateTimeUtc] datetime	NULL,
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
+	[ComputedUserId] AS SubjectId + ':' + ProviderName,
 	CONSTRAINT [PK_[Users] PRIMARY KEY ([Id]),
 );
+
+GO
+
+CREATE TABLE [UserClaims](
+	[Id] int NOT NULL IDENTITY,
+	[UserId] int NOT NULL,
+	[Type] nvarchar(200) NOT NULL,
+	CONSTRAINT [PK_UserClaims] PRIMARY KEY ([Id]),
+	CONSTRAINT [FK_UserClaims_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+);
+
+GO
 
 CREATE TABLE [UserLogins](
 	[Id] int NOT NULL IDENTITY,
@@ -237,7 +252,7 @@ CREATE TABLE [UserLogins](
 	[ClientId] nvarchar(200) NOT NULL,
 	[LoginDate] datetime NOT NULL,	
 	CONSTRAINT [PK_[UserLogins] PRIMARY KEY ([Id]),	
-	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
+	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
 );
 
 GO

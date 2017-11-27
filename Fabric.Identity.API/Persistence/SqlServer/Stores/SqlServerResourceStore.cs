@@ -25,10 +25,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var scopes = scopeNames.ToArray();
 
-            var identityResources = await IdentityDbContext.IdentityResources
-                .Where(i => scopes.Contains(i.Name))
+            var query =
+                from identityResource in IdentityDbContext.IdentityResources
+                where scopes.Contains(identityResource.Name) && !identityResource.IsDeleted
+                select identityResource;
+
+            var identityResources = await query
                 .Include(x => x.IdentityClaims)
-                .ToArrayAsync();
+                .ToArrayAsync().ConfigureAwait(false);
 
             return identityResources.Select(i => i.ToModel());
         }
@@ -37,8 +41,15 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var scopes = scopeNames.ToArray();
 
-            var apiResources = await IdentityDbContext.ApiResources
-                .Where(r => scopes.Contains(r.Name))
+            var query =
+                from api in IdentityDbContext.ApiResources
+                where api.ApiScopes.Any(x => scopes.Contains(x.Name)) && !api.IsDeleted
+                select api;
+
+            var apiResources = await query
+                .Include(x => x.ApiSecrets)
+                .Include(x => x.ApiScopes)
+                .ThenInclude(s => s.ApiScopeClaims)
                 .Include(x => x.ApiClaims)
                 .ToArrayAsync();
 
@@ -61,9 +72,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<Resources> GetAllResources()
         {
             var identity = IdentityDbContext.IdentityResources
+                .Where(i => !i.IsDeleted)
                 .Include(x => x.IdentityClaims);
 
             var apis = IdentityDbContext.ApiResources
+                .Where(i => !i.IsDeleted)
                 .Include(x => x.ApiSecrets)
                 .Include(x => x.ApiScopes)
                 .ThenInclude(s => s.ApiScopeClaims)

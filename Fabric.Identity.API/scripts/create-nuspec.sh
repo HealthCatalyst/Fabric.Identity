@@ -15,10 +15,10 @@ cat > Fabric.Identity.API.nuspec << EOF
         <description>Install package for Fabric.Identity</description>		
     </metadata>		
     <files>		
-        <file src="Fabric.Identity.API.zip" target="build" />
-	<file src="Install-Identity-Windows.ps1" target="build" />
-	<file src="Fabric-Install-Utilities.psm1" target="build" />
-	<file src="install.config" target="build" />
+		<file src="Fabric.Identity.API.zip" target="build" />
+		<file src="Install-Identity-Windows.ps1" target="build" />
+		<file src="Fabric-Install-Utilities.psm1" target="build" />
+		<file src="install.config" target="build" />
     </files>		
 </package>		
 EOF

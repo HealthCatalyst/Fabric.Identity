@@ -3,6 +3,7 @@ using System.Linq;
 using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
@@ -76,7 +77,8 @@ namespace Fabric.Identity.API.Extensions
             IAppConfiguration appConfiguration,
             ICertificateService certificateService,
             ILogger logger,
-            HostingOptions hostingOptions)
+            HostingOptions hostingOptions,
+            IConnectionStrings connectionStrings)
         {
             serviceCollection.AddSingleton<IProfileService, UserProfileService>();
 
@@ -96,6 +98,7 @@ namespace Fabric.Identity.API.Extensions
                 serviceCollection,
                 appConfiguration,
                 hostingOptions,
+                connectionStrings,
                 certificateService,
                 logger).Initialize();
 

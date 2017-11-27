@@ -25,7 +25,9 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Services
         private readonly DbConnectionInfo _dbConnectionInfo;
         private readonly ILogger _logger;
 
-        public CouchDbBootstrapper(IDocumentDbService documentDbService, ICouchDbSettings couchDbSettings,
+        public CouchDbBootstrapper(
+            IDocumentDbService documentDbService,
+            ICouchDbSettings couchDbSettings,
             ILogger logger)
         {
             _couchDbSettings = couchDbSettings;
@@ -64,7 +66,7 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Services
                 string.IsNullOrEmpty(_couchDbSettings.Password))
             {
                 throw new CouchDbSetupException(
-                    $"please add the admin username and password for the database to the CouchDbSettings in appsettings.json [DONT CHECK IT IN!!!]");
+                    "Please add the admin username and password for the database to the CouchDbSettings in appsettings.json [DONT CHECK IT IN!!!]");
             }
 
             var connectionInfo = new ServerConnectionInfo(_couchDbSettings.Server)

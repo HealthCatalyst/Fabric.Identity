@@ -1,20 +1,21 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
-using IdentityServer4.EntityFramework.Options;
+using Fabric.Identity.API.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
-{
+{  
+
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
-        private readonly ConfigurationStoreOptions _storeOptions;
+        private readonly IUserResolverService _userResolverService;
 
-        public IdentityDbContext(DbContextOptions<IdentityDbContext> options, ConfigurationStoreOptions storeOptions)
+        public IdentityDbContext(DbContextOptions<IdentityDbContext> options, IUserResolverService userResolverService)
             : base(options)
-        {            
-            _storeOptions = storeOptions;
+        {
+            _userResolverService = userResolverService;
         }
 
         public DbSet<Client> Clients { get; set; }
@@ -23,15 +24,52 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
         public DbSet<User> Users { get; set; }
         public DbSet<PersistedGrant> PersistedGrants { get; set; }
 
-        public Task<int> SaveChangesAsync()
+        public async Task<int> SaveChangesAsync()
         {
-            return base.SaveChangesAsync();
+            OnSaveChanges();
+
+            return await base.SaveChangesAsync();
+        }
+
+        private void OnSaveChanges()
+        {
+            var entities = base.ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+            foreach (var entityEntry in entities)
+            {
+                var trackableEntity = entityEntry.Entity as ITrackable;
+                if(trackableEntity == null)
+                {
+                    continue;
+                }
+
+                if (entityEntry.State == EntityState.Added)
+                {
+                    trackableEntity.CreatedDateTimeUtc = DateTime.UtcNow;
+                    trackableEntity.CreatedBy = (_userResolverService.Subject ?? _userResolverService.ClientId) ?? "anonymous";
+                }
+                else if (entityEntry.State == EntityState.Modified)
+                {
+                    trackableEntity.ModifiedDateTimeUtc = DateTime.UtcNow;
+                    trackableEntity.ModifiedBy = (_userResolverService.Subject ?? _userResolverService.ClientId) ?? "anonymous";
+                }
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            OnSaveChanges();
+
+            return base.SaveChanges();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ApiClaim>(entity =>
             {
+                entity.ToTable("ApiClaims");
+
                 entity.HasIndex(e => e.ApiResourceId)
                     .HasName("IX_ApiClaims_ApiResourceId");
 
@@ -46,6 +84,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ApiResource>(entity =>
             {
+                entity.ToTable("ApiResources");
+
                 entity.HasIndex(e => e.Name)
                     .HasName("IX_ApiResources_Name")
                     .IsUnique();
@@ -73,6 +113,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ApiScopeClaim>(entity =>
             {
+                entity.ToTable("ApiScopeClaims");
+
                 entity.HasIndex(e => e.ApiScopeId)
                     .HasName("IX_ApiScopeClaims_ApiScopeId");
 
@@ -87,6 +129,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ApiScope>(entity =>
             {
+                entity.ToTable("ApiScopes");
+
                 entity.HasIndex(e => e.ApiResourceId)
                     .HasName("IX_ApiScopes_ApiResourceId");
 
@@ -109,6 +153,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ApiSecret>(entity =>
             {
+                entity.ToTable("ApiSecrets");
+
                 entity.HasIndex(e => e.ApiResourceId)
                     .HasName("IX_ApiSecrets_ApiResourceId");
 
@@ -125,6 +171,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientClaim>(entity =>
             {
+                entity.ToTable("ClientClaims");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientClaims_ClientId");
 
@@ -143,6 +191,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientCorsOrigin>(entity =>
             {
+                entity.ToTable("ClientCorsOrigins");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientCorsOrigins_ClientId");
 
@@ -157,6 +207,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientGrantType>(entity =>
             {
+                entity.ToTable("ClientGrantTypes");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientGrantTypes_ClientId");
 
@@ -187,6 +239,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientPostLogoutRedirectUri>(entity =>
             {
+                entity.ToTable("ClientPostLogoutRedirectUris");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientPostLogoutRedirectUris_ClientId");
 
@@ -201,6 +255,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientRedirectUri>(entity =>
             {
+                entity.ToTable("ClientRedirectUris");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientRedirectUris_ClientId");
 
@@ -215,6 +271,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientScope>(entity =>
             {
+                entity.ToTable("ClientScopes");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientScopes_ClientId");
 
@@ -229,6 +287,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<ClientSecret>(entity =>
             {
+                entity.ToTable("ClientSecrets");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_ClientSecrets_ClientId");
 
@@ -247,6 +307,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<Client>(entity =>
             {
+                entity.ToTable("Clients");
+
                 entity.HasIndex(e => e.ClientId)
                     .HasName("IX_Clients_ClientId")
                     .IsUnique();
@@ -280,6 +342,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<IdentityClaim>(entity =>
             {
+                entity.ToTable("IdentityClaims");
+
                 entity.HasIndex(e => e.IdentityResourceId)
                     .HasName("IX_IdentityClaims_IdentityResourceId");
 
@@ -294,6 +358,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<IdentityResource>(entity =>
             {
+                entity.ToTable("IdentityResources");
+                entity.HasKey("Id");
+
                 entity.HasIndex(e => e.Name)
                     .HasName("IX_IdentityResources_Name")
                     .IsUnique();
@@ -302,6 +369,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .IsRequired()
                     .HasMaxLength(100);
 
+                
                 entity.Property(e => e.CreatedDateTimeUtc).HasColumnType("datetime");
 
                 entity.Property(e => e.Description).HasMaxLength(1000);
@@ -321,17 +389,21 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
             modelBuilder.Entity<UserLogin>(entity =>
             {
+                entity.ToTable("UserLogins");
+
                 entity.Property(e => e.LoginDate).HasColumnType("datetime");
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.UserLogins)
-                    .HasForeignKey(d => d.UserId)
-                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasForeignKey(d => d.UserId)                    
                     .HasConstraintName("FK_UserLogins_Users_Id");
             });
 
             modelBuilder.Entity<User>(entity =>
             {
+                entity.ToTable("Users")
+                .HasKey(e => e.Id);
+
                 entity.Property(e => e.CreatedBy)
                     .IsRequired()
                     .HasMaxLength(100);
@@ -359,10 +431,32 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                 entity.Property(e => e.Username)
                     .IsRequired()
                     .HasMaxLength(200);
+
+                entity.Property(p => p.ComputedUserId)
+                    .HasComputedColumnSql("SubjectId + ':' + ProviderName")
+                    .HasColumnName("ComputedUserId");
+            });
+
+            modelBuilder.Entity<UserClaim>(entity =>
+            {
+                entity.ToTable("UserClaims");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("IX_UserClaims_UserId");
+
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(e => e.Claims)
+                    .HasForeignKey(e => e.UserId);
             });
 
             modelBuilder.Entity<PersistedGrant>(grant =>
             {
+                grant.ToTable("PersistedGrants");
+
                 grant.Property(x => x.Key).HasMaxLength(200).ValueGeneratedNever();
                 grant.Property(x => x.Type).HasMaxLength(50).IsRequired();
                 grant.Property(x => x.SubjectId).HasMaxLength(200);
@@ -374,6 +468,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 grant.HasIndex(x => new { x.SubjectId, x.ClientId, x.Type });
             });
-        }
+        }       
     }
 }

@@ -14,9 +14,9 @@ namespace Fabric.Identity.API.Persistence.InMemory.DependencyInjection
         public InMemoryIdentityServerConfigurator(
             IIdentityServerBuilder identityServerBuilder,
             IServiceCollection serviceCollection,
-            IAppConfiguration appConfiguration,
+            HostingOptions hostingOptions,
             ILogger logger)
-            : base(identityServerBuilder, serviceCollection, appConfiguration, logger)
+            : base(identityServerBuilder, serviceCollection, hostingOptions, logger)
         {
         }
 
@@ -35,7 +35,7 @@ namespace Fabric.Identity.API.Persistence.InMemory.DependencyInjection
         {
             IdentityServerBuilder
                 .AddTemporarySigningCredential()
-                .AddTestUsersIfConfigured(AppConfiguration.HostingOptions)
+                .AddTestUsersIfConfigured(HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<InMemoryResourceStore>()
                 .AddClientStore<InMemoryClientManagementStore>();

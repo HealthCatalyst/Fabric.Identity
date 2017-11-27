@@ -20,13 +20,17 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public Task<IEnumerable<IdentityServer4.Models.PersistedGrant>> GetAllAsync(string subjectId)
         {
-            var persistedGrants = _identityDbContext.PersistedGrants.Where(pg => pg.SubjectId == subjectId);
+            var persistedGrants = _identityDbContext.PersistedGrants
+                .Where(pg => pg.SubjectId == subjectId
+                             && !pg.IsDeleted);
             return Task.FromResult(persistedGrants.Select(pg => pg.ToModel()).AsEnumerable());
         }
 
         public async Task<IdentityServer4.Models.PersistedGrant> GetAsync(string key)
         {
-            var persistedGrantEntity = await _identityDbContext.PersistedGrants.FirstOrDefaultAsync(pg => pg.Key == key);
+            var persistedGrantEntity = await _identityDbContext.PersistedGrants
+                .Where(pg => !pg.IsDeleted)
+                .FirstOrDefaultAsync(pg => pg.Key == key);
             return persistedGrantEntity?.ToModel();
         }
 
@@ -63,10 +67,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             await _identityDbContext.SaveChangesAsync();
         }
 
-        public Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
+        public async Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
         {
             var persistedGrantEntity = grant.ToEntity();
-            return _identityDbContext.PersistedGrants.AddAsync(persistedGrantEntity);
+            _identityDbContext.PersistedGrants.Add(persistedGrantEntity);
+            await _identityDbContext.SaveChangesAsync();
         }
     }
 }

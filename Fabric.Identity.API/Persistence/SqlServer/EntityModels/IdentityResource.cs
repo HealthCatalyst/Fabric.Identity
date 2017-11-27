@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class IdentityResource : ITrackable, ISoftDelete
+    public class IdentityResource : ITrackable, ISoftDelete
     {
         public IdentityResource()
         {
             IdentityClaims = new HashSet<IdentityClaim>();
         }
-
+      
         public int Id { get; set; }
         public string Description { get; set; }
         public string DisplayName { get; set; }

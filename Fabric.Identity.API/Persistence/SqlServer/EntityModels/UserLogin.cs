@@ -9,6 +9,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public string ClientId { get; set; }
         public DateTime LoginDate { get; set; }
         
-        public virtual User User { get; set; }        
+        public virtual User User { get; set; }
     }
 }
