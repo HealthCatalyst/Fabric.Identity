@@ -28,11 +28,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
         public void AddResources(IEnumerable<IdentityResource> resources)
         {
-            var context = _identityDbContext as DbContext;
-            if (context != null)
-            {
-                _logger.Information("Connection String: " + context.Database.GetDbConnection().ConnectionString);
-            }
             var existingResources = _identityDbContext.IdentityResources.ToList();
             foreach (var identityResource in resources)
             {
