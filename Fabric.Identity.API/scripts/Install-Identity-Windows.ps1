@@ -104,16 +104,25 @@ if((Test-Path $zipPackage))
 
 if(!(Test-Prerequisite-Exact '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
 {
-   try{
-			Write-Host "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"
-			Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile $env:Temp\bundle.exe
-			Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
-			net stop was /y
-			net start w3svc
-			Remove-Item $env:Temp\bundle.exe
-		}catch{
-			Write-Error "Could not install .NET Windows Server Hosting bundle is installed. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461" -ErrorAction Stop
-		}
+    try{
+		Write-Host "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"
+        Write-Host "downloading to:" $env:Temp
+		Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile $env:Temp\bundle.exe
+		Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
+		net stop was /y
+		net start w3svc			
+	}catch{
+	    Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461"
+        throw $_.Exception
+	}
+    try{
+        Remove-Item $env:Temp\bundle.exe
+    }catch{
+        Write-Warning "Unable to remove Server Hosting bundle exe"
+        $e = $_.Exception
+        Write-Host $e.Message
+    }
+
 }else{
     Write-Host ".NET Core Windows Server Hosting Bundle installed and meets expectations."
 }
