@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using IdentityServer4.Models;
@@ -35,26 +36,30 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
             var existingResources = _identityDbContext.IdentityResources.ToList();
             foreach (var identityResource in resources)
             {
-                try
-                {
-                    var existingResource = existingResources.FirstOrDefault(i =>
-                        i.Name.Equals(identityResource.Name, StringComparison.OrdinalIgnoreCase));
+                var existingResource = existingResources.FirstOrDefault(i =>
+                    i.Name.Equals(identityResource.Name, StringComparison.OrdinalIgnoreCase));
 
-                    if (existingResource != null)
-                    {
-                        continue;
-                    }
-
-                    _identityDbContext.IdentityResources.Add(identityResource.ToEntity());
-                }
-                catch (Exception ex)
+                if (existingResource != null)
                 {
-                    _logger.Warning(ex, ex.Message);
-                    throw;
+                    continue;
                 }
+
+                _identityDbContext.IdentityResources.Add(identityResource.ToEntity());
             }
 
-            _identityDbContext.SaveChanges();
+            try
+            {
+                _identityDbContext.SaveChanges();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.Warning(ex, "Error when adding IdentityResource, error message: {Message}.", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, ex.Message);
+                throw;
+            }
         }
     }
 }
