@@ -51,32 +51,26 @@ $workingDirectory = Get-CurrentScriptDirectory
 
 try{
 
-$allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
+    $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
+    $index = 1
+    $allCerts |
+        ForEach-Object {New-Object PSCustomObject -Property @{
+        'Index'=$index;
+        'Subject'= $_.Subject; 
+        'Name' = $_.FriendlyName; 
+        'Thumbprint' = $_.Thumbprint; 
+        'Expiration' = $_.NotAfter
+        };
+        $index ++} |
+        Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
 
-$index = 1
-
-$allCerts |
-    ForEach-Object {New-Object PSCustomObject -Property @{
-    'Index'=$index;
-    'Subject'= $_.Subject; 
-    'Name' = $_.FriendlyName; 
-    'Thumbprint' = $_.Thumbprint; 
-    'Expiration' = $_.NotAfter
-    };
-    $index ++} |
-    Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
-
-$selectionNumber = Read-Host  "Select a certificate by Index"
-
-$certThumbprint = Get-CertThumbprint $allCerts $selectionNumber 
-
-
-$primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
-Write-Host "cert thumbprint returned::: " $primarySigningCertificateThumbprint
-$encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
-}catch{
-    Write-Host "Could not set the certificate thumbprint."
-    throw $_.Exception
+    $selectionNumber = Read-Host  "Select a certificate by Index"
+    $certThumbprint = Get-CertThumbprint $allCerts $selectionNumber     
+    $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
+    $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
+    }catch{
+        Write-Host "Could not set the certificate thumbprint."
+        throw $_.Exception
 }
 
 
@@ -255,30 +249,3 @@ Write-Host "The Fabric.Installer clientSecret will be needed in subsequent insta
 Write-Host "Fabric.Installer clientSecret: $installerClientSecret"
 
 Write-Host "Installation complete, exiting."
-
-
-
-
-
-function Show-Menu()
-{
-     cls
-     Write-Host "================ $Title ================"
-     
-     Write-Host "1: Press '1' for this option."
-     Write-Host "2: Press '2' for this option."
-     Write-Host "3: Press '3' for this option."
-     Write-Host "Q: Press 'Q' to quit."
-}
-
-$linenumber = 1
-Get-ChildItem |
-    ForEach-Object {New-Object psObject -Property @{
-    'Index'=$linenumber;
-    'Subject'= $_.Subject; 
-    'Name' = $_.FriendlyName; 
-    'Thumbprint' = $_.Thumbprint; 
-    'Expiration' = $_.NotAfter
-    };
-    $linenumber ++} |
-    Format-Table -AutoSize
