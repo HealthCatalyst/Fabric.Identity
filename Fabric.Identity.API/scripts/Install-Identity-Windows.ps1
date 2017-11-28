@@ -103,10 +103,7 @@ if((Test-Path $zipPackage))
 
 
 if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
-{
-    if(Test-Prerequisite "*.NET Core*Windows Server Hosting*"){
-        Write-Error "There is already a different version of the .NET Windows Server Hosting bundle installed. Please uninstall it before proceeding." -ErrorAction Stop
-    }
+{    
     try{
 		Write-Host "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"
         Write-Host "downloading to:" $env:Temp
@@ -119,10 +116,10 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
 	}
     try{
         Remove-Item $env:Temp\bundle.exe
-    }catch{
-        Write-Warning "Unable to remove Server Hosting bundle exe"
-        $e = $_.Exception
-        Write-Host $e.Message
+    }catch{        
+        $e = $_.Exception        
+        Write-Warning "Unable to remove Server Hosting bundle exe" 
+        Write-Warning $e.Message
     }
 
 }else{
