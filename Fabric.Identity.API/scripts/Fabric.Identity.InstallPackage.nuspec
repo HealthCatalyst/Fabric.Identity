@@ -13,6 +13,6 @@
     <file src="Fabric.Identity.InstallPackage.targets" target="build" />
     <file src="Fabric.Identity.SqlServer.dacpac" target="build" />
     <file src="Fabric.Identity.SqlServer.publish.xml" target="build" />
-    <file src="Fabric.Identity.SqlServerIncludeTables.publish.xml" target="build" />
+    <file src="Fabric.Identity.SqlServerIncludingTables.publish.xml" target="build" />
   </files>
 </package>
