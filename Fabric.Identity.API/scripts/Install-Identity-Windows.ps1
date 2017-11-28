@@ -131,6 +131,12 @@ if(!(Test-Prerequisite '*CouchDB*'))
     Write-Host "CouchDB installed and meets specifications"
 }
 
+$userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to continue"
+
+if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){   
+     $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
+}
+
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
 Write-Host "App directory is: $appDirectory"
