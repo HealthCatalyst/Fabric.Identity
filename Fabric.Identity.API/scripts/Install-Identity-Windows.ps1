@@ -102,8 +102,11 @@ if((Test-Path $zipPackage))
 }
 
 
-if(!(Test-Prerequisite-Exact '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
+if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
 {
+    if(Test-Prerequisite "*.NET Core*Windows Server Hosting*"){
+        Write-Error "There is already a different version of the .NET Windows Server Hosting bundle installed. Please uninstall it before proceeding." -ErrorAction Stop
+    }
     try{
 		Write-Host "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"
         Write-Host "downloading to:" $env:Temp
@@ -112,8 +115,7 @@ if(!(Test-Prerequisite-Exact '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
 		net stop was /y
 		net start w3svc			
 	}catch{
-	    Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461"
-        throw $_.Exception
+	    Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461" -ErrorAction Stop
 	}
     try{
         Remove-Item $env:Temp\bundle.exe
