@@ -55,7 +55,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public int GetClientCount()
         {
-            return GetAllClients().Count();
+            return _identityDbContext.Clients.Count();
         }
 
         public void AddClient(Client client)
