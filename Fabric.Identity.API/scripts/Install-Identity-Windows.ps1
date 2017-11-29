@@ -69,7 +69,7 @@ try{
 		};} |
 		Format-Table Id,Name,'Physical Path',Bindings -AutoSize
 
-	$selectedSiteId = Read-Host "Select a web site by Id:"
+	$selectedSiteId = Read-Host "Select a web site by Id"
 
 	if($sites -is [array]){
 		$selectedSite = $sites[$selectedSiteId - 1]
