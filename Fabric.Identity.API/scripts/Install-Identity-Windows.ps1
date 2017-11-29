@@ -22,22 +22,6 @@ function Test-RegistrationComplete($authUrl)
     return $false
 }
 
-function Unlock-ConfigurationSections(){
-    $assembly = [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll")
-    $manager = new-object Microsoft.Web.Administration.ServerManager  
-    $config = $manager.GetApplicationHostConfiguration()
-    
-    $section = $config.GetSection("system.webServer/security/authentication/anonymousAuthentication")
-    $section.OverrideMode = "Allow"    
-    Write-Host "Unlocked system.webServer/security/authentication/anonymousAuthentication"
-
-    $section = $config.GetSection("system.webServer/security/authentication/windowsAuthentication")
-    $section.OverrideMode = "Allow"    
-    Write-Host "Unlocked system.webServer/security/authentication/windowsAuthentication"
-    
-    $manager.CommitChanges()
-}
-
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
 }
