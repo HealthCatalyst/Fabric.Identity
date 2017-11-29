@@ -187,7 +187,6 @@ Write-Host "App directory is: $appDirectory"
 New-AppPool $appName
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName
-Unlock-ConfigurationSections
 
 #Write environment variables
 Write-Host "Loading up environment variables..."
