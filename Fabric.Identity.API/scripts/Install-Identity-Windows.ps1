@@ -54,7 +54,13 @@ try{
 		Format-Table Id,Name,'Physical Path',Bindings -AutoSize
 
 	$selectedSiteId = Read-Host "Select a web site by Id:"
-	$selectedSite = $sites[$selectedSiteId - 1]
+
+	if($sites -is [array]){
+		$selectedSite = $sites[$selectedSiteId - 1]
+	}else{
+		$selectedSite = $sites
+	}
+
 	$webroot = $selectedSite.physicalPath
 	$siteName = $selectedSite.name
 
