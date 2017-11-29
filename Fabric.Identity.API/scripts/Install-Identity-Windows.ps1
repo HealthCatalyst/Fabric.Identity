@@ -44,6 +44,25 @@ $workingDirectory = Get-CurrentScriptDirectory
 
 
 try{
+	$sites = Get-ChildItem IIS:\Sites
+	$sites |
+		ForEach-Object {New-Object PSCustomObject -Property @{
+			'Id'=$_.id;
+			'Name'=$_.name;
+			'Physical Path'=$_.physicalPath;
+			'Bindings'=$_.bindings;
+		};} |
+		Format-Table Id,Name,'Physical Path',Bindings -AutoSize
+
+	$selectedSiteId = Read-Host "Select a web site by Id:"
+	$selectedSite = $sites[$selectedSiteId - 1]
+	$webroot = $selectedSite.physicalPath
+
+}catch{
+	Write-Error "Could not select a website." -ErrorAction Stop
+}
+
+try{
 
     $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
     $index = 1
