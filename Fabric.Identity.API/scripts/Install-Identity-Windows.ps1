@@ -46,8 +46,11 @@ $ldapUserName = $installSettings.ldapUserName
 $ldapPassword = $installSettings.ldapPassword
 $ldapUseSsl = $installSettings.ldapUseSsl
 $ldapBaseDn = $installSettings.ldapBaseDn
+$sqlServerAddress = $installSettings.sqlServerAddress
+$sqlServerConnStr = $installSettings.sqlServerConnStr
 
 $workingDirectory = Get-CurrentScriptDirectory
+
 
 try{
 
@@ -153,6 +156,21 @@ if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){
      $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
 }
 
+$userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql Server address '$($sqlServerAddress)' or enter a new Sql Server address" 
+
+if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
+    $sqlServerAddress = $userEnteredSqlServerAddress
+    $sqlServerConnStr = "Server=$($sqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
+}
+
+$userEnteredSqlServerConnStr = Read-Host "Press Enter to accept the connection string '$($sqlServerConnStr)' or enter a new connection string"
+
+if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){
+    Write-Host "user setting their own connection string"
+    $sqlServerConnStr = $userEnteredSqlServerConnStr
+}
+
+
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
 Write-Host "App directory is: $appDirectory"
@@ -222,6 +240,10 @@ if($ldapUseSsl){
 
 if($ldapBaseDn){
 	$environmentVariables.Add("LdapSettings__BaseDn", $ldapBaseDn)
+}
+
+if($sqlServerConnStr){
+    $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $sqlServerConnStr)
 }
 
 Set-EnvironmentVariables $appDirectory $environmentVariables
