@@ -43,8 +43,24 @@ if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
+function Unlock-ConfigurationSections(){   
+    $manager = new-object Microsoft.Web.Administration.ServerManager  
+    $config = $manager.GetApplicationHostConfiguration()
+    
+    $section = $config.GetSection("system.webServer/security/authentication/anonymousAuthentication")
+    $section.OverrideMode = "Allow"    
+    Write-Host "Unlocked system.webServer/security/authentication/anonymousAuthentication"
+
+    $section = $config.GetSection("system.webServer/security/authentication/windowsAuthentication")
+    $section.OverrideMode = "Allow"    
+    Write-Host "Unlocked system.webServer/security/authentication/windowsAuthentication"
+    
+    $manager.CommitChanges()
+}
+
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
+$webroot = $installSettings.webroot
 $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
 $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
@@ -179,6 +195,7 @@ if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){
     $sqlServerConnStr = $userEnteredSqlServerConnStr
 }
 
+Unlock-ConfigurationSections
 
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
