@@ -34,18 +34,9 @@ $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
 $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
-$couchDbServer = $installSettings.couchDbServer
-$couchDbUsername = $installSettings.couchDbUsername
-$couchDbPassword = $installSettings.couchDbPassword 
 $appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
 $siteName = $installSettings.siteName
 $hostUrl = $installSettings.hostUrl
-$ldapServer = $installSettings.ldapServer
-$ldapPort = $installSettings.ldapPort
-$ldapUserName = $installSettings.ldapUserName
-$ldapPassword = $installSettings.ldapPassword
-$ldapUseSsl = $installSettings.ldapUseSsl
-$ldapBaseDn = $installSettings.ldapBaseDn
 $sqlServerAddress = $installSettings.sqlServerAddress
 $sqlServerConnStr = $installSettings.sqlServerConnStr
 
@@ -129,27 +120,6 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
     Write-Host ".NET Core Windows Server Hosting Bundle installed and meets expectations."
 }
 
-if(!(Test-Prerequisite '*CouchDB*'))
-{
-    Write-Host "CouchDB not installed locally, testing to see if is installed on a remote server using $couchDbServer"
-    $remoteInstallationStatus = Get-CouchDbRemoteInstallationStatus $couchDbServer 2.0.0
-    if($remoteInstallationStatus -eq "NotInstalled")
-    {
-        Write-Host "CouchDB not installed, download and install from https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi. Halting installation."
-		exit 1
-    }elseif($remoteInstallationStatus -eq "MinVersionNotMet"){
-        Write-Host "CouchDB is installed on $couchDbServer but does not meet the minimum version requirements, you must have CouchDB 2.0.0.1 or greater installed: https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi. Halting installation."
-        exit 1
-    }else{
-        Write-Host "CouchDB installed and meets specifications"
-    }
-}elseif (!(Test-Prerequisite '*CouchDB*' 2.0.0.1)) {
-    Write-Host "CouchDB is installed but does not meet the minimum version requirements, you must have CouchDB 2.0.0.1 or greater installed: https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi. Halting installation."
-    exit 1
-}else{
-    Write-Host "CouchDB installed and meets specifications"
-}
-
 $userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to continue"
 
 if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){   
@@ -195,50 +165,12 @@ if ($encryptionCertificateThumbprint){
 	$environmentVariables.Add("SigningCertificateSettings__EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
 }
 
-if ($couchDbServer){
-	$environmentVariables.Add("CouchDbSettings__Server", $couchDbServer)
-}
-
-if ($couchDbUsername){
-	$environmentVariables.Add("CouchDbSettings__Username", $couchDbUsername)
-}
-
-if ($couchDbPassword){
-	$encryptedCouchDbPassword = Get-EncryptedString $encryptionCert $couchDbPassword
-	$environmentVariables.Add("CouchDbSettings__Password", $encryptedCouchDbPassword)
-}
-
 if($appInsightsInstrumentationKey){
 	$environmentVariables.Add("ApplicationInsights__Enabled", "true")
 	$environmentVariables.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
 }
 
 $environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "${hostUrl}/${appName}")
-
-if($ldapServer){
-	$environmentVariables.Add("LdapSettings__Server", $ldapServer)
-}
-
-if($ldapPort){
-	$environmentVariables.Add("LdapSettings__Port", $ldapPort)
-}
-
-if($ldapUserName){
-	$environmentVariables.Add("LdapSettings__Username", $ldapUserName)
-}
-
-if($ldapPassword){
-	$encryptedLdapPassword = Get-EncryptedString $encryptionCert $ldapPassword
-	$environmentVariables.Add("LdapSettings__Password", $encryptedLdapPassword)
-}
-
-if($ldapUseSsl){
-	$environmentVariables.Add("LdapSettings__UseSsl", $ldapUseSsl)
-}
-
-if($ldapBaseDn){
-	$environmentVariables.Add("LdapSettings__BaseDn", $ldapBaseDn)
-}
 
 if($sqlServerConnStr){
     $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $sqlServerConnStr)
