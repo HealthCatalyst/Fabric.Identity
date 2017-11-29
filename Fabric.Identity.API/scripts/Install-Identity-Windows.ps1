@@ -29,7 +29,6 @@ Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
-$webroot = $installSettings.webroot
 $appName = $installSettings.appName
 $iisUser = $installSettings.iisUser
 $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
@@ -57,6 +56,7 @@ try{
 	$selectedSiteId = Read-Host "Select a web site by Id:"
 	$selectedSite = $sites[$selectedSiteId - 1]
 	$webroot = $selectedSite.physicalPath
+	$siteName = $selectedSite.name
 
 }catch{
 	Write-Error "Could not select a website." -ErrorAction Stop
