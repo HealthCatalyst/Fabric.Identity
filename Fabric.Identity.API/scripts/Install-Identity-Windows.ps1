@@ -158,15 +158,13 @@ if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){
 
 $userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql Server address '$($sqlServerAddress)' or enter a new Sql Server address" 
 
-if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
-    $sqlServerAddress = $userEnteredSqlServerAddress
-    $sqlServerConnStr = "Server=$($sqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
+if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){    
+    $sqlServerConnStr = "Server=$($userEnteredSqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
 }
 
 $userEnteredSqlServerConnStr = Read-Host "Press Enter to accept the connection string '$($sqlServerConnStr)' or enter a new connection string"
 
-if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){
-    Write-Host "user setting their own connection string"
+if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){    
     $sqlServerConnStr = $userEnteredSqlServerConnStr
 }
 
