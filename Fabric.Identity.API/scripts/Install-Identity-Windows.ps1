@@ -28,7 +28,8 @@ if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
 function Unlock-ConfigurationSections(){   
-    $manager = new-object Microsoft.Web.Administration.ServerManager  
+    [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll")
+    $manager = new-object Microsoft.Web.Administration.ServerManager      
     $config = $manager.GetApplicationHostConfiguration()
     
     $section = $config.GetSection("system.webServer/security/authentication/anonymousAuthentication")
@@ -40,6 +41,19 @@ function Unlock-ConfigurationSections(){
     Write-Host "Unlocked system.webServer/security/authentication/windowsAuthentication"
     
     $manager.CommitChanges()
+}
+
+function Invoke-Sql($connectionString, $sql){    
+    $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
+    $command = New-Object System.Data.SqlClient.SqlCommand($sql, $connection)
+
+    try {
+        $connection.Open()    
+        $command.ExecuteNonQuery()
+        $connection.Close()        
+    }catch [System.Data.SqlClient.SqlException] {
+        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String $($connectionString)"  -ErrorAction Stop
+    }    
 }
 
 $installSettings = Get-InstallationSettings "identity"
@@ -178,6 +192,8 @@ $userEnteredSqlServerConnStr = Read-Host "Press Enter to accept the connection s
 if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){    
     $sqlServerConnStr = $userEnteredSqlServerConnStr
 }
+Invoke-Sql $sqlServerConnStr "SELECT TOP 1 ClientId FROM Clients"
+Write-Host "Connection string verified"
 
 Unlock-ConfigurationSections
 
