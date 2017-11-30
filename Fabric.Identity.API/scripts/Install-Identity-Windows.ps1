@@ -78,7 +78,7 @@ try{
 		ForEach-Object {New-Object PSCustomObject -Property @{
 			'Id'=$_.id;
 			'Name'=$_.name;
-			'Physical Path'=$_.physicalPath;
+			'Physical Path'=[System.Environment]::ExpandEnvironmentVariables($_.physicalPath);
 			'Bindings'=$_.bindings;
 		};} |
 		Format-Table Id,Name,'Physical Path',Bindings -AutoSize
@@ -91,7 +91,7 @@ try{
 		$selectedSite = $sites
 	}
 
-	$webroot = $selectedSite.physicalPath
+    $webroot = [System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath)    
 	$siteName = $selectedSite.name
 
 }catch{
