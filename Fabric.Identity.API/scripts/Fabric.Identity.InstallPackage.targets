@@ -12,7 +12,7 @@
       <Link>SetupContent\Fabric.Identity.SqlServer.publish.xml</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="$(MSBuildThisFileDirectory)Fabric.Identity.SqlServerIncludeTables.publish.xml">
+    <None Include="$(MSBuildThisFileDirectory)Fabric.Identity.SqlServerIncludingTables.publish.xml">
       <Link>SetupContent\Fabric.Identity.SqlServerIncludingTables.publish.xml</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
