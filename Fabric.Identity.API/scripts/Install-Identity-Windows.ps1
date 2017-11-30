@@ -23,6 +23,57 @@ function Test-RegistrationComplete($authUrl)
     return $false
 }
 
+function Add-DatabaseLogin($userName, $connString)
+{
+	$query = "USE master
+			If Not exists (SELECT * FROM sys.server_principals
+				WHERE sid = suser_sid('$userName'))
+			BEGIN
+				print '-- creating database login'
+				CREATE LOGIN [$userName] FROM WINDOWS
+			END"
+	Invoke-Query $connString $query
+}
+
+function Add-DatabaseUser($userName, $connString)
+{
+	$query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$userName'))
+			BEGIN
+				print '-- Creating user';
+				CREATE USER [$userName] FOR LOGIN [$userName];
+			END"
+	Invoke-Query $connString $query
+}
+
+function Add-DatabaseUserToRole($userName, $connString, $role)
+{
+	$query = "DECLARE @exists int
+			SELECT @exists = IS_ROLEMEMBER('$role', '$userName') 
+			IF (@exists IS NULL OR @exists = 0)
+			BEGIN
+				print '-- Adding $role to $userName';
+				EXEC sp_addrolemember '$role', '$userName';
+			END"
+	Invoke-Query $connString $query
+}
+
+function Invoke-Query($connString, $query)
+{
+	Write-Host $connString
+	$connection = New-Object System.Data.SqlClient.SqlConnection($connString)
+	$command = New-Object System.Data.SqlClient.SqlCommand($query, $connection)
+	$connection.Open()
+	$command.ExecuteNonQuery()
+	$connection.Close()
+}
+
+function Add-DatabaseSecurity($userName, $role, $connString)
+{
+	Add-DatabaseLogin $userName $connString
+	Add-DatabaseUser $userName $connString
+	Add-DatabaseUserToRole $userName $connString $role
+}
+
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
 }
@@ -59,9 +110,7 @@ function Invoke-Sql($connectionString, $sql){
 
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
-$webroot = $installSettings.webroot
 $appName = $installSettings.appName
-$iisUser = $installSettings.iisUser
 $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
@@ -69,9 +118,11 @@ $siteName = $installSettings.siteName
 $hostUrl = $installSettings.hostUrl
 $sqlServerAddress = $installSettings.sqlServerAddress
 $sqlServerConnStr = $installSettings.sqlServerConnStr
+$identityDatabaseRole = $installSettings.identityDatabaseRole
+
+$iisUser = "IIS AppPool\$appName"
 
 $workingDirectory = Get-CurrentScriptDirectory
-
 
 try{
 	$sites = Get-ChildItem IIS:\Sites
@@ -193,6 +244,12 @@ if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){
 Invoke-Sql $sqlServerConnStr "SELECT TOP 1 ClientId FROM Clients"
 Write-Success "Connection string verified"
 
+$userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($iisUser)' or enter a new App Pool User"
+
+if(![string]::IsNullOrEmpty($userEnteredIisUser)){
+	$iisUser = $userEnteredIisUser
+}
+
 Unlock-ConfigurationSections
 
 $appDirectory = "$webroot\$appName"
@@ -201,6 +258,7 @@ Write-Console "App directory is: $appDirectory"
 New-AppPool $appName
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
+Add-DatabaseSecurity $iisUser $identityDatabaseRole $sqlServerConnStr
 
 #Write environment variables
 Write-Console "Loading up environment variables..."
@@ -234,6 +292,8 @@ if($sqlServerConnStr){
 Set-EnvironmentVariables $appDirectory $environmentVariables
 
 Set-Location $workingDirectory
+
+
 $identityServerUrl = "$hostUrl/identity"
 
 if(Test-RegistrationComplete $identityServerUrl)
