@@ -61,6 +61,7 @@
     <Folder Include="Tables" />
     <Folder Include="PublishProfiles" />
     <Folder Include="Security" />
+    <Folder Include="Admin" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Tables\ApiResources.sql" />
@@ -84,6 +85,7 @@
     <Build Include="Tables\PersistedGrants.sql" />
     <Build Include="Tables\UserClaims.sql" />
     <Build Include="Security\IdentityServiceRole.sql" />
+    <Build Include="Admin\MountPoints.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PublishProfiles\Fabric.Identity.SqlServer.publish.xml">
