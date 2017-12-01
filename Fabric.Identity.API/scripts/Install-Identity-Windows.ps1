@@ -109,6 +109,7 @@ $hostUrl = $installSettings.hostUrl
 $sqlServerAddress = $installSettings.sqlServerAddress
 $sqlServerConnStr = $installSettings.sqlServerConnStr
 $identityDatabaseRole = $installSettings.identityDatabaseRole
+$useSpecificUser = $false;
 
 $iisUser = "IIS AppPool\$appName"
 
@@ -238,6 +239,9 @@ $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool 
 
 if(![string]::IsNullOrEmpty($userEnteredIisUser)){
 	$iisUser = $userEnteredIisUser
+	$useSpecificUser = $true
+	$userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
+	$credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
 }
 
 Unlock-ConfigurationSections
@@ -245,7 +249,11 @@ Unlock-ConfigurationSections
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
 Write-Console "App directory is: $appDirectory"
-New-AppPool $appName
+if($useSpecificUser){
+	New-AppPool $appName $iisUser $credential
+}else{
+	New-AppPool $appName 
+}
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
 Add-DatabaseSecurity $iisUser $identityDatabaseRole $sqlServerConnStr
