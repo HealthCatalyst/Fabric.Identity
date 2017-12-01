@@ -10,4 +10,12 @@
     <AllowIncompatiblePlatform>False</AllowIncompatiblePlatform>
     <ExcludeTables>True</ExcludeTables>
   </PropertyGroup>
+  <ItemGroup>
+    <SqlCmdVariable Include="FabricIdentityDataMountPoint">
+      <Value>C:\SQLData</Value>
+    </SqlCmdVariable>
+    <SqlCmdVariable Include="FabricIdentityLogMountPoint">
+      <Value>C:\SQLData</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
 </Project>
