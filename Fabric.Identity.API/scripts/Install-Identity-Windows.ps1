@@ -328,13 +328,6 @@ $body = @'
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
-#Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint
-#Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint
-#Add-InstallationSetting "identity" "appInsightsInstrumentationKey" $appInsightsInstrumentationKey
-#Add-InstallationSetting "identity" "sqlServerAddress" $sqlServerAddress
-#Add-InstallationSetting "identity" "sqlServerConnStr" $sqlServerConnStr
-#Add-InstallationSetting "identity" "siteName" $siteName
-#Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint
 
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
