@@ -1,6 +1,7 @@
 #
 # Install_Identity_Windows.ps1
 #	
+param([bool]$overwriteWebConfig)
 
 function Test-RegistrationComplete($authUrl)
 {
@@ -52,7 +53,7 @@ function Invoke-Sql($connectionString, $sql){
         $command.ExecuteNonQuery()
         $connection.Close()        
     }catch [System.Data.SqlClient.SqlException] {
-        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String $($connectionString)"  -ErrorAction Stop
+        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString)"  -ErrorAction Stop
     }    
 }
 
@@ -202,7 +203,7 @@ New-AppRoot $appDirectory $iisUser
 Write-Host "App directory is: $appDirectory"
 New-AppPool $appName
 New-App $appName $siteName $appDirectory
-Publish-WebSite $zipPackage $appDirectory $appName
+Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
 
 #Write environment variables
 Write-Host "Loading up environment variables..."
