@@ -32,7 +32,7 @@ function Add-DatabaseLogin($userName, $connString)
 				print '-- creating database login'
 				CREATE LOGIN [$userName] FROM WINDOWS
 			END"
-	Invoke-Query $connString $query
+	Invoke-Sql $connString $query
 }
 
 function Add-DatabaseUser($userName, $connString)
@@ -42,7 +42,7 @@ function Add-DatabaseUser($userName, $connString)
 				print '-- Creating user';
 				CREATE USER [$userName] FOR LOGIN [$userName];
 			END"
-	Invoke-Query $connString $query
+	Invoke-Sql $connString $query
 }
 
 function Add-DatabaseUserToRole($userName, $connString, $role)
@@ -54,17 +54,7 @@ function Add-DatabaseUserToRole($userName, $connString, $role)
 				print '-- Adding $role to $userName';
 				EXEC sp_addrolemember '$role', '$userName';
 			END"
-	Invoke-Query $connString $query
-}
-
-function Invoke-Query($connString, $query)
-{
-	Write-Host $connString
-	$connection = New-Object System.Data.SqlClient.SqlConnection($connString)
-	$command = New-Object System.Data.SqlClient.SqlCommand($query, $connection)
-	$connection.Open()
-	$command.ExecuteNonQuery()
-	$connection.Close()
+	Invoke-Sql $connString $query
 }
 
 function Add-DatabaseSecurity($userName, $role, $connString)
