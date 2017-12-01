@@ -215,7 +215,7 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
     Write-Success ".NET Core Windows Server Hosting Bundle installed and meets expectations."
 }
 
-$userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to continue"
+$userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to accept the default [$appInsightsInstrumentationKey]"
 
 if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){   
      $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
@@ -223,7 +223,8 @@ if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){
 
 $userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql Server address '$($sqlServerAddress)' or enter a new Sql Server address" 
 
-if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){    
+if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
+	$sqlServerAddress = $userEnteredSqlServerAddress
     $sqlServerConnStr = "Server=$($userEnteredSqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
 }
 
@@ -327,7 +328,14 @@ $body = @'
 
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
-Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
+if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
+if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
+if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
+if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" }
+if($sqlServerAddress){ Add-InstallationSetting "identity" "sqlServerAddress" "$sqlServerAddress" }
+if($sqlServerConnStr){ Add-InstallationSetting "identity" "sqlServerConnStr" $sqlServerConnStr }
+if($siteName){ Add-InstallationSetting "identity" "siteName" $siteName }
+if($primarySigningCertificateThumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint }
 
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
