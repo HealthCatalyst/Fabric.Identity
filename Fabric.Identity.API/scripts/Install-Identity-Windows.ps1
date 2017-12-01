@@ -117,18 +117,18 @@ $workingDirectory = Get-CurrentScriptDirectory
 
 try{
 	$sites = Get-ChildItem IIS:\Sites
-	$sites |
-		ForEach-Object {New-Object PSCustomObject -Property @{
-			'Id'=$_.id;
-			'Name'=$_.name;
-			'Physical Path'=[System.Environment]::ExpandEnvironmentVariables($_.physicalPath);
-			'Bindings'=$_.bindings;
-		};} |
-		Format-Table Id,Name,'Physical Path',Bindings -AutoSize
-
-	$selectedSiteId = Read-Host "Select a web site by Id"
-
 	if($sites -is [array]){
+		$sites |
+			ForEach-Object {New-Object PSCustomObject -Property @{
+				'Id'=$_.id;
+				'Name'=$_.name;
+				'Physical Path'=[System.Environment]::ExpandEnvironmentVariables($_.physicalPath);
+				'Bindings'=$_.bindings;
+			};} |
+			Format-Table Id,Name,'Physical Path',Bindings -AutoSize
+
+		$selectedSiteId = Read-Host "Select a web site by Id"
+
 		$selectedSite = $sites[$selectedSiteId - 1]
 	}else{
 		$selectedSite = $sites
@@ -227,11 +227,6 @@ if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
     $sqlServerConnStr = "Server=$($userEnteredSqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
 }
 
-$userEnteredSqlServerConnStr = Read-Host "Press Enter to accept the connection string '$($sqlServerConnStr)' or enter a new connection string"
-
-if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){    
-    $sqlServerConnStr = $userEnteredSqlServerConnStr
-}
 Invoke-Sql $sqlServerConnStr "SELECT TOP 1 ClientId FROM Clients"
 Write-Success "Connection string verified"
 
@@ -242,6 +237,13 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
 	$useSpecificUser = $true
 	$userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
 	$credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
+	[System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement")
+	$ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
+	$pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
+	$isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password)
+	if(!$isValid){
+		Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
+	}
 }
 
 Unlock-ConfigurationSections
@@ -260,7 +262,7 @@ Add-DatabaseSecurity $iisUser $identityDatabaseRole $sqlServerConnStr
 
 #Write environment variables
 Write-Console "Loading up environment variables..."
-$environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
+$environmentVariables = @{"HostingOptions__StorageProvider" = "SqlServer"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 
 
 if($clientName){
@@ -326,6 +328,13 @@ $body = @'
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
+#Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint
+#Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint
+#Add-InstallationSetting "identity" "appInsightsInstrumentationKey" $appInsightsInstrumentationKey
+#Add-InstallationSetting "identity" "sqlServerAddress" $sqlServerAddress
+#Add-InstallationSetting "identity" "sqlServerConnStr" $sqlServerConnStr
+#Add-InstallationSetting "identity" "siteName" $siteName
+#Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint
 
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
