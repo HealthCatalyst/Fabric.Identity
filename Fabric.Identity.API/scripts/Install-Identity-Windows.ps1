@@ -16,7 +16,7 @@ function Test-RegistrationComplete($authUrl)
 
     if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 401)
     {
-        Write-Host "Fabric registration is already complete."
+        Write-Success "Fabric registration is already complete."
         return $true
     }
 
@@ -35,11 +35,11 @@ function Unlock-ConfigurationSections(){
     
     $section = $config.GetSection("system.webServer/security/authentication/anonymousAuthentication")
     $section.OverrideMode = "Allow"    
-    Write-Host "Unlocked system.webServer/security/authentication/anonymousAuthentication"
+    Write-Success "Unlocked system.webServer/security/authentication/anonymousAuthentication"
 
     $section = $config.GetSection("system.webServer/security/authentication/windowsAuthentication")
     $section.OverrideMode = "Allow"    
-    Write-Host "Unlocked system.webServer/security/authentication/windowsAuthentication"
+    Write-Success "Unlocked system.webServer/security/authentication/windowsAuthentication"
     
     $manager.CommitChanges()
 }
@@ -119,22 +119,21 @@ try{
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
     $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
     }catch{
-        Write-Host "Could not set the certificate thumbprint."
-        throw $_.Exception
+        Write-Error "Could not set the certificate thumbprint." -ErrorAction Stop        
 }
 
 
 try{
 	$signingCert = Get-Certificate $primarySigningCertificateThumbprint
 }catch{
-	Write-Host "Could not get signing certificate with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
+	Write-Error "Could not get signing certificate with thumbprint $primarySigningCertificateThumbprint. Please verify that the primarySigningCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
 	throw $_.Exception
 }
 
 try{
 	$encryptionCert = Get-Certificate $encryptionCertificateThumbprint
 }catch{
-	Write-Host "Could not get encryption certificate with thumbprint $encryptionCertificateThumbprint. Please verify that the encryptionCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
+	Write-Error "Could not get encryption certificate with thumbprint $encryptionCertificateThumbprint. Please verify that the encryptionCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
 	throw $_.Exception
 }
 
@@ -144,19 +143,17 @@ if((Test-Path $zipPackage))
 	if(!$path)
 	{
 		$zipPackage = [System.IO.Path]::Combine($workingDirectory, $zipPackage)
-		Write-Host "zipPackage: $zipPackage"
+		Write-Console "zipPackage: $zipPackage"
 	}
 }else{
-	Write-Host "Could not find file or directory $zipPackage, please verify that the zipPackage configuration setting in install.config is the path to a valid zip file that exists."
-	exit 1
+	Write-Error "Could not find file or directory $zipPackage, please verify that the zipPackage configuration setting in install.config is the path to a valid zip file that exists." -ErrorAction Stop	
 }
 
 
 if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
 {    
     try{
-		Write-Host "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"
-        Write-Host "downloading to:" $env:Temp
+		Write-Console "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30327.81"        
 		Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile $env:Temp\bundle.exe
 		Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
 		net stop was /y
@@ -173,7 +170,7 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
     }
 
 }else{
-    Write-Host ".NET Core Windows Server Hosting Bundle installed and meets expectations."
+    Write-Success ".NET Core Windows Server Hosting Bundle installed and meets expectations."
 }
 
 $userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to continue"
@@ -194,19 +191,19 @@ if(![string]::IsNullOrEmpty($userEnteredSqlServerConnStr)){
     $sqlServerConnStr = $userEnteredSqlServerConnStr
 }
 Invoke-Sql $sqlServerConnStr "SELECT TOP 1 ClientId FROM Clients"
-Write-Host "Connection string verified"
+Write-Success "Connection string verified"
 
 Unlock-ConfigurationSections
 
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
-Write-Host "App directory is: $appDirectory"
+Write-Console "App directory is: $appDirectory"
 New-AppPool $appName
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
 
 #Write environment variables
-Write-Host "Loading up environment variables..."
+Write-Console "Loading up environment variables..."
 $environmentVariables = @{"HostingOptions__UseInMemoryStores" = "false"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 
 
@@ -241,7 +238,7 @@ $identityServerUrl = "$hostUrl/identity"
 
 if(Test-RegistrationComplete $identityServerUrl)
 {
-    Write-Host "Installation complete, exiting."
+    Write-Success "Installation complete, exiting."
     exit 0
 }
 
@@ -254,7 +251,7 @@ $body = @'
 }
 '@
 
-Write-Host "Registering Fabric.Identity registration api."
+Write-Console "Registering Fabric.Identity registration api."
 $registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
 
 #Register Fabric.Installer
@@ -268,16 +265,16 @@ $body = @'
 }
 '@
 
-Write-Host "Registering Fabric.Installer."
+Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
 
-Write-Host ""
-Write-Host "Please keep the following secrets in a secure place:"
-Write-Host "Fabric.Installer clientSecret: $installerClientSecret"
-Write-Host "Fabric.Registration apiSecret: $registrationApiSecret"
-Write-Host ""
-Write-Host "The Fabric.Installer clientSecret will be needed in subsequent installations:"
-Write-Host "Fabric.Installer clientSecret: $installerClientSecret"
+Write-Console ""
+Write-Console "Please keep the following secrets in a secure place:"
+Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
+Write-Success "Fabric.Registration apiSecret: $registrationApiSecret"
+Write-Console ""
+Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
+Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
 
-Write-Host "Installation complete, exiting."
+Write-Success "Installation complete, exiting."
