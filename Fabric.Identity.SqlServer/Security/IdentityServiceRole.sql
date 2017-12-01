@@ -53,7 +53,7 @@ GO
 GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[PersistedGrants] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[UserClaims] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[UserClaims] to IdentityServiceRole;
 GO
 
 GRANT SELECT, INSERT, UPDATE ON [dbo].[UserLogins] to IdentityServiceRole;
