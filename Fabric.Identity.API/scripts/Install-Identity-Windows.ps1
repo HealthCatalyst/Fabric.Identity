@@ -69,6 +69,11 @@ if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
+if(!(Test-IsRunAsAdministrator))
+{
+	Write-Error "You must run this script as an administrator. Halting configuration." -ErrorAction Stop
+}
+
 function Unlock-ConfigurationSections(){   
     [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll")
     $manager = new-object Microsoft.Web.Administration.ServerManager      
