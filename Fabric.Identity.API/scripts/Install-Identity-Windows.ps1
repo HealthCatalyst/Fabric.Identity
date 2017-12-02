@@ -103,6 +103,28 @@ function Invoke-Sql($connectionString, $sql){
     }    
 }
 
+function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
+	try{
+        $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
+        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"    
+
+		$keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername        
+		$keyPath = [io.path]::combine($keyFolder, $keyname)
+
+		if ([io.file]::exists($keyPath))
+		{        
+			$acl = Get-Acl $keyPath
+			$acl.AddAccessRule($allowRule)
+			Set-Acl $keyPath $acl			
+			Write-Success "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
+		}else{
+			Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided" -ErrorAction Stop
+		}
+	}catch{
+		Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key" -ErrorAction Stop
+	}	
+}
+
 $installSettings = Get-InstallationSettings "identity"
 $zipPackage = $installSettings.zipPackage
 $appName = $installSettings.appName
@@ -262,6 +284,9 @@ if($useSpecificUser){
 }else{
 	New-AppPool $appName 
 }
+
+Add-PermissionToPrivateKey $iisUser $signingCert
+
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
 Add-DatabaseSecurity $iisUser $identityDatabaseRole $sqlServerConnStr
