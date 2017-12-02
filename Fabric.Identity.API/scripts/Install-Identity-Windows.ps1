@@ -285,7 +285,7 @@ if($useSpecificUser){
 	New-AppPool $appName 
 }
 
-Add-PermissionToPrivateKey $iisUser $signingCert
+Add-PermissionToPrivateKey $iisUser $signingCert read
 
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
