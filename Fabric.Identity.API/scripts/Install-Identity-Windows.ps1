@@ -64,6 +64,29 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 	Add-DatabaseUserToRole $userName $connString $role
 }
 
+function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl)
+{
+	$registrationBody = @{
+		ServiceName = "Fabric.Identity"
+		Version = 1
+		ServiceUrl = $serviceUrl
+		DiscoveryType = "Service"
+		IsHidden = $true
+		FriendlyName = "Fabric.Identity"
+		Description = "Fabric.Identity"
+		BuildNumber = "1.1.2017120101"
+	}
+
+	$url = "$discoveryUrl/v1/Services"
+	$jsonBody = $registrationBody | ConvertTo-Json
+	try{
+		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -UseDefaultCredentials | Out-Null
+		Write-Success "Fabric.Identity successfully registered with DiscoveryService."
+	}catch{
+		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Error $($_.Exception.Message) Halting installation." -ErrorAction Stop
+	}
+}
+
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
 	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
 }
@@ -75,7 +98,7 @@ if(!(Test-IsRunAsAdministrator))
 }
 
 function Unlock-ConfigurationSections(){   
-    [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll")
+    [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll") | Out-Null
     $manager = new-object Microsoft.Web.Administration.ServerManager      
     $config = $manager.GetApplicationHostConfiguration()
     
@@ -101,6 +124,16 @@ function Invoke-Sql($connectionString, $sql){
     }catch [System.Data.SqlClient.SqlException] {
         Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString)"  -ErrorAction Stop
     }    
+}
+
+function Get-ApplicationEndpoint($appName)
+{
+	return "http://$env:computername/$appName"
+}
+
+function Get-DiscoveryServiceUrl()
+{
+	return "http://$env:computername/DiscoveryService"
 }
 
 function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
@@ -136,8 +169,9 @@ $hostUrl = $installSettings.hostUrl
 $sqlServerAddress = $installSettings.sqlServerAddress
 $sqlServerConnStr = $installSettings.sqlServerConnStr
 $identityDatabaseRole = $installSettings.identityDatabaseRole
+$discoveryServiceUrl = Get-DiscoveryServiceUrl
 $useSpecificUser = $false;
-
+$applicationEndPoint = Get-ApplicationEndpoint $appName
 $iisUser = "IIS AppPool\$appName"
 
 $workingDirectory = Get-CurrentScriptDirectory
@@ -274,6 +308,16 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
 	}
 }
 
+$userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
+if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
+     $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
+}
+
+$userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$applicationEndpoint] or enter a new URL"
+if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
+	$applicationEndpoint = $userEnteredApplicationEndpoint
+}
+
 Unlock-ConfigurationSections
 
 $appDirectory = "$webroot\$appName"
@@ -325,8 +369,7 @@ Set-EnvironmentVariables $appDirectory $environmentVariables
 Set-Location $workingDirectory
 
 
-$identityServerUrl = "$hostUrl/identity"
-
+$identityServerUrl = $applicationEndpoint
 if(Test-RegistrationComplete $identityServerUrl)
 {
     Write-Success "Installation complete, exiting."
@@ -358,6 +401,9 @@ $body = @'
 
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
+
+Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl
+
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
