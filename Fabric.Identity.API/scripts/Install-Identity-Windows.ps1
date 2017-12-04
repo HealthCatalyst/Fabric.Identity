@@ -143,7 +143,7 @@ function Invoke-Sql($connectionString, $sql){
         $command.ExecuteNonQuery()
         $connection.Close()        
     }catch [System.Data.SqlClient.SqlException] {
-        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString)"  -ErrorAction Stop
+        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString). Error $($_.Exception.Message)"  -ErrorAction Stop
     }    
 }
 
@@ -175,7 +175,7 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
 			Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided" -ErrorAction Stop
 		}
 	}catch{
-		Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key" -ErrorAction Stop
+		Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Error $($_.Exception.Message)" -ErrorAction Stop
 	}	
 }
 
@@ -243,7 +243,7 @@ try{
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
     $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
     }catch{
-        Write-Error "Could not set the certificate thumbprint." -ErrorAction Stop        
+        Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)" -ErrorAction Stop        
 }
 
 
