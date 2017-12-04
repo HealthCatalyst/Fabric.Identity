@@ -345,6 +345,7 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
 	if(!$isValid){
 		Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
 	}
+	Write-Success "Credentials are valid for user $iisUser"
 }
 
 $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
