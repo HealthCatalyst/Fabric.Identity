@@ -311,8 +311,10 @@ namespace Fabric.Identity.IntegrationTests
             var connection =
                 $"Data Source={SqlServerHost};Initial Catalog=master;{SqlServerSecurityString};MultipleActiveResultSets=True";
             var file = new FileInfo("Fabric.Identity.SqlServer_Create.sql");
+
+            var dbName = $"Identity-{DatabaseNameSuffix}";
             var createDbScript = file.OpenText().ReadToEnd()
-                .Replace("$(DatabaseName)", $"Identity-{DatabaseNameSuffix}");
+                .Replace("$(DatabaseName)", dbName);
 
             var splitter = new[] { "GO\r\n" };
             var commandTexts = createDbScript.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
@@ -330,7 +332,7 @@ namespace Fabric.Identity.IntegrationTests
                         // break if we just created the Identity DB
                         if (commandText.StartsWith("CREATE DATABASE"))
                         {
-                            command.CommandText = $"CREATE DATABASE [Identity-{DatabaseNameSuffix}]"; // commandText.TrimEnd(Environment.NewLine.ToCharArray());
+                            command.CommandText = $"CREATE DATABASE [{dbName}]"; // commandText.TrimEnd(Environment.NewLine.ToCharArray());
                             command.ExecuteNonQuery();
                             break;
                         }
