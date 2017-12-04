@@ -88,13 +88,13 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
 {
 	$registrationBody = @{
-		ServiceName = "Fabric.Identity"
+		ServiceName = "IdentityService"
 		Version = 1
 		ServiceUrl = $serviceUrl
 		DiscoveryType = "Service"
 		IsHidden = $true
 		FriendlyName = "Fabric.Identity"
-		Description = "Fabric.Identity"
+		Description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
 		BuildNumber = "1.1.2017120101"
 	}
 
