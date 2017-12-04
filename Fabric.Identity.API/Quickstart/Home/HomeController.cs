@@ -30,7 +30,7 @@ namespace IdentityServer4.Quickstart.UI
         public async Task<IActionResult> Index()
         {
             var model = new IdentityStatusModel();
-            var discoPolicy = new DiscoveryPolicy { ValidateIssuerName = false };
+            var discoPolicy = new DiscoveryPolicy { ValidateIssuerName = false, RequireHttps = false };
             using (var discoClient =
                 new DiscoveryClient(_appConfiguration.IdentityServerConfidentialClientSettings.Authority)
                 {
