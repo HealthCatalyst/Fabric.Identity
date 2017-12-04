@@ -314,16 +314,22 @@ if(![string]::IsNullOrEmpty($userEnteredMetadataDbName)){
 	$metadataDbName = $userEnteredMetadataDbName
 }
 
+$metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
+
+Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
+Write-Success "Metadata DB Connection string: $metadataConnStr verified"
+
 $userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
 if(![string]::IsNullOrEmpty($userEnteredIdentityDbName)){
 	$identityDbName = $userEnteredIdentityDbName
 }
 
-
 $identityDbConnStr = "Server=$($sqlServerAddress);Database=$($identityDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
-$metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
-Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients"
-Write-Success "Connection string verified"
+
+Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
+Write-Success "Identity DB Connection string: $identityDbConnStr verified"
+
+
 
 $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($iisUser)' or enter a new App Pool User"
 
