@@ -64,7 +64,7 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 	Add-DatabaseUserToRole $userName $connString $role
 }
 
-function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl)
+function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
 {
 	$registrationBody = @{
 		ServiceName = "Fabric.Identity"
@@ -80,7 +80,7 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl)
 	$url = "$discoveryUrl/v1/Services"
 	$jsonBody = $registrationBody | ConvertTo-Json
 	try{
-		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -UseDefaultCredentials | Out-Null
+		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
 		Write-Success "Fabric.Identity successfully registered with DiscoveryService."
 	}catch{
 		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Error $($_.Exception.Message) Halting installation." -ErrorAction Stop
@@ -402,7 +402,7 @@ $body = @'
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 
-Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl
+Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
 
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
