@@ -358,7 +358,7 @@ if($appInsightsInstrumentationKey){
 	$environmentVariables.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
 }
 
-$environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "${hostUrl}/${appName}")
+$environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "$applicationEndpoint")
 
 if($sqlServerConnStr){
     $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $sqlServerConnStr)
