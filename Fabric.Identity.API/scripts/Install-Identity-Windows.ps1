@@ -57,6 +57,27 @@ function Add-DatabaseUserToRole($userName, $connString, $role)
 	Invoke-Sql $connString $query
 }
 
+function Add-ServiceUserToDiscovery($userName, $connString){
+	$query = "DECLARE @IdentityID int;
+				DECLARE @DiscoveryServiceUserRoleID int;
+
+				SELECT @IdentityID = IdentityID FROM CatalystAdmin.IdentityBASE WHERE IdentityNM = '$userName';
+				IF (@IdentityID IS NULL)
+				BEGIN
+					print ''-- Adding Identity'';
+					INSERT INTO CatalystAdmin.IdentityBASE (IdentityNM) VALUES ('$userName');
+					SELECT @IdentityID = SCOPE_IDENTITY();
+				END
+
+				SELECT @DiscoveryServiceUserRoleID = RoleID FROM CatalystAdmin.RoleBASE WHERE RoleNM = 'DiscoveryServiceUser';
+				IF (NOT EXISTS (SELECT 1 FROM CatalystAdmin.IdentityRoleBASE WHERE IdentityID = @IdentityID AND RoleID = @DiscoveryServiceUserRoleID))
+				BEGIN
+					print ''-- Assigning Discovery Service user'';
+					INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
+				END"
+	Invoke-Sql $connString $query
+}
+
 function Add-DatabaseSecurity($userName, $role, $connString)
 {
 	Add-DatabaseLogin $userName $connString
@@ -165,14 +186,14 @@ $primarySigningCertificateThumbprint = $installSettings.primarySigningCertificat
 $encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint -replace '[^a-zA-Z0-9]', ''
 $appInsightsInstrumentationKey = $installSettings.appInsightsInstrumentationKey
 $siteName = $installSettings.siteName
-$hostUrl = $installSettings.hostUrl
 $sqlServerAddress = $installSettings.sqlServerAddress
-$sqlServerConnStr = $installSettings.sqlServerConnStr
+$metadataDbName = $installSettings.metadataDbName
+$identityDbName = $installSettings.identityDbName
 $identityDatabaseRole = $installSettings.identityDatabaseRole
 $discoveryServiceUrl = Get-DiscoveryServiceUrl
-$useSpecificUser = $false;
 $applicationEndPoint = Get-ApplicationEndpoint $appName
 $iisUser = "IIS AppPool\$appName"
+$useSpecificUser = $false;
 
 $workingDirectory = Get-CurrentScriptDirectory
 
@@ -286,10 +307,22 @@ $userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql 
 
 if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
 	$sqlServerAddress = $userEnteredSqlServerAddress
-    $sqlServerConnStr = "Server=$($userEnteredSqlServerAddress);Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
 }
 
-Invoke-Sql $sqlServerConnStr "SELECT TOP 1 ClientId FROM Clients"
+$userEnteredMetadataDbName = Read-Host "Press Enter to accept the default Metadata DB Name '$($metadataDbName)' or enter a new Metadata DB Name"
+if(![string]::IsNullOrEmpty($userEnteredMetadataDbName)){
+	$metadataDbName = $userEnteredMetadataDbName
+}
+
+$userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
+if(![string]::IsNullOrEmpty($userEnteredIdentityDbName)){
+	$identityDbName = $userEnteredIdentityDbName
+}
+
+
+$identityDbConnStr = "Server=$($sqlServerAddress);Database=$($identityDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
+$metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
+Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients"
 Write-Success "Connection string verified"
 
 $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($iisUser)' or enter a new App Pool User"
@@ -333,7 +366,7 @@ Add-PermissionToPrivateKey $iisUser $signingCert read
 
 New-App $appName $siteName $appDirectory
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
-Add-DatabaseSecurity $iisUser $identityDatabaseRole $sqlServerConnStr
+Add-DatabaseSecurity $iisUser $identityDatabaseRole $identityDbConnStr
 
 #Write environment variables
 Write-Console "Loading up environment variables..."
@@ -360,8 +393,8 @@ if($appInsightsInstrumentationKey){
 
 $environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "$applicationEndpoint")
 
-if($sqlServerConnStr){
-    $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $sqlServerConnStr)
+if($identityDbConnStr){
+    $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $identityDbConnStr)
 }
 
 Set-EnvironmentVariables $appDirectory $environmentVariables
@@ -402,14 +435,16 @@ $body = @'
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 
+Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
 Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
 
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
 if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" }
-if($sqlServerAddress){ Add-InstallationSetting "identity" "sqlServerAddress" "$sqlServerAddress" }
-if($sqlServerConnStr){ Add-InstallationSetting "identity" "sqlServerConnStr" $sqlServerConnStr }
+if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" }
+if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" }
+if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" }
 if($siteName){ Add-InstallationSetting "identity" "siteName" $siteName }
 if($primarySigningCertificateThumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint }
 
