@@ -330,7 +330,7 @@ namespace Fabric.Identity.IntegrationTests
                         // break if we just created the Identity DB
                         if (commandText.StartsWith("CREATE DATABASE"))
                         {
-                            command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
+                            command.CommandText = $"CREATE DATABASE [Identity-{DatabaseNameSuffix}]"; // commandText.TrimEnd(Environment.NewLine.ToCharArray());
                             command.ExecuteNonQuery();
                             break;
                         }
