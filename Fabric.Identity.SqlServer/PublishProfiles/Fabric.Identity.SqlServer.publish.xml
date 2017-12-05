@@ -14,7 +14,7 @@
     <SqlCmdVariable Include="FabricIdentityDataMountPoint">
       <Value>C:\SQLData</Value>
     </SqlCmdVariable>
-    <SqlCmdVariable Include="FabricIdentityLogMountPoint">
+    <SqlCmdVariable Include="FabricIdentityLogFileMountPoint">
       <Value>C:\SQLData</Value>
     </SqlCmdVariable>
   </ItemGroup>
