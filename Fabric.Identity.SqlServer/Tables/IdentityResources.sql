@@ -14,10 +14,12 @@
 	[ModifiedBy] nvarchar(100) NULL,
 	[IsDeleted] bit default 0 NOT NULL,
 	CONSTRAINT [PK_IdentityResources] PRIMARY KEY ([Id])
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_IdentityResources_Name] ON [IdentityResources] ([Name]);
+CREATE UNIQUE INDEX [IX_IdentityResources_Name] ON [IdentityResources] ([Name])
+ON [HCFabricIdentityIndex1];
 
 GO

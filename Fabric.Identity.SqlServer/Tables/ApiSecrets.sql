@@ -8,10 +8,12 @@
 	[Value] nvarchar(2000) NULL,
 	CONSTRAINT [PK_ApiSecrets] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_ApiSecrets_ApiResources_ApiResourceId] FOREIGN KEY ([ApiResourceId]) REFERENCES [ApiResources] ([Id]) ON DELETE CASCADE
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE INDEX [IX_ApiSecrets_ApiResourceId] ON [ApiSecrets] ([ApiResourceId]);
+CREATE INDEX [IX_ApiSecrets_ApiResourceId] ON [ApiSecrets] ([ApiResourceId])
+ON [HCFabricIdentityIndex1];
 
 GO

@@ -13,10 +13,12 @@
 	[ModifiedBy] nvarchar(100) NULL,
 	[IsDeleted] bit default 0 NOT NULL,
 	CONSTRAINT [PK_PersistedGrants] PRIMARY KEY ([Key])
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE INDEX [IX_PersistedGrants_SubjectId_ClientId_Type] ON [PersistedGrants] ([SubjectId], [ClientId], [Type]);
+CREATE INDEX [IX_PersistedGrants_SubjectId_ClientId_Type] ON [PersistedGrants] ([SubjectId], [ClientId], [Type])
+ON [HCFabricIdentityIndex1];
 
 GO

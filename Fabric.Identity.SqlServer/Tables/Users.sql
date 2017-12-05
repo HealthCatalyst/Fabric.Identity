@@ -13,4 +13,5 @@
 	[CreatedBy] nvarchar(100) NOT NULL,
 	[ModifiedBy] nvarchar(100) NULL,
 	CONSTRAINT [PK_[Users] PRIMARY KEY ([Id])
-);
+)
+ON [HCFabricIdentityData1];

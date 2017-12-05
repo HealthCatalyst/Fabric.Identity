@@ -11,10 +11,12 @@
 	[ModifiedBy] nvarchar(100) NULL,
 	[IsDeleted] bit default 0 NOT NULL,
 	CONSTRAINT [PK_ApiResources] PRIMARY KEY ([Id])
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_ApiResources_Name] ON [ApiResources] ([Name]);
+CREATE UNIQUE INDEX [IX_ApiResources_Name] ON [ApiResources] ([Name])
+ON [HCFabricIdentityIndex1];
 
 GO

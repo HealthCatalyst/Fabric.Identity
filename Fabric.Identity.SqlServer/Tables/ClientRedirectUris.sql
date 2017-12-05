@@ -5,10 +5,12 @@
 	[RedirectUri] nvarchar(2000) NOT NULL,
 	CONSTRAINT [PK_ClientRedirectUris] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_ClientRedirectUris_Clients_ClientId] FOREIGN KEY ([ClientId]) REFERENCES [Clients] ([Id]) ON DELETE CASCADE
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE INDEX [IX_ClientRedirectUris_ClientId] ON [ClientRedirectUris] ([ClientId]);
+CREATE INDEX [IX_ClientRedirectUris_ClientId] ON [ClientRedirectUris] ([ClientId])
+ON [HCFabricIdentityIndex1];
 
 GO

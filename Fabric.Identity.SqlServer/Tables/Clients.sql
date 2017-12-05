@@ -36,10 +36,12 @@
 	[ModifiedBy] nvarchar(100) NULL,
 	[IsDeleted] bit default 0 NOT NULL,
 	CONSTRAINT [PK_Clients] PRIMARY KEY ([Id])
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_Clients_ClientId] ON [Clients] ([ClientId]);
+CREATE UNIQUE INDEX [IX_Clients_ClientId] ON [Clients] ([ClientId])
+ON [HCFabricIdentityIndex1];
 
 GO
