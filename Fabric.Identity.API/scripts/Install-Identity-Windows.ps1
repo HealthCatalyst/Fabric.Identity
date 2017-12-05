@@ -243,7 +243,10 @@ try{
         $index ++} |
         Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
 
-    $selectionNumber = Read-Host  "Select a certificate by Index"
+    $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
+    if([string]::IsNullOrEmpty($selectionNumber)){
+		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens." -ErrorAction Stop
+	}
     $certThumbprint = Get-CertThumbprint $allCerts $selectionNumber     
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
     $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
@@ -350,7 +353,7 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
     $useSpecificUser = $true
     $userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
     $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
-    [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement")
+    [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
     $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
     $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
     $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password)
