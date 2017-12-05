@@ -5,9 +5,31 @@
     <TargetDatabaseName>Identity</TargetDatabaseName>
     <DeployScriptFileName>Fabric.Identity.SqlServer.sql</DeployScriptFileName>
     <TargetConnectionString>Data Source=localhost;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=60;Encrypt=False;TrustServerCertificate=True</TargetConnectionString>
+    <ScriptDatabaseOptions>True</ScriptDatabaseOptions>
     <BlockOnPossibleDataLoss>True</BlockOnPossibleDataLoss>
+    <DeployDatabaseInSingleUserMode>True</DeployDatabaseInSingleUserMode>
     <ProfileVersionNumber>1</ProfileVersionNumber>
-    <AllowIncompatiblePlatform>False</AllowIncompatiblePlatform>
+    <AllowIncompatiblePlatform>True</AllowIncompatiblePlatform>
+    <DropConstraintsNotInSource>True</DropConstraintsNotInSource>
+    <DropDmlTriggersNotInSource>False</DropDmlTriggersNotInSource>
+    <DropExtendedPropertiesNotInSource>False</DropExtendedPropertiesNotInSource>
+    <DropIndexesNotInSource>True</DropIndexesNotInSource>
+    <IgnoreComments>True</IgnoreComments>
+    <IgnoreDefaultSchema>True</IgnoreDefaultSchema>
+    <IgnoreExtendedProperties>True</IgnoreExtendedProperties>
+    <IgnoreIdentitySeed>True</IgnoreIdentitySeed>
+    <IgnoreIncrement>True</IgnoreIncrement>
+    <IgnorePermissions>True</IgnorePermissions>
+    <IgnoreRoleMembership>True</IgnoreRoleMembership>
+    <DropObjectsNotInSource>False</DropObjectsNotInSource>
+    <BlockWhenDriftDetected>False</BlockWhenDriftDetected>
+    <RegisterDataTierApplication>True</RegisterDataTierApplication>
+    <ScriptFileSize>True</ScriptFileSize>
+    <IgnoreFilegroupPlacement>False</IgnoreFilegroupPlacement>
+    <IgnoreFileAndLogFilePath>False</IgnoreFileAndLogFilePath>
+    <IgnoreFileSize>False</IgnoreFileSize>
+    <GenerateSmartDefaults>True</GenerateSmartDefaults>
+    <VerifyDeployment>False</VerifyDeployment>
     <ExcludeTables>False</ExcludeTables>
   </PropertyGroup>
   <ItemGroup>
