@@ -27,45 +27,45 @@ function Add-DatabaseLogin($userName, $connString)
 {
 	$query = "USE master
 			If Not exists (SELECT * FROM sys.server_principals
-				WHERE sid = suser_sid('$userName'))
+				WHERE sid = suser_sid(@userName))
 			BEGIN
 				print '-- creating database login'
-				CREATE LOGIN [$userName] FROM WINDOWS
+				CREATE LOGIN [@userName] FROM WINDOWS
 			END"
-	Invoke-Sql $connString $query
+	Invoke-Sql $connString $query @{userName=$userName}
 }
 
 function Add-DatabaseUser($userName, $connString)
 {
-	$query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$userName'))
+	$query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = @userName))
 			BEGIN
 				print '-- Creating user';
 				CREATE USER [$userName] FOR LOGIN [$userName];
 			END"
-	Invoke-Sql $connString $query
+	Invoke-Sql $connString $query @{userName=$userName}
 }
 
 function Add-DatabaseUserToRole($userName, $connString, $role)
 {
 	$query = "DECLARE @exists int
-			SELECT @exists = IS_ROLEMEMBER('$role', '$userName') 
+			SELECT @exists = IS_ROLEMEMBER(@role, @userName) 
 			IF (@exists IS NULL OR @exists = 0)
 			BEGIN
-				print '-- Adding $role to $userName';
-				EXEC sp_addrolemember '$role', '$userName';
+				print '-- Adding @role to @userName';
+				EXEC sp_addrolemember @role, @userName;
 			END"
-	Invoke-Sql $connString $query
+	Invoke-Sql $connString $query @{userName=$userName; role=$role}
 }
 
 function Add-ServiceUserToDiscovery($userName, $connString){
 	$query = "DECLARE @IdentityID int;
 				DECLARE @DiscoveryServiceUserRoleID int;
 
-				SELECT @IdentityID = IdentityID FROM CatalystAdmin.IdentityBASE WHERE IdentityNM = '$userName';
+				SELECT @IdentityID = IdentityID FROM CatalystAdmin.IdentityBASE WHERE IdentityNM = @userName;
 				IF (@IdentityID IS NULL)
 				BEGIN
 					print ''-- Adding Identity'';
-					INSERT INTO CatalystAdmin.IdentityBASE (IdentityNM) VALUES ('$userName');
+					INSERT INTO CatalystAdmin.IdentityBASE (IdentityNM) VALUES (@userName);
 					SELECT @IdentityID = SCOPE_IDENTITY();
 				END
 
@@ -75,7 +75,7 @@ function Add-ServiceUserToDiscovery($userName, $connString){
 					print ''-- Assigning Discovery Service user'';
 					INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
 				END"
-	Invoke-Sql $connString $query
+	Invoke-Sql $connString $query @{userName=$userName}
 }
 
 function Add-DatabaseSecurity($userName, $role, $connString)
@@ -83,6 +83,7 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 	Add-DatabaseLogin $userName $connString
 	Add-DatabaseUser $userName $connString
 	Add-DatabaseUserToRole $userName $connString $role
+	Write-Success "Database security was setup successfully"
 }
 
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
@@ -134,11 +135,15 @@ function Unlock-ConfigurationSections(){
     $manager.CommitChanges()
 }
 
-function Invoke-Sql($connectionString, $sql){    
+function Invoke-Sql($connectionString, $sql, $parameters=@{}){    
     $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
     $command = New-Object System.Data.SqlClient.SqlCommand($sql, $connection)
-
+	
     try {
+		foreach($p in $parameters.Keys){		
+		  $command.Parameters.AddWithValue("@$p",$parameters[$p])
+		 }
+
         $connection.Open()    
         $command.ExecuteNonQuery()
         $connection.Close()        
@@ -163,7 +168,7 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
         $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"    
 
 		$keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername        
-		$keyPath = [io.path]::combine($keyFolder, $keyname)
+		$keyPath = [io.path]::combine($keyFolder, $keyname)		
 
 		if ([io.file]::exists($keyPath))
 		{        
