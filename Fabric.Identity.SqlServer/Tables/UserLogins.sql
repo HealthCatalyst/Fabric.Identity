@@ -6,4 +6,5 @@
 	[LoginDate] datetime NOT NULL,	
 	CONSTRAINT [PK_[UserLogins] PRIMARY KEY ([Id]),	
 	CONSTRAINT [FK_UserLogins_Users_Id] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
-);
+)
+ON [HCFabricIdentityData1];

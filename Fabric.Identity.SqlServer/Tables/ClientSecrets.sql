@@ -8,10 +8,12 @@
 	[Value] nvarchar(2000) NOT NULL,
 	CONSTRAINT [PK_ClientSecrets] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_ClientSecrets_Clients_ClientId] FOREIGN KEY ([ClientId]) REFERENCES [Clients] ([Id]) ON DELETE CASCADE
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
 
-CREATE INDEX [IX_ClientSecrets_ClientId] ON [ClientSecrets] ([ClientId]);
+CREATE INDEX [IX_ClientSecrets_ClientId] ON [ClientSecrets] ([ClientId])
+ON [HCFabricIdentityIndex1];
 
 GO

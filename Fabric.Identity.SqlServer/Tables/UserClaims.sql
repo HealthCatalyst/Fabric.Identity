@@ -5,6 +5,7 @@
 	[Type] nvarchar(200) NOT NULL,
 	CONSTRAINT [PK_UserClaims] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_UserClaims_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
-);
+)
+ON [HCFabricIdentityData1];
 
 GO
