@@ -30,7 +30,9 @@ function Add-DatabaseLogin($userName, $connString)
 				WHERE sid = suser_sid(@userName))
 			BEGIN
 				print '-- creating database login'
-				CREATE LOGIN [@userName] FROM WINDOWS
+                DECLARE @sql nvarchar(4000)
+                set @sql = 'CREATE LOGIN ' + QUOTENAME('$userName') + ' FROM WINDOWS'
+                EXEC sp_executesql @sql
 			END"
 	Invoke-Sql $connString $query @{userName=$userName}
 }
@@ -40,7 +42,9 @@ function Add-DatabaseUser($userName, $connString)
 	$query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = @userName))
 			BEGIN
 				print '-- Creating user';
-				CREATE USER [$userName] FOR LOGIN [$userName];
+				DECLARE @sql nvarchar(4000)
+                set @sql = 'CREATE USER ' + QUOTENAME('$userName') + ' FOR LOGIN ' + QUOTENAME('$userName')
+                EXEC sp_executesql @sql
 			END"
 	Invoke-Sql $connString $query @{userName=$userName}
 }
