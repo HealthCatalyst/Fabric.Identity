@@ -332,7 +332,11 @@ namespace Fabric.Identity.IntegrationTests
                         // break if we just created the Identity DB
                         if (commandText.StartsWith("CREATE DATABASE"))
                         {
-                            command.CommandText = $"CREATE DATABASE [{dbName}]"; // commandText.TrimEnd(Environment.NewLine.ToCharArray());
+                            var commandParts = commandText.Split(
+                                new[] { " ON " },
+                                StringSplitOptions.RemoveEmptyEntries);
+
+                            command.CommandText = commandParts[0];
                             command.ExecuteNonQuery();
                             break;
                         }
@@ -355,6 +359,25 @@ namespace Fabric.Identity.IntegrationTests
                         if (commandText.StartsWith(":") || commandText.StartsWith("/*"))
                         {
                             continue;
+                        }
+
+                        if (commandText.StartsWith("CREATE TABLE"))
+                        {
+                            var commandParts = commandText.Split(
+                                new[] { " ON " },
+                                StringSplitOptions.RemoveEmptyEntries);
+
+                            command.CommandText = commandParts[0];
+                            command.ExecuteNonQuery();
+                        }
+                        else if (commandText.StartsWith("CREATE NONCLUSTERED INDEX") || commandText.StartsWith("CREATE UNIQUE NONCLUSTERED INDEX"))
+                        {
+                            var commandParts = commandText.Split(
+                                new[] { " ON " },
+                                StringSplitOptions.RemoveEmptyEntries);
+
+                            command.CommandText = commandParts[0] + "ON " + commandParts[1];
+                            command.ExecuteNonQuery();
                         }
 
                         command.CommandText = commandText.TrimEnd(Environment.NewLine.ToCharArray());
