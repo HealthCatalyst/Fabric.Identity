@@ -62,6 +62,7 @@ function Add-DatabaseUserToRole($userName, $connString, $role)
 }
 
 function Add-ServiceUserToDiscovery($userName, $connString){
+
     $query = "DECLARE @IdentityID int;
                 DECLARE @DiscoveryServiceUserRoleID int;
 
@@ -91,7 +92,7 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 }
 
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
-{
+{	
     $registrationBody = @{
         ServiceName = "IdentityService"
         Version = 1
@@ -103,14 +104,14 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
         BuildNumber = "1.1.2017120101"
     }
 
-    $url = "$discoveryUrl/v1/Services"
-    $jsonBody = $registrationBody | ConvertTo-Json
-    try{
-        Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
-        Write-Success "Fabric.Identity successfully registered with DiscoveryService."
-    }catch{
-        Write-Error "Unable to register Fabric.Identity with DiscoveryService. Error $($_.Exception.Message) Halting installation." -ErrorAction Stop
-    }
+	$url = "$discoveryUrl/v1/Services"
+	$jsonBody = $registrationBody | ConvertTo-Json	
+	try{
+		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
+		Write-Success "Fabric.Identity successfully registered with DiscoveryService."
+	}catch{
+		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Error $($_.Exception.Message) Halting installation." -ErrorAction Stop
+	}
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
@@ -429,8 +430,11 @@ Set-EnvironmentVariables $appDirectory $environmentVariables
 
 Set-Location $workingDirectory
 
-
 $identityServerUrl = $applicationEndpoint
+
+Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
+Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
+
 if(Test-RegistrationComplete $identityServerUrl)
 {
     Write-Success "Installation complete, exiting."
@@ -462,9 +466,6 @@ $body = @'
 
 Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
-
-Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
-Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
 
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
