@@ -287,10 +287,10 @@ if((Test-Path $zipPackage))
 }
 
 
-if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30327.81))
+if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
 {    
     try{
-        Write-Console "Windows Server Hosting Bundle version 1.1.30327.81 not installed...installing version 1.1.30503.82"        
+        Write-Console "Windows Server Hosting Bundle version 1.1.30503.82 not installed...installing version 1.1.30503.82"        
         Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=848766 -OutFile $env:Temp\bundle.exe
         Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
         net stop was /y
