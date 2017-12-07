@@ -34,7 +34,7 @@ function Add-DatabaseLogin($userName, $connString)
                 set @sql = 'CREATE LOGIN ' + QUOTENAME('$userName') + ' FROM WINDOWS'
                 EXEC sp_executesql @sql
 			END"
-	Invoke-Sql $connString $query @{userName=$userName}
+	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseUser($userName, $connString)
@@ -46,7 +46,7 @@ function Add-DatabaseUser($userName, $connString)
                 set @sql = 'CREATE USER ' + QUOTENAME('$userName') + ' FOR LOGIN ' + QUOTENAME('$userName')
                 EXEC sp_executesql @sql
 			END"
-	Invoke-Sql $connString $query @{userName=$userName}
+	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseUserToRole($userName, $connString, $role)
@@ -58,7 +58,7 @@ function Add-DatabaseUserToRole($userName, $connString, $role)
 				print '-- Adding @role to @userName';
 				EXEC sp_addrolemember @role, @userName;
 			END"
-	Invoke-Sql $connString $query @{userName=$userName; role=$role}
+	Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
 }
 
 function Add-ServiceUserToDiscovery($userName, $connString){
@@ -80,7 +80,7 @@ function Add-ServiceUserToDiscovery($userName, $connString){
 					print ''-- Assigning Discovery Service user'';
 					INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
 				END"
-	Invoke-Sql $connString $query @{userName=$userName}
+	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseSecurity($userName, $role, $connString)
@@ -220,7 +220,7 @@ try{
             Format-Table Id,Name,'Physical Path',Bindings -AutoSize
 
         $selectedSiteId = Read-Host "Select a web site by Id"
-
+        Write-Host ""
         $selectedSite = $sites[$selectedSiteId - 1]
     }else{
         $selectedSite = $sites
@@ -249,6 +249,7 @@ try{
         Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
 
     $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
+    Write-Host ""
     if([string]::IsNullOrEmpty($selectionNumber)){
 		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens." -ErrorAction Stop
 	}
@@ -308,15 +309,18 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
 
 }else{
     Write-Success ".NET Core Windows Server Hosting Bundle installed and meets expectations."
+    Write-Host ""
 }
 
 $userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to accept the default [$appInsightsInstrumentationKey]"
+Write-Host ""
 
 if(![string]::IsNullOrEmpty($userEnteredAppInsightsInstrumentationKey)){   
      $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
 }
 
 $userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql Server address '$($sqlServerAddress)' or enter a new Sql Server address" 
+Write-Host ""
 
 if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
     $sqlServerAddress = $userEnteredSqlServerAddress
@@ -331,6 +335,7 @@ $metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trus
 
 Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
 Write-Success "Metadata DB Connection string: $metadataConnStr verified"
+Write-Host ""
 
 $userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
 if(![string]::IsNullOrEmpty($userEnteredIdentityDbName)){
@@ -341,6 +346,7 @@ $identityDbConnStr = "Server=$($sqlServerAddress);Database=$($identityDbName);Tr
 
 Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
 Write-Success "Identity DB Connection string: $identityDbConnStr verified"
+Write-Host ""
 
 
 if(![string]::IsNullOrEmpty($storedIisUser)){
@@ -366,21 +372,25 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
         Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
     }
     Write-Success "Credentials are valid for user $iisUser"
+    Write-Host ""
 }else{
     Write-Error "No user account was entered, please enter a valid user account." -ErrorAction Stop
 }
 
 $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
+Write-Host ""
 if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
      $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
 }
 
 $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$applicationEndpoint] or enter a new URL"
+Write-Host ""
 if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
     $applicationEndpoint = $userEnteredApplicationEndpoint
 }
 
 Unlock-ConfigurationSections
+Write-Host ""
 
 $appDirectory = "$webroot\$appName"
 New-AppRoot $appDirectory $iisUser
@@ -393,11 +403,13 @@ if($useSpecificUser){
 
 Add-PermissionToPrivateKey $iisUser $signingCert read
 
-New-App $appName $siteName $appDirectory
+New-App $appName $siteName $appDirectory | Out-Null
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
+Write-Host ""
 Add-DatabaseSecurity $iisUser $identityDatabaseRole $identityDbConnStr
 
 #Write environment variables
+Write-Host ""
 Write-Console "Loading up environment variables..."
 $environmentVariables = @{"HostingOptions__StorageProvider" = "SqlServer"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 
@@ -426,7 +438,8 @@ if($identityDbConnStr){
     $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $identityDbConnStr)
 }
 
-Set-EnvironmentVariables $appDirectory $environmentVariables
+Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
+Write-Host ""
 
 Set-Location $workingDirectory
 
@@ -434,6 +447,7 @@ $identityServerUrl = $applicationEndpoint
 
 Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
 Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
+Write-Host ""
 
 if(Test-RegistrationComplete $identityServerUrl)
 {
