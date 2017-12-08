@@ -185,6 +185,8 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
             Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided" -ErrorAction Stop
         }
     }catch{
+        $scriptDirectory =  Get-CurrentScriptDirectory
+        Set-Location $scriptDirectory
         Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Error $($_.Exception.Message)" -ErrorAction Stop
     }	
 }
