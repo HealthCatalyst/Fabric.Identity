@@ -260,7 +260,6 @@ try{
         Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)" -ErrorAction Stop        
 }
 
-
 try{
     $signingCert = Get-Certificate $primarySigningCertificateThumbprint
 }catch{
@@ -274,6 +273,36 @@ try{
     Write-Error "Could not get encryption certificate with thumbprint $encryptionCertificateThumbprint. Please verify that the encryptionCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
     throw $_.Exception
 }
+
+if(![string]::IsNullOrEmpty($storedIisUser)){
+    $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($storedIisUser)' or enter a new App Pool User"
+    if([string]::IsNullOrEmpty($userEnteredIisUser)){
+        $userEnteredIisUser = $storedIisUser
+    }
+}else{
+    $userEnteredIisUser = Read-Host "Please enter a user account for the App Pool"
+}
+
+if(![string]::IsNullOrEmpty($userEnteredIisUser)){
+    
+    $iisUser = $userEnteredIisUser
+    $useSpecificUser = $true
+    $userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
+    $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
+    [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
+    $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
+    $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
+    $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password)
+    if(!$isValid){
+        Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
+    }
+    Write-Success "Credentials are valid for user $iisUser"
+    Write-Host ""
+}else{
+    Write-Error "No user account was entered, please enter a valid user account." -ErrorAction Stop
+}
+
+Add-PermissionToPrivateKey $iisUser $signingCert read
 
 if((Test-Path $zipPackage))
 {
@@ -348,35 +377,6 @@ Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
 Write-Success "Identity DB Connection string: $identityDbConnStr verified"
 Write-Host ""
 
-
-if(![string]::IsNullOrEmpty($storedIisUser)){
-    $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($storedIisUser)' or enter a new App Pool User"
-    if([string]::IsNullOrEmpty($userEnteredIisUser)){
-        $userEnteredIisUser = $storedIisUser
-    }
-}else{
-    $userEnteredIisUser = Read-Host "Please enter a user account for the App Pool"
-}
-
-if(![string]::IsNullOrEmpty($userEnteredIisUser)){
-    
-    $iisUser = $userEnteredIisUser
-    $useSpecificUser = $true
-    $userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
-    $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
-    [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
-    $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
-    $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
-    $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password)
-    if(!$isValid){
-        Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
-    }
-    Write-Success "Credentials are valid for user $iisUser"
-    Write-Host ""
-}else{
-    Write-Error "No user account was entered, please enter a valid user account." -ErrorAction Stop
-}
-
 $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
 Write-Host ""
 if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
@@ -400,8 +400,6 @@ if($useSpecificUser){
 }else{
     New-AppPool $appName 
 }
-
-Add-PermissionToPrivateKey $iisUser $signingCert read
 
 New-App $appName $siteName $appDirectory | Out-Null
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
