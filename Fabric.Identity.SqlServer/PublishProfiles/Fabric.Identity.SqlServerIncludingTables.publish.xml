@@ -19,8 +19,8 @@
     <IgnoreExtendedProperties>True</IgnoreExtendedProperties>
     <IgnoreIdentitySeed>True</IgnoreIdentitySeed>
     <IgnoreIncrement>True</IgnoreIncrement>
-    <IgnorePermissions>True</IgnorePermissions>
-    <IgnoreRoleMembership>True</IgnoreRoleMembership>
+    <IgnorePermissions>False</IgnorePermissions>
+    <IgnoreRoleMembership>False</IgnoreRoleMembership>
     <DropObjectsNotInSource>False</DropObjectsNotInSource>
     <BlockWhenDriftDetected>False</BlockWhenDriftDetected>
     <RegisterDataTierApplication>True</RegisterDataTierApplication>
