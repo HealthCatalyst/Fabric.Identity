@@ -88,7 +88,7 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 	Add-DatabaseLogin $userName $connString
 	Add-DatabaseUser $userName $connString
 	Add-DatabaseUserToRole $userName $connString $role
-	Write-Success "Database security was setup successfully"
+	Write-Success "Database security applied successfully"
 }
 
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
@@ -128,7 +128,7 @@ function Unlock-ConfigurationSections(){
     [System.Reflection.Assembly]::LoadFrom("$env:systemroot\system32\inetsrv\Microsoft.Web.Administration.dll") | Out-Null
     $manager = new-object Microsoft.Web.Administration.ServerManager      
     $config = $manager.GetApplicationHostConfiguration()
-    
+
     $section = $config.GetSection("system.webServer/security/authentication/anonymousAuthentication")
     $section.OverrideMode = "Allow"    
     Write-Success "Unlocked system.webServer/security/authentication/anonymousAuthentication"
@@ -259,6 +259,8 @@ try{
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
     $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
     }catch{
+        $scriptDirectory =  Get-CurrentScriptDirectory
+        Set-Location $scriptDirectory
         Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)" -ErrorAction Stop        
 }
 
