@@ -396,6 +396,12 @@ if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
     $applicationEndpoint = $userEnteredApplicationEndpoint
 }
 
+$identityServerUrl = $applicationEndpoint
+
+Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
+Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
+Write-Host ""
+
 Unlock-ConfigurationSections
 Write-Host ""
 
@@ -448,11 +454,7 @@ Write-Host ""
 
 Set-Location $workingDirectory
 
-$identityServerUrl = $applicationEndpoint
 
-Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
-Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
-Write-Host ""
 
 if(Test-RegistrationComplete $identityServerUrl)
 {
