@@ -255,10 +255,11 @@ try{
     if([string]::IsNullOrEmpty($selectionNumber)){
 		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens." -ErrorAction Stop
     }
-    if(($selectionNumber -gt  $allCerts.Count) -or ($selectionNumber -le 0)){
+    $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
+    if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
         Write-Error "Please select a certificate with index between 1 and $($allCerts.Count)."  -ErrorAction Stop
     }
-    $certThumbprint = Get-CertThumbprint $allCerts $selectionNumber     
+    $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt     
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
     $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
     }catch{
