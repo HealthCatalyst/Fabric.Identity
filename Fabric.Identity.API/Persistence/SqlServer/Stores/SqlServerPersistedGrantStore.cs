@@ -63,7 +63,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         private async Task DeletePersistedGrantsAsync(IQueryable<PersistedGrant> persistedGrants)
         {
-            await persistedGrants.ForEachAsync(pg => pg.IsDeleted = true);
+            await persistedGrants.ForEachAsync(pg => _identityDbContext.PersistedGrants.Remove(pg));
             await _identityDbContext.SaveChangesAsync();
         }
 
