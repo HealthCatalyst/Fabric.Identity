@@ -158,14 +158,22 @@ function Invoke-Sql($connectionString, $sql, $parameters=@{}){
     }    
 }
 
-function Get-ApplicationEndpoint($appName)
+function Get-ApplicationEndpoint($appName, $appEndPoint)
 {
-    return "http://$env:computername/$appName"
+    if([string]::IsNullOrEmpty($appEndPoint)){
+        return "http://$env:computername/$appName"
+    }else{
+        return $appEndPoint
+    }
 }
 
-function Get-DiscoveryServiceUrl()
+function Get-DiscoveryServiceUrl($discoUrl)
 {
-    return "http://$env:computername/DiscoveryService"
+    if([string]::IsNullOrEmpty($discoUrl)){
+        return "http://$env:computername/DiscoveryService"
+    }else{
+        return $discoUrl
+    }
 }
 
 function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
@@ -203,8 +211,8 @@ $sqlServerAddress = $installSettings.sqlServerAddress
 $metadataDbName = $installSettings.metadataDbName
 $identityDbName = $installSettings.identityDbName
 $identityDatabaseRole = $installSettings.identityDatabaseRole
-$discoveryServiceUrl = Get-DiscoveryServiceUrl
-$applicationEndPoint = Get-ApplicationEndpoint $appName
+$discoveryServiceUrl = Get-DiscoveryServiceUrl $installSettings.discoveryServiceUrl
+$applicationEndPoint = Get-ApplicationEndpoint $appName $installSettings.applicationEndPoint
 $storedIisUser = $installSettings.iisUser
 $useSpecificUser = $false;
 
@@ -403,6 +411,17 @@ if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
     $applicationEndpoint = $userEnteredApplicationEndpoint
 }
 
+if($discoveryServiceUrl){ Add-InstallationSetting "identity" "discoveryServiceUrl" "$discoveryServiceUrl" | Out-Null }
+if($applicationEndPoint){ Add-InstallationSetting "identity" "applicationEndPoint" "$applicationEndPoint" | Out-Null }
+if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
+if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
+if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
+if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" | Out-Null }
+if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" | Out-Null }
+if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" | Out-Null }
+if($siteName){ Add-InstallationSetting "identity" "siteName" $siteName | Out-Null }
+if($primarySigningCertificateThumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint | Out-Null }
+if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" | Out-Null }
 $identityServerUrl = $applicationEndpoint
 
 if(!($noDiscoveryService)){
@@ -498,15 +517,7 @@ Write-Console "Registering Fabric.Installer."
 $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
 
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
-if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
-if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint }
-if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" }
-if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" }
-if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" }
-if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" }
-if($siteName){ Add-InstallationSetting "identity" "siteName" $siteName }
-if($primarySigningCertificateThumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $primarySigningCertificateThumbprint }
-if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" }
+
 
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
