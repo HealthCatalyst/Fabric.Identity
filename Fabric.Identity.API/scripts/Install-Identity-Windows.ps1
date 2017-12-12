@@ -1,7 +1,8 @@
 #
 # Install_Identity_Windows.ps1
 #	
-param([bool]$overwriteWebConfig)
+param([bool]$overwriteWebConfig,
+      [switch]$noDiscoveryService)
 
 function Test-RegistrationComplete($authUrl)
 {
@@ -363,16 +364,18 @@ if(![string]::IsNullOrEmpty($userEnteredSqlServerAddress)){
     $sqlServerAddress = $userEnteredSqlServerAddress
 }
 
-$userEnteredMetadataDbName = Read-Host "Press Enter to accept the default Metadata DB Name '$($metadataDbName)' or enter a new Metadata DB Name"
-if(![string]::IsNullOrEmpty($userEnteredMetadataDbName)){
-    $metadataDbName = $userEnteredMetadataDbName
+if(!($noDiscoveryService)){
+    $userEnteredMetadataDbName = Read-Host "Press Enter to accept the default Metadata DB Name '$($metadataDbName)' or enter a new Metadata DB Name"
+    if(![string]::IsNullOrEmpty($userEnteredMetadataDbName)){
+        $metadataDbName = $userEnteredMetadataDbName
+    }
+
+    $metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
+
+    Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
+    Write-Success "Metadata DB Connection string: $metadataConnStr verified"
+    Write-Host ""
 }
-
-$metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
-
-Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
-Write-Success "Metadata DB Connection string: $metadataConnStr verified"
-Write-Host ""
 
 $userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
 if(![string]::IsNullOrEmpty($userEnteredIdentityDbName)){
@@ -385,11 +388,14 @@ Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
 Write-Success "Identity DB Connection string: $identityDbConnStr verified"
 Write-Host ""
 
-$userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
-Write-Host ""
-if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
-     $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
+if(!($noDiscoveryService)){
+    $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$discoveryServiceUrl] or enter a new URL"
+    Write-Host ""
+    if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
+         $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
+    }
 }
+
 
 $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$applicationEndpoint] or enter a new URL"
 Write-Host ""
@@ -399,9 +405,11 @@ if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
 
 $identityServerUrl = $applicationEndpoint
 
-Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
-Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
-Write-Host ""
+if(!($noDiscoveryService)){
+    Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
+    Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
+    Write-Host ""
+}
 
 Unlock-ConfigurationSections
 Write-Host ""
