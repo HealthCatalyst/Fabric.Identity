@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 
 namespace Fabric.Identity.API.Models
@@ -13,7 +14,7 @@ namespace Fabric.Identity.API.Models
         public string LastName { get; set; }
         public string ProviderName { get; set; }
         public ICollection<Claim> Claims { get; set; }
-        public Dictionary<string, DateTime> LastLoginDatesByClient { get; set; } = new Dictionary<string, DateTime>();
+        public ICollection<UserLogin> LastLoginDatesByClient { get; set; } = new List<UserLogin>();
 
         public void SetLastLoginDateForClient(string clientId)
         {
@@ -23,13 +24,17 @@ namespace Fabric.Identity.API.Models
                 clientIdToLog = FabricIdentityConstants.ServiceName;
             }
 
-            if (LastLoginDatesByClient.ContainsKey(clientIdToLog))
+            var existingLogin =
+                LastLoginDatesByClient.FirstOrDefault(l =>
+                    l.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase));
+
+            if (existingLogin != null)
             {
-                LastLoginDatesByClient[clientIdToLog] = DateTime.UtcNow;
+                existingLogin.LoginDate = DateTime.UtcNow;
             }
             else
             {
-                LastLoginDatesByClient.Add(clientIdToLog, DateTime.UtcNow);
+                LastLoginDatesByClient.Add(new UserLogin {ClientId = clientIdToLog, LoginDate = DateTime.UtcNow});
             }
         }       
     }

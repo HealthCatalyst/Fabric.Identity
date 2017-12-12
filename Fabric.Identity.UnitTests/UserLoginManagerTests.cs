@@ -41,7 +41,7 @@ namespace Fabric.Identity.UnitTests
             var existingUser = await userLoginManager.UserLogin(provider, userId, claims, clientId);
 
             var existingRoleClaim = existingUser.Claims.Single(c => c.Type == JwtClaimTypes.Role);
-            var firstLoginDate = existingUser.LastLoginDatesByClient.First().Value;
+            var firstLoginDate = existingUser.LastLoginDatesByClient.First().LoginDate;
 
             userId = "HealthCatalyst\\foo.bar";
             provider = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
@@ -67,7 +67,7 @@ namespace Fabric.Identity.UnitTests
             Assert.Equal(middleName, updatedUser.MiddleName);
             Assert.Equal(5, updatedUser.Claims.Count);
             Assert.NotEqual(existingRoleClaim.Value, updatedUser.Claims.First().Value);
-            Assert.True(firstLoginDate.Ticks < updatedUser.LastLoginDatesByClient.First().Value.Ticks);
+            Assert.True(firstLoginDate.Ticks < updatedUser.LastLoginDatesByClient.First().LoginDate.Ticks);
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace Fabric.Identity.UnitTests
             Assert.Equal(1, newUser.Claims.Count(c => c.Type == JwtClaimTypes.Name));
             Assert.Equal(1, newUser.Claims.Count(c => c.Type == JwtClaimTypes.Role));
             Assert.Equal(1, newUser.LastLoginDatesByClient.Count);
-            Assert.Equal(clientId, newUser.LastLoginDatesByClient.First().Key);
+            Assert.Equal(clientId, newUser.LastLoginDatesByClient.First().ClientId);
         }
     }
 }
