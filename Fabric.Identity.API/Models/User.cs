@@ -13,7 +13,7 @@ namespace Fabric.Identity.API.Models
         public string MiddleName { get; set; }
         public string LastName { get; set; }
         public string ProviderName { get; set; }
-        public ICollection<Claim> Claims { get; set; }
+        public ICollection<Claim> Claims { get; set; } = new List<Claim>();
         public ICollection<UserLogin> LastLoginDatesByClient { get; set; } = new List<UserLogin>();
 
         public void SetLastLoginDateForClient(string clientId)
