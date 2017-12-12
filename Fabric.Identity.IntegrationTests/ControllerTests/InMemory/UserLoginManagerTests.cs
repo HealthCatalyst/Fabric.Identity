@@ -60,11 +60,11 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 
             var user = await userLoginManager.UserLogin(provider, userId, claims, clientId);
 
-            var firstLoginDate = user.LastLoginDatesByClient.First().Value;
+            var firstLoginDate = user.LastLoginDatesByClient.First().LoginDate;
 
             user = await  userLoginManager.UserLogin(provider, userId, claims, clientId);
 
-            var secondLoginDate = user.LastLoginDatesByClient.First().Value;
+            var secondLoginDate = user.LastLoginDatesByClient.First().LoginDate;
 
             Assert.True(secondLoginDate > firstLoginDate, "second login date is not greater than first");
 

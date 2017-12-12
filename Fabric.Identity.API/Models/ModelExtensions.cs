@@ -260,15 +260,10 @@ namespace Fabric.Identity.API.Models
 
         public static UserApiModel ToUserViewModel(this User user, string clientId)
         {
-            var lastLoginDate = user.LastLoginDatesByClient
-                .SingleOrDefault(l => l.Key.Equals(clientId, StringComparison.OrdinalIgnoreCase))
-                .Value;
+            var lastLoginForClient = user.LastLoginDatesByClient
+                .SingleOrDefault(l => l.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase));
 
-            DateTime? dateToSet = null;
-            if (lastLoginDate != DateTime.MinValue)
-            {
-                dateToSet = lastLoginDate;
-            }
+            DateTime? dateToSet = lastLoginForClient?.LoginDate;
 
             return new UserApiModel
             {
