@@ -1,5 +1,9 @@
-﻿using AutoMapper;
-using Fabric.Identity.API.Models;
+﻿using System;
+using System.Linq;
+using AutoMapper;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using User = Fabric.Identity.API.Models.User;
+using UserLogin = Fabric.Identity.API.Persistence.SqlServer.EntityModels.UserLogin;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
 {
@@ -30,7 +34,20 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
         /// <returns></returns>
         public static EntityModels.User ToEntity(this User model)
         {
-            return Mapper.Map<EntityModels.User>(model);
+            var userEntity = Mapper.Map<EntityModels.User>(model);
+
+            foreach (var userLogin in model.LastLoginDatesByClient)
+            {
+                userEntity.UserLogins.Add(
+                    new UserLogin { ClientId = userLogin.ClientId, LoginDate = userLogin.LoginDate });
+            }
+
+            foreach (var userClaim in model.Claims)
+            {
+                userEntity.Claims.Add(new UserClaim { Type = userClaim.Type });
+            }
+
+            return userEntity;
         }
 
         /// <summary>
@@ -41,6 +58,38 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
         public static void ToEntity(this User model, EntityModels.User entity)
         {
             Mapper.Map(model, entity);
+
+            foreach (var userLogin in model.LastLoginDatesByClient)
+            {
+                var existingLogin = entity.UserLogins.FirstOrDefault(l =>
+                    l.ClientId.Equals(userLogin.ClientId, StringComparison.OrdinalIgnoreCase));
+
+                if (existingLogin != null)
+                {
+                    existingLogin.LoginDate = userLogin.LoginDate;
+                }
+                else
+                {
+                    entity.UserLogins.Add(new UserLogin { ClientId = userLogin.ClientId, LoginDate = userLogin.LoginDate });
+                }
+
+            }
+
+            foreach (var userClaim in model.Claims)
+            {
+                var existingClaim = entity.Claims.FirstOrDefault(l =>
+                    l.Type.Equals(userClaim.Type, StringComparison.OrdinalIgnoreCase));
+
+                if (existingClaim != null)
+                {
+                    existingClaim.Type = userClaim.Type;
+                }
+                else
+                {
+                    entity.Claims.Add(new UserClaim { Type = userClaim.Type });
+                }
+
+            }
         }
     }
 }

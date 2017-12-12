@@ -55,17 +55,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var userEntity = user.ToEntity();
 
-            foreach (var userLogin in user.LastLoginDatesByClient)
-            {
-                userEntity.UserLogins.Add(
-                    new UserLogin {ClientId = userLogin.ClientId, LoginDate = userLogin.LoginDate});
-            }
-
-            foreach (var userClaim in user.Claims)
-            {
-                userEntity.Claims.Add(new UserClaim { Type = userClaim.Type });
-            }
-
             _identityDbContext.Users.Add(userEntity);
             await _identityDbContext.SaveChangesAsync();
 
@@ -87,38 +76,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .FirstOrDefaultAsync();
 
             user.ToEntity(existingUser);
-
-            foreach (var userLogin in user.LastLoginDatesByClient)
-            {
-                var existingLogin = existingUser.UserLogins.FirstOrDefault(l =>
-                    l.ClientId.Equals(userLogin.ClientId, StringComparison.OrdinalIgnoreCase));
-
-                if (existingLogin != null)
-                {
-                    existingLogin.LoginDate = userLogin.LoginDate;
-                }
-                else
-                {
-                    existingUser.UserLogins.Add(new UserLogin{ClientId = userLogin.ClientId, LoginDate = userLogin.LoginDate});
-                }
-                
-            }
-
-            foreach (var userClaim in user.Claims)
-            {
-                var existingClaim = existingUser.Claims.FirstOrDefault(l =>
-                    l.Type.Equals(userClaim.Type, StringComparison.OrdinalIgnoreCase));
-
-                if (existingClaim != null)
-                {
-                    existingClaim.Type = userClaim.Type;                    
-                }
-                else
-                {
-                    existingUser.Claims.Add(new UserClaim {Type = userClaim.Type});
-                }
-
-            }
 
             _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
