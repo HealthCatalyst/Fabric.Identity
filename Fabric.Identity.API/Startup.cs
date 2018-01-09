@@ -14,7 +14,6 @@ using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
-using Fabric.Identity.API.XForwardedHeaders;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;

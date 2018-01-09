@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-namespace Fabric.Identity.API.XForwardedHeaders
+namespace Fabric.Identity.API.Infrastructure;
 {
     public class CheckXForwardHeader
     {
