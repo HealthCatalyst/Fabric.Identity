@@ -181,6 +181,8 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
+            app.UseCheckXForwardHeader();
+
             InitializeDatabase(dbBootstrapper);
 
             loggerFactory.AddSerilog(_logger);
