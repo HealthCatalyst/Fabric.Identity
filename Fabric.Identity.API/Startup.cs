@@ -198,14 +198,7 @@ namespace Fabric.Identity.API
 
             var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
             app.UseIdentityServerAuthentication(options);
-            //app.UseMvcWithDefaultRoute();
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
-                routes.MapRoute("xforward", "{x?}/{controller=Home}/{action=Index}/{id?}");
-               
-                
-            });
+            app.UseMvcWithDefaultRoute();
 
             var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
