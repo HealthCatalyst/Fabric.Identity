@@ -14,6 +14,7 @@ using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.XForwardedHeaders;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
@@ -181,6 +182,8 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
+            app.UseCheckXForwardHeader();
+
             InitializeDatabase(dbBootstrapper);
 
             loggerFactory.AddSerilog(_logger);
@@ -195,7 +198,14 @@ namespace Fabric.Identity.API
 
             var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
             app.UseIdentityServerAuthentication(options);
-            app.UseMvcWithDefaultRoute();
+            //app.UseMvcWithDefaultRoute();
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
+                routes.MapRoute("xforward", "{x?}/{controller=Home}/{action=Index}/{id?}");
+               
+                
+            });
 
             var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
