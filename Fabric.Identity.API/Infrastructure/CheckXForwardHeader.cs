@@ -26,21 +26,15 @@ namespace Fabric.Identity.API.Infrastructure;
                 context.Items["prefix"] = prefix;
 
                 await _next(context);
-
-                // TODO: subtract PathBase from Path if needed.
             }
             await _next(context);
         }
     }
-
-    //Extension method used to add the middleware to the HTTP request pipeline.
     public static class CheckXForwardHeaderExtensions
     {
         public static IApplicationBuilder UseCheckXForwardHeader(this IApplicationBuilder builder)
         {
             return builder.UseMiddleware<CheckXForwardHeader>();
-
-
         }
     }
 }
