@@ -44,6 +44,7 @@ docker run -d --name functional-identity \
         -e COUCHDBSETTINGS__PASSWORD=$couchpassword \
 	-e COUCHDBSETTINGS__SERVER=http://functional-couchdb:5984 \
 	-e HOSTINGOPTIONS__STORAGEPROVIDER="CouchDB" \
+	-e HOSTINGOPTIONS__ALLOWUNSAFEEVAL="true" \
 	--network="functional-tests" \
 	identity.functional.api
 echo "started api"

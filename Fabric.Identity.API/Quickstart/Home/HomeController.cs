@@ -13,7 +13,7 @@ using IdentityModel.Client;
 
 namespace IdentityServer4.Quickstart.UI
 {
-    [SecurityHeaders]
+    [TypeFilter(typeof(SecurityHeadersAttribute))]
     public class HomeController : Controller
     {
         private readonly IIdentityServerInteractionService _interaction;

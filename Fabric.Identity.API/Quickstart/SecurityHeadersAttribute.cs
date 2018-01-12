@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using Fabric.Identity.API.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -9,6 +10,13 @@ namespace IdentityServer4.Quickstart.UI
 {
     public class SecurityHeadersAttribute : ActionFilterAttribute
     {
+        private readonly HostingOptions _hostingOptions;
+
+        public SecurityHeadersAttribute(HostingOptions hostingOptions)
+        {
+            _hostingOptions = hostingOptions;
+        }
+
         public override void OnResultExecuting(ResultExecutingContext context)
         {
             var result = context.Result;
@@ -23,9 +31,7 @@ namespace IdentityServer4.Quickstart.UI
                     context.HttpContext.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
                 }
 
-                var csp = "default-src 'self';";
-                // an example if you need client images to be displayed from twitter
-                //var csp = "default-src 'self'; img-src 'self' https://pbs.twimg.com";
+                var csp = GetContentSecurityPolicy();
                 
                 // once for standards compliant browsers
                 if (!context.HttpContext.Response.Headers.ContainsKey("Content-Security-Policy"))
@@ -38,6 +44,15 @@ namespace IdentityServer4.Quickstart.UI
                     context.HttpContext.Response.Headers.Add("X-Content-Security-Policy", csp);
                 }
             }
+        }
+
+        private string GetContentSecurityPolicy()
+        {
+            if (_hostingOptions.AllowUnsafeEval)
+            {
+                return "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src: 'self' 'unsafe-inline' 'unsafe-eval';";
+            }
+            return "default-src 'self';";
         }
     }
 }
