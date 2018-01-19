@@ -1,7 +1,6 @@
 ﻿@model LoginViewModel
 <div class="login-page">
     @Html.Partial("_ValidationSummary")
-    @if (Model.EnableLocalLogin)
     {
         <div id="PageOne" class="container">
             <div class="row row-centered login">
@@ -9,30 +8,33 @@
                     <div class="logo item">
                         <img src="~/images/HC_logo.svg" alt="Health Catalyst Logo">
                     </div>
-                            <form asp-route="Login">
-                                <input type="hidden" asp-for="ReturnUrl"/>
+                    @if (Model.EnableLocalLogin)
+                    {
+                        <form asp-route="Login">
+                            <input type="hidden" asp-for="ReturnUrl"/>
 
-                                <label asp-for="Username">Email</label>
-                                <div>
-                                    <input asp-for="Username" placeholder="Email" autofocus>
+                            <label asp-for="Username">Email</label>
+                            <div>
+                                <input asp-for="Username" placeholder="Email" autofocus>
+                            </div>
+                            <label asp-for="Password">Password</label>
+                            <a id="forgotpwd" href="#">Forgot Password?</a>
+                            <div>
+                                <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
+                            </div>
+                            @if (Model.AllowRememberLogin)
+                            {
+                                <div class="checkbox">
+                                    <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
                                 </div>
-                                <label asp-for="Password">Password</label>
-                                <a id="forgotpwd" href="#">Forgot Password?</a>
-                                <div>
-                                    <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
-                                </div>
-                                @if (Model.AllowRememberLogin)
-                                {
-                                    <div class="checkbox">
-                                        <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
-                                    </div>
-                                }
-                                <p class="legal">
-                                    By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
-                                </p>
-                                <input value="Log In" name="login_but" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
-                            </form>
-                            <label>Or Log in with:</label>
+                            }
+                            <p class="legal">
+                                By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
+                            </p>
+                            <input value="Log In" name="login_but" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
+                        </form>
+                    }
+                            <label>Log in with:</label>
                             @foreach (var provider in Model.VisibleExternalProviders)
                             {
                                 <div>
@@ -71,6 +73,5 @@
                 </div>
             </div>
         </div>
-    }
 </div>
 
