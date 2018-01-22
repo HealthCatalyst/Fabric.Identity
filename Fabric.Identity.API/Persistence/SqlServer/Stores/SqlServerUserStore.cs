@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
@@ -14,7 +15,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
     public class SqlServerUserStore : IUserStore
     {
         private readonly IIdentityDbContext _identityDbContext;
-        private static readonly ConcurrentDictionary<string, List<Claim>> UserClaims = new ConcurrentDictionary<string, List<Claim>>();
 
         public SqlServerUserStore(IIdentityDbContext identityDbContext)
         {
@@ -29,10 +29,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             var userModel = userEntity.ToModel();
-            if (userModel != null)
-            {
-                userModel.Claims = GetUserClaims(subjectId);
-            }
             return userModel;
         }
 
@@ -45,10 +41,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
             var userModel = userEntity.ToModel();
-            if (userModel != null)
-            {
-                userModel.Claims = GetUserClaims(subjectId);
-            }
             return userModel;
         }
 
@@ -66,9 +58,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<User> AddUserAsync(User user)
         {
             var userEntity = user.ToEntity();
-
+            userEntity.Claims = user.Claims.Select(c => new UserClaim {Type = c.Type, Value = c.Value}).ToList();
             _identityDbContext.Users.Add(userEntity);
-            AddOrUpdateClaims(user.SubjectId, user.Claims.ToList());
             await _identityDbContext.SaveChangesAsync();
 
             return user;
@@ -90,19 +81,21 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             user.ToEntity(existingUser);
 
+            foreach (var claim in user.Claims)
+            {
+                var userClaim = existingUser.Claims.FirstOrDefault(c => c.Type == claim.Type);
+                if (userClaim != null)
+                {
+                    userClaim.Value = claim.Value;
+                }
+                else
+                {
+                    existingUser.Claims.Add(new UserClaim{Type = claim.Type, Value = claim.Value});
+                }
+            }
+
             _identityDbContext.Users.Update(existingUser);
-            AddOrUpdateClaims(user.SubjectId, user.Claims.ToList());
             await _identityDbContext.SaveChangesAsync();
-        }
-
-        private List<Claim> GetUserClaims(string subjectId)
-        {
-            return UserClaims.TryGetValue(subjectId, out List<Claim> claims) ? claims : new List<Claim>();
-        }
-
-        private void AddOrUpdateClaims(string subjectId, List<Claim> claims)
-        {
-            UserClaims.AddOrUpdate(subjectId, claims, (key, oldValue) => claims);
         }
     }
 }
