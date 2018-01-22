@@ -29,7 +29,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
             var userModel = userEntity.ToModel();
-            userModel.Claims = GetUserClaims(subjectId);
+            if (userModel != null)
+            {
+                userModel.Claims = GetUserClaims(subjectId);
+            }
             return userModel;
         }
 
@@ -42,7 +45,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
             var userModel = userEntity.ToModel();
-            userModel.Claims = GetUserClaims(subjectId);
+            if (userModel != null)
+            {
+                userModel.Claims = GetUserClaims(subjectId);
+            }
             return userModel;
         }
 
@@ -62,7 +68,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntity = user.ToEntity();
 
             _identityDbContext.Users.Add(userEntity);
-            UserClaims.AddOrUpdate(user.SubjectId, user.Claims.ToList(), (key, oldValue) => user.Claims.ToList());
+            AddOrUpdateClaims(user.SubjectId, user.Claims.ToList());
             await _identityDbContext.SaveChangesAsync();
 
             return user;
@@ -85,13 +91,18 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             user.ToEntity(existingUser);
 
             _identityDbContext.Users.Update(existingUser);
-            UserClaims.AddOrUpdate(user.SubjectId, user.Claims.ToList(), (key, oldValue) => user.Claims.ToList());
+            AddOrUpdateClaims(user.SubjectId, user.Claims.ToList());
             await _identityDbContext.SaveChangesAsync();
         }
 
         private List<Claim> GetUserClaims(string subjectId)
         {
             return UserClaims.TryGetValue(subjectId, out List<Claim> claims) ? claims : new List<Claim>();
+        }
+
+        private void AddOrUpdateClaims(string subjectId, List<Claim> claims)
+        {
+            UserClaims.AddOrUpdate(subjectId, claims, (key, oldValue) => claims);
         }
     }
 }
