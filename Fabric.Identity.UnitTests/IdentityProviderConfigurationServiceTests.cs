@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Authentication;
@@ -37,7 +37,9 @@ namespace Fabric.Identity.UnitTests
             var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
             httpContextAccessorMock.Setup(mock => mock.HttpContext).Returns(httpContextMock.Object);
 
-            var identityProviderConfigurationService = new IdentityProviderConfigurationService(httpContextAccessorMock.Object);
+            var appConfig = new AppConfiguration {WindowsAuthenticationEnabled = true};
+
+            var identityProviderConfigurationService = new IdentityProviderConfigurationService(httpContextAccessorMock.Object, appConfig);
             var providers = identityProviderConfigurationService.GetConfiguredIdentityProviders();
             Assert.NotNull(providers);
             Assert.Equal(expectedProviders.Count, providers.Count);

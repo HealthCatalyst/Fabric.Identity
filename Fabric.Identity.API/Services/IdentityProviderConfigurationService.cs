@@ -12,10 +12,12 @@ namespace Fabric.Identity.API.Services
     public class IdentityProviderConfigurationService : IIdentityProviderConfigurationService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAppConfiguration _appConfiguration;
 
-        public IdentityProviderConfigurationService(IHttpContextAccessor httpContextAccessor)
+        public IdentityProviderConfigurationService(IHttpContextAccessor httpContextAccessor, IAppConfiguration appConfiguration)
         {
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _appConfiguration = appConfiguration ?? throw new ArgumentNullException(nameof(appConfiguration));
         }
 
         public ICollection<ExternalProvider> GetConfiguredIdentityProviders()
@@ -30,7 +32,7 @@ namespace Fabric.Identity.API.Services
                     AuthenticationScheme = x.AuthenticationScheme
                 }).ToList();
 
-            if (AccountOptions.WindowsAuthenticationEnabled)
+            if (_appConfiguration.WindowsAuthenticationEnabled)
             {
                 // this is needed to handle windows auth schemes
                 var windowsSchemes = schemes.Where(s => AccountOptions.WindowsAuthenticationSchemes.Contains(s.AuthenticationScheme));
