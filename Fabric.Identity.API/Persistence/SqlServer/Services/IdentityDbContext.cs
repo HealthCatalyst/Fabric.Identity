@@ -448,6 +448,9 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .IsRequired()
                     .HasMaxLength(200);
 
+                entity.Property(e => e.Value)
+                    .HasMaxLength(400);
+
                 entity.HasOne(e => e.User)
                     .WithMany(e => e.Claims)
                     .HasForeignKey(e => e.UserId);
