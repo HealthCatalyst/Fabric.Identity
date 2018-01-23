@@ -8,16 +8,16 @@ using Xunit;
 
 namespace Fabric.Identity.IntegrationTests.ControllerTests.CouchDb
 {
-    public class CouchDbUsersControllerTests : UsersControllerTests
+    public class CouchDbUsersControllerTests //: UsersControllerTests
     {
-        public CouchDbUsersControllerTests() : base(FabricIdentityConstants.StorageProviders.CouchDb)
+        public CouchDbUsersControllerTests() //: base(FabricIdentityConstants.StorageProviders.CouchDb)
         {
-            UserStore = new CouchDbUserStore(CouchDbService, new Mock<ILogger>().Object);
+            //UserStore = new CouchDbUserStore(CouchDbService, new Mock<ILogger>().Object);
         }
 
-        public override async Task UsersController_Search_ReturnsUsers()
-        {
-            Assert.True(true);
-        }
+        //public override async Task UsersController_Search_ReturnsUsers()
+        //{
+        //    Assert.True(true);
+        //}
     }
 }
