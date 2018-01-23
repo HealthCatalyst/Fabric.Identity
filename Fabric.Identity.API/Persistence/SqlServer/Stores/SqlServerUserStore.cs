@@ -83,15 +83,28 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             foreach (var claim in user.Claims)
             {
-                var userClaim = existingUser.Claims.FirstOrDefault(c => c.Type == claim.Type);
-                if (userClaim != null)
-                {
-                    userClaim.Value = claim.Value;
-                }
-                else
+                var existingClaim =
+                    existingUser.Claims.FirstOrDefault(c => c.Type == claim.Type && c.Value == claim.Value);
+                if (existingClaim == null)
                 {
                     existingUser.Claims.Add(new UserClaim{Type = claim.Type, Value = claim.Value});
                 }
+            }
+
+            var claimsToRemove = new List<UserClaim>();
+            foreach (var existingUserClaim in existingUser.Claims)
+            {
+                var newClaim = user.Claims.FirstOrDefault(
+                    c => c.Type == existingUserClaim.Type && c.Value == existingUserClaim.Value);
+                if (newClaim == null)
+                {
+                    claimsToRemove.Add(existingUserClaim);
+                }
+            }
+
+            foreach (var claimToRemove in claimsToRemove)
+            {
+                existingUser.Claims.Remove(claimToRemove);
             }
 
             _identityDbContext.Users.Update(existingUser);
