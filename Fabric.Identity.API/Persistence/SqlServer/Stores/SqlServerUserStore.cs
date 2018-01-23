@@ -58,7 +58,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<User> AddUserAsync(User user)
         {
             var userEntity = user.ToEntity();
-            userEntity.Claims = user.Claims.Select(c => new UserClaim {Type = c.Type, Value = c.Value}).ToList();
             _identityDbContext.Users.Add(userEntity);
             await _identityDbContext.SaveChangesAsync();
 
@@ -80,32 +79,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .FirstOrDefaultAsync();
 
             user.ToEntity(existingUser);
-
-            foreach (var claim in user.Claims)
-            {
-                var existingClaim =
-                    existingUser.Claims.FirstOrDefault(c => c.Type == claim.Type && c.Value == claim.Value);
-                if (existingClaim == null)
-                {
-                    existingUser.Claims.Add(new UserClaim{Type = claim.Type, Value = claim.Value});
-                }
-            }
-
-            var claimsToRemove = new List<UserClaim>();
-            foreach (var existingUserClaim in existingUser.Claims)
-            {
-                var newClaim = user.Claims.FirstOrDefault(
-                    c => c.Type == existingUserClaim.Type && c.Value == existingUserClaim.Value);
-                if (newClaim == null)
-                {
-                    claimsToRemove.Add(existingUserClaim);
-                }
-            }
-
-            foreach (var claimToRemove in claimsToRemove)
-            {
-                existingUser.Claims.Remove(claimToRemove);
-            }
 
             _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
