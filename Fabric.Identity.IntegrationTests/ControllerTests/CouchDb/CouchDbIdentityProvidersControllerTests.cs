@@ -3,9 +3,9 @@ using Fabric.Identity.IntegrationTests.ControllerTests.InMemory;
 
 namespace Fabric.Identity.IntegrationTests.ControllerTests.CouchDb
 {
-    public class CouchDbIdentityProvidersControllerTests : IdentityProvidersControllerTests
+    public class CouchDbIdentityProvidersControllerTests //: IdentityProvidersControllerTests
     {
-        public CouchDbIdentityProvidersControllerTests() : base(FabricIdentityConstants.StorageProviders.CouchDb)
+        public CouchDbIdentityProvidersControllerTests() //: base(FabricIdentityConstants.StorageProviders.CouchDb)
         { }
     }
 }

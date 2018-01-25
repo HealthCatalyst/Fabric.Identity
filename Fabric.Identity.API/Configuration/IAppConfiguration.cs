@@ -11,6 +11,7 @@ namespace Fabric.Identity.API.Configuration
         string ClientName { get; }
         string RegistrationAdminGroup { get; }
         bool AllowLocalLogin { get; }
+        bool WindowsAuthenticationEnabled { get; }
         SigningCertificateSettings SigningCertificateSettings { get; }
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }

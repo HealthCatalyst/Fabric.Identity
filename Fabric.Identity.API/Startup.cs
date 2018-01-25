@@ -210,7 +210,7 @@ namespace Fabric.Identity.API
             app.UseSwaggerUI(c =>
             {
                 // this sets up the JSON endpoint (1 call to SwaggerEndpoint per version)
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Health Catalyst Fabric Identity API V1");
+                c.SwaggerEndpoint("v1/swagger.json", "Health Catalyst Fabric Identity API V1");
             });
         }
 

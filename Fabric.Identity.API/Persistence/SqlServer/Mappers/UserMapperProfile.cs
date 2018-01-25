@@ -12,9 +12,10 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
         public UserMapperProfile()
         {
             //entity to model
-            CreateMap<User, Models.User>(MemberList.Destination)             
+            CreateMap<User, Models.User>(MemberList.Destination)
                 .ForMember(x => x.LastLoginDatesByClient, opt => opt.MapFrom(src => src.UserLogins))
-                .ForMember(x => x.Claims, opt => opt.MapFrom(src => src.Claims));
+                .ForMember(x => x.Claims,
+                    opt => opt.MapFrom(src => src.Claims.Select(c => new Claim(c.Type, c.Value ?? string.Empty))));
 
 
             //model to entity

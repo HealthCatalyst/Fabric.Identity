@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
@@ -42,10 +43,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
                     new UserLogin { ClientId = userLogin.ClientId, LoginDate = userLogin.LoginDate });
             }
 
-            foreach (var userClaim in model.Claims)
-            {
-                userEntity.Claims.Add(new UserClaim { Type = userClaim.Type });
-            }
+            userEntity.Claims = model.Claims.Select(c => new UserClaim { Type = c.Type, Value = c.Value }).ToList();
 
             return userEntity;
         }
@@ -74,21 +72,31 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Mappers
                 }
 
             }
-
-            foreach (var userClaim in model.Claims)
+            
+            foreach (var claim in model.Claims)
             {
-                var existingClaim = entity.Claims.FirstOrDefault(l =>
-                    l.Type.Equals(userClaim.Type, StringComparison.OrdinalIgnoreCase));
-
-                if (existingClaim != null)
+                var existingClaim =
+                    entity.Claims.FirstOrDefault(c => c.Type == claim.Type && c.Value == claim.Value);
+                if (existingClaim == null)
                 {
-                    existingClaim.Type = userClaim.Type;
+                    entity.Claims.Add(new UserClaim { Type = claim.Type, Value = claim.Value });
                 }
-                else
-                {
-                    entity.Claims.Add(new UserClaim { Type = userClaim.Type });
-                }
+            }
 
+            var claimsToRemove = new List<UserClaim>();
+            foreach (var existingUserClaim in entity.Claims)
+            {
+                var newClaim = model.Claims.FirstOrDefault(
+                    c => c.Type == existingUserClaim.Type && c.Value == existingUserClaim.Value);
+                if (newClaim == null)
+                {
+                    claimsToRemove.Add(existingUserClaim);
+                }
+            }
+
+            foreach (var claimToRemove in claimsToRemove)
+            {
+                entity.Claims.Remove(claimToRemove);
             }
         }
     }

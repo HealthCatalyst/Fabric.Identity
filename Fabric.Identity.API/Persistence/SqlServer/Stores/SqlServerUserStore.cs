@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
@@ -26,7 +28,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .Include(u => u.Claims)
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
 
-            return userEntity.ToModel();
+            var userModel = userEntity.ToModel();
+            return userModel;
         }
 
         public async Task<User> FindByExternalProviderAsync(string provider, string subjectId)
@@ -37,7 +40,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
                 .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
                                           && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
 
-            return userEntity.ToModel();
+            var userModel = userEntity.ToModel();
+            return userModel;
         }
 
         public async Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds)
@@ -54,7 +58,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<User> AddUserAsync(User user)
         {
             var userEntity = user.ToEntity();
-
             _identityDbContext.Users.Add(userEntity);
             await _identityDbContext.SaveChangesAsync();
 

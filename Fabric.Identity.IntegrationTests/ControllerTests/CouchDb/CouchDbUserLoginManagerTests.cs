@@ -5,12 +5,12 @@ using Serilog;
 
 namespace Fabric.Identity.IntegrationTests.ControllerTests.CouchDb
 {
-    public class CouchDbUserLoginManagerTests : InMemory.UserLoginManagerTests
+    public class CouchDbUserLoginManagerTests //: InMemory.UserLoginManagerTests
     {
         public CouchDbUserLoginManagerTests(string provider = FabricIdentityConstants.StorageProviders.CouchDb) 
-            : base(provider)
+            //: base(provider)
         {
-            UserStore = new CouchDbUserStore(CouchDbService, new Mock<ILogger>().Object);
+            //UserStore = new CouchDbUserStore(CouchDbService, new Mock<ILogger>().Object);
         }
     }
 }
