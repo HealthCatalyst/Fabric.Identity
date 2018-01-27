@@ -1,9 +1,10 @@
 #!/bin/bash
 
-installerSecretString=$(FABRIC_INSTALLER_SECRET)
-authClientSecretString=$(AUTH_CLIENT_SECRET)
+set installerSecretString=%~1
+set authClientSecretString=%~2
+set stagingDirectory=%~3
 
 json="{\"installerSecret\":\""$installerSecretString"\", \"authClientSecret\":\""$authClientSecretString"\"}"  
 
 echo -e $json
-echo $json > $(Build.ArtifactStagingDirectory)"\variables.txt"
+echo $json > $stagingDirectory"\variables.txt"
