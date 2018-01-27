@@ -1,6 +1,6 @@
 #!/bin/bash
 
-value=$(</c/hc/variables.txt)
+value=$(<$(System.DefaultWorkingDirectory)/variables.txt)
 echo "$value"
 
 installersecret=$(echo $value | jq .installerSecret) 
