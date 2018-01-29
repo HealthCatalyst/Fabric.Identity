@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set workingDirectory=%~1
+set workingDirectory=$1
 
 value=$(<$workingDirectory/variables.txt)
 echo "$value"
