@@ -6,12 +6,12 @@ blobName=$3
 fileToUpload=$4
 
 
-export AZURE_STORAGE_ACCOUNT=storageAccountName
-export AZURE_STORAGE_ACCESS_KEY=storageAccountKey
+export AZURE_STORAGE_ACCOUNT=$storageAccountName
+export AZURE_STORAGE_ACCESS_KEY=$storageAccountKey
 
 export container_name=fabric-release
-export blob_name=blobName
-export file_to_upload=fileToUpload
+export blob_name=$blobName
+export file_to_upload=$fileToUpload
 
 echo "Creating the container..."
 az storage container create --name $container_name
