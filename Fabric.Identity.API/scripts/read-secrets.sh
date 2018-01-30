@@ -1,8 +1,10 @@
 #!/bin/bash
 
-workingDirectory=$1
+sourceFile=$1
 
-clientSecretJson=$(<$workingDirectory/variables.txt)
+echo $sourceFile
+
+clientSecretJson=$(<$sourceFile)
 echo $clientSecretJson
 
 installersecret=$(echo $clientSecretJson | jq .installerSecret) 
