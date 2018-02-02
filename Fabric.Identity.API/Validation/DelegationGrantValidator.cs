@@ -35,8 +35,8 @@ namespace Fabric.Identity.API.Validation
 
             // get user's identity
             var sub = result.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-
-            context.Result = new GrantValidationResult(sub, "delegation");
+            var groups = result.Claims.Where(c => c.Type == "role" || c.Type == "groups");
+            context.Result = new GrantValidationResult(sub, "delegation", groups);
         }
     }
 }
