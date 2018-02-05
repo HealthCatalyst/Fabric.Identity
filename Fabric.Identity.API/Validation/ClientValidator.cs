@@ -1,8 +1,10 @@
 ﻿using System.Linq;
 using System.Reflection;
+using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Persistence;
 using FluentValidation;
 using IdentityServer4.Models;
+using Client = IdentityServer4.Models.Client;
 
 namespace Fabric.Identity.API.Validation
 {
@@ -45,9 +47,11 @@ namespace Fabric.Identity.API.Validation
                 .WithMessage(
                     "Client may not have Allow Offline Access when grant type is Implicit or ResourceOwnerPassword");
 
-            var grantTypes = typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Where(f => f.FieldType == typeof(string))
-                .Select(f => f.GetValue(null).ToString());
+            var grantTypes =
+                typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
+                    .Union(typeof(CustomGrantType).GetFields(BindingFlags.Public | BindingFlags.Static))
+                    .Where(f => f.FieldType == typeof(string))
+                    .Select(f => f.GetValue(null).ToString());
 
             RuleFor(client => client.AllowedGrantTypes)
                 .NotNull()
