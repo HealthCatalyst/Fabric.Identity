@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using IdentityModel;
 using IdentityServer4.Models;
 using IdentityServer4.Validation;
 
@@ -34,8 +35,8 @@ namespace Fabric.Identity.API.Validation
             }
 
             // get user's identity
-            var sub = result.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            var groups = result.Claims.Where(c => c.Type == "role" || c.Type == "groups");
+            var sub = result.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Subject)?.Value;
+            var groups = result.Claims.Where(c => c.Type == JwtClaimTypes.Role || c.Type == "groups");
             context.Result = new GrantValidationResult(sub, "delegation", groups);
         }
     }
