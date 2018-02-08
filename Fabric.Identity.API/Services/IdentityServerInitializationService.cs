@@ -1,11 +1,11 @@
 ﻿using System;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.ExtensionGrantValidators;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.DependencyInjection;
 using Fabric.Identity.API.Persistence.InMemory.DependencyInjection;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.DependencyInjection;
-using Fabric.Identity.API.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 

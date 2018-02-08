@@ -87,5 +87,10 @@
             internal const string ReadScopeClaim = "ReadScopeClaim";
             internal const string SearchUsersScopeClaim = "SearchUsersScopeClaim";
         }
+
+        public static class ExtensionGrantTypes
+        {
+            public const string Delegation = "delegation";
+        }
     }
 }
