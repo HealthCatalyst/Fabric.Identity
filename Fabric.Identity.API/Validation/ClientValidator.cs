@@ -49,7 +49,7 @@ namespace Fabric.Identity.API.Validation
 
             var grantTypes =
                 typeof(GrantType).GetFields(BindingFlags.Public | BindingFlags.Static)
-                    .Union(typeof(CustomGrantType).GetFields(BindingFlags.Public | BindingFlags.Static))
+                    .Union(typeof(FabricIdentityConstants.ExtensionGrantTypes).GetFields(BindingFlags.Public | BindingFlags.Static))
                     .Where(f => f.FieldType == typeof(string))
                     .Select(f => f.GetValue(null).ToString());
 

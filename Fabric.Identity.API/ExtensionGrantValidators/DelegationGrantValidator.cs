@@ -4,7 +4,7 @@ using IdentityModel;
 using IdentityServer4.Models;
 using IdentityServer4.Validation;
 
-namespace Fabric.Identity.API.Validation
+namespace Fabric.Identity.API.ExtensionGrantValidators
 {
     public class DelegationGrantValidator : IExtensionGrantValidator
     {

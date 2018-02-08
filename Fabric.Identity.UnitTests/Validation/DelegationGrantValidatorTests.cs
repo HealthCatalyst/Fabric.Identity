@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Claims;
-using Fabric.Identity.API.Validation;
+using Fabric.Identity.API.ExtensionGrantValidators;
 using IdentityModel;
 using IdentityServer4.Validation;
 using Xunit;
