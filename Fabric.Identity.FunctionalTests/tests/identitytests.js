@@ -1,5 +1,6 @@
 var chakram = require("chakram");
 var expect = require("chakram").expect;
+var jwtDecode = require('jwt-decode');
 
 var webdriver = require("selenium-webdriver"),
 By = webdriver.By,
@@ -41,7 +42,7 @@ describe("identity tests", function () {
         "clientId": "func-test",
         "clientName": "Functional Test Client",
         "requireConsent": "false",
-        "allowedGrantTypes": ["client_credentials", "password", "implicit"],
+        "allowedGrantTypes": ["client_credentials", "password", "implicit", "delegation"],
         "allowedScopes": [
             "fabric/identity.manageresources",
             "fabric/authorization.read",
@@ -84,6 +85,9 @@ describe("identity tests", function () {
         ],
         "scopes": [{ "name": "patientapi", "displayName": "Patient API" }]
     }
+
+    var hybridClientAccessToken = '';
+    var identityClientFuncTestClientSecret = '';
 
     function registerAuthorizationApi() {
         var authApiResource = {
@@ -173,6 +177,20 @@ describe("identity tests", function () {
         return getAccessToken(clientData);
     }
 
+    function getAccessTokenForFuncTestDelegationGrantClient(delegationClientSecret, incomingToken){
+        var clientData = {
+            form: {
+                "client_id": "func-test",
+                "client_secret": delegationClientSecret,
+                "grant_type": "delegation",
+                "scope": "fabric/authorization.read fabric/authorization.write",
+                "token": incomingToken
+            }
+        }
+
+        return getAccessToken(clientData);
+    }
+
     function bootstrapIdentityServer() {
         return registerRegistrationApi()
             .then(registerAuthorizationApi)
@@ -216,6 +234,7 @@ describe("identity tests", function () {
                 })
                  //take the new client secret and try to get an access token
                 .then(function(updatedClientSecret){
+                    identityClientFuncTestClientSecret = updatedClientSecret;
                     return getAccessTokenForFuncTestClient(updatedClientSecret);
                 })
                 .then(function(accessToken){
@@ -354,7 +373,7 @@ describe("identity tests", function () {
             var driver = new webdriver.Builder().
                 withCapabilities(customPhantom).
                 build();
-            
+
             var hybridClientSecret = "";
 
             driver.manage().window().setSize(1024, 768);
@@ -384,10 +403,12 @@ describe("identity tests", function () {
                 var authUrl = url.parse(currentUrl);    
                 var obj = qs.parse(authUrl.hash);
                 var authCode = obj["#code"];
-                expect(authCode).to.not.be.undefined;               
+                expect(authCode).to.not.be.undefined;
                 return getAccessTokenForFuncTestHybridClient(hybridClientSecret, authCode);
             })
-            .then(function(accessToken){                
+            .then(function(accessToken){
+                hybridClientAccessToken = accessToken;
+
                 //use access token to get the client from identity
                 var options = {
                     headers: {
@@ -402,5 +423,26 @@ describe("identity tests", function () {
                 expect(getResponse).to.comprise.of.json({ clientId: "func-test-hybrid" });
             });
         });
+
+        it("should be able to authenticate using delegation grant flow", function(){
+            this.timeout(10000);
+
+            // func-test client requesting a delegate token for the func-test-hybrid client
+            return getAccessTokenForFuncTestDelegationGrantClient(identityClientFuncTestClientSecret, hybridClientAccessToken.replace("Bearer ", ""))
+                .then(function(delegateToken){
+                    expect(delegateToken).to.not.be.null;
+                    expect(delegateToken).to.not.be.undefined;
+                    expect(delegateToken).to.not.include("undefined");
+
+                    var jwtOriginalToken = jwtDecode(hybridClientAccessToken);
+                    var jwtDelegateToken = jwtDecode(delegateToken);
+
+                    expect(jwtDelegateToken.sub).to.equal(jwtOriginalToken.sub);
+                    expect(jwtDelegateToken.scope).to.include("fabric/authorization.read");
+                    expect(jwtDelegateToken.scope).to.include("fabric/authorization.write");
+                });
+        });
     });
 });
+
+
