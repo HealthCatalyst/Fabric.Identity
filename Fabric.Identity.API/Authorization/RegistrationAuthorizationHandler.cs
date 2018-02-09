@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
-using Fabric.Identity.API.Persistence.InMemory.Stores;
 using Microsoft.AspNetCore.Authorization;
 using Serilog;
 

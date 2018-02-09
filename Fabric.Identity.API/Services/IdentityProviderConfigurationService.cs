@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Models;
 using IdentityServer4.Quickstart.UI;
