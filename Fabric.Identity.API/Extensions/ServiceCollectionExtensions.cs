@@ -107,7 +107,7 @@ namespace Fabric.Identity.API.Extensions
 
         public static IServiceCollection AddAuthorizationServices(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<IAuthorizationHandler, RegistrationAuthorizationHandler>();
+            serviceCollection.AddScoped<IAuthorizationHandler, RegistrationAuthorizationHandler>();
             serviceCollection.AddSingleton<IAuthorizationHandler, ReadAuthorizationHandler>();
             serviceCollection.AddSingleton<IAuthorizationHandler, SearchUserAuthorizationHandler>();
 
