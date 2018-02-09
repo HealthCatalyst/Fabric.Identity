@@ -492,9 +492,9 @@ vars.put(&quot;clientName&quot;, randomUUIDString);
     &quot;name&quot;: &quot;${resourceName}&quot;, &#xd;
     &quot;userClaims&quot;: [&quot;name&quot;, &quot;email&quot;, &quot;role&quot;, &quot;groups&quot;], &#xd;
     &quot;scopes&quot;: [&#xd;
-        {&quot;name&quot;: &quot;fabric/authorization.read&quot;}, &#xd;
-        {&quot;name&quot;: &quot;fabric/authorization.write&quot;}, &#xd;
-        {&quot;name&quot;:&quot;fabric/authorization.manageclients&quot;}&#xd;
+        {&quot;name&quot;: &quot;fabric/authorization.read-${resourceName}&quot;}, &#xd;
+        {&quot;name&quot;: &quot;fabric/authorization.write-${resourceName}&quot;}, &#xd;
+        {&quot;name&quot;:&quot;fabric/authorization.manageclients-${resourceName}&quot;}&#xd;
     ]&#xd;
 }</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
