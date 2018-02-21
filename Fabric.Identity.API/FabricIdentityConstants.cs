@@ -95,6 +95,7 @@
 
         public static class ValidationRuleSets
         {
+            public const string Default = "default";
             public const string ClientPost = "ClientPost";
         }
     }
