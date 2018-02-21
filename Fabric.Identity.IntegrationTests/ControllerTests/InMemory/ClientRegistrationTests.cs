@@ -167,6 +167,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 
             // Update it
             var updatedTestClient = GetTestClient();
+            updatedTestClient.ClientId = testClient.ClientId;
+
             var stringContent = new StringContent(JsonConvert.SerializeObject(updatedTestClient), Encoding.UTF8, "application/json");
             response = await HttpClient.PutAsync($"/api/Client/{testClient.ClientId}", stringContent);
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);

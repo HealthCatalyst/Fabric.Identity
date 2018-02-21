@@ -118,7 +118,7 @@ namespace Fabric.Identity.API.Management
                     viewClient.ClientSecret = clientSecret;
 
                     return CreatedAtAction("Get", new {id}, viewClient);
-                });
+                }, $"{FabricIdentityConstants.ValidationRuleSets.ClientPost},{FabricIdentityConstants.ValidationRuleSets.Default}");
             }
             catch (BadRequestException<Client> ex)
             {
@@ -140,8 +140,15 @@ namespace Fabric.Identity.API.Management
         public IActionResult Put(string id, [FromBody] Client client)
         {
             var is4Client = client.ToIs4ClientModel();
+
             return ValidateAndExecute(is4Client, () =>
             {
+                if (!string.Equals(id, client.ClientId))
+                {
+                    return CreateFailureResponse(
+                        "The ClientId in the request URL path must match the ClientId in the request body.", HttpStatusCode.BadRequest);
+                }
+
                 var storedClient = _clientManagementStore.FindClientByIdAsync(id).Result;
 
                 if (string.IsNullOrEmpty(storedClient?.ClientId))

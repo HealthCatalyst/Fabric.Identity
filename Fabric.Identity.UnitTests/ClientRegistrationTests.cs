@@ -213,6 +213,7 @@ namespace Fabric.Identity.UnitTests
                 }));
 
             var testClient = GetTestClient();
+            testClient.ClientId = clientId;
             var result = controller.Put(clientId, testClient);
             Assert.True(result is NoContentResult);
 
