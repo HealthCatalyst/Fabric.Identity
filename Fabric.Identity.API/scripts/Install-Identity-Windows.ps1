@@ -161,7 +161,7 @@ function Invoke-Sql($connectionString, $sql, $parameters=@{}){
 function Get-ApplicationEndpoint($appName, $appEndPoint)
 {
     if([string]::IsNullOrEmpty($appEndPoint)){
-        return "http://$env:computername/$appName"
+        return "https://$env:computername/$appName"
     }else{
         return $appEndPoint
     }
@@ -170,7 +170,7 @@ function Get-ApplicationEndpoint($appName, $appEndPoint)
 function Get-DiscoveryServiceUrl($discoUrl)
 {
     if([string]::IsNullOrEmpty($discoUrl)){
-        return "http://$env:computername/DiscoveryService"
+        return "https://$env:computername/DiscoveryService"
     }else{
         return $discoUrl
     }
