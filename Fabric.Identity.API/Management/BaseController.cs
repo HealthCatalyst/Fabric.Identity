@@ -31,7 +31,7 @@ namespace Fabric.Identity.API.Management
             return new Secret(password.Sha256());
         }
 
-        protected virtual IActionResult ValidateAndExecute(T model, Func<IActionResult> successFunctor)
+        protected virtual IActionResult ValidateAndExecute(T model, Func<IActionResult> successFunctor, string ruleSet)
         {
             // FluentValidation cannot handle null models.
             if (model == null)
@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.BadRequest);
             }
 
-            var validationResults = Validator.Validate(model);
+            var validationResults = Validator.Validate(model, ruleSet: ruleSet);
 
             if (!validationResults.IsValid)
             {
@@ -58,6 +58,11 @@ namespace Fabric.Identity.API.Management
             {
                 return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
             }
+        }
+
+        protected virtual IActionResult ValidateAndExecute(T model, Func<IActionResult> successFunctor)
+        {
+            return ValidateAndExecute(model, successFunctor, FabricIdentityConstants.ValidationRuleSets.Default);
         }
 
         protected IActionResult CreateValidationFailureResponse(ValidationResult validationResult)

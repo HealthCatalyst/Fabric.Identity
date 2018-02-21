@@ -92,5 +92,10 @@
         {
             public const string Delegation = "delegation";
         }
+
+        public static class ValidationRuleSets
+        {
+            public const string ClientPost = "ClientPost";
+        }
     }
 }

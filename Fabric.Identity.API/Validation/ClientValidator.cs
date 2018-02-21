@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Reflection;
-using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Persistence;
 using FluentValidation;
 using IdentityServer4.Models;
@@ -60,11 +59,12 @@ namespace Fabric.Identity.API.Validation
                 .WithMessage("Grant type not allowed. Allowed values: " +
                              grantTypes.Aggregate((acc, x) => $"{acc} ,{x}"));
 
-            RuleFor(client => client.ClientId)
-                .Must(BeUnique)
-                .When(client => !string.IsNullOrEmpty(client.ClientId))
-                .WithMessage(c => $"Client {c.ClientId} already exists. Please provide a new client id")
-                .WithState(c => FabricIdentityEnums.ValidationState.Duplicate);
+            RuleSet(FabricIdentityConstants.ValidationRuleSets.ClientPost, () =>
+                RuleFor(client => client.ClientId)
+                    .Must(BeUnique)
+                    .When(client => !string.IsNullOrEmpty(client.ClientId))
+                    .WithMessage(c => $"Client {c.ClientId} already exists. Please provide a new client id")
+                    .WithState(c => FabricIdentityEnums.ValidationState.Duplicate));
         }
 
         private bool BeUnique(string clientId)
