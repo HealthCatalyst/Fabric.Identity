@@ -84,6 +84,7 @@ namespace Fabric.Identity.API
                 .AddSingleton<ISerializationSettings, SerializationSettings>()
                 .AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>()
                 .AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>()
+                .AddSingleton<IExternalIdentityProviderService, IdPSearchServiceProvider>()
                 .AddSingleton<LdapProviderService>()
                 .AddSingleton<PolicyProvider>()
                 .AddSingleton<IHealthCheckerService, HealthCheckerService>()

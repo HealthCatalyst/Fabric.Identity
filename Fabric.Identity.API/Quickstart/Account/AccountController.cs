@@ -40,9 +40,10 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IEventService _events;
         private readonly IAppConfiguration _appConfiguration;
         private readonly ILogger _logger;
+        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
         private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
-        private readonly IExternalIdentityProviderServiceResolver _externalIdentityProviderServiceResolver;
+        
         private readonly GroupFilterService _groupFilterService;
 
         public AccountController(
@@ -53,7 +54,7 @@ namespace IdentityServer4.Quickstart.UI
             IAppConfiguration appConfiguration,
             IUserStore userStore,
             ILogger logger,
-            IExternalIdentityProviderServiceResolver externalIdentityProviderServiceResolver,
+            IExternalIdentityProviderService externalIdentityProviderService,
             AccountService accountService,
             GroupFilterService groupFilterService,
             TestUserStore users = null)
@@ -64,10 +65,11 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;
             _logger = logger;
+            _externalIdentityProviderService = externalIdentityProviderService;
             _accountService = accountService;
             _groupFilterService = groupFilterService;
             _userLoginManager = new UserLoginManager(userStore, _logger);
-            _externalIdentityProviderServiceResolver = externalIdentityProviderServiceResolver;
+            
         }
 
         private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
@@ -168,10 +170,8 @@ namespace IdentityServer4.Quickstart.UI
                     
                     id.AddClaim(new Claim(JwtClaimTypes.Subject, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
-
-                    var externalIdentityProviderService = _externalIdentityProviderServiceResolver
-                        .GetExternalIdentityProviderService(FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows);
-                    var externalUser = externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
+                    
+                    var externalUser = _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
                     if (externalUser != null)
                     {
                         id.AddClaim(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
