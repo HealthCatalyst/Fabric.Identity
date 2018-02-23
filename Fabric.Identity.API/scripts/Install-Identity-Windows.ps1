@@ -502,6 +502,18 @@ $body = @'
 Write-Console "Registering Fabric.Identity registration api."
 $registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
 
+#register identity search service api 
+$body = @'
+{
+    "name":"idpsearch-api",
+    "userClaims":["name","email","role","groups"],
+    "scopes":[{"name":"fabric/idprovider.searchusers"}]
+}
+'@
+
+Write-Console "Registering Fabric.IdentityProviderSearch api."
+$idpSearchApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
+
 #Register Fabric.Installer
 $body = @'
 {
@@ -519,10 +531,35 @@ $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -bod
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 
 
+#register Fabric.Identity client
+$body = @'
+{
+    "clientId":"fabric-identity-client", 
+    "clientName":"Fabric Identity Client", 
+    "requireConsent":"false", 
+    "allowedGrantTypes": ["client_credentials"], 
+    "allowedScopes": ["fabric/idprovider.searchusers"]
+}
+'@
+
+Write-Console "identity server url " $identityServerUrl
+Write-Console 
+
+$accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installerClientSecret
+
+Write-Console "Registering Fabric.Identity Client"
+$identityClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+
+if($identityClientSecret){
+	$encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
+	$environmentVariables.Add("IdentityServerConfidentialClientSettings__ClientSecret", $encryptedSecret)
+}
+
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
 Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
 Write-Success "Fabric.Registration apiSecret: $registrationApiSecret"
+Write-Success "Fabric.IdentityProviderSearch apiSecret: $idpSearchApiSecret"
 Write-Console ""
 Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
 Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
