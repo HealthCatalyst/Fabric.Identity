@@ -9,5 +9,8 @@ namespace Fabric.Identity.API.Infrastructure
     {
         public readonly CircuitBreakerPolicy LdapErrorPolicy = Policy.Handle<LdapException>()
             .CircuitBreaker(5, TimeSpan.FromMinutes(5));
+
+        public readonly CircuitBreakerPolicy IdPSearchServiceErrorPolicy = Policy.Handle<LdapException>()
+            .CircuitBreaker(5, TimeSpan.FromMinutes(5));
     }
 }

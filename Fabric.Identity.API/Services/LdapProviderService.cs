@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Novell.Directory.Ldap;
@@ -22,19 +23,19 @@ namespace Fabric.Identity.API.Services
             _logger = logger;
             _policyProvider = policyProvider;
         }
-        public ExternalUser FindUserBySubjectId(string subjectId)
+        public Task<ExternalUser> FindUserBySubjectId(string subjectId)
         {
             if (!subjectId.Contains(@"\"))
             {
                 _logger.Information("subjectId '{subjectId}' was not in the correct format. Expected DOMAIN\\username.", subjectId);
-                return new ExternalUser();
+                return Task.FromResult(new ExternalUser());
             }
             _logger.Debug("Searching LDAP for '{subjectId}'.", subjectId);
             var subjectIdParts = subjectId.Split('\\');
             var accountName = subjectIdParts[subjectIdParts.Length - 1];
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}))";
             var users = SearchLdapSafe(ldapQuery);
-            return users.FirstOrDefault();
+            return Task.FromResult(users.FirstOrDefault());
         }
 
         public ICollection<ExternalUser> SearchUsers(string searchText)
