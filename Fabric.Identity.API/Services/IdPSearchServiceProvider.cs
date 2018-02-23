@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
@@ -60,36 +59,51 @@ namespace Fabric.Identity.API.Services
             var tokenClient = new TokenClient(tokenUriAddress, fabricIdentityClient, settings.ClientSecret);
             var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
 
-            var httpClient = new HttpClientFactory(
+            using (var httpClient = new HttpClientFactory(
                 tokenUriAddress,
                 fabricIdentityClient,
                 settings.ClientSecret,
                 null,
-                null).CreateWithAccessToken(new Uri(_appConfig.IdentityProviderSearchSettings.IdPSearchServiceUrl), accessTokenResponse.AccessToken);
-
-            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-
-            var searchServiceUrl = $"/v1/principals/user?subjectid={subjectId}";
-
-            var response = await httpClient.GetAsync(searchServiceUrl);
-
-            var responseContent = response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrEmpty(responseContent) || response.StatusCode != HttpStatusCode.OK)
+                null).CreateWithAccessToken(new Uri(_appConfig.IdentityProviderSearchSettings.IdPSearchServiceUrl),
+                accessTokenResponse.AccessToken))
             {
-                _logger.Information($"no user principal was found for subject id: {subjectId}. response status code: {response.StatusCode}");
-                return null;
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                var searchServiceUrl = $"/v1/principals/user?subjectid={subjectId}";
+
+                try
+                {
+                    var response = await httpClient.GetAsync(searchServiceUrl);
+
+                    var responseContent =
+                        response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync();
+
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        _logger.Error(
+                            $"no user principal was found for subject id: {subjectId}. response status code: {response.StatusCode}.");
+                        return null;
+                    }
+
+                    var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
+
+                    return new ExternalUser
+                    {
+                        FirstName = result.FirstName,
+                        LastName = result.LastName,
+                        MiddleName = result.MiddleName,
+                        SubjectId = result.SubjectId
+                    };
+                }
+                catch (HttpRequestException e)
+                {
+                    var baseException = e.GetBaseException();
+
+                    _logger.Error($"there was an error connecting to the search service: {baseException.Message}");
+                    return null;
+                }
+                
             }
-
-            var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
-
-            return new ExternalUser
-            {
-                FirstName = result.FirstName,
-                LastName = result.LastName,
-                MiddleName = result.MiddleName,
-                SubjectId = result.SubjectId
-            };
         }
 
         public ICollection<ExternalUser> SearchUsers(string searchText)
