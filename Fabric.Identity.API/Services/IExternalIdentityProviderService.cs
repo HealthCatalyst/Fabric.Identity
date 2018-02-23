@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 
 namespace Fabric.Identity.API.Services
 {
     public interface IExternalIdentityProviderService
     {
-        ExternalUser FindUserBySubjectId(string subjectId);
+        Task<ExternalUser> FindUserBySubjectId(string subjectId);
         ICollection<ExternalUser> SearchUsers(string searchText);
     }
 }

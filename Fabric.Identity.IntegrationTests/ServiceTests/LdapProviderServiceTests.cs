@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Services;
@@ -13,7 +14,7 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
     public class LdapProviderServiceTests
     {
         [Fact]
-        public void FindUser_Succeeds_WhenUserExists()
+        public async Task FindUser_Succeeds_WhenUserExists()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = LdapTestHelper.GetLdapSettings();
@@ -21,7 +22,7 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var newUser = LdapTestHelper.CreateTestUser("test", "user", settings.BaseDn, ldapConnectionProvider);
             var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
-            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\{newUser.getAttribute("cn").StringValue}");
+            var externalUser = await ldapProviderService.FindUserBySubjectId($"EXAMPLE\\{newUser.getAttribute("cn").StringValue}");
             LdapTestHelper.RemoveEntry(newUser, ldapConnectionProvider);
             Assert.NotNull(externalUser);
             Assert.Equal("test", externalUser.FirstName);
@@ -31,19 +32,19 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
         }
 
         [Fact]
-        public void FindUser_ReturnsNull_WhenUserDoesNotExist()
+        public async Task FindUser_ReturnsNull_WhenUserDoesNotExist()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = LdapTestHelper.GetLdapSettings();
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
-            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
+            var externalUser = await ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
             Assert.Null(externalUser);
         }
 
         [Fact]
-        public void FindUser_ReturnsNull_WithNoConnectionInfo()
+        public async Task FindUser_ReturnsNull_WithNoConnectionInfo()
         {
             var logger = new Mock<ILogger>().Object;
             var settings = new LdapSettings
@@ -57,26 +58,26 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
 
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var ldapProviderService = new LdapProviderService(ldapConnectionProvider, logger, new PolicyProvider());
-            var externalUser = ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
+            var externalUser = await ldapProviderService.FindUserBySubjectId($"EXAMPLE\\nonexistent.user");
             Assert.Null(externalUser);
         }
 
         [Fact]
-        public void FindUsers_ReturnsNull_WithBadConnection()
+        public async Task FindUsers_ReturnsNull_WithBadConnection()
         {
             var ldapProviderService = GetLdapProviderSerivce(GetBadConnectionSettings(), new PolicyProvider());
-            var externalUser = ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistent.user");
+            var externalUser = await ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistent.user");
             Assert.Null(externalUser);
         }
 
         [Fact]
-        public void FindUsers_TripsBreaker_WithBadConnection()
+        public async Task FindUsers_TripsBreaker_WithBadConnection()
         {
             var policyProvider = new PolicyProvider();
             var ldapProviderService = GetLdapProviderSerivce(GetBadConnectionSettings(), policyProvider); 
             for (var i = 0; i < 6; i++)
             {
-                var externalUser = ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistant.user");
+                var externalUser = await ldapProviderService.FindUserBySubjectId("EXAMPLE\\nonexistant.user");
                 Assert.Null(externalUser);
             }
             Assert.Equal(CircuitState.Open, policyProvider.LdapErrorPolicy.CircuitState);
