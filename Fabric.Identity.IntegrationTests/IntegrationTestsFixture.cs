@@ -78,8 +78,8 @@ namespace Fabric.Identity.IntegrationTests
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
         {
             DatabaseName = $"integration-{DatabaseNameSuffix}",
-            Username = "admin",
-            Password = "admin",
+            Username = "",
+            Password = "",
             Server = "http://127.0.0.1:5984"
         });
 
