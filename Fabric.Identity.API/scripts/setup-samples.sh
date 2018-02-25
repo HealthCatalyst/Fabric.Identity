@@ -48,6 +48,19 @@ echo $groupfetcherresponse
 groupfetchersecret=$(echo $groupfetcherresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""
 
+# register the identity provider search service
+echo "registering Fabric.IdentityProviderSearchService API..."
+idpsearchserviceresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"idpsearch-api\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{ \"name\": \"fabric/idprovider.searchusers\"}]}" $identitybaseurl/api/apiresource)
+echo $idpsearchserviceresponse
+echo ""
+
+#register identity client
+echo "registering Fabric.Identity as a client"
+identityclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-identity-client\", \"clientName\": \"Fabric Identity Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/idprovider.searchusers\"]}" $identitybaseurl/api/client)
+echo $identityclientresponse
+identityclientsecret=$(echo $identityclientresponse | grep -oP '(?<="clientSecret":")[^"]*')
+echo ""
+
 # register patient api
 echo "registering Fabric.Identity.Samples.API..."
 patientapiresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"name\": \"patientapi\", \"userClaims\": [\"name\", \"email\", \"role\", \"groups\"], \"scopes\": [{\"name\":\"patientapi\", \"displayName\":\"Patient API\"}]}" $identitybaseurl/api/apiresource)
@@ -87,6 +100,11 @@ echo ""
 echo "Update the Fabric.Authorization appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
 echo "\"authClientSecret\":\"$authorizationclientsecret\""
 echo "##vso[task.setvariable variable=AUTH_CLIENT_SECRET;]$authorizationclientsecret"
+echo ""
+
+echo "Update the Fabric.Identity appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
+echo "\"identityClientSecret\":\"$identityclientsecret\""
+echo "##vso[task.setvariable variable=IDENTITY_CLIENT_SECRET;]$identityclientsecret"
 echo ""
 
 echo "Update the Fabric.Identity.Samples.API appsettings.json IdentityServerConfidentialClientSettings.ClientSecret:"
