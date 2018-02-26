@@ -64,16 +64,16 @@ namespace Fabric.Identity.API.Services
                 fabricIdentityClient,
                 settings.ClientSecret,
                 null,
-                null).CreateWithAccessToken(new Uri(_appConfig.IdentityProviderSearchSettings.IdPSearchServiceUrl),
+                null).CreateWithAccessToken(new Uri(_appConfig.IdentityProviderSearchSettings.BaseUrl),
                 accessTokenResponse.AccessToken))
             {
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                var searchServiceUrl = $"/v1/principals/user?subjectid={subjectId}";
+                var searchServiceUrl = $"{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint}{subjectId}";
 
                 try
                 {
-                    _logger.Information($"searching for user with url: {_appConfig.IdentityProviderSearchSettings.IdPSearchServiceUrl}{searchServiceUrl}");
+                    _logger.Information($"searching for user with url: {_appConfig.IdentityProviderSearchSettings.BaseUrl}{searchServiceUrl}");
 
                     var response = await httpClient.GetAsync(searchServiceUrl);
 
