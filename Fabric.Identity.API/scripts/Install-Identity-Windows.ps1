@@ -161,7 +161,7 @@ function Invoke-Sql($connectionString, $sql, $parameters=@{}){
 function Get-ApplicationEndpoint($appName, $appEndPoint)
 {
     if([string]::IsNullOrEmpty($appEndPoint)){
-        return "https://$env:computername/$appName"
+        return "https://$env:computername.$($env:userdnsdomain.tolower())/$appName"
     }else{
         return $appEndPoint
     }
@@ -170,7 +170,7 @@ function Get-ApplicationEndpoint($appName, $appEndPoint)
 function Get-DiscoveryServiceUrl($discoUrl)
 {
     if([string]::IsNullOrEmpty($discoUrl)){
-        return "https://$env:computername/DiscoveryService"
+        return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService"
     }else{
         return $discoUrl
     }
@@ -211,7 +211,7 @@ $sqlServerAddress = $installSettings.sqlServerAddress
 $metadataDbName = $installSettings.metadataDbName
 $identityDbName = $installSettings.identityDbName
 $identityDatabaseRole = $installSettings.identityDatabaseRole
-$discoveryServiceUrl = Get-DiscoveryServiceUrl $installSettings.discoveryServiceUrl
+$discoveryServiceUrl = Get-DiscoveryServiceUrl $installSettings.discoveryService
 $applicationEndPoint = Get-ApplicationEndpoint $appName $installSettings.applicationEndPoint
 $storedIisUser = $installSettings.iisUser
 $useSpecificUser = $false;
@@ -411,8 +411,9 @@ if(![string]::IsNullOrEmpty($userEnteredApplicationEndpoint)){
     $applicationEndpoint = $userEnteredApplicationEndpoint
 }
 
-if($discoveryServiceUrl){ Add-InstallationSetting "identity" "discoveryServiceUrl" "$discoveryServiceUrl" | Out-Null }
+if($discoveryServiceUrl){ Add-InstallationSetting "common" "discoveryService" "$discoveryServiceUrl" | Out-Null }
 if($applicationEndPoint){ Add-InstallationSetting "identity" "applicationEndPoint" "$applicationEndPoint" | Out-Null }
+if($applicationEndPoint){ Add-InstallationSetting "common" "identityService" "$applicationEndPoint" | Out-Null }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
 if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
@@ -486,7 +487,7 @@ Set-Location $workingDirectory
 
 if(Test-RegistrationComplete $identityServerUrl)
 {
-    Write-Success "Installation complete, exiting."
+    Read-Host -Prompt "Installation complete, press Enter to exit"
     exit 0
 }
 
@@ -564,4 +565,4 @@ Write-Console ""
 Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
 Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
 
-Write-Success "Installation complete, exiting."
+Read-Host -Prompt "Installation complete, press Enter to exit"
