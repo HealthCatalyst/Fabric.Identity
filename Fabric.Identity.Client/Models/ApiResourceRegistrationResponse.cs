@@ -1,9 +1,9 @@
 ﻿namespace Fabric.Identity.Client.Models
 {
     /// <summary>
-    /// The api resource response.
+    /// The API resource registration response.
     /// </summary>
-    public class ApiResourceResponse
+    public class ApiResourceRegistrationResponse
     {
         /// <summary>
         /// Gets or sets a value indicating whether there is an error.

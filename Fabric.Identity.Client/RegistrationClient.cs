@@ -6,6 +6,7 @@
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
 
+    using Fabric.Identity.Client.Extensions;
     using Fabric.Identity.Client.Models;
 
     using Newtonsoft.Json;
@@ -41,7 +42,7 @@
         /// <param name="userClaims"> The list of user claims that should be included on the access token that gets passed to the API. </param>
         /// <param name="scopes"> The list of scopes to register for the API. </param>
         /// <returns> The <see cref="Task"/>. </returns>
-        public async Task<ApiResourceResponse> RegisterApiAsync(string accessToken, string apiName, ICollection<string> userClaims, ICollection<string> scopes)
+        public async Task<ApiResourceRegistrationResponse> RegisterApiAsync(string accessToken, string apiName, ICollection<string> userClaims, ICollection<string> scopes)
         {
             var apiResourceToPost = new ApiResource(apiName, userClaims, scopes);
             return await this.RegisterApiAsync(accessToken, apiResourceToPost).ConfigureAwait(false);
@@ -53,25 +54,47 @@
         /// <param name="accessToken">The access token to access the registration API.</param>
         /// <param name="apiResource">The <see cref="ApiResource" /> to register.</param>
         /// <returns>The <see cref="Task"/>.</returns>
-        public async Task<ApiResourceResponse> RegisterApiAsync(string accessToken, ApiResource apiResource)
+        public async Task<ApiResourceRegistrationResponse> RegisterApiAsync(string accessToken, ApiResource apiResource)
         {
-            var apiResult = await this.HttpClient.PostAsync(
+            var apiResourceResponse = await this.HttpClient.PostAsync(
                                     "/api/apiresource",
                                     new StringContent(JsonConvert.SerializeObject(apiResource)))
                                 .ConfigureAwait(false);
 
-            if (!apiResult.IsSuccessStatusCode)
+            if (!apiResourceResponse.IsSuccessStatusCode)
             {
-                var error =
-                    JsonConvert.DeserializeObject<Error>(
-                        await apiResult.Content.ReadAsStringAsync().ConfigureAwait(false));
-                return new ApiResourceResponse { IsError = true, Error = error };
+                var error = await apiResourceResponse.DeserializeContentAsync<Error>().ConfigureAwait(false);
+                return new ApiResourceRegistrationResponse { IsError = true, Error = error };
             }
 
-            var returnedApiResource =
-                JsonConvert.DeserializeObject<ApiResource>(
-                    await apiResult.Content.ReadAsStringAsync().ConfigureAwait(false));
-            return new ApiResourceResponse { ApiResource = returnedApiResource };
+            var returnedApiResource = await apiResourceResponse.DeserializeContentAsync<ApiResource>()
+                                          .ConfigureAwait(false);
+            return new ApiResourceRegistrationResponse { ApiResource = returnedApiResource };
+        }
+
+        /// <summary>
+        /// The register client async.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <param name="client">The client.</param>
+        /// <returns> The <see cref="Task"/>. </returns>
+        public async Task<ClientRegistrationResponse> RegisterClientAsync(string accessToken, Client client)
+        {
+            var clientResponse = await this.HttpClient
+                                                 .PostAsync(
+                                                     "/api/client",
+                                                     new StringContent(JsonConvert.SerializeObject(client)))
+                                                 .ConfigureAwait(false);
+
+            if (!clientResponse.IsSuccessStatusCode)
+            {
+                var error = await clientResponse.DeserializeContentAsync<Error>().ConfigureAwait(false);
+                return new ClientRegistrationResponse { IsError = true, Error = error };
+            }
+
+            var clientRegistrationResponse = await clientResponse.DeserializeContentAsync<Client>()
+                                                 .ConfigureAwait(false);
+            return new ClientRegistrationResponse { Client = clientRegistrationResponse };
         }
 
         /// <summary>
