@@ -11,9 +11,19 @@ function Get-AuthorizationServiceUrl()
     return "https://$env:computername.$($env:userdnsdomain.tolower())/Authorization"
 }
 
-function Get-AtlasUrl()
+function Get-DiscoveryServiceUrl()
 {
-    return "https://$env:computername.$($env:userdnsdomain.tolower())/Atlas"
+    return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService"
+}
+
+function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
+    $discoveryRequest = "$discoveryServiceUrl/v1/Services?`$filter=ServiceName eq '$serviceName'&`$select=ServiceUrl&`$orderby=Version desc"
+    $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
+    $serviceUrl = $discoveryResponse.value.ServiceUrl
+    if([string]::IsNullOrWhiteSpace($serviceUrl)){
+        Write-Error "The service $serviceName is not registered with the Discovery service. Make sure that the service is registered w/ Discovery service before proceeding. Halting installation." -ErrorAction Stop
+    }
+    return $serviceUrl
 }
 
 function Invoke-Get($url, $accessToken)
@@ -257,7 +267,7 @@ function Get-PostLogoutRedirectUris($client, $atlasUrl)
     return $postLogoutRedirectUris
 }
 
-function Get-ImplicitClientFromConfig($client){
+function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
     $implicitBody = @{
         requireConsent = $false
         allowOfflineAccess = $false
@@ -269,7 +279,7 @@ function Get-ImplicitClientFromConfig($client){
         postLogoutRedirectUris = @()
     }
     
-    $atlasUrl = Get-AtlasUrl
+    $atlasUrl = Get-ApplicationUrl -serviceName $client.serviceName -discoveryServiceUrl $discoveryServiceUrl
 
     foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
         $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
@@ -286,7 +296,7 @@ function Get-ImplicitClientFromConfig($client){
     return $implicitBody
 }
 
-function Get-ClientFromConfig($client){
+function Get-ClientFromConfig($client, $discoveryServiceUrl){
     $body = @{
             clientId = $client.clientid
             clientName = $client.clientName
@@ -303,7 +313,7 @@ function Get-ClientFromConfig($client){
         }
 
     if($body.allowedGrantTypes.Contains("implicit")){
-        $implicitBody = Get-ImplicitClientFromConfig -client $client -body $body
+        $implicitBody = Get-ImplicitClientFromConfig -client $client -body $body -discoveryServiceUrl $discoveryServiceUrl
         $body = $implicitBody + $body
     }
 
@@ -331,7 +341,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
     }
 }
 
-function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken)
+function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl)
 {
     Write-Host "registering clients"
     if($clients -eq $null){
@@ -339,7 +349,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken)
     }
     foreach($client in $clients){
         Write-Host "registering $($client.clientid)"
-        $body = Get-ClientFromConfig($client)
+        $body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
         $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
 
         if($isClientRegistered){
@@ -348,7 +358,6 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken)
         }else{
             Write-Host "Client is not registered, adding"
             $jsonBody = ConvertTo-Json $body
-            $jsonBody
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
         }
     }
@@ -366,6 +375,7 @@ if(!(Test-IsRunAsAdministrator))
 
 $installSettings = Get-InstallationSettings "identity"
 $fabricInstallerSecret = $installSettings.fabricInstallerSecret
+$discoveryServiceUrl = $installSettings.discoveryService
 $authorizationServiceURL =  $installSettings.authorizationService
 $identityServiceUrl = $installSettings.identityService
 
@@ -385,6 +395,14 @@ if([string]::IsNullOrEmpty($installSettings.authorizationService))
 	$authorizationServiceURL = $installSettings.authorizationService
 }
 
+if([string]::IsNullOrEmpty($installSettings.discoveryService))  
+{
+	$discoveryServiceUrl = Get-DiscoveryServiceUrl
+} else
+{
+	$discoveryServiceUrl = $installSettings.discoveryService
+}
+
 try{
 	$encryptionCert = Get-Certificate $encryptionCertificateThumbprint
 }catch{
@@ -396,6 +414,12 @@ $userEnteredFabricInstallerSecret = Read-Host  "Enter the Fabric Installer Secre
 Write-Host ""
 if(![string]::IsNullOrEmpty($userEnteredFabricInstallerSecret)){   
      $fabricInstallerSecret = $userEnteredFabricInstallerSecret
+}
+
+$userEnteredDiscoveryServiceUrl = Read-Host  "Enter the URL for the Discovery Service or hit enter to accept the default [$discoveryServiceUrl]"
+Write-Host ""
+if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
+     $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
 }
 
 $userEnteredAuthorizationServiceURL = Read-Host  "Enter the URL for the Authorization Service or hit enter to accept the default [$authorizationServiceURL]"
@@ -422,10 +446,13 @@ if([string]::IsNullOrWhiteSpace($identityServiceUrl))
 {
     Write-Error "You must enter a value for the Fabric.Identity URL." -ErrorAction Stop
 }
+if([string]::IsNullOrWhiteSpace($discoveryServiceUrl))
+{
+    Write-Error "You must enter a value for the Discovery Service URL." -ErrorAction Stop
+}
 
 # Get the installer access token
 $accessToken = Get-AccessToken $identityServiceUrl "fabric-installer" "fabric/identity.manageresources fabric/authorization.write fabric/authorization.read fabric/authorization.manageclients" $fabricInstallerSecret
-Write-Host $accessToken
 
 # Read the registration.config file
 $registrationSettings = Get-RegistrationSettings
@@ -436,4 +463,4 @@ Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $ide
 
 # Register the Clients specified in the registration.config file
 $clients = Get-ClientsToRegister -registrationConfig $registrationSettings
-Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl
