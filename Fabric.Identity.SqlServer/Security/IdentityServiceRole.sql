@@ -2,52 +2,52 @@
 CREATE ROLE [IdentityServiceRole];
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ApiClaims] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ApiClaims] TO IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ApiResources] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ApiResources] TO IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ApiScopeClaims] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ApiScopeClaims] TO IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ApiScopes] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ApiScopes] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ApiSecrets] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ApiSecrets] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientClaims] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientClaims] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientCorsOrigins] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientCorsOrigins] TO IdentityServiceRole;
 GO
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientGrantTypes] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientIdPRestrictions] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientIdPRestrictions] TO IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientPostLogoutRedirectUris] TO IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientPostLogoutRedirectUris] TO IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientRedirectUris] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientRedirectUris] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[Clients] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Clients] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientScopes] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientScopes] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[ClientSecrets] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClientSecrets] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[IdentityClaims] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[IdentityClaims] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[IdentityResources] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[IdentityResources] to IdentityServiceRole;
 GO
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[PersistedGrants] to IdentityServiceRole;
@@ -56,8 +56,8 @@ GO
 GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[UserClaims] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[UserLogins] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[UserLogins] to IdentityServiceRole;
 GO
 
-GRANT SELECT, INSERT, UPDATE ON [dbo].[Users] to IdentityServiceRole;
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Users] to IdentityServiceRole;
 GO
