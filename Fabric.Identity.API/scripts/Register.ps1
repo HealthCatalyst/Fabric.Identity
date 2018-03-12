@@ -50,11 +50,11 @@ function Invoke-Put($url, $body, $accessToken)
         $putResponse = Invoke-RestMethod -Method Put -Uri $url -Body $body -ContentType "application/json" -Headers $headers
         Write-Success "Success."
         Write-Host ""
-        return $postResponse
+        return $putResponse
     }catch{
         $exception = $_.Exception
-        #$error = Get-ErrorFromResponse -respone $exception.Response
-        #Write-Error $error
+        $error = Get-ErrorFromResponse -response $exception.Response
+        Write-Error "There was an error updating the resource: $error. Halting installation."
         throw $exception
     }
 }
@@ -75,8 +75,8 @@ function Invoke-Post($url, $body, $accessToken)
         return $postResponse
     }catch{
         $exception = $_.Exception
-        $error = Get-ErrorFromResponse -respone $exception.Response
-        Write-Error $error
+        $error = Get-ErrorFromResponse -response $exception.Response
+        Write-Error "There was an error adding the resource: $error. Halting installation."
         throw $exception
     }
 }
@@ -88,6 +88,7 @@ function Get-ErrorFromResponse($response)
     $reader.BaseStream.Position = 0
     $reader.DiscardBufferedData()
     $responseBody = $reader.ReadToEnd();
+    return $responseBody
 }
 
 function Add-AuthorizationRegistration($authUrl, $clientId, $clientName, $accessToken)
@@ -148,7 +149,7 @@ function Add-RoleToGroup($authUrl, $groupName, $role, $accessToken)
     return Invoke-Post $url $body $accessToken
 }
 
-function Test-ApiIsRegistered($identityServiceUrl, $apiName, $accessToken){
+function Test-IsApiRegistered($identityServiceUrl, $apiName, $accessToken){
     $apiExists = $false
     $url = "$identityServiceUrl/api/apiresource/$apiName"
 
@@ -242,31 +243,6 @@ function Get-ApiResourceFromConfig($api){
     return $body
 }
 
-function Get-AllowedCorsOrigins($client, $atlasUrl){
-    $allowedCorsOrigins = @()
-    foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
-        $allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
-    }
-    return $allowedCorsOrigins
-}
-
-function Get-RedirectUris($client, $atlasUrl){
-    $redirectUris = @()
-    foreach($redirectUri in $client.redirectUris.redirectUri){
-        $redirectUris += [string]::Format($redirectUri, $atlasUrl)
-    }
-    return $redirectUris
-}
-
-function Get-PostLogoutRedirectUris($client, $atlasUrl)
-{
-    $postLogoutRedirectUris = @()
-    foreach($redirectUri in $client.postLogoutRedirectUris.redirectUri){
-        $postLogoutRedirectUris += [string]::Format($redirectUri, $atlasUrl)
-    }
-    return $postLogoutRedirectUris
-}
-
 function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
     $implicitBody = @{
         requireConsent = $false
@@ -329,11 +305,11 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
     foreach($api in $apiResources){
         Write-Host "registering $($api.name)"
         $body = Get-ApiResourceFromConfig($api)
-        $isApiRegistered = Test-ApiIsRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
+        $isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
         
         if($isApiRegistered){
             Write-Host "API is registered, updating"
-            #$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
+            $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
             Write-Host "API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
