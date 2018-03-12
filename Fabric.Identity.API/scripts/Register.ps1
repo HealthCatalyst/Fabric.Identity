@@ -185,6 +185,11 @@ function Invoke-UpdateApiRegistration($identityServiceUrl, $body, $apiName, $acc
     $response = Invoke-Put -url $url -body $body -accessToken $accessToken
 }
 
+function Invoke-UpdateClientRegistration($identityServiceUrl, $body, $clientId, $accessToken){
+    $url = "$identityServiceUrl/api/client/$clientId"
+    $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+}
+
 function Get-RegistrationSettings()
 {
     Write-Host "Getting registration settings"
@@ -253,24 +258,31 @@ function Get-PostLogoutRedirectUris($client, $atlasUrl)
 }
 
 function Get-ImplicitClientFromConfig($client){
-    $implicitBody = @{}
-    $implicitBody.Add("requireConsent", $false)
-    $implicitBody.Add("allowOfflineAccess", $false)
-    $implicitBody.Add("allowAccessTokensViaBrowser", $true)
-    $implicitBody.Add("enableLocalLogin", $false)
-    $implicitBody.Add("accessTokenLifetime", 1200)
+    $implicitBody = @{
+        requireConsent = $false
+        allowOfflineAccess = $false
+        allowAccessTokensViaBrowser = $true
+        enableLocalLogin =$false
+        accessTokenLifetime = 1200
+        allowedCorsOrigins = @()
+        redirectUris = @()
+        postLogoutRedirectUris = @()
+    }
     
     $atlasUrl = Get-AtlasUrl
 
-    $allowedCorsOrigins = Get-AllowedCorsOrigins -client $client -atlasUrl $atlasUrl
-    $implicitBody.Add("allowedCorsOrigins", $allowedCorsOrigins)
-    
-    $redirectUris = Get-RedirectUris -client $client -atlasUrl $atlasUrl
-    $implicitBody.Add("redirectUris", $redirectUris)
-    
-    $postLogoutRedirectUris = Get-PostLogoutRedirectUris -client $client -atlasUrl $atlasUrl
-    $implicitBody.Add("postLogoutRedirectUris", $postLogoutRedirectUris)
+    foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
+        $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
+    }
 
+    foreach($redirectUri in $client.redirectUris.redirectUri){
+        $implicitBody.redirectUris += [string]::Format($redirectUri, $atlasUrl)
+    }
+
+    foreach($redirectUri in $client.postLogoutRedirectUris.redirectUri){
+        $implicitBody.postLogoutRedirectUris += [string]::Format($redirectUri, $atlasUrl)
+    }
+    
     return $implicitBody
 }
 
@@ -332,10 +344,12 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken)
 
         if($isClientRegistered){
             Write-Host "Client is registered, updating"
-            ConvertTo-Json $body
+            $clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
         }else{
             Write-Host "Client is not registered, adding"
-            ConvertTo-Json $body
+            $jsonBody = ConvertTo-Json $body
+            $jsonBody
+            $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
         }
     }
 }
