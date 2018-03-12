@@ -11,6 +11,11 @@ function Get-AuthorizationServiceUrl()
     return "https://$env:computername.$($env:userdnsdomain.tolower())/Authorization"
 }
 
+function Get-AtlasUrl()
+{
+    return "https://$env:computername.$($env:userdnsdomain.tolower())/Atlas"
+}
+
 function Invoke-Get($url, $accessToken)
 {
     $headers = @{"Accept" = "application/json"}
@@ -149,6 +154,27 @@ function Test-ApiIsRegistered($identityServiceUrl, $apiName, $accessToken){
             Write-Error $error
             throw $exception
         }
+        return $apiExists
+    }
+}
+
+function Test-IsClientRegistered($identityServiceUrl, $clientId, $accessToken){
+    $clientExists = $false
+    $url = "$identityServiceUrl/api/client/$clientId"
+
+    try{
+        $getResponse = Invoke-Get -url $url -accessToken $accessToken
+        $clientExists = $true
+        return $clientExists
+    }catch{
+        $exception = $_.Exception
+        if($exception -ne $null -and $exception.Response.StatusCode.value__ -ne 404)
+        {
+            $error = Get-ErrorFromResponse($exception.Response)
+            Write-Error $error
+            throw $exception
+        }
+        return $clientExists
     }
 }
 
@@ -201,6 +227,77 @@ function Get-ApiResourceFromConfig($api){
     return $body
 }
 
+function Get-AllowedCorsOrigins($client, $atlasUrl){
+    $allowedCorsOrigins = @()
+    foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
+        $allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
+    }
+    return $allowedCorsOrigins
+}
+
+function Get-RedirectUris($client, $atlasUrl){
+    $redirectUris = @()
+    foreach($redirectUri in $client.redirectUris.redirectUri){
+        $redirectUris += [string]::Format($redirectUri, $atlasUrl)
+    }
+    return $redirectUris
+}
+
+function Get-PostLogoutRedirectUris($client, $atlasUrl)
+{
+    $postLogoutRedirectUris = @()
+    foreach($redirectUri in $client.postLogoutRedirectUris.redirectUri){
+        $postLogoutRedirectUris += [string]::Format($redirectUri, $atlasUrl)
+    }
+    return $postLogoutRedirectUris
+}
+
+function Get-ImplicitClientFromConfig($client){
+    $implicitBody = @{}
+    $implicitBody.Add("requireConsent", $false)
+    $implicitBody.Add("allowOfflineAccess", $false)
+    $implicitBody.Add("allowAccessTokensViaBrowser", $true)
+    $implicitBody.Add("enableLocalLogin", $false)
+    $implicitBody.Add("accessTokenLifetime", 1200)
+    
+    $atlasUrl = Get-AtlasUrl
+
+    $allowedCorsOrigins = Get-AllowedCorsOrigins -client $client -atlasUrl $atlasUrl
+    $implicitBody.Add("allowedCorsOrigins", $allowedCorsOrigins)
+    
+    $redirectUris = Get-RedirectUris -client $client -atlasUrl $atlasUrl
+    $implicitBody.Add("redirectUris", $redirectUris)
+    
+    $postLogoutRedirectUris = Get-PostLogoutRedirectUris -client $client -atlasUrl $atlasUrl
+    $implicitBody.Add("postLogoutRedirectUris", $postLogoutRedirectUris)
+
+    return $implicitBody
+}
+
+function Get-ClientFromConfig($client){
+    $body = @{
+            clientId = $client.clientid
+            clientName = $client.clientName
+            allowedScopes = @()
+            allowedGrantTypes = @()
+        }
+    
+        foreach($scope in $client.allowedScopes.scope){
+            $body.allowedScopes += $scope
+        }
+
+        foreach($grantType in $client.allowedGrantTypes.grantType){
+            $body.allowedGrantTypes += $grantType
+        }
+
+    if($body.allowedGrantTypes.Contains("implicit")){
+        $implicitBody = Get-ImplicitClientFromConfig -client $client -body $body
+        $body = $implicitBody + $body
+    }
+
+    return $body
+}
+
 function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken)
 {
     Write-Host "registering apis"
@@ -213,9 +310,32 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         $isApiRegistered = Test-ApiIsRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
         
         if($isApiRegistered){
-            $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
+            Write-Host "API is registered, updating"
+            #$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
+            Write-Host "API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+        }
+    }
+}
+
+function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken)
+{
+    Write-Host "registering clients"
+    if($clients -eq $null){
+        Write-Host "no clients to register"
+    }
+    foreach($client in $clients){
+        Write-Host "registering $($client.clientid)"
+        $body = Get-ClientFromConfig($client)
+        $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
+
+        if($isClientRegistered){
+            Write-Host "Client is registered, updating"
+            ConvertTo-Json $body
+        }else{
+            Write-Host "Client is not registered, adding"
+            ConvertTo-Json $body
         }
     }
 }
@@ -289,9 +409,17 @@ if([string]::IsNullOrWhiteSpace($identityServiceUrl))
     Write-Error "You must enter a value for the Fabric.Identity URL." -ErrorAction Stop
 }
 
+# Get the installer access token
 $accessToken = Get-AccessToken $identityServiceUrl "fabric-installer" "fabric/identity.manageresources fabric/authorization.write fabric/authorization.read fabric/authorization.manageclients" $fabricInstallerSecret
 Write-Host $accessToken
 
+# Read the registration.config file
 $registrationSettings = Get-RegistrationSettings
+
+# Register API Resources specified in the registration.config file
 $apiResources = Get-ApiResourcesToRegister -registrationConfig  $registrationSettings
 Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+
+# Register the Clients specified in the registration.config file
+$clients = Get-ClientsToRegister -registrationConfig $registrationSettings
+Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken
