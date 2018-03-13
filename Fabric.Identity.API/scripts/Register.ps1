@@ -1,19 +1,22 @@
 #
 # Register.ps1
 #
-function Get-IdentityServiceUrl()
-{
-    return "https://$env:computername.$($env:userdnsdomain.tolower())/Identity"
+function Get-FullyQualifiedHostName(){
+    return "https://$env:computername.$($env:userdnsdomain.tolower())"
+}
+function Get-IdentityServiceUrl(){
+    $hostName = Get-FullyQualifiedHostName
+    return "$hostName/Identity"
 }
 
-function Get-AuthorizationServiceUrl()
-{
-    return "https://$env:computername.$($env:userdnsdomain.tolower())/Authorization"
+function Get-AuthorizationServiceUrl(){
+    $hostName = Get-FullyQualifiedHostName
+    return "$hostName/Authorization"
 }
 
-function Get-DiscoveryServiceUrl()
-{
-    return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService"
+function Get-DiscoveryServiceUrl(){
+    $hostName = Get-FullyQualifiedHostName
+    return "$hostName/DiscoveryService"
 }
 
 function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
@@ -26,12 +29,17 @@ function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
     return $serviceUrl
 }
 
-function Invoke-Get($url, $accessToken)
-{
+function Get-Headers($accessToken){
     $headers = @{"Accept" = "application/json"}
     if($accessToken){
         $headers.Add("Authorization", "Bearer $accessToken")
     }
+    return $headers
+}
+
+function Invoke-Get($url, $accessToken)
+{
+    $headers = Get-Headers -accessToken $accessToken
         
     $getResponse = Invoke-RestMethod -Method Get -Uri $url -Headers $headers
     return $getResponse
@@ -39,10 +47,8 @@ function Invoke-Get($url, $accessToken)
 
 function Invoke-Put($url, $body, $accessToken)
 {
-    $headers = @{"Accept" = "application/json"}
-    if($accessToken){
-        $headers.Add("Authorization", "Bearer $accessToken")
-    }
+    $headers = Get-Headers -accessToken $accessToken
+
     if(!($body -is [String])){
         $body = (ConvertTo-Json $body)
     }
@@ -55,10 +61,8 @@ function Invoke-Put($url, $body, $accessToken)
 
 function Invoke-Post($url, $body, $accessToken)
 {
-    $headers = @{"Accept" = "application/json"}
-    if($accessToken){
-        $headers.Add("Authorization", "Bearer $accessToken")
-    }
+    $headers = Get-Headers -accessToken $accessToken
+
     if(!($body -is [String])){
         $body = (ConvertTo-Json $body)
     }
@@ -436,10 +440,10 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 function Invoke-RegisterSharedRolesAndPermissions($rolesAndPermissions, $identityServiceUrl, $accessToken){
     Write-Host "Creating Roles and Permissions..."
     Write-Host ""
-    if($authorization -eq $null){
+    if($rolesAndPermissions -eq $null){
         Write-Host "    No roles and permissions to register"
     }
-    foreach($grain in $authorization.grain){
+    foreach($grain in $rolesAndPermissions.grain){
         $grainName = $grain.name
         foreach($securableItem in $grain.securableItem){
             $securableItemName = $securableItem.name
