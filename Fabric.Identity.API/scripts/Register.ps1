@@ -46,17 +46,11 @@ function Invoke-Put($url, $body, $accessToken)
     if(!($body -is [String])){
         $body = (ConvertTo-Json $body)
     }
-    try{
-        $putResponse = Invoke-RestMethod -Method Put -Uri $url -Body $body -ContentType "application/json" -Headers $headers
-        Write-Success "Success."
-        Write-Host ""
-        return $putResponse
-    }catch{
-        $exception = $_.Exception
-        $error = Get-ErrorFromResponse -response $exception.Response
-        Write-Error "There was an error updating the resource: $error. Halting installation."
-        throw $exception
-    }
+    
+    $putResponse = Invoke-RestMethod -Method Put -Uri $url -Body $body -ContentType "application/json" -Headers $headers
+    Write-Success "    Success."
+    Write-Host ""
+    return $putResponse
 }
 
 function Invoke-Post($url, $body, $accessToken)
@@ -68,17 +62,11 @@ function Invoke-Post($url, $body, $accessToken)
     if(!($body -is [String])){
         $body = (ConvertTo-Json $body)
     }
-    try{
-        $postResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body -ContentType "application/json" -Headers $headers
-        Write-Success "Success."
-        Write-Host ""
-        return $postResponse
-    }catch{
-        $exception = $_.Exception
-        $error = Get-ErrorFromResponse -response $exception.Response
-        Write-Error "There was an error adding the resource: $error. Halting installation."
-        throw $exception
-    }
+    
+    $postResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body -ContentType "application/json" -Headers $headers
+    Write-Success "    Success."
+    Write-Host ""
+    return $postResponse
 }
 
 function Get-ErrorFromResponse($response)
@@ -127,10 +115,13 @@ function Invoke-AddOrGetPermission($authUrl, $name, $grain, $securableItem, $acc
         $exception = $_.Exception
         if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
         {
-            Write-Host "Permission $name has already been created."
+            Write-Success "    Permission: $name has already been created."
+            Write-Host ""
             $permission = Get-Permission -authUrl $authUrl -name $name -grain $grain -securableItem $securableItem -accessToken $accessToken
             return $permission
         }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
             throw $exception
         }
     }
@@ -162,10 +153,13 @@ function Invoke-AddOrGetRole($authUrl, $name, $grain, $securableItem, $accessTok
         $exception = $_.Exception
         if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
         {
-            Write-Host "Role: $name has already been created."
+            Write-Success "    Role: $name has already been created."
+            Write-Host ""
             $role = Get-Role -authUrl $authUrl -name $name -grain $grain -securableItem $securableItem -accessToken $accessToken
             return $role
         }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
             throw $exception
         }
     }
@@ -192,8 +186,11 @@ function Add-PermissionToRole($authUrl, $roleId, $permission, $accessToken)
         $exception = $_.Exception
         if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
         {
-            Write-Host "Permission: $($permission.name) has already been associated to the role with id: $roleId"
+            Write-Success "    Permission: $($permission.name) has already been associated to the role"
+            Write-Host ""
         }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
             throw $exception
         }
 
@@ -250,19 +247,30 @@ function Test-IsClientRegistered($identityServiceUrl, $clientId, $accessToken){
 
 function Invoke-UpdateApiRegistration($identityServiceUrl, $body, $apiName, $accessToken){
     $url = "$identityServiceUrl/api/apiresource/$apiName"
-    Write-Host $url
-    Write-Host $body
-    $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+    try{
+        $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+    }catch{
+        $exception = $_.Exception
+        $error = Get-ErrorFromResponse -response $exception.Response
+        Write-Error "There was an error updating the resource: $error. Halting installation."
+        throw $exception
+    } 
 }
 
 function Invoke-UpdateClientRegistration($identityServiceUrl, $body, $clientId, $accessToken){
     $url = "$identityServiceUrl/api/client/$clientId"
-    $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+    try{
+        $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+    }catch{
+        $exception = $_.Exception
+        $error = Get-ErrorFromResponse -response $exception.Response
+        Write-Error "There was an error updating the resource: $error. Halting installation."
+        throw $exception
+    }   
 }
 
 function Get-RegistrationSettings()
 {
-    Write-Host "Getting registration settings"
     $registrationConfig = [xml](Get-Content registration.config)
     if($registrationConfig -eq $null){
         Write-Host "No registration content"
@@ -362,20 +370,21 @@ function Get-ClientFromConfig($client, $discoveryServiceUrl){
 
 function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken)
 {
-    Write-Host "registering apis"
+    Write-Host "Registering APIs..."
+    Write-Host ""
     if($apiResources -eq $null){
-        Write-Host "no api resources"
+        Write-Host "    No api resources"
     }
     foreach($api in $apiResources){
-        Write-Host "registering $($api.name)"
+        Write-Host "    Registering $($api.name)"
         $body = Get-ApiResourceFromConfig($api)
         $isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
         
         if($isApiRegistered){
-            Write-Host "API is registered, updating"
+            Write-Host "    API is registered, updating"
             #$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
-            Write-Host "API is not registered, adding"
+            Write-Host "    API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
         }
     }
@@ -383,20 +392,21 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
 
 function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl)
 {
-    Write-Host "registering clients"
+    Write-Host "Registering Clients..."
+    Write-Host ""
     if($clients -eq $null){
-        Write-Host "no clients to register"
+        Write-Host "    No clients to register"
     }
     foreach($client in $clients){
-        Write-Host "registering $($client.clientid)"
+        Write-Host "    Registering $($client.clientid)"
         $body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
         $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
 
         if($isClientRegistered){
-            Write-Host "Client is registered, updating"
+            Write-Host "    Client is registered, updating"
             $clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
         }else{
-            Write-Host "Client is not registered, adding"
+            Write-Host "    Client is not registered, adding"
             $jsonBody = ConvertTo-Json $body
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
         }
@@ -404,9 +414,10 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 }
 
 function Invoke-RegisterRolesAndPermissions($rolesAndPermissions, $identityServiceUrl, $accessToken){
-    Write-Host "registering roles and permissions"
+    Write-Host "Creating Roles and Permissions..."
+    Write-Host ""
     if($authorization -eq $null){
-        Write-Host "No roles and permissions to register"
+        Write-Host "    No roles and permissions to register"
     }
     foreach($grain in $authorization.grain){
         $grainName = $grain.name
@@ -414,13 +425,13 @@ function Invoke-RegisterRolesAndPermissions($rolesAndPermissions, $identityServi
             $secureableItemName = $securableItem.name
             foreach($role in $securableItem.role){
                 $roleName = $role.name
-                Write-Host "Adding role: $roleName for grain: $grainName and securableItem: $secureableItemName"
+                Write-Host "    Adding role: $roleName for grain: $grainName and securableItem: $secureableItemName"
                 $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
                 foreach($permission in $role.permission){
                     $permissionName = $permission.name
-                    Write-Host "Adding permission: $permissionName for grain: $grainName and securableItem: $secureableItemName"
+                    Write-Host "    Adding permission: $permissionName for grain: $grainName and securableItem: $secureableItemName"
                     $addedPermission = Invoke-AddOrGetPermission -authUrl $authorizationServiceURL -name $permissionName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
-                    Write-Host "Associating permission: $permissionName with role: $roleName"
+                    Write-Host "    Associating permission: $permissionName with role: $roleName"
                     $rolePermission = Add-PermissionToRole -authUrl $authorizationServiceURL -roleId $addedRole.id -permission $addedPermission -accessToken $accessToken
                 }
             }
