@@ -123,7 +123,7 @@ namespace Fabric.Identity.API.Management
                 var viewResource = is4ApiResource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
                 return CreatedAtAction("Get", new { apiResource.Name }, viewResource);
-            });
+            }, $"{FabricIdentityConstants.ValidationRuleSets.ApiResourcePost},{FabricIdentityConstants.ValidationRuleSets.Default}");
         }
 
         /// <summary>
@@ -142,7 +142,14 @@ namespace Fabric.Identity.API.Management
             var is4ApiResource = apiResource.ToIs4ApiResource();
             return ValidateAndExecute(is4ApiResource, () =>
             {
+                if (!string.Equals(id, apiResource.Name))
+                {
+                    return CreateFailureResponse(
+                        "The ApiResource Name in the request URL path must match the ApiResource Name in the request body.", HttpStatusCode.BadRequest);
+                }
+
                 var storedApiResource = _apiResourceStore.GetResource(id);
+
                 if (string.IsNullOrEmpty(storedApiResource?.Name))
                 {
                     return CreateFailureResponse($"The specified api resource with id:{id} was not found",

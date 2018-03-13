@@ -97,6 +97,7 @@
         {
             public const string Default = "default";
             public const string ClientPost = "ClientPost";
+            public const string ApiResourcePost = "ApiResourcePost";
         }
     }
 }
