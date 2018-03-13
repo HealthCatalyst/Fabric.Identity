@@ -133,5 +133,52 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+
+        [Fact]
+        public async Task TestUpdateApiResource_Success()
+        {
+            var testApiResource = GetTestApiResource();
+            var response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            var updatedApiResource = GetTestApiResource();
+            updatedApiResource.Name = testApiResource.Name;
+            updatedApiResource.DisplayName = "New Name";
+
+            var stringContent = new StringContent(JsonConvert.SerializeObject(updatedApiResource), Encoding.UTF8,
+                "application/json");
+            response = await HttpClient.PutAsync($"/api/ApiResource/{updatedApiResource.Name}", stringContent);
+            
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+            // Fetch it => confirm it's persisted
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{updatedApiResource.Name}"));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var content = await response.Content.ReadAsStringAsync();
+            var getApiResource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
+
+            // Must not return password
+            Assert.Equal(null, getApiResource.ApiSecret);
+            // Confirm payload
+            Assert.Equal(updatedApiResource.Name, getApiResource.Name);
+            Assert.Equal(updatedApiResource.DisplayName, getApiResource.DisplayName);
+        }
+
+        [Fact]
+        public async Task TestUpdateApiResource_MismatchedName_ReturnsBadRequest()
+        {
+            var testApiResource = GetTestApiResource();
+            var response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            var updatedApiResource = GetTestApiResource();
+
+            var stringContent = new StringContent(JsonConvert.SerializeObject(updatedApiResource), Encoding.UTF8,
+                "application/json");
+            response = await HttpClient.PutAsync($"/api/ApiResource/{testApiResource.Name}", stringContent);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
     }
 }
