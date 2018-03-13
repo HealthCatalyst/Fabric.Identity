@@ -86,7 +86,20 @@ function Add-AuthorizationRegistration($authUrl, $clientId, $clientName, $access
         id = "$clientId"
         name = "$clientName"
     }
-    return Invoke-Post $url $body $accessToken
+    try{
+        return Invoke-Post $url $body $accessToken
+    }catch{
+        $exception = $_.Exception
+        if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
+        {
+            Write-Success "    Permission: $($permission.name) has already been associated to the role"
+            Write-Host ""
+        }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
+            throw $exception
+        }
+    }
 }
 
 function Add-Permission($authUrl, $name, $grain, $securableItem, $accessToken)
@@ -398,7 +411,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
         Write-Host "    No clients to register"
     }
     foreach($client in $clients){
-        Write-Host "    Registering $($client.clientid)"
+        Write-Host "    Registering $($client.clientid) with Fabric.Identity"
         $body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
         $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
 
@@ -410,10 +423,17 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
             $jsonBody = ConvertTo-Json $body
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
         }
+
+        Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
+        $authorizationClient = Add-AuthorizationRegistration -authUrl $authorizationServiceURL -clientId $client.clientid -clientName $client.clientName -accessToken $accessToken
+
+        if($client.authorization -ne $null){
+            Invoke-RegisterRolesAndPermissions -grainName "app" -securableItemName $client.clientid -securableItem $client.authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+        }
     }
 }
 
-function Invoke-RegisterRolesAndPermissions($rolesAndPermissions, $identityServiceUrl, $accessToken){
+function Invoke-RegisterSharedRolesAndPermissions($rolesAndPermissions, $identityServiceUrl, $accessToken){
     Write-Host "Creating Roles and Permissions..."
     Write-Host ""
     if($authorization -eq $null){
@@ -422,19 +442,23 @@ function Invoke-RegisterRolesAndPermissions($rolesAndPermissions, $identityServi
     foreach($grain in $authorization.grain){
         $grainName = $grain.name
         foreach($securableItem in $grain.securableItem){
-            $secureableItemName = $securableItem.name
-            foreach($role in $securableItem.role){
-                $roleName = $role.name
-                Write-Host "    Adding role: $roleName for grain: $grainName and securableItem: $secureableItemName"
-                $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
-                foreach($permission in $role.permission){
-                    $permissionName = $permission.name
-                    Write-Host "    Adding permission: $permissionName for grain: $grainName and securableItem: $secureableItemName"
-                    $addedPermission = Invoke-AddOrGetPermission -authUrl $authorizationServiceURL -name $permissionName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
-                    Write-Host "    Associating permission: $permissionName with role: $roleName"
-                    $rolePermission = Add-PermissionToRole -authUrl $authorizationServiceURL -roleId $addedRole.id -permission $addedPermission -accessToken $accessToken
-                }
-            }
+            $securableItemName = $securableItem.name
+            Invoke-RegisterRolesAndPermissions -grainName $grainName -securableItemName $securableItemName -securableItem $securableItem -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+        }
+    }
+}
+
+function Invoke-RegisterRolesAndPermissions($grainName, $securableItemName, $securableItem, $identityServiceUrl, $accessToken){
+    foreach($role in $securableItem.role){
+        $roleName = $role.name
+        Write-Host "    Adding role: $roleName for grain: $grainName and securableItem: $securableItemName"
+        $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -grain $grainName -securableItem $securableItemName -accessToken $accessToken
+        foreach($permission in $role.permission){
+            $permissionName = $permission.name
+            Write-Host "    Adding permission: $permissionName for grain: $grainName and securableItem: $securableItemName"
+            $addedPermission = Invoke-AddOrGetPermission -authUrl $authorizationServiceURL -name $permissionName -grain $grainName -securableItem $securableItemName -accessToken $accessToken
+            Write-Host "    Associating permission: $permissionName with role: $roleName"
+            $rolePermission = Add-PermissionToRole -authUrl $authorizationServiceURL -roleId $addedRole.id -permission $addedPermission -accessToken $accessToken
         }
     }
 }
@@ -543,4 +567,4 @@ Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl
 
 # Register shared roles and permissions
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
-Invoke-RegisterRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+Invoke-RegisterSharedRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
