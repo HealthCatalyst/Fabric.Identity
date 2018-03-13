@@ -19,8 +19,8 @@ function Get-DiscoveryServiceUrl(){
     return "$hostName/DiscoveryService"
 }
 
-function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
-    $discoveryRequest = "$discoveryServiceUrl/v1/Services?`$filter=ServiceName eq '$serviceName'&`$select=ServiceUrl&`$orderby=Version desc"
+function Get-ApplicationUrl($serviceName, $serviceVersion, $discoveryServiceUrl){
+    $discoveryRequest = "$discoveryServiceUrl/v1/Services?`$filter=ServiceName eq '$serviceName' and Version eq $serviceVersion&`$select=ServiceUrl&`$orderby=Version desc"
     $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
     $serviceUrl = $discoveryResponse.value.ServiceUrl
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
@@ -344,7 +344,7 @@ function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
         postLogoutRedirectUris = @()
     }
     
-    $atlasUrl = Get-ApplicationUrl -serviceName $client.serviceName -discoveryServiceUrl $discoveryServiceUrl
+    $atlasUrl = Get-ApplicationUrl -serviceName $client.serviceName -serviceVersion $client.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
 
     foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
         $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
