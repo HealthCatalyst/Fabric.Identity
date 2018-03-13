@@ -522,7 +522,7 @@ $body = @'
     "clientName":"Fabric Installer", 
     "requireConsent":"false", 
     "allowedGrantTypes": ["client_credentials"], 
-    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.manageclients"]
+    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
 }
 '@
 
