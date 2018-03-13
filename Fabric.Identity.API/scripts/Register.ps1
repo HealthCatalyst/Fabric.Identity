@@ -399,7 +399,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         
         if($isApiRegistered){
             Write-Host "    API is registered, updating"
-            #$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
+            $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
             Write-Host "    API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
