@@ -109,7 +109,8 @@ function Add-Permission($authUrl, $name, $grain, $securableItem, $accessToken)
         grain = "$grain"
         securableItem = "$securableItem"
     }
-    return Invoke-Post $url $body $accessToken
+    $permission = Invoke-Post $url $body $accessToken
+    return $permission
 }
 
 function Add-Role($authUrl, $name, $grain, $securableItem, $accessToken)
@@ -120,7 +121,8 @@ function Add-Role($authUrl, $name, $grain, $securableItem, $accessToken)
         grain = "$grain"
         securableItem = "$securableItem"
     }
-    return Invoke-Post $url $body $accessToken
+    $role = Invoke-Post $url $body $accessToken
+    return $role
 }
 
 function Add-Group($authUrl,$name, $source, $accessToken)
@@ -226,6 +228,11 @@ function Get-ClientsToRegister($registrationConfig)
     return $clients.client
 }
 
+function Get-RolesAndPermissionsToRegister($registrationConfig){
+    $authorization = $registrationConfig.authorization
+    return $authorization
+}
+
 function Get-ApiResourceFromConfig($api){
     $body = @{
             name = $api.name
@@ -309,7 +316,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         
         if($isApiRegistered){
             Write-Host "API is registered, updating"
-            $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
+            #$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
             Write-Host "API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
@@ -335,6 +342,31 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
             Write-Host "Client is not registered, adding"
             $jsonBody = ConvertTo-Json $body
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
+        }
+    }
+}
+
+function Invoke-RegisterRolesAndPermissions($rolesAndPermissions, $identityServiceUrl, $accessToken){
+    Write-Host "registering roles and permissions"
+    if($authorization -eq $null){
+        Write-Host "No roles and permissions to register"
+    }
+    foreach($grain in $authorization.grain){
+        $grainName = $grain.name
+        foreach($secureableItem in $grain.secureableItem){
+            $secureableItemName = $secureableItem.name
+            foreach($role in $secureableItem.role){
+                $roleName = $role.name
+                Write-Host "Adding role: $roleName for grain: $grainName and secureableItem: $secureableItemName"
+                $addedRole = Add-Role -authUrl $authorizationServiceURL -name $roleName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
+                foreach($permission in $role.permission){
+                    $permissionName = $permission.name
+                    Write-Host "Adding permission: $permissionName for grain: $grainName and securableItem: $secureableItemName"
+                    $addedPermission = Add-Permission -authUrl $authorizationServiceURL -name $permissionName -grain $grainName -securableItem $secureableItemName -accessToken $accessToken
+                    Write-Host "Associating permission: $permissionName with role: $roleName"
+                    $rolePermission = Add-PermissionToRole -authUrl $authorizationServiceURL -roleId $addedRole.id -permission $addedPermission -accessToken $accessToken
+                }
+            }
         }
     }
 }
@@ -428,7 +460,7 @@ if([string]::IsNullOrWhiteSpace($discoveryServiceUrl))
 }
 
 # Get the installer access token
-$accessToken = Get-AccessToken $identityServiceUrl "fabric-installer" "fabric/identity.manageresources fabric/authorization.write fabric/authorization.read fabric/authorization.manageclients" $fabricInstallerSecret
+$accessToken = Get-AccessToken $identityServiceUrl "fabric-installer" "fabric/identity.manageresources fabric/authorization.write fabric/authorization.read fabric/authorization.dos.write fabric/authorization.manageclients" $fabricInstallerSecret
 
 # Read the registration.config file
 $registrationSettings = Get-RegistrationSettings
@@ -440,3 +472,7 @@ Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $ide
 # Register the Clients specified in the registration.config file
 $clients = Get-ClientsToRegister -registrationConfig $registrationSettings
 Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl
+
+# Register shared roles and permissions
+$authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
+Invoke-RegisterRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
