@@ -385,12 +385,72 @@ function Get-ClientFromConfig($client, $discoveryServiceUrl){
     return $body
 }
 
-function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken)
+function Invoke-WriteSecretToConfig($service, $secret, $encryptionCertificateThumbprint, $discoveryServiceUrl){
+    $serviceUrl = Get-ApplicationUrl -serviceName $service.serviceName -serviceVersion $service.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
+
+    if([string]::IsNullOrWhiteSpace($serviceUrl)){
+        Write-Error "Could not retrieve a registered URL from DiscoveryService for $($service.serviceName)." -ErrorAction Stop
+    }
+
+    $serviceUri = [System.Uri]$serviceUrl
+    $serviceAbsolutePath = $serviceUri.AbsolutePath
+
+    $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceAbsolutePath}
+
+    if($app -eq $null){
+        Write-Error "Could not find an installed application that matches the path of the registered URL: $serviceUrl" -ErrorAction Stop
+    }
+
+    $configPath = "$($app.PhysicalPath)/web.config"
+
+    $encryptionCertificate = Get-Certificate $encryptionCertificateThumbprint
+    $encryptedSecret = Get-EncryptedString $encryptionCertificate $secret
+
+    if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
+        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $encryptedSecret
+    }else{
+        Write-Warning "No secretConfig setting specified, not writing secret to web.config."
+    }
+
+    if(!([string]::IsNullOrWhiteSpace($service.certificateConfig))){
+        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.certificateConfig -settingValue $encryptionCertificateThumbprint
+    }else{
+        Write-Warning "No certificateConfig setting specified, not writing encryption certificate thumb-print to web.config."
+    }
+}
+
+function Add-WebConfigAppSetting($webConfigLocation, $settingKey, $settingValue) {
+    $webConfigDoc = [xml](Get-Content $webConfigLocation)
+    $appSettings = $webConfigDoc.configuration.appSettings
+    
+    $existingSetting = $appSettings.add | where {$_.key -eq $settingKey}
+    
+    if ($existingSetting -eq $null) {
+        $setting = $webConfigDoc.CreateElement("add")
+
+        $keyAttribute = $webConfigDoc.CreateAttribute("key")
+        $keyAttribute.Value = $settingKey;
+        $setting.Attributes.Append($keyAttribute)
+
+        $valueAttribute = $webConfigDoc.CreateAttribute("value")
+        $valueAttribute.Value = $settingValue
+        $setting.Attributes.Append($valueAttribute)
+
+        $appSettings.AppendChild($setting)
+    }
+    else {
+        $existingSetting.Value = $settingValue
+    }
+
+    $webConfigDoc.Save($webConfigLocation)
+}
+
+function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken, $discoveryServiceUrl, $encryptionCertificateThumbprint)
 {
     Write-Host "Registering APIs..."
     Write-Host ""
     if($apiResources -eq $null){
-        Write-Host "    No api resources"
+        Write-Host "    No API resources"
     }
     foreach($api in $apiResources){
         Write-Host "    Registering $($api.name)"
@@ -403,16 +463,19 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         }else{
             Write-Host "    API is not registered, adding"
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+            Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -discoveryServiceUrl $discoveryServiceUrl
         }
+
+        
     }
 }
 
-function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl)
+function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl, $encryptionCertificateThumbprint)
 {
     Write-Host "Registering Clients..."
     Write-Host ""
     if($clients -eq $null){
-        Write-Host "    No clients to register"
+        Write-Host "    No Clients to register"
     }
     foreach($client in $clients){
         Write-Host "    Registering $($client.clientid) with Fabric.Identity"
@@ -426,6 +489,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
             Write-Host "    Client is not registered, adding"
             $jsonBody = ConvertTo-Json $body
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
+            Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -discoveryServiceUrl $discoveryServiceUrl
         }
 
         Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
@@ -563,11 +627,11 @@ $registrationSettings = Get-RegistrationSettings
 
 # Register API Resources specified in the registration.config file
 $apiResources = Get-ApiResourcesToRegister -registrationConfig  $registrationSettings
-Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl -encryptionCertificateThumbprint $encryptionCertificateThumbprint
 
 # Register the Clients specified in the registration.config file
 $clients = Get-ClientsToRegister -registrationConfig $registrationSettings
-Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl
+Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl -encryptionCertificateThumbprint $encryptionCertificateThumbprint
 
 # Register shared roles and permissions
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
