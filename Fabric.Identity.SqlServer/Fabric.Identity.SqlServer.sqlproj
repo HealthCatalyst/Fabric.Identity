@@ -98,4 +98,14 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <SqlCmdVariable Include="FabricIdentityDataMountPoint">
+      <DefaultValue>C:\SQLData</DefaultValue>
+      <Value>$(SqlCmdVar__2)</Value>
+    </SqlCmdVariable>
+    <SqlCmdVariable Include="FabricIdentityLogMountPoint">
+      <DefaultValue>C:\SQLData</DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
 </Project>
