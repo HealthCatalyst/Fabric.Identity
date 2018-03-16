@@ -96,7 +96,7 @@ function Add-AuthorizationRegistration($authUrl, $clientId, $clientName, $access
         $exception = $_.Exception
         if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
         {
-            Write-Success "    Permission: $($permission.name) has already been associated to the role"
+            Write-Success "    Client: $clientName has already been registered with Fabric.Authorization"
             Write-Host ""
         }else{
             $error = Get-ErrorFromResponse -response $exception.Response
@@ -385,37 +385,41 @@ function Get-ClientFromConfig($client, $discoveryServiceUrl){
     return $body
 }
 
-function Invoke-WriteSecretToConfig($service, $secret, $encryptionCertificateThumbprint, $discoveryServiceUrl){
+function Get-WebConfigPath($service, $discoveryServiceUrl){
     $serviceUrl = Get-ApplicationUrl -serviceName $service.serviceName -serviceVersion $service.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
 
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
-        Write-Error "Could not retrieve a registered URL from DiscoveryService for $($service.serviceName)." -ErrorAction Stop
+        Write-Error "Could not retrieve a registered URL from DiscoveryService for $($service.serviceName). Halting installation." -ErrorAction Stop
     }
 
     $serviceUri = [System.Uri]$serviceUrl
-    $serviceAbsolutePath = $serviceUri.AbsolutePath
+    $serviceAbsolutePath = $serviceUri.AbsolutePath.TrimEnd("/v$($service.serviceVersion)")
 
     $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceAbsolutePath}
 
     if($app -eq $null){
-        Write-Error "Could not find an installed application that matches the path of the registered URL: $serviceUrl" -ErrorAction Stop
+        Write-Error "Could not find an installed application that matches the path of the registered URL: $serviceUrl. Halting installation." -ErrorAction Stop
     }
 
-    $configPath = "$($app.PhysicalPath)/web.config"
+    $configPath = "$($app.PhysicalPath)\web.config"
+    
+    if(!(Test-Path $configPath)){
+        Write-Error "Could not find a web.config for the $($app.Path) application. Halting installation." -ErrorAction Stop
+    }
 
+    return $configPath
+}
+
+function Invoke-WriteSecretToConfig($service, $secret, $encryptionCertificateThumbprint, $configPath){
     $encryptionCertificate = Get-Certificate $encryptionCertificateThumbprint
     $encryptedSecret = Get-EncryptedString $encryptionCertificate $secret
-
+    
     if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
         Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $encryptedSecret
-    }else{
-        Write-Warning "No secretConfig setting specified, not writing secret to web.config."
     }
 
     if(!([string]::IsNullOrWhiteSpace($service.certificateConfig))){
         Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.certificateConfig -settingValue $encryptionCertificateThumbprint
-    }else{
-        Write-Warning "No certificateConfig setting specified, not writing encryption certificate thumb-print to web.config."
     }
 }
 
@@ -458,12 +462,14 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         $isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
         
         if($isApiRegistered){
-            Write-Host "    API is registered, updating"
+            Write-Host "    $($api.name) is already registered, updating"
             $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
         }else{
-            Write-Host "    API is not registered, adding"
+            $configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
             $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
-            Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -discoveryServiceUrl $discoveryServiceUrl
+            Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -configPath $configPath
+            Write-Success "    Success"
+            Write-Host ""
         }
 
         
@@ -483,13 +489,15 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
         $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
 
         if($isClientRegistered){
-            Write-Host "    Client is registered, updating"
+            Write-Host "    $($client.clientid) is already registered, updating"
             $clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
         }else{
-            Write-Host "    Client is not registered, adding"
+            $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
             $jsonBody = ConvertTo-Json $body
             $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
-            Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -discoveryServiceUrl $discoveryServiceUrl
+            Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint -configPath $configPath
+            Write-Success "    Success"
+            Write-Host ""
         }
 
         Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
@@ -546,6 +554,7 @@ $fabricInstallerSecret = $installSettings.fabricInstallerSecret
 $discoveryServiceUrl = $installSettings.discoveryService
 $authorizationServiceURL =  $installSettings.authorizationService
 $identityServiceUrl = $installSettings.identityService
+$encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint
 
 if([string]::IsNullOrEmpty($installSettings.identityService))  
 {
@@ -617,6 +626,11 @@ if([string]::IsNullOrWhiteSpace($identityServiceUrl))
 if([string]::IsNullOrWhiteSpace($discoveryServiceUrl))
 {
     Write-Error "You must enter a value for the Discovery Service URL." -ErrorAction Stop
+}
+
+if([string]::IsNullOrWhiteSpace($encryptionCertificateThumbprint))
+{
+    Write-Error "There is no encryption certificate thumb-print stored in the install.config, halting installation." -ErrorAction Stop
 }
 
 # Get the installer access token
