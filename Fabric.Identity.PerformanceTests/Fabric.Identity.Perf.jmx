@@ -43,7 +43,7 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">api/apiresource</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -96,7 +96,7 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">api/client</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -172,7 +172,7 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">connect/token</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -296,7 +296,7 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">connect/token</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -409,7 +409,7 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">api/client</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -503,7 +503,7 @@ vars.put(&quot;clientName&quot;, randomUUIDString);
           </elementProp>
           <stringProp name="HTTPSampler.domain">${__property(identityserver)}</stringProp>
           <stringProp name="HTTPSampler.port">${__property(identityport)}</stringProp>
-          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__property(identityprotocol)}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">api/apiresource</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
