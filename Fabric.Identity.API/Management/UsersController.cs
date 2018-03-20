@@ -102,13 +102,6 @@ namespace Fabric.Identity.API.Management
 
         private async Task<IActionResult> ProcessSearchRequest(string clientId, IEnumerable<string> userIds)
         {
-            if (string.IsNullOrEmpty(clientId))
-            {
-                return CreateFailureResponse(
-                    "No client id was included in the request. Please specify a client id",
-                    HttpStatusCode.BadRequest);
-            }
-
             var docIds = userIds.Select(id => id?.ToLower()).ToList();
             if (!docIds.Any() || docIds.All(string.IsNullOrEmpty))
             {
@@ -116,12 +109,14 @@ namespace Fabric.Identity.API.Management
                     HttpStatusCode.BadRequest);
             }
 
-            var client = _clientManagementStore.FindClientByIdAsync(clientId).Result;
-
-            if (string.IsNullOrEmpty(client?.ClientId))
+            if (!string.IsNullOrEmpty(clientId))
             {
-                return CreateFailureResponse($"The specified client with id: {clientId} was not found",
-                    HttpStatusCode.NotFound);
+                var client = _clientManagementStore.FindClientByIdAsync(clientId).Result;
+                if (string.IsNullOrEmpty(client?.ClientId))
+                {
+                    return CreateFailureResponse($"The specified client with id: {clientId} was not found",
+                        HttpStatusCode.NotFound);
+                }
             }
 
             var users = await _userStore.GetUsersBySubjectIdAsync(docIds);
