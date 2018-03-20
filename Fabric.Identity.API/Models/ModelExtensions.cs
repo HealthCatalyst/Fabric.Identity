@@ -264,7 +264,6 @@ namespace Fabric.Identity.API.Models
 
             if (!string.IsNullOrEmpty(clientId))
             {
-
                 var lastLoginForClient = user.LastLoginDatesByClient
                     .SingleOrDefault(l => l.ClientId.Equals(clientId, StringComparison.OrdinalIgnoreCase));
 
