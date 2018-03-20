@@ -24,7 +24,7 @@ function Get-ApplicationUrl($serviceName, $serviceVersion, $discoveryServiceUrl)
     $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
     $serviceUrl = $discoveryResponse.value.ServiceUrl
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
-        Write-Error "The service $serviceName is not registered with the Discovery service. Make sure that the service is registered w/ Discovery service before proceeding. Halting installation." -ErrorAction Stop
+        throw "The service $serviceName is not registered with the Discovery service. Make sure that the service is registered w/ Discovery service before proceeding. Halting installation."
     }
     return $serviceUrl
 }
@@ -290,7 +290,8 @@ function Get-RegistrationSettings()
 {
     $registrationConfig = [xml](Get-Content registration.config)
     if($registrationConfig -eq $null){
-        Write-Host "No registration content"
+        Write-Error "There is no configuration defined for the Fabric Registration step."
+		throw
     }
     return $registrationConfig.registration
 }
@@ -389,7 +390,7 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
     $serviceUrl = Get-ApplicationUrl -serviceName $service.serviceName -serviceVersion $service.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
 
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
-        Write-Error "Could not retrieve a registered URL from DiscoveryService for $($service.serviceName). Halting installation." -ErrorAction Stop
+        throw "Could not retrieve a registered URL from DiscoveryService for $($service.serviceName). Halting installation."
     }
 
     $serviceUri = [System.Uri]$serviceUrl
@@ -398,13 +399,13 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
     $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceAbsolutePath}
 
     if($app -eq $null){
-        Write-Error "Could not find an installed application that matches the path of the registered URL: $serviceUrl. Halting installation." -ErrorAction Stop
+        throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl. Halting installation."
     }
 
     $configPath = "$($app.PhysicalPath)\web.config"
     
     if(!(Test-Path $configPath)){
-        Write-Error "Could not find a web.config for the $($app.Path) application. Halting installation." -ErrorAction Stop
+        throw "Could not find a web.config for the $($app.Path) application. Halting installation."
     }
 
     return $configPath
@@ -457,20 +458,28 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         Write-Host "    No API resources"
     }
     foreach($api in $apiResources){
-        Write-Host "    Registering $($api.name)"
-        $body = Get-ApiResourceFromConfig($api)
-        $isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
-        
-        if($isApiRegistered){
-            Write-Host "    $($api.name) is already registered, updating"
-            $apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
-        }else{
-            $configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
-            $apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
-            Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -configPath $configPath
-            Write-Success "    Success"
-            Write-Host ""
-        }
+		try{
+			Write-Host "    Registering $($api.name)"
+			$body = Get-ApiResourceFromConfig($api)
+			$isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
+			
+			if($isApiRegistered){
+				Write-Host "    $($api.name) is already registered, updating"
+				$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
+			}else{
+				$configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
+				$apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+				Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -configPath $configPath
+				Write-Success "    Success"
+				Write-Host ""
+			}
+		}
+		catch{
+			Write-Error "Could not register api $($api.name)"
+			$exception = $_.Exception
+			Write-Error $exception
+			throw $exception
+		}
 
         
     }
@@ -484,28 +493,36 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
         Write-Host "    No Clients to register"
     }
     foreach($client in $clients){
-        Write-Host "    Registering $($client.clientid) with Fabric.Identity"
-        $body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
-        $isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
+		try{
+			Write-Host "    Registering $($client.clientid) with Fabric.Identity"
+			$body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
+			$isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
 
-        if($isClientRegistered){
-            Write-Host "    $($client.clientid) is already registered, updating"
-            $clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
-        }else{
-            $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
-            $jsonBody = ConvertTo-Json $body
-            $clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
-            Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint -configPath $configPath
-            Write-Success "    Success"
-            Write-Host ""
-        }
+			if($isClientRegistered){
+				Write-Host "    $($client.clientid) is already registered, updating"
+				$clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
+			}else{
+				$configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
+				$jsonBody = ConvertTo-Json $body
+				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
+				Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint -configPath $configPath
+				Write-Success "    Success"
+				Write-Host ""
+			}
 
-        Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
-        $authorizationClient = Add-AuthorizationRegistration -authUrl $authorizationServiceURL -clientId $client.clientid -clientName $client.clientName -accessToken $accessToken
+			Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
+			$authorizationClient = Add-AuthorizationRegistration -authUrl $authorizationServiceURL -clientId $client.clientid -clientName $client.clientName -accessToken $accessToken
 
-        if($client.authorization -ne $null){
-            Invoke-RegisterRolesAndPermissions -grainName "app" -securableItemName $client.clientid -securableItem $client.authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
-        }
+			if($client.authorization -ne $null){
+				Invoke-RegisterRolesAndPermissions -grainName "app" -securableItemName $client.clientid -securableItem $client.authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+			}
+		}
+		catch{
+			Write-Error "Could not register client $($client.clientid)"
+			$exception = $_.Exception
+			Write-Error $exception
+			throw $exception
+		}
     }
 }
 
