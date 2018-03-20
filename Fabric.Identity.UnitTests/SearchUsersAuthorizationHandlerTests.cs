@@ -11,9 +11,11 @@ using Microsoft.AspNetCore.Authorization;
 using Moq;
 using Serilog;
 using Xunit;
+using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.UnitTests
 {
+
     public class SearchUsersAuthorizationHandlerTests
     {
         private readonly IAppConfiguration _appConfiguration;
@@ -22,9 +24,13 @@ namespace Fabric.Identity.UnitTests
         public SearchUsersAuthorizationHandlerTests()
         {
             _appConfiguration = new AppConfiguration
-                                    {
-                                        IssuerUri = "http://fabric.identity"
-                                    };
+            {
+                IssuerUri = "http://fabric.identity",
+                IdentityServerConfidentialClientSettings = new IdentityServerConfidentialClientSettings
+                {
+                    Authority = "http://fabric.identity"
+                }
+            };
         }
 
         [Fact]

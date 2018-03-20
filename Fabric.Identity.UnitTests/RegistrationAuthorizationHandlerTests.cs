@@ -10,9 +10,11 @@ using Microsoft.AspNetCore.Authorization;
 using Moq;
 using Serilog;
 using Xunit;
+using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.UnitTests
 {
+
     public class RegistrationAuthorizationHandlerTests
     {
         public RegistrationAuthorizationHandlerTests()
@@ -20,7 +22,11 @@ namespace Fabric.Identity.UnitTests
             _appConfiguration = new AppConfiguration
             {
                 IssuerUri = "http://fabric.identity",
-                RegistrationAdminGroup = "Domain Admins"
+                RegistrationAdminGroup = "Domain Admins",
+                IdentityServerConfidentialClientSettings = new IdentityServerConfidentialClientSettings
+                {
+                    Authority = "http://fabric.identity"
+                }
             };
         }
 
@@ -54,7 +60,7 @@ namespace Fabric.Identity.UnitTests
             });
             var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
-            var context = new AuthorizationHandlerContext(new[] {requirement},
+            var context = new AuthorizationHandlerContext(new[] { requirement },
                 new TestPrincipal(), null);
             var result = registrationAuthorizationHandler.HandleAsync(context);
             if (!result.IsCompleted)
@@ -78,7 +84,7 @@ namespace Fabric.Identity.UnitTests
             var requirement = new RegisteredClientThresholdRequirement(1);
             var roleClaim = new Claim(ClaimTypes.Role, _appConfiguration.RegistrationAdminGroup, "claim",
                 _appConfiguration.IssuerUri);
-            var context = new AuthorizationHandlerContext(new[] {requirement},
+            var context = new AuthorizationHandlerContext(new[] { requirement },
                 new TestPrincipal(roleClaim), null);
             var result = registrationAuthorizationHandler.HandleAsync(context);
             if (!result.IsCompleted)
@@ -102,7 +108,7 @@ namespace Fabric.Identity.UnitTests
             var requirement = new RegisteredClientThresholdRequirement(1);
             var scopeClaim = new Claim(ClaimTypes.Role, _appConfiguration.RegistrationAdminGroup, "claim",
                 _appConfiguration.IssuerUri);
-            var context = new AuthorizationHandlerContext(new[] {requirement},
+            var context = new AuthorizationHandlerContext(new[] { requirement },
                 new TestPrincipal(scopeClaim), null);
             var result = registrationAuthorizationHandler.HandleAsync(context);
             if (!result.IsCompleted)
@@ -118,7 +124,7 @@ namespace Fabric.Identity.UnitTests
             var clientManagementStore = GetClientManagementStore(new List<Client>());
             var registrationAuthorizationHandler = GetRegistrationAuthorizationHandler(clientManagementStore);
             var requirement = new RegisteredClientThresholdRequirement(1);
-            var context = new AuthorizationHandlerContext(new[] {requirement},
+            var context = new AuthorizationHandlerContext(new[] { requirement },
                 new TestPrincipal(), null);
             var result = registrationAuthorizationHandler.HandleAsync(context);
             if (!result.IsCompleted)

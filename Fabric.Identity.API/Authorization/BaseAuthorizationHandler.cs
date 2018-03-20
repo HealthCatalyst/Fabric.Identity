@@ -39,18 +39,18 @@ namespace Fabric.Identity.API.Authorization
                 return false;
             }
 
-            var hasGroupClaim = user.Claims.Any(c => (c.Type == ClaimTypes.Role ||
-                                                      c.Type == FabricIdentityConstants.FabricClaimTypes.Groups) &&
-                                                     c.Value == _appConfiguration.RegistrationAdminGroup &&
-                                                     c.Issuer == _appConfiguration.IssuerUri);
+            var hasGroupClaim = user.Claims.Any(
+                c => (c.Type == ClaimTypes.Role || c.Type == FabricIdentityConstants.FabricClaimTypes.Groups)
+                     && c.Value == _appConfiguration.RegistrationAdminGroup && c.Issuer == _appConfiguration
+                         .IdentityServerConfidentialClientSettings.Authority);
             return hasGroupClaim;
         }
 
         protected bool HasRequiredScopeClaim(ClaimsPrincipal user, string claimType)
         {
-            var hasScopeClaim = user.Claims.Any(c => c.Type == JwtClaimTypes.Scope &&
-                                                     c.Value == claimType &&
-                                                     c.Issuer == _appConfiguration.IssuerUri);
+            var hasScopeClaim = user.Claims.Any(
+                c => c.Type == JwtClaimTypes.Scope && c.Value == claimType && c.Issuer
+                     == _appConfiguration.IdentityServerConfidentialClientSettings.Authority);
             return hasScopeClaim;
         }
     }
