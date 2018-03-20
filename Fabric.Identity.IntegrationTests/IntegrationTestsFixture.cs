@@ -62,8 +62,6 @@ namespace Fabric.Identity.IntegrationTests
             Client = GetTestClient();
             InMemoryDocumentDbService.AddDocument(api.Name, api);
             InMemoryDocumentDbService.AddDocument(Client.ClientId, Client);
-            CouchDbService.AddDocument(api.Name, api);
-            CouchDbService.AddDocument(Client.ClientId, Client);
             CreateSqlServerDatabase();
             AddTestEntitiesToSql(Client, api);
         }
