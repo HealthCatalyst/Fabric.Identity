@@ -139,13 +139,13 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         }
 
         [Fact]
-        public async Task UsersController_Get_FindUsersByDocumentId_NoClientId_BadRequest()
+        public async Task UsersController_Get_FindUsersByDocumentId_NoClientId_ReturnsOk()
         {
             var numberOfUsers = 1;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, string.Empty);
             var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
