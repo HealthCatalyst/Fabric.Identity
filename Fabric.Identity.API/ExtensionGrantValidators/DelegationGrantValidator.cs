@@ -37,7 +37,8 @@ namespace Fabric.Identity.API.ExtensionGrantValidators
             // get user's identity
             var sub = result.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Subject)?.Value;
             var groups = result.Claims.Where(c => c.Type == JwtClaimTypes.Role || c.Type == "groups");
-            context.Result = new GrantValidationResult(sub, "delegation", groups);
+            var identityProvider = result.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.IdentityProvider)?.Value ?? "local";
+            context.Result = new GrantValidationResult(sub, "delegation", groups, identityProvider);
         }
     }
 }

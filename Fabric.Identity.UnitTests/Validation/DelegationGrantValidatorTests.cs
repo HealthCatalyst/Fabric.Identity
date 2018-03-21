@@ -63,6 +63,7 @@ namespace Fabric.Identity.UnitTests.Validation
             var claims = new List<Claim>
             {
                 new Claim(JwtClaimTypes.Subject, "first.last"),
+                new Claim(JwtClaimTypes.IdentityProvider, "Windows"),
                 new Claim(JwtClaimTypes.Role, "role1"),
                 new Claim(JwtClaimTypes.Role, "role2"),
                 new Claim("groups", "group1"),
@@ -91,12 +92,13 @@ namespace Fabric.Identity.UnitTests.Validation
 
             var returnedClaims = claimsPrincipal.Claims.ToList();
             Assert.Null(context.Result.Error);            
-            Assert.True(claims.Count >= 5);
+            Assert.True(claims.Count >= 6);
             Assert.Contains(claims[0], returnedClaims, new ClaimComparer(true));
             Assert.Contains(claims[1], returnedClaims, new ClaimComparer(true));
             Assert.Contains(claims[2], returnedClaims, new ClaimComparer(true));
             Assert.Contains(claims[3], returnedClaims, new ClaimComparer(true));
             Assert.Contains(claims[4], returnedClaims, new ClaimComparer(true));
+            Assert.Contains(claims[5], returnedClaims, new ClaimComparer(true));
         }
     }
 }
