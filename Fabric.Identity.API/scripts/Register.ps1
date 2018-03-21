@@ -667,3 +667,5 @@ Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl
 # Register shared roles and permissions
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
 Invoke-RegisterSharedRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
+
+Read-Host -Prompt "Registration complete, press Enter to exit"
