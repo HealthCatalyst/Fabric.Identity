@@ -434,7 +434,7 @@ if(!($noDiscoveryService)){
 Unlock-ConfigurationSections
 Write-Host ""
 
-$appDirectory = "$webroot\$appName"
+$appDirectory = [io.path]::combine($webroot, $appName)
 New-AppRoot $appDirectory $iisUser
 Write-Console "App directory is: $appDirectory"
 if($useSpecificUser){
