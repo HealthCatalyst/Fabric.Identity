@@ -402,10 +402,12 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
         throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl. Halting installation."
     }
 
-    $configPath = "$($app.PhysicalPath)\web.config"
+    $appPath = [Environment]::ExpandEnvironmentVariables($app.PhysicalPath)
+
+    $configPath = [System.IO.Path]::Combine($appPath, "web.config")
     
     if(!(Test-Path $configPath)){
-        throw "Could not find a web.config for the $($app.Path) application. Halting installation."
+        throw "Could not find a web.config in $appPath for the $($app.Path) application. Halting installation."
     }
 
     return $configPath
