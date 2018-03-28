@@ -415,10 +415,9 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
 
 function Invoke-WriteSecretToConfig($service, $secret, $encryptionCertificateThumbprint, $configPath){
     $encryptionCertificate = Get-Certificate $encryptionCertificateThumbprint
-    $encryptedSecret = Get-EncryptedString $encryptionCertificate $secret
     
     if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
-        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $encryptedSecret
+        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $secret
     }
 
     if(!([string]::IsNullOrWhiteSpace($service.certificateConfig))){
