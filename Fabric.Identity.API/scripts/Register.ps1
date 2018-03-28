@@ -413,15 +413,10 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
     return $configPath
 }
 
-function Invoke-WriteSecretToConfig($service, $secret, $encryptionCertificateThumbprint, $configPath){
-    $encryptionCertificate = Get-Certificate $encryptionCertificateThumbprint
+function Invoke-WriteSecretToConfig($service, $secret, $configPath){
     
     if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
-        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $secret
-    }
-
-    if(!([string]::IsNullOrWhiteSpace($service.certificateConfig))){
-        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.certificateConfig -settingValue $encryptionCertificateThumbprint
+        Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $secret | Out-Null
     }
 }
 
@@ -451,7 +446,7 @@ function Add-WebConfigAppSetting($webConfigLocation, $settingKey, $settingValue)
     $webConfigDoc.Save($webConfigLocation)
 }
 
-function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken, $discoveryServiceUrl, $encryptionCertificateThumbprint)
+function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $accessToken, $discoveryServiceUrl)
 {
     Write-Host "Registering APIs..."
     Write-Host ""
@@ -470,7 +465,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
 			}else{
 				$configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
 				$apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
-				Invoke-WriteSecretToConfig -service $api -secret $apiSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint  -configPath $configPath
+				Invoke-WriteSecretToConfig -service $api -secret $apiSecret -configPath $configPath
 				Write-Success "    Success"
 				Write-Host ""
 			}
@@ -486,7 +481,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
     }
 }
 
-function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl, $encryptionCertificateThumbprint)
+function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $discoveryServiceUrl)
 {
     Write-Host "Registering Clients..."
     Write-Host ""
@@ -506,7 +501,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 				$configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
 				$jsonBody = ConvertTo-Json $body
 				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
-				Invoke-WriteSecretToConfig -service $client -secret $clientSecret -encryptionCertificateThumbprint $encryptionCertificateThumbprint -configPath $configPath
+				Invoke-WriteSecretToConfig -service $client -secret $clientSecret -configPath $configPath
 				Write-Success "    Success"
 				Write-Host ""
 			}
@@ -659,11 +654,11 @@ $registrationSettings = Get-RegistrationSettings
 
 # Register API Resources specified in the registration.config file
 $apiResources = Get-ApiResourcesToRegister -registrationConfig  $registrationSettings
-Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl -encryptionCertificateThumbprint $encryptionCertificateThumbprint
+Invoke-RegisterApiResources -apiResources $apiResources -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl
 
 # Register the Clients specified in the registration.config file
 $clients = Get-ClientsToRegister -registrationConfig $registrationSettings
-Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl -encryptionCertificateThumbprint $encryptionCertificateThumbprint
+Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl -accessToken $accessToken -discoveryServiceUrl $discoveryServiceUrl
 
 # Register shared roles and permissions
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
