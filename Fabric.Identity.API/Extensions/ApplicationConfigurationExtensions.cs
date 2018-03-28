@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 
-
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 
@@ -29,9 +28,14 @@ namespace Fabric.Identity.API.Extensions
                 if (!string.IsNullOrEmpty(serviceRegistration?.ServiceUrl))
                 {
                     appConfig.IdentityProviderSearchSettings.BaseUrl =
-                        serviceRegistration.ServiceUrl;
+                        FormatUrl(serviceRegistration.ServiceUrl);
                 }
             }
+        }
+
+        private static string FormatUrl(string url)
+        {
+            return !url.EndsWith("/") ? $"{url}/" : url;
         }
     }
 }
