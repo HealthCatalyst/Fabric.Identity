@@ -66,6 +66,7 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            _appConfig.ConfigureIdentitySearchProviderServiceUrl();
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
             var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
             var serilogEventSink = new SerilogEventSink(eventLogger);
