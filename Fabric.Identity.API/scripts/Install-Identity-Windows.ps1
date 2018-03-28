@@ -478,6 +478,13 @@ if($identityDbConnStr){
     $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $identityDbConnStr)
 }
 
+if(!($noDiscoveryService) -and $discoveryServiceUrl){
+    $environmentVariables.Add("DiscoveryServiceEndpoint", $discoveryServiceUrl)
+    $environmentVariables.Add("UseDiscoveryService", "true")
+}else{
+    $environmentVariables.Add("UseDiscoveryService", "false")
+}
+
 Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
 Write-Host ""
 

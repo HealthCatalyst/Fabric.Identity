@@ -12,6 +12,8 @@ namespace Fabric.Identity.API.Configuration
         public string RegistrationAdminGroup { get; set; }
         public bool AllowLocalLogin { get; set; }
         public bool WindowsAuthenticationEnabled { get; set; }
+        public bool UseDiscoveryService { get; set; }
+        public string DiscoveryServiceEndpoint { get; set; }
         public IdentityProviderSearchSettings IdentityProviderSearchSettings { get; set; }
         public SigningCertificateSettings SigningCertificateSettings { get; set; }
         public ElasticSearchSettings ElasticSearchSettings { get; set; }
