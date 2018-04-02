@@ -2,13 +2,15 @@
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Linq;
+
+using Fabric.Identity.API.Models;
 
 using Newtonsoft.Json;
 
+
 namespace Fabric.Identity.API.Services
 {
-    using Fabric.Identity.API.Models;
-
     /// <summary>
     /// Client for interacting with the DiscoveryService.
     /// </summary>
@@ -56,11 +58,33 @@ namespace Fabric.Identity.API.Services
         /// <returns>A <see cref="DiscoveryServiceApiModel"/></returns>
         public async Task<DiscoveryServiceApiModel> GetServiceAsync(string serviceName, int serviceVersion)
         {
-            var url = $"Services(ServiceName='{serviceName}', Version={serviceVersion})";
+            var url = $"Services?$filter=ServiceName eq '{serviceName}' and Version eq {serviceVersion}";
             var response = await this.httpClient.GetAsync(url).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            var apiModel = JsonConvert.DeserializeObject<DiscoveryServiceApiModel>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-            return apiModel;
+            try
+            {
+                var apiModel = JsonConvert.DeserializeObject<DiscoveryServiceResponseModel>(
+                    await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+
+                if (apiModel.Value.Count > 1)
+                {
+                    throw new InvalidOperationException($"Retrieved multiple {serviceName} version {serviceVersion} from DiscoveryService at {response.RequestMessage.RequestUri}");
+                }
+
+                var serviceRegistration = apiModel.Value.SingleOrDefault();
+                if (serviceRegistration == null)
+                {
+                    throw new InvalidOperationException($"Could not get {serviceName} version {serviceVersion} from DiscoveryService at {response.RequestMessage.RequestUri}");
+                }
+
+                return serviceRegistration;
+            }
+            catch (JsonException e)
+            {
+                throw new InvalidOperationException(
+                    $"Could not get {serviceName} version {serviceVersion} from DiscoveryService at {response.RequestMessage.RequestUri}",
+                    e);
+            }
         }
 
         /// <summary>
