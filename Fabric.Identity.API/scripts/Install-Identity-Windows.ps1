@@ -479,7 +479,7 @@ if($identityDbConnStr){
 }
 
 if(!($noDiscoveryService) -and $discoveryServiceUrl){
-    $environmentVariables.Add("DiscoveryServiceEndpoint", $discoveryServiceUrl)
+    $environmentVariables.Add("DiscoveryServiceEndpoint", "$discoveryServiceUrl/v1/")
     $environmentVariables.Add("UseDiscoveryService", "true")
 }else{
     $environmentVariables.Add("UseDiscoveryService", "false")
@@ -509,18 +509,6 @@ $body = @'
 
 Write-Console "Registering Fabric.Identity registration api."
 $registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
-
-#register identity search service api 
-$body = @'
-{
-    "name":"idpsearch-api",
-    "userClaims":["name","email","role","groups"],
-    "scopes":[{"name":"fabric/idprovider.searchusers"}]
-}
-'@
-
-Write-Console "Registering Fabric.IdentityProviderSearch api."
-$idpSearchApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
 
 #Register Fabric.Installer
 $body = @'
@@ -559,9 +547,16 @@ Write-Console "Registering Fabric.Identity Client"
 $identityClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 
 if($identityClientSecret){
-	$encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
-	$environmentVariables.Add("IdentityServerConfidentialClientSettings__ClientSecret", $encryptedSecret)
+    $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
+    $environmentVariables.Add("IdentityServerConfidentialClientSettings__ClientSecret", $encryptedSecret)
 }
+
+if($registrationApiSecret){
+    $encryptedSecret = Get-EncryptedString $encryptionCert $registrationApiSecret
+    $environmentVariables.Add("IdentityServerApiSettings__ApiSecret", $encryptedSecret)
+}
+
+Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
 
 Write-Console ""
 Write-Console "Please keep the following secrets in a secure place:"
