@@ -2,6 +2,9 @@
 
 namespace Fabric.Identity.API.Models
 {
+    /// <summary>
+    /// A model to represent a DiscoveryService Registration.
+    /// </summary>
     public class DiscoveryServiceApiModel
     {
         /// <summary>
