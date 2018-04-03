@@ -144,11 +144,13 @@ function Invoke-AddOrGetPermission($authUrl, $name, $grain, $securableItem, $acc
     }
 }
 
-function Add-Role($authUrl, $name, $grain, $securableItem, $accessToken)
+function Add-Role($authUrl, $name, $displayName, $description, $grain, $securableItem, $accessToken)
 {
     $url = "$authUrl/roles"
     $body = @{
         name = "$name"
+        displayName = "$displayName"
+        description = "$description"
         grain = "$grain"
         securableItem = "$securableItem"
     }
@@ -162,9 +164,9 @@ function Get-Role($authUrl, $name, $grain, $securableItem, $accessToken){
     return $role
 }
 
-function Invoke-AddOrGetRole($authUrl, $name, $grain, $securableItem, $accessToken){
+function Invoke-AddOrGetRole($authUrl, $name, $displayName, $description, $grain, $securableItem, $accessToken){
     try{
-        $role = Add-Role -authUrl $authUrl -name $name -grain $grain -securableItem $securableItem -accessToken $accessToken
+        $role = Add-Role -authUrl $authUrl -name $name -displayName $displayName -description $description -grain $grain -securableItem $securableItem -accessToken $accessToken
         return $role
     }catch{
         $exception = $_.Exception
@@ -182,11 +184,13 @@ function Invoke-AddOrGetRole($authUrl, $name, $grain, $securableItem, $accessTok
     }
 }
 
-function Add-Group($authUrl,$name, $source, $accessToken)
+function Add-Group($authUrl, $name, $displayName, $description, $source, $accessToken)
 {
     $url = "$authUrl/groups"
     $body = @{
         id = "$name"
+        displayName = "$displayName"
+        description = "$description"
         groupName = "$name"
         groupSource = "$source"
     }
@@ -540,8 +544,10 @@ function Invoke-RegisterSharedRolesAndPermissions($rolesAndPermissions, $identit
 function Invoke-RegisterRolesAndPermissions($grainName, $securableItemName, $securableItem, $identityServiceUrl, $accessToken){
     foreach($role in $securableItem.role){
         $roleName = $role.name
+        $roleDisplayName = $role.displayName
+        $roleDescription = $role.description
         Write-Host "    Adding role: $roleName for grain: $grainName and securableItem: $securableItemName"
-        $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -grain $grainName -securableItem $securableItemName -accessToken $accessToken
+        $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -displayName $roleDisplayName -description $roleDescription -grain $grainName -securableItem $securableItemName -accessToken $accessToken
         foreach($permission in $role.permission){
             $permissionName = $permission.name
             Write-Host "    Adding permission: $permissionName for grain: $grainName and securableItem: $securableItemName"
