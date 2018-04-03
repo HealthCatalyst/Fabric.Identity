@@ -7,7 +7,7 @@ namespace Fabric.Identity.API.Extensions
 {
     public static class UtilityExtensions
     {
-        public static string FormatUrl(this string url)
+        public static string EnsureTrailingSlash(this string url)
         {
             return !url.EndsWith("/") ? $"{url}/" : url;
         }

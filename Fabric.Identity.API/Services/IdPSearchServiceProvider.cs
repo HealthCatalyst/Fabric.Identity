@@ -61,7 +61,7 @@ namespace Fabric.Identity.API.Services
                 throw new FabricConfigurationException("IdentityServerConfidentialClientSettings.Authority is not set, Please set the Authority to the appropriate url.");
             }
 
-            var authority = settings.Authority.FormatUrl();
+            var authority = settings.Authority.EnsureTrailingSlash();
 
             var tokenUriAddress = $"{authority}connect/token";
             this._logger.Information($"Getting access token for ClientId: {fabricIdentityClient} at {tokenUriAddress}");
