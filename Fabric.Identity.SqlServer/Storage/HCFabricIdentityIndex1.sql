@@ -12,7 +12,7 @@ ALTER DATABASE [$(DatabaseName)]
 	ADD FILE
 	(
 		NAME = [HCFabricIdentityIndex1File1],
-		FILENAME = '$(FabricIdentityDataMountPoint)\HC$(DatabaseName)Index1File1.ldf',
+		FILENAME = '$(FabricIdentityDataMountPoint)\HC$(DatabaseName)Index1File1.ndf',
 		SIZE = 500MB,
 		MAXSIZE = 2GB,
 		FILEGROWTH = 100MB
