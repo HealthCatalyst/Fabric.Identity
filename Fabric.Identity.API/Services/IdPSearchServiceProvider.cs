@@ -8,6 +8,7 @@ using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Extensions;
 using Fabric.Platform.Http;
+using Fabric.Platform.Shared.Exceptions;
 using IdentityModel.Client;
 using Newtonsoft.Json;
 using Polly.CircuitBreaker;
@@ -55,6 +56,11 @@ namespace Fabric.Identity.API.Services
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var fabricIdentityClient = "fabric-identity-client";
+            if (string.IsNullOrEmpty(settings.Authority))
+            {
+                throw new FabricConfigurationException("IdentityServerConfidentialClientSettings.Authority is not set, Please set the Authority to the appropriate url.");
+            }
+
             var authority = settings.Authority.FormatUrl();
 
             var tokenUriAddress = $"{authority}connect/token";
