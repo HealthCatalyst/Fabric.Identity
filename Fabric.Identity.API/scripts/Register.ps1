@@ -2,7 +2,7 @@
 # Register.ps1
 #
 function Get-FullyQualifiedHostName(){
-    return "https://$env:computername.$($env:userdnsdomain.tolower())"
+    return "http://localhost"
 }
 function Get-IdentityServiceUrl(){
     $hostName = Get-FullyQualifiedHostName
@@ -149,11 +149,18 @@ function Add-Role($authUrl, $name, $displayName, $description, $grain, $securabl
     $url = "$authUrl/roles"
     $body = @{
         name = "$name"
-        displayName = "$displayName"
-        description = "$description"
         grain = "$grain"
         securableItem = "$securableItem"
     }
+
+    if(![string]::IsNullOrWhiteSpace($displayName)){
+        $body += @{displayName = $displayName}
+    }
+
+    if(![string]::IsNullOrWhiteSpace($description)){
+        $body += @{description = $description}
+    }
+
     $role = Invoke-Post $url $body $accessToken
     return $role
 }
