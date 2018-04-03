@@ -37,7 +37,7 @@ namespace Fabric.Identity.API.Services
         /// <param name="handler">The optional message handler for processing requests.</param>
         public DiscoveryServiceClient(string discoveryServiceUrl, HttpMessageHandler handler)
         {
-            this.httpClient = new HttpClient(handler) { BaseAddress = new Uri(discoveryServiceUrl.FormatUrl()) };
+            this.httpClient = new HttpClient(handler) { BaseAddress = new Uri(discoveryServiceUrl.EnsureTrailingSlash()) };
             this.httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
