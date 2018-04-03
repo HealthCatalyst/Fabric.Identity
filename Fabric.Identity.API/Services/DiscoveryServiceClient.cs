@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Linq;
 
+using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Models;
 
 using Newtonsoft.Json;
@@ -36,7 +37,7 @@ namespace Fabric.Identity.API.Services
         /// <param name="handler">The optional message handler for processing requests.</param>
         public DiscoveryServiceClient(string discoveryServiceUrl, HttpMessageHandler handler)
         {
-            this.httpClient = new HttpClient(handler) { BaseAddress = new Uri(this.FormatUrl(discoveryServiceUrl)) };
+            this.httpClient = new HttpClient(handler) { BaseAddress = new Uri(discoveryServiceUrl.FormatUrl()) };
             this.httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
@@ -106,16 +107,6 @@ namespace Fabric.Identity.API.Services
             {
                 this.httpClient?.Dispose();
             }
-        }
-
-        /// <summary>
-        /// Adds a trailing slash to the url if it is not present.
-        /// </summary>
-        /// <param name="url">The url to format.</param>
-        /// <returns>The formatted url.</returns>
-        private string FormatUrl(string url)
-        {
-            return !url.EndsWith("/") ? $"{url}/" : url;
         }
     }
 }

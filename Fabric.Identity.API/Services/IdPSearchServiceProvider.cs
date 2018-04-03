@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
+using Fabric.Identity.API.Extensions;
 using Fabric.Platform.Http;
 using IdentityModel.Client;
 using Newtonsoft.Json;
@@ -54,10 +55,19 @@ namespace Fabric.Identity.API.Services
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var fabricIdentityClient = "fabric-identity-client";
+            var authority = settings.Authority.FormatUrl();
 
-            var tokenUriAddress = $"{settings.Authority}connect/token";
+            var tokenUriAddress = $"{authority}connect/token";
+            this._logger.Information($"Getting access token for ClientId: {fabricIdentityClient} at {tokenUriAddress}");
+
             var tokenClient = new TokenClient(tokenUriAddress, fabricIdentityClient, settings.ClientSecret);
+            
             var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
+
+            if (accessTokenResponse.IsError)
+            {
+                this._logger.Error($"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
+            }
 
             using (var httpClient = new HttpClientFactory(
                 tokenUriAddress,

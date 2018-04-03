@@ -41,19 +41,35 @@ namespace Fabric.Identity.API.Configuration
             if (appConfiguration.ElasticSearchSettings != null &&
                 IsEncrypted(appConfiguration.ElasticSearchSettings.Password))
             {
-                appConfiguration.ElasticSearchSettings.Password =
-                    DecryptString(appConfiguration.ElasticSearchSettings.Password, certificateService, appConfiguration);
+                appConfiguration.ElasticSearchSettings.Password = DecryptString(
+                    appConfiguration.ElasticSearchSettings.Password,
+                    certificateService,
+                    appConfiguration);
             }
 
             if (appConfiguration.CouchDbSettings != null && IsEncrypted(appConfiguration.CouchDbSettings.Password))
             {
-                appConfiguration.CouchDbSettings.Password = DecryptString(appConfiguration.CouchDbSettings.Password, certificateService, appConfiguration);
+                appConfiguration.CouchDbSettings.Password = DecryptString(
+                    appConfiguration.CouchDbSettings.Password,
+                    certificateService,
+                    appConfiguration);
             }
 
             if (appConfiguration.LdapSettings != null && IsEncrypted(appConfiguration.LdapSettings.Password))
             {
-                appConfiguration.LdapSettings.Password = DecryptString(appConfiguration.LdapSettings.Password,
-                    certificateService, appConfiguration);
+                appConfiguration.LdapSettings.Password = DecryptString(
+                    appConfiguration.LdapSettings.Password,
+                    certificateService,
+                    appConfiguration);
+            }
+
+            if (appConfiguration.IdentityServerConfidentialClientSettings != null && IsEncrypted(
+                    appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret))
+            {
+                appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret = DecryptString(
+                    appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret,
+                    certificateService,
+                    appConfiguration);
             }
         }
 
