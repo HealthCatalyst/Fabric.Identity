@@ -2,7 +2,7 @@
 # Register.ps1
 #
 function Get-FullyQualifiedHostName(){
-    return "http://localhost"
+    return "https://$env:computername.$($env:userdnsdomain.tolower())"
 }
 function Get-IdentityServiceUrl(){
     $hostName = Get-FullyQualifiedHostName
@@ -196,11 +196,18 @@ function Add-Group($authUrl, $name, $displayName, $description, $source, $access
     $url = "$authUrl/groups"
     $body = @{
         id = "$name"
-        displayName = "$displayName"
-        description = "$description"
         groupName = "$name"
         groupSource = "$source"
     }
+
+    if(![string]::IsNullOrWhiteSpace($displayName)){
+        $body += @{displayName = $displayName}
+    }
+        
+    if(![string]::IsNullOrWhiteSpace($description)){
+        $body += @{description = $description}
+    }
+
     return Invoke-Post $url $body $accessToken
 }
 
