@@ -684,4 +684,7 @@ Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
 Invoke-RegisterSharedRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
 
+# Upgrade users with EDWAdmin role to dosadmin role
+Invoke-Sqlcmd -InputFile "upgrade-admin-role.sql"
+
 Read-Host -Prompt "Registration complete, press Enter to exit"
