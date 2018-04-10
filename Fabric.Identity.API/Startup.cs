@@ -206,13 +206,14 @@ namespace Fabric.Identity.API
                 .UseFabricMonitoring(healthCheckService.CheckHealth, _loggingLevelSwitch);
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
+            app.UseSwagger(c => { c.RouteTemplate = "swagger/ui/index/{documentName}/swagger.json"; }); 
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
                 // this sets up the JSON endpoint (1 call to SwaggerEndpoint per version)
                 c.SwaggerEndpoint("v1/swagger.json", "Health Catalyst Fabric Identity API V1");
+                c.RoutePrefix = "swagger/ui/index";
             });
         }
 
