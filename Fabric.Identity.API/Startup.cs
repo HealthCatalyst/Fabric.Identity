@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Fabric.Identity.API.Configuration;
@@ -14,6 +15,7 @@ using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
+using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
@@ -73,9 +75,20 @@ namespace Fabric.Identity.API
 
             services.TryAddSingleton(_appConfig.HostingOptions);
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
+
+            var settings = _appConfig.IdentityServerConfidentialClientSettings;
+            var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
+            services.AddTransient<IHttpRequestMessageFactory>(serviceProvider => new HttpRequestMessageFactory(
+                tokenUriAddress,
+                "fabric-identity-client",
+                settings.ClientSecret,
+                null,
+                null));
+
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
             var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
+                .AddSingleton<HttpClient>()
                 .AddSingleton<IEventSink>(serilogEventSink)
                 .AddSingleton(_appConfig)
                 .AddSingleton(_logger)
