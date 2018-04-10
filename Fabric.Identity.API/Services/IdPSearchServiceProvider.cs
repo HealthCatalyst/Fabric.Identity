@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
@@ -59,7 +60,7 @@ namespace Fabric.Identity.API.Services
         private async Task<ExternalUser> SearchForUser(string subjectId)
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
-            var fabricIdentityClient = "fabric-identity-client";
+            const string fabricIdentityClient = "fabric-identity-client";
             if (string.IsNullOrEmpty(settings.Authority))
             {
                 throw new FabricConfigurationException(
@@ -75,7 +76,7 @@ namespace Fabric.Identity.API.Services
             var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
             if (accessTokenResponse.IsError)
             {
-                this._logger.Error(
+                _logger.Error(
                     $"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
             }
 
@@ -88,7 +89,7 @@ namespace Fabric.Identity.API.Services
                 new Uri(searchServiceUrl),
                 accessTokenResponse.AccessToken);
 
-            _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            httpRequestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             try
             {
