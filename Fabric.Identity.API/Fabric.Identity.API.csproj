@@ -32,8 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="6.0.2" />
-    <PackageReference Include="Fabric.Platform.Http" Version="1.0.0-beta4" />
-    <PackageReference Include="Fabric.Platform.Logging" Version="1.0.0-beta8" />
+    <PackageReference Include="Fabric.Platform.Http" Version="1.0.2018040605" />
+    <PackageReference Include="Fabric.Platform.Logging" Version="1.0.2018040605" />
     <PackageReference Include="FluentValidation" Version="7.1.1" />
     <PackageReference Include="IdentityServer4" Version="1.5.2" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="1.2.1" />
