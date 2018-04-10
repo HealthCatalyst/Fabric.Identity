@@ -21,12 +21,16 @@ namespace Fabric.Identity.API.Services
         private readonly IAppConfiguration _appConfig;
         private readonly ILogger _logger;
         private readonly PolicyProvider _policyProvider;
+        private readonly HttpClient _httpClient;
+        private readonly IHttpRequestMessageFactory _httpRequestMessageFactory;
 
-        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider)
+        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider, HttpClient httpClient, IHttpRequestMessageFactory httpRequestMessageFactory)
         {
             _appConfig = appConfig;
             _logger = logger;
             _policyProvider = policyProvider;
+            _httpClient = httpClient;
+            _httpRequestMessageFactory = httpRequestMessageFactory;
         }
 
         public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
@@ -58,70 +62,67 @@ namespace Fabric.Identity.API.Services
             var fabricIdentityClient = "fabric-identity-client";
             if (string.IsNullOrEmpty(settings.Authority))
             {
-                throw new FabricConfigurationException("IdentityServerConfidentialClientSettings.Authority is not set, Please set the Authority to the appropriate url.");
+                throw new FabricConfigurationException(
+                    "IdentityServerConfidentialClientSettings.Authority is not set, Please set the Authority to the appropriate url.");
             }
 
             var authority = settings.Authority.EnsureTrailingSlash();
 
             var tokenUriAddress = $"{authority}connect/token";
-            this._logger.Information($"Getting access token for ClientId: {fabricIdentityClient} at {tokenUriAddress}");
+            _logger.Information($"Getting access token for ClientId: {fabricIdentityClient} at {tokenUriAddress}");
 
             var tokenClient = new TokenClient(tokenUriAddress, fabricIdentityClient, settings.ClientSecret);
-            
             var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
-
             if (accessTokenResponse.IsError)
             {
-                this._logger.Error($"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
+                this._logger.Error(
+                    $"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
             }
 
-            using (var httpClient = new HttpClientFactory(
-                tokenUriAddress,
-                fabricIdentityClient,
-                settings.ClientSecret,
-                null,
-                null).CreateWithAccessToken(new Uri(_appConfig.IdentityProviderSearchSettings.BaseUrl),
-                accessTokenResponse.AccessToken))
+            var baseUri = _appConfig.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
+
+            var searchServiceUrl =
+                $"{baseUri}{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint.EnsureTrailingSlash()}{subjectId}";
+
+            var httpRequestMessage = _httpRequestMessageFactory.CreateWithAccessToken(HttpMethod.Get,
+                new Uri(searchServiceUrl),
+                accessTokenResponse.AccessToken);
+
+            _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+            try
             {
-                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+                _logger.Information($"searching for user with url: {searchServiceUrl}");
 
-                var searchServiceUrl = $"{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint}{subjectId}";
+                var response = await _httpClient.SendAsync(httpRequestMessage);
 
-                try
+                var responseContent =
+                    response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    _logger.Information($"searching for user with url: {_appConfig.IdentityProviderSearchSettings.BaseUrl}{searchServiceUrl}");
-
-                    var response = await httpClient.GetAsync(searchServiceUrl);
-
-                    var responseContent =
-                        response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync();
-
-                    if (response.StatusCode != HttpStatusCode.OK)
-                    {
-                        _logger.Error(
-                            $"no user principal was found for subject id: {subjectId}. response status code: {response.StatusCode}.");
-                        _logger.Error($"response from search service: {responseContent}");
-                        return null;
-                    }
-
-                    var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
-
-                    return new ExternalUser
-                    {
-                        FirstName = result.FirstName,
-                        LastName = result.LastName,
-                        MiddleName = result.MiddleName,
-                        SubjectId = result.SubjectId
-                    };
-                }
-                catch (HttpRequestException e)
-                {
-                    var baseException = e.GetBaseException();
-
-                    _logger.Error($"there was an error connecting to the search service: {baseException.Message}");
+                    _logger.Error(
+                        $"no user principal was found for subject id: {subjectId}. response status code: {response.StatusCode}.");
+                    _logger.Error($"response from search service: {responseContent}");
                     return null;
                 }
-                
+
+                var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
+
+                return new ExternalUser
+                {
+                    FirstName = result.FirstName,
+                    LastName = result.LastName,
+                    MiddleName = result.MiddleName,
+                    SubjectId = result.SubjectId
+                };
+            }
+            catch (HttpRequestException e)
+            {
+                var baseException = e.GetBaseException();
+
+                _logger.Error($"there was an error connecting to the search service: {baseException.Message}");
+                return null;
             }
         }
 
