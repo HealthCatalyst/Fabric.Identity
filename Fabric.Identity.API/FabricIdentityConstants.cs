@@ -9,6 +9,7 @@
         public static readonly string IdentityReadScope = "fabric/identity.read";
         public static readonly string IdentitySearchUsersScope = "fabric/identity.searchusers";
         public static readonly string AuditEventCategory = "Audit";
+        public static readonly string FabricIdentityClient = "fabric-identity-client";
 
         public static class StorageProviders
         {

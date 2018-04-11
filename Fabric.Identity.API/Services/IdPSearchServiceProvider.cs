@@ -60,7 +60,6 @@ namespace Fabric.Identity.API.Services
         private async Task<ExternalUser> SearchForUser(string subjectId)
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
-            const string fabricIdentityClient = "fabric-identity-client";
             if (string.IsNullOrEmpty(settings.Authority))
             {
                 throw new FabricConfigurationException(
@@ -70,9 +69,9 @@ namespace Fabric.Identity.API.Services
             var authority = settings.Authority.EnsureTrailingSlash();
 
             var tokenUriAddress = $"{authority}connect/token";
-            _logger.Information($"Getting access token for ClientId: {fabricIdentityClient} at {tokenUriAddress}");
+            _logger.Information($"Getting access token for ClientId: {FabricIdentityConstants.FabricIdentityClient} at {tokenUriAddress}");
 
-            var tokenClient = new TokenClient(tokenUriAddress, fabricIdentityClient, settings.ClientSecret);
+            var tokenClient = new TokenClient(tokenUriAddress, FabricIdentityConstants.FabricIdentityClient, settings.ClientSecret);
             var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
             if (accessTokenResponse.IsError)
             {
