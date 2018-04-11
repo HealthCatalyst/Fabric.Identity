@@ -80,7 +80,7 @@ namespace Fabric.Identity.API
             var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
             services.AddTransient<IHttpRequestMessageFactory>(serviceProvider => new HttpRequestMessageFactory(
                 tokenUriAddress,
-                "fabric-identity-client",
+                FabricIdentityConstants.FabricIdentityClient,
                 settings.ClientSecret,
                 null,
                 null));
