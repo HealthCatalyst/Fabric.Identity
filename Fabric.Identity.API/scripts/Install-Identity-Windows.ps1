@@ -92,6 +92,16 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 	Write-Success "Database security applied successfully"
 }
 
+function Get-ErrorFromResponse($response)
+{
+    $result = $response.GetResponseStream()
+    $reader = New-Object System.IO.StreamReader($result)
+    $reader.BaseStream.Position = 0
+    $reader.DiscardBufferedData()
+    $responseBody = $reader.ReadToEnd();
+    return $responseBody
+}
+
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
 {	
     $registrationBody = @{
@@ -111,7 +121,13 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
 		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
 		Write-Success "Fabric.Identity successfully registered with DiscoveryService."
 	}catch{
-		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Error $($_.Exception.Message) Halting installation." -ErrorAction Stop
+        $exception = $_.Exception
+		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Ensure that DiscoveryService is running at $discoveryUrl, that Windows Authentication is enabled for DiscoveryService and Anonymous Authentication is disabled for DiscoveryService. Error $($_.Exception.Message) Halting installation."
+        if($exception.Response -ne $null){
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error."
+        }
+        throw
 	}
 }
 
@@ -122,7 +138,8 @@ Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
 if(!(Test-IsRunAsAdministrator))
 {
-    Write-Error "You must run this script as an administrator. Halting configuration." -ErrorAction Stop
+    Write-Error "You must run this script as an administrator. Halting configuration."
+    throw
 }
 
 function Unlock-ConfigurationSections(){   
@@ -154,7 +171,8 @@ function Invoke-Sql($connectionString, $sql, $parameters=@{}){
         $command.ExecuteNonQuery()
         $connection.Close()        
     }catch [System.Data.SqlClient.SqlException] {
-        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString). Error $($_.Exception.Message)"  -ErrorAction Stop
+        Write-Error "An error ocurred while executing the command. Please ensure the connection string is correct and the identity database has been setup. Connection String: $($connectionString). Error $($_.Exception.Message)"
+        throw
     }    
 }
 
@@ -191,12 +209,14 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
             Set-Acl $keyPath $acl			
             Write-Success "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
         }else{
-            Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided" -ErrorAction Stop
+            Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided"
+            throw
         }
     }catch{
         $scriptDirectory =  Get-CurrentScriptDirectory
         Set-Location $scriptDirectory
-        Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Error $($_.Exception.Message)" -ErrorAction Stop
+        Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Error $($_.Exception.Message)"
+        throw
     }	
 }
 
@@ -241,7 +261,8 @@ try{
     $siteName = $selectedSite.name
 
 }catch{
-    Write-Error "Could not select a website." -ErrorAction Stop
+    Write-Error "Could not select a website."
+    throw
 }
 
 try{
@@ -262,11 +283,13 @@ try{
     $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
     Write-Host ""
     if([string]::IsNullOrEmpty($selectionNumber)){
-		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens." -ErrorAction Stop
+		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens."
+        throw
     }
     $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
     if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
-        Write-Error "Please select a certificate with index between 1 and $($allCerts.Count)."  -ErrorAction Stop
+        Write-Error "Please select a certificate with index between 1 and $($allCerts.Count)."
+        throw
     }
     $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt     
     $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
@@ -274,7 +297,8 @@ try{
     }catch{
         $scriptDirectory =  Get-CurrentScriptDirectory
         Set-Location $scriptDirectory
-        Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)" -ErrorAction Stop        
+        Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)"
+        throw
 }
 
 try{
@@ -311,12 +335,14 @@ if(![string]::IsNullOrEmpty($userEnteredIisUser)){
     $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
     $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password)
     if(!$isValid){
-        Write-Error "Incorrect credentials for $iisUser" -ErrorAction Stop
+        Write-Error "Incorrect credentials for $iisUser"
+        throw
     }
     Write-Success "Credentials are valid for user $iisUser"
     Write-Host ""
 }else{
-    Write-Error "No user account was entered, please enter a valid user account." -ErrorAction Stop
+    Write-Error "No user account was entered, please enter a valid user account."
+    throw
 }
 
 Add-PermissionToPrivateKey $iisUser $signingCert read
@@ -330,7 +356,8 @@ if((Test-Path $zipPackage))
         Write-Console "zipPackage: $zipPackage"
     }
 }else{
-    Write-Error "Could not find file or directory $zipPackage, please verify that the zipPackage configuration setting in install.config is the path to a valid zip file that exists." -ErrorAction Stop	
+    Write-Error "Could not find file or directory $zipPackage, please verify that the zipPackage configuration setting in install.config is the path to a valid zip file that exists."
+    throw
 }
 
 
@@ -343,7 +370,8 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
         net stop was /y
         net start w3svc			
     }catch{
-        Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461" -ErrorAction Stop
+        Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461"
+        throw
     }
     try{
         Remove-Item $env:Temp\bundle.exe
