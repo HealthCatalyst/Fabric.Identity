@@ -90,6 +90,7 @@
     <Build Include="Storage\HCFabricIdentityLogFile1.sql" />
     <Build Include="Storage\HCFabricIdentityIndex1.sql" />
     <Build Include="Storage\HCFabricIdentityPrimary.sql" />
+    <Build Include="Tables\EventLogs.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PublishProfiles\Fabric.Identity.SqlServer.publish.xml">
