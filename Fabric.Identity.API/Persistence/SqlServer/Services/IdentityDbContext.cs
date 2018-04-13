@@ -6,8 +6,7 @@ using Fabric.Identity.API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
-{  
-
+{
     public class IdentityDbContext : DbContext, IIdentityDbContext
     {
         private readonly IUserResolverService _userResolverService;
