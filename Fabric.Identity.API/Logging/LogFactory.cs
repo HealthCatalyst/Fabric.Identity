@@ -4,6 +4,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
+using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 
 namespace Fabric.Identity.API.Logging
 {
@@ -22,17 +23,17 @@ namespace Fabric.Identity.API.Logging
             return loggerConfiguration.CreateLogger();
         }
 
-        public static ILogger CreateEventLogger(LoggingLevelSwitch levelSwitch, IAppConfiguration appConfiguration)
+        public static ILogger CreateEventLogger(LoggingLevelSwitch levelSwitch, HostingOptions hostingOptions, IConnectionStrings connectionStrings)
         {
 
-            if (appConfiguration.HostingOptions.StorageProvider.Equals(FabricIdentityConstants.StorageProviders.SqlServer, StringComparison.OrdinalIgnoreCase))
+            if (hostingOptions.StorageProvider.Equals(FabricIdentityConstants.StorageProviders.SqlServer, StringComparison.OrdinalIgnoreCase))
             {
                 var columnOptions = new ColumnOptions();
                 columnOptions.Store.Add(StandardColumn.LogEvent);
 
                 return new LoggerConfiguration().Enrich.FromLogContext()
                     .WriteTo.MSSqlServer(
-                        appConfiguration.ConnectionStrings.IdentityDatabase,
+                        connectionStrings.IdentityDatabase,
                         "EventLogs",
                         columnOptions: columnOptions)
                     .CreateLogger();
