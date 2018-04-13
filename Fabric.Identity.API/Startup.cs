@@ -70,11 +70,16 @@ namespace Fabric.Identity.API
         {
             _appConfig.ConfigureIdentitySearchProviderServiceUrl();
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
-            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig);
-            var serilogEventSink = new SerilogEventSink(eventLogger);
 
             services.TryAddSingleton(_appConfig.HostingOptions);
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
+
+
+            var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
+            var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
+
+            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings);
+            var serilogEventSink = new SerilogEventSink(eventLogger);
 
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
@@ -85,8 +90,6 @@ namespace Fabric.Identity.API
                 null,
                 null));
 
-            var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
-            var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                 .AddSingleton<HttpClient>()
                 .AddSingleton<IEventSink>(serilogEventSink)
