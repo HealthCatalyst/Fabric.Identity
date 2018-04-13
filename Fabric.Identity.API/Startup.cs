@@ -70,7 +70,7 @@ namespace Fabric.Identity.API
         {
             _appConfig.ConfigureIdentitySearchProviderServiceUrl();
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
-            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
+            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, _appConfig);
             var serilogEventSink = new SerilogEventSink(eventLogger);
 
             services.TryAddSingleton(_appConfig.HostingOptions);
