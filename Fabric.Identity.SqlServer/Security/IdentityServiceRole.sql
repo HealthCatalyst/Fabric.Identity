@@ -61,3 +61,6 @@ GO
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Users] to IdentityServiceRole;
 GO
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[EventLogs] to IdentityServiceRole;
+GO
