@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
+using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Services;
+using IdentityServer4.Services;
 using User = Fabric.Identity.API.Models.User;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
@@ -15,10 +15,19 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
     public class SqlServerUserStore : IUserStore
     {
         private readonly IIdentityDbContext _identityDbContext;
+        private readonly IUserResolverService _userResolverService;
+        private readonly IEventService _eventService;
+        private readonly ISerializationSettings _serializationSettings;
 
-        public SqlServerUserStore(IIdentityDbContext identityDbContext)
+        public SqlServerUserStore(IIdentityDbContext identityDbContext,
+            IEventService eventService,
+            IUserResolverService userResolverService,
+            ISerializationSettings serializationSettings)
         {
             _identityDbContext = identityDbContext;
+            _eventService = eventService;
+            _userResolverService = userResolverService;
+            _serializationSettings = serializationSettings;
         }
 
         public async Task<User> FindBySubjectIdAsync(string subjectId)
@@ -60,7 +69,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntity = user.ToEntity();
             _identityDbContext.Users.Add(userEntity);
             await _identityDbContext.SaveChangesAsync();
-
+            await _eventService.RaiseAsync(
+                new EntityCreatedAuditEvent<User>(
+                    _userResolverService.Username,
+                    _userResolverService.ClientId,
+                    _userResolverService.Subject,
+                    user.SubjectId,
+                    user,
+                    _serializationSettings));
             return user;
         }
 
@@ -82,6 +98,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             _identityDbContext.Users.Update(existingUser);
             await _identityDbContext.SaveChangesAsync();
+            await _eventService.RaiseAsync(
+                new EntityUpdatedAuditEvent<User>(
+                    _userResolverService.Username,
+                    _userResolverService.ClientId,
+                    _userResolverService.Subject,
+                    user.SubjectId,
+                    user,
+                    _serializationSettings));
         }
     }
 }
