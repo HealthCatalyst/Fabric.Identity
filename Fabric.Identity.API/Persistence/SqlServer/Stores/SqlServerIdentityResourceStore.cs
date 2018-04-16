@@ -1,19 +1,31 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Services;
+using IdentityServer4.Services;
 using IdentityResource = IdentityServer4.Models.IdentityResource;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
     public class SqlServerIdentityResourceStore : SqlServerResourceStore, IIdentityResourceStore
     {
-        public SqlServerIdentityResourceStore(IIdentityDbContext identityDbContext) :
+        private readonly IUserResolverService _userResolverService;
+        private readonly IEventService _eventService;
+        private readonly ISerializationSettings _serializationSettings;
+
+        public SqlServerIdentityResourceStore(IIdentityDbContext identityDbContext,
+            IEventService eventService,
+            IUserResolverService userResolverService,
+            ISerializationSettings serializationSettings) :
             base(identityDbContext)
         {
-            
+            _eventService = eventService;
+            _userResolverService = userResolverService;
+            _serializationSettings = serializationSettings;
         }
 
         public void AddResource(IdentityResource resource)
@@ -42,6 +54,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             IdentityDbContext.IdentityResources.Add(resourceEntity);
             await IdentityDbContext.SaveChangesAsync();
+            await _eventService.RaiseAsync(
+                new EntityCreatedAuditEvent<IdentityResource>(
+                    _userResolverService.Username,
+                    _userResolverService.ClientId,
+                    _userResolverService.Subject,
+                    resource.Name,
+                    resource,
+                    _serializationSettings));
         }
 
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
@@ -55,6 +75,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             
             IdentityDbContext.IdentityResources.Update(existingResource);
             await IdentityDbContext.SaveChangesAsync();
+            await _eventService.RaiseAsync(
+                new EntityUpdatedAuditEvent<IdentityResource>(
+                    _userResolverService.Username,
+                    _userResolverService.ClientId,
+                    _userResolverService.Subject,
+                    resource.Name,
+                    resource,
+                    _serializationSettings));
         }
 
         public async Task<IdentityResource> GetResourceAsync(string id)
@@ -75,6 +103,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             identityResourceToDelete.IsDeleted = true;
 
             await IdentityDbContext.SaveChangesAsync();
+            await _eventService.RaiseAsync(
+                new EntityDeletedAuditEvent<IdentityResource>(
+                    _userResolverService.Username,
+                    _userResolverService.ClientId,
+                    _userResolverService.Subject,
+                    identityResourceToDelete.Name,
+                    identityResourceToDelete.ToModel(),
+                    _serializationSettings));
         }
     }
 }
