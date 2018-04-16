@@ -435,7 +435,7 @@ function Invoke-WriteSecretToConfig($service, $secret, $configPath){
     
     if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
         Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $secret | Out-Null
-		Write-Success "    Wrote secret to $service.serviceName configuration file located at $configPath (key=$service.secretConfig, value=$secret)."
+		Write-Success "    Wrote secret to $($service.serviceName) configuration file located at $configPath (key=$($service.secretConfig), value=$secret)."
     }
 }
 
