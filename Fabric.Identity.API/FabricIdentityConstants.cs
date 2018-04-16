@@ -62,10 +62,10 @@
 
         public static class CustomEventIds
         {
-            public static readonly int EntityCreatedAudit = 2000;
-            public static readonly int EntityUpdatedAudit = 2001;
-            public static readonly int EntityDeletedAudit = 2002;
-            public static readonly int EntityReadAudit = 2003;
+            public static readonly int EntityCreatedAudit = 15000;
+            public static readonly int EntityUpdatedAudit = 15001;
+            public static readonly int EntityDeletedAudit = 15002;
+            public static readonly int EntityReadAudit = 15003;
         }
 
         public static class CustomEventNames
