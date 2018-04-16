@@ -17,6 +17,7 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Services;
@@ -127,7 +128,7 @@ namespace IdentityServer4.Quickstart.UI
                     //get the client id from the auth context
                     var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
                     await _userLoginManager.UserLogin("test", user.SubjectId, user.Claims.ToList(), context?.ClientId);
-                    await _events.RaiseAsync(new UserLoginSuccessEvent(user.Username, user.SubjectId, user.Username));
+                    await _events.RaiseAsync(new FabricUserLoginSuccessEvent("test", user.Username, user.SubjectId, user.Username, context?.ClientId));
                     await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, props);
 
                     // make sure the returnUrl is still valid, and if yes - redirect back to authorize endpoint or a local page
@@ -274,7 +275,7 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             //issue authentication cookie for user
-            await _events.RaiseAsync(new UserLoginSuccessEvent(provider, userId, user.SubjectId, user.Username));
+            await _events.RaiseAsync(new FabricUserLoginSuccessEvent(provider, userId, user.SubjectId, user.Username, context?.ClientId));
             await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, provider, props, additionalClaims.ToArray());
 
             //delete temporary cookie used during external authentication
