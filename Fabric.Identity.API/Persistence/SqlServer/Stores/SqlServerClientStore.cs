@@ -15,14 +15,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
     public class SqlServerClientStore : IClientManagementStore
     {
         private readonly IIdentityDbContext _identityDbContext;
-
         private readonly IUserResolverService _userResolverService;
-
         private readonly IEventService _eventService;
-
         private readonly ISerializationSettings _serializationSettings;
 
-        public SqlServerClientStore(IIdentityDbContext identityDbContext, IEventService eventService, IUserResolverService userResolverService, ISerializationSettings serializationSettings)
+        public SqlServerClientStore(IIdentityDbContext identityDbContext,
+            IEventService eventService,
+            IUserResolverService userResolverService,
+            ISerializationSettings serializationSettings)
         {
             _identityDbContext = identityDbContext;
             _eventService = eventService;
