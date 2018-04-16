@@ -412,7 +412,13 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
     }
 
     $serviceUri = [System.Uri]$serviceUrl
-    $serviceAbsolutePath = $serviceUri.AbsolutePath.TrimEnd("/v$($service.serviceVersion)")
+
+	$serviceAbsolutePath = $serviceUri.AbsolutePath
+	$versionSuffix = "/v$($service.serviceVersion)"
+
+	if($serviceAbsolutePath.EndsWith($versionSuffix)){
+		$serviceAbsolutePath = $serviceAbsolutePath.Substring(0, $serviceAbsolutePath.Length-$versionSuffix.Length)
+	}
 
     $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceAbsolutePath}
 
