@@ -12,27 +12,18 @@ using Fabric.Identity.API.Events;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerClientStore : IClientManagementStore
+    public class SqlServerClientStore : SqlServerBaseStore, IClientManagementStore
     {
-        private readonly IIdentityDbContext _identityDbContext;
-        private readonly IUserResolverService _userResolverService;
-        private readonly IEventService _eventService;
-        private readonly ISerializationSettings _serializationSettings;
-
         public SqlServerClientStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings)
+            ISerializationSettings serializationSettings) : base (identityDbContext, eventService, userResolverService, serializationSettings)
         {
-            _identityDbContext = identityDbContext;
-            _eventService = eventService;
-            _userResolverService = userResolverService;
-            _serializationSettings = serializationSettings;
         }
 
         public Task<Client> FindClientByIdAsync(string clientId)
         {
-            var client = _identityDbContext.Clients
+            var client = IdentityDbContext.Clients
                 .Include(x => x.ClientGrantTypes)
                 .Include(x => x.ClientRedirectUris)
                 .Include(x => x.ClientPostLogoutRedirectUris)
@@ -50,7 +41,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public IEnumerable<Client> GetAllClients()
         {
-            var clients = _identityDbContext.Clients
+            var clients = IdentityDbContext.Clients
                 .Include(x => x.ClientGrantTypes)
                 .Include(x => x.ClientRedirectUris)
                 .Include(x => x.ClientPostLogoutRedirectUris)
@@ -67,7 +58,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public int GetClientCount()
         {
-            return _identityDbContext.Clients.Count();
+            return IdentityDbContext.Clients.Count();
         }
 
         public void AddClient(Client client)
@@ -89,54 +80,54 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var domainModelClient = client.ToEntity();
 
-            _identityDbContext.Clients.Add(domainModelClient);
-            await _identityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            IdentityDbContext.Clients.Add(domainModelClient);
+            await IdentityDbContext.SaveChangesAsync();
+            await EventService.RaiseAsync(
                 new EntityCreatedAuditEvent<Client>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     client.ClientId,
                     client,
-                    _serializationSettings));
+                    SerializationSettings));
         }
 
         public async Task UpdateClientAsync(string clientId, Client client)
         {
-            var existingClient = await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
+            var existingClient = await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
                 c.ClientId.Equals(client.ClientId, StringComparison.OrdinalIgnoreCase));
 
             client.ToEntity(existingClient);
 
-            _identityDbContext.Clients.Update(existingClient);
-            await _identityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            IdentityDbContext.Clients.Update(existingClient);
+            await IdentityDbContext.SaveChangesAsync();
+            await EventService.RaiseAsync(
                 new EntityUpdatedAuditEvent<Client>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     client.ClientId,
                     client,
-                    _serializationSettings));
+                    SerializationSettings));
         }
 
         public async Task DeleteClientAsync(string id)
         {
             var clientToDelete =
-               await _identityDbContext.Clients.FirstOrDefaultAsync(c =>
+               await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
                     c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
 
             clientToDelete.IsDeleted = true;
 
-            await _identityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            await IdentityDbContext.SaveChangesAsync();
+            await EventService.RaiseAsync(
                 new EntityDeletedAuditEvent<Client>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     clientToDelete.ClientId,
                     clientToDelete.ToModel(),
-                    _serializationSettings));
+                    SerializationSettings));
         }
     }
 }

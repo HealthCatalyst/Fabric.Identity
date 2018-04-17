@@ -13,19 +13,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
     public class SqlServerApiResourceStore : SqlServerResourceStore, IApiResourceStore
     {
-        private readonly IUserResolverService _userResolverService;
-        private readonly IEventService _eventService;
-        private readonly ISerializationSettings _serializationSettings;
-
         public SqlServerApiResourceStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
             ISerializationSettings serializationSettings)
-            : base(identityDbContext)
+            : base(identityDbContext, eventService, userResolverService, serializationSettings)
         {
-            _eventService = eventService;
-            _userResolverService = userResolverService;
-            _serializationSettings = serializationSettings;
         }
 
         public void AddResource(ApiResource resource)
@@ -51,17 +44,17 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task AddResourceAsync(ApiResource resource)
         {
             var resourceEntity = resource.ToEntity();
-            
+
             IdentityDbContext.ApiResources.Add(resourceEntity);
             await IdentityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            await EventService.RaiseAsync(
                 new EntityCreatedAuditEvent<ApiResource>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     resource.Name,
                     resource,
-                    _serializationSettings));
+                    SerializationSettings));
         }
 
         public async Task UpdateResourceAsync(string id, ApiResource resource)
@@ -75,14 +68,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
             IdentityDbContext.ApiResources.Update(savedResource);
             await IdentityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            await EventService.RaiseAsync(
                 new EntityUpdatedAuditEvent<ApiResource>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     resource.Name,
                     resource,
-                    _serializationSettings));
+                    SerializationSettings));
         }
 
         public async Task<ApiResource> GetResourceAsync(string id)
@@ -108,14 +101,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             apiResourceToDelete.IsDeleted = true;
 
             await IdentityDbContext.SaveChangesAsync();
-            await _eventService.RaiseAsync(
+            await EventService.RaiseAsync(
                 new EntityDeletedAuditEvent<ApiResource>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     apiResourceToDelete.Name,
                     apiResourceToDelete.ToModel(),
-                    _serializationSettings));
+                    SerializationSettings));
         }
     }
 }
