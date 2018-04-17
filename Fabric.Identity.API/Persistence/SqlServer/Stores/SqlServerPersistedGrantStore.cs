@@ -14,30 +14,22 @@ using Serilog;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerPersistedGrantStore : IPersistedGrantStore
+    public class SqlServerPersistedGrantStore : SqlServerBaseStore, IPersistedGrantStore
     {
-        private readonly IIdentityDbContext _identityDbContext;
         private readonly ILogger _logger;
-        private readonly IUserResolverService _userResolverService;
-        private readonly IEventService _eventService;
-        private readonly ISerializationSettings _serializationSettings;
 
         public SqlServerPersistedGrantStore(IIdentityDbContext identityDbContext,
             ILogger logger,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings)
+            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService, serializationSettings)
         {
-            _identityDbContext = identityDbContext;
             _logger = logger;
-            _eventService = eventService;
-            _userResolverService = userResolverService;
-            _serializationSettings = serializationSettings;
         }
 
         public Task<IEnumerable<IdentityServer4.Models.PersistedGrant>> GetAllAsync(string subjectId)
         {
-            var persistedGrants = _identityDbContext.PersistedGrants
+            var persistedGrants = IdentityDbContext.PersistedGrants
                 .Where(pg => pg.SubjectId == subjectId
                              && !pg.IsDeleted);
             return Task.FromResult(persistedGrants.Select(pg => pg.ToModel()).AsEnumerable());
@@ -45,7 +37,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task<IdentityServer4.Models.PersistedGrant> GetAsync(string key)
         {
-            var persistedGrantEntity = await _identityDbContext.PersistedGrants
+            var persistedGrantEntity = await IdentityDbContext.PersistedGrants
                 .Where(pg => !pg.IsDeleted)
                 .FirstOrDefaultAsync(pg => pg.Key == key);
             return persistedGrantEntity?.ToModel();
@@ -53,7 +45,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task RemoveAllAsync(string subjectId, string clientId)
         {
-            var persistedGrantEntities = _identityDbContext.PersistedGrants
+            var persistedGrantEntities = IdentityDbContext.PersistedGrants
                 .Where(pg => pg.SubjectId == subjectId
                              && pg.ClientId == clientId);
 
@@ -62,7 +54,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task RemoveAllAsync(string subjectId, string clientId, string type)
         {
-            var persistedGrantEntities = _identityDbContext.PersistedGrants
+            var persistedGrantEntities = IdentityDbContext.PersistedGrants
                 .Where(pg => pg.SubjectId == subjectId
                              && pg.ClientId == clientId
                              && pg.Type == type);
@@ -72,7 +64,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task RemoveAsync(string key)
         {
-            var persistedGrantEntities = _identityDbContext.PersistedGrants
+            var persistedGrantEntities = IdentityDbContext.PersistedGrants
                 .Where(pg => pg.Key == key);
 
             await DeletePersistedGrantsAsync(persistedGrantEntities);
@@ -80,20 +72,20 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         private async Task DeletePersistedGrantsAsync(IQueryable<PersistedGrant> persistedGrants)
         {
-            await persistedGrants.ForEachAsync(pg => _identityDbContext.PersistedGrants.Remove(pg));
+            await persistedGrants.ForEachAsync(pg => IdentityDbContext.PersistedGrants.Remove(pg));
             try
             {
-                await _identityDbContext.SaveChangesAsync();
+                await IdentityDbContext.SaveChangesAsync();
                 foreach (var persistedGrant in persistedGrants)
                 {
-                    await _eventService.RaiseAsync(
+                    await EventService.RaiseAsync(
                         new EntityDeletedAuditEvent<PersistedGrant>(
-                            _userResolverService.Username,
-                            _userResolverService.ClientId,
-                            _userResolverService.Subject,
+                            UserResolverService.Username,
+                            UserResolverService.ClientId,
+                            UserResolverService.Subject,
                             persistedGrant.Key,
                             persistedGrant,
-                            _serializationSettings));
+                            SerializationSettings));
                 }
             }
             catch (DbUpdateConcurrencyException ex)
@@ -104,35 +96,35 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 
         public async Task StoreAsync(IdentityServer4.Models.PersistedGrant grant)
         {
-            var existingGrant = _identityDbContext.PersistedGrants.SingleOrDefault(pg => pg.Key == grant.Key);
+            var existingGrant = IdentityDbContext.PersistedGrants.SingleOrDefault(pg => pg.Key == grant.Key);
             Event evt;
             if (existingGrant == null)
             {
                 var persistedGrantEntity = grant.ToEntity();
-                _identityDbContext.PersistedGrants.Add(persistedGrantEntity);
+                IdentityDbContext.PersistedGrants.Add(persistedGrantEntity);
                 evt = new EntityCreatedAuditEvent<PersistedGrant>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     persistedGrantEntity.Key,
                     persistedGrantEntity,
-                    _serializationSettings);
+                    SerializationSettings);
             }
             else
             {
                 grant.ToEntity(existingGrant);
                 evt = new EntityUpdatedAuditEvent<PersistedGrant>(
-                    _userResolverService.Username,
-                    _userResolverService.ClientId,
-                    _userResolverService.Subject,
+                    UserResolverService.Username,
+                    UserResolverService.ClientId,
+                    UserResolverService.Subject,
                     existingGrant.Key,
                     existingGrant,
-                    _serializationSettings);
+                    SerializationSettings);
             }
             try
             {
-                await _identityDbContext.SaveChangesAsync();
-                await _eventService.RaiseAsync(evt);
+                await IdentityDbContext.SaveChangesAsync();
+                await EventService.RaiseAsync(evt);
             }
             catch (DbUpdateConcurrencyException ex)
             {

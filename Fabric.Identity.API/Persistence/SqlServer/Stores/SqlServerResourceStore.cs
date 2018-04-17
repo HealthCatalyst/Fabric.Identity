@@ -7,18 +7,20 @@ using IdentityServer4.Models;
 using IdentityServer4.Stores;
 using Microsoft.EntityFrameworkCore;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Services;
+using IdentityServer4.Services;
 using IdentityResource = IdentityServer4.Models.IdentityResource;
 using ApiResource = IdentityServer4.Models.ApiResource;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerResourceStore : IResourceStore
+    public class SqlServerResourceStore : SqlServerBaseStore, IResourceStore
     {
-        protected readonly IIdentityDbContext IdentityDbContext;
-
-        public SqlServerResourceStore(IIdentityDbContext identityDbContext)
+        public SqlServerResourceStore(IIdentityDbContext identityDbContext,
+            IEventService eventService,
+            IUserResolverService userResolverService,
+            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService, serializationSettings)
         {
-            IdentityDbContext = identityDbContext;
         }
 
         public async Task<IEnumerable<IdentityResource>> FindIdentityResourcesByScopeAsync(IEnumerable<string> scopeNames)
