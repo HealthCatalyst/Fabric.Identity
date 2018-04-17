@@ -19,9 +19,6 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             ISerializationSettings serializationSettings) :
             base(identityDbContext, eventService, userResolverService, serializationSettings)
         {
-            EventService = eventService;
-            UserResolverService = userResolverService;
-            SerializationSettings = serializationSettings;
         }
 
         public void AddResource(IdentityResource resource)
