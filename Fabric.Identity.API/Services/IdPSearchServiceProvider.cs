@@ -82,7 +82,7 @@ namespace Fabric.Identity.API.Services
             var baseUri = _appConfig.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
 
             var searchServiceUrl =
-                $"{baseUri}{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint.EnsureTrailingSlash()}{subjectId}";
+                $"{baseUri}{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint}{subjectId}";
 
             var httpRequestMessage = _httpRequestMessageFactory.CreateWithAccessToken(HttpMethod.Get,
                 new Uri(searchServiceUrl),
