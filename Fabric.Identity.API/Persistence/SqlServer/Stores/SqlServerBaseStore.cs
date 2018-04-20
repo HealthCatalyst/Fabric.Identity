@@ -4,14 +4,14 @@ using IdentityServer4.Services;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
-    public class SqlServerBaseStore
+    public abstract class SqlServerBaseStore
     {
         protected IIdentityDbContext IdentityDbContext;
         protected IUserResolverService UserResolverService;
         protected IEventService EventService;
         protected ISerializationSettings SerializationSettings;
 
-        public SqlServerBaseStore(IIdentityDbContext identityDbContext,
+        protected SqlServerBaseStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
             ISerializationSettings serializationSettings)

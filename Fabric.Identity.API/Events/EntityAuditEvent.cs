@@ -9,12 +9,12 @@ namespace Fabric.Identity.API.Events
     {
         private readonly ISerializationSettings _serializationSettings;
 
-        protected EntityAuditEvent(string username, string clientId, string subject, string documentId, string category,
+        protected EntityAuditEvent(string userName, string clientId, string subject, string documentId, string category,
             string name, int id, ISerializationSettings serializationSettings)
             : base(category, name, EventTypes.Information, id)
         {
             _serializationSettings = serializationSettings;
-            Username = username;
+            Username = userName;
             ClientId = clientId;
             Subject = subject;
             DocumentId = documentId;
@@ -36,7 +36,7 @@ namespace Fabric.Identity.API.Events
         public string EntityType { get; set; }
         public T Entity { get; set; }
 
-        protected T ObfuscateEntity<T>(T entity)
+        protected T ObfuscateEntity(T entity)
         {
             var clonedEntity = DeepClone(entity);
             if (typeof(T) == typeof(ApiResource))
@@ -56,7 +56,7 @@ namespace Fabric.Identity.API.Events
             return clonedEntity;
         }
 
-        private void ObfuscateSecrets(ICollection<Secret> secrets)
+        private static void ObfuscateSecrets(IEnumerable<Secret> secrets)
         {
             foreach (var secret in secrets)
             {
@@ -64,7 +64,7 @@ namespace Fabric.Identity.API.Events
             }
         }
 
-        private T DeepClone<T>(T entity)
+        private T DeepClone(T entity)
         {
             var serializedEntity = JsonConvert.SerializeObject(entity, _serializationSettings.JsonSettings);
             return JsonConvert.DeserializeObject<T>(serializedEntity, _serializationSettings.JsonSettings);
