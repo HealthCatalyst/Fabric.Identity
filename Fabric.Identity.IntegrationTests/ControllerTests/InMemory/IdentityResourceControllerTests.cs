@@ -49,5 +49,30 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+
+        [Fact]
+        public async Task TestDeleteIdentityResource_Success()
+        {
+            var identityResource = GetTestIdentityResource();
+            var response = await CreateNewIdentityResource(identityResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            // Send POST with same Name
+            Console.WriteLine("calling create for test client 2");
+            response = await CreateNewIdentityResource(identityResource);
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
+                $"/api/identityresource/{identityResource.Name}"));
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+            response = await HttpClient.SendAsync(
+                new HttpRequestMessage(new HttpMethod("GET"), $"/api/identityresource/{identityResource.Name}"));
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            // Create the same ApiResource again.
+            response = await CreateNewIdentityResource(identityResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
     }
 }
