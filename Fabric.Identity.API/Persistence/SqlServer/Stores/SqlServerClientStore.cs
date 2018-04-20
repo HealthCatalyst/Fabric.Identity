@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fabric.Identity.API.Persistence.SqlServer.Services;
-using Fabric.Identity.API.Persistence.SqlServer.Mappers;
-using IdentityServer4.Models;
-using Microsoft.EntityFrameworkCore;
-using Fabric.Identity.API.Services;
-using IdentityServer4.Services;
 using Fabric.Identity.API.Events;
+using Fabric.Identity.API.Persistence.SqlServer.Mappers;
+using Fabric.Identity.API.Persistence.SqlServer.Services;
+using Fabric.Identity.API.Services;
+using IdentityServer4.Models;
+using IdentityServer4.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -17,7 +17,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public SqlServerClientStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings) : base (identityDbContext, eventService, userResolverService, serializationSettings)
+            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService,
+            serializationSettings)
         {
         }
 
@@ -114,7 +115,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task DeleteClientAsync(string id)
         {
             var clientToDelete =
-               await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
+                await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
                     c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
 
             clientToDelete.IsDeleted = true;

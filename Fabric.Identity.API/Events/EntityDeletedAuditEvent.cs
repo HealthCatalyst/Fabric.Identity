@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fabric.Identity.API.Events
+﻿namespace Fabric.Identity.API.Events
 {
     public class EntityDeletedAuditEvent<T> : EntityAuditEvent<T>
     {
-        public EntityDeletedAuditEvent(string username, string clientId, string subject, string documentId, T entity, ISerializationSettings serializationSettings)
-            : base(username,
+        public EntityDeletedAuditEvent(string userName, string clientId, string subject, string documentId, T entity,
+            ISerializationSettings serializationSettings)
+            : base(userName,
                 clientId,
                 subject,
                 documentId,
@@ -19,17 +15,18 @@ namespace Fabric.Identity.API.Events
                 serializationSettings)
         {
         }
-        public EntityDeletedAuditEvent(string username, string clientId, string subject, string documentId, ISerializationSettings serializationSettings)
-            : base(username, 
-                  clientId, 
-                  subject, 
-                  documentId, 
-                  FabricIdentityConstants.AuditEventCategory, 
-                  FabricIdentityConstants.CustomEventNames.EntityDeletedAudit,
-                  FabricIdentityConstants.CustomEventIds.EntityDeletedAudit,
-                  serializationSettings)
+
+        public EntityDeletedAuditEvent(string username, string clientId, string subject, string documentId,
+            ISerializationSettings serializationSettings)
+            : base(username,
+                clientId,
+                subject,
+                documentId,
+                FabricIdentityConstants.AuditEventCategory,
+                FabricIdentityConstants.CustomEventNames.EntityDeletedAudit,
+                FabricIdentityConstants.CustomEventIds.EntityDeletedAudit,
+                serializationSettings)
         {
         }
-        
     }
 }

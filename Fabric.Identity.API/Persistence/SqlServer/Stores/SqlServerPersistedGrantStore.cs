@@ -11,7 +11,6 @@ using IdentityServer4.Events;
 using IdentityServer4.Services;
 using Serilog;
 
-
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
     public class SqlServerPersistedGrantStore : SqlServerBaseStore, IPersistedGrantStore

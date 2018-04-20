@@ -2,8 +2,8 @@
 {
     public class EntityUpdatedAuditEvent<T> : EntityAuditEvent<T>
     {
-        public EntityUpdatedAuditEvent(string username, string clientId, string subject, string documentId, T entity, ISerializationSettings serializationSettings)
-            : base(username, 
+        public EntityUpdatedAuditEvent(string userName, string clientId, string subject, string documentId, T entity, ISerializationSettings serializationSettings)
+            : base(userName, 
                   clientId, 
                   subject, 
                   documentId, 
