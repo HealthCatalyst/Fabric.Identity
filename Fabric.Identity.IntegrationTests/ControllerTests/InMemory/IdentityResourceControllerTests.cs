@@ -57,8 +57,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var response = await CreateNewIdentityResource(identityResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            // Send POST with same Name
-            Console.WriteLine("calling create for test client 2");
+            // Send POST with same Name, should return a conflict
             response = await CreateNewIdentityResource(identityResource);
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
@@ -70,7 +69,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
                 new HttpRequestMessage(new HttpMethod("GET"), $"/api/identityresource/{identityResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
-            // Create the same ApiResource again.
+            // Create the same IdentityResource again.
             response = await CreateNewIdentityResource(identityResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
