@@ -16,7 +16,9 @@ ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_ApiResources_Name] ON [ApiResources] ([Name])
+CREATE UNIQUE INDEX [IX_ApiResources_Name] 
+	ON [ApiResources] ([Name])
+	WHERE IsDeleted = 0
 ON [HCFabricIdentityIndex1];
 
 GO

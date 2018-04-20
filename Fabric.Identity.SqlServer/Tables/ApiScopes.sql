@@ -8,6 +8,7 @@
 	[Name] nvarchar(200) NOT NULL,
 	[Required] bit NOT NULL,
 	[ShowInDiscoveryDocument] bit NOT NULL,
+	[IsDeleted] bit default 0 NOT NULL,
 	CONSTRAINT [PK_ApiScopes] PRIMARY KEY ([Id]),
 	CONSTRAINT [FK_ApiScopes_ApiResources_ApiResourceId] FOREIGN KEY ([ApiResourceId]) REFERENCES [ApiResources] ([Id]) ON DELETE CASCADE
 )
@@ -20,7 +21,9 @@ ON [HCFabricIdentityIndex1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_ApiScopes_Name] ON [ApiScopes] ([Name])
+CREATE UNIQUE INDEX [IX_ApiScopes_Name] 
+	ON [ApiScopes] ([Name])
+	WHERE IsDeleted = 0
 ON [HCFabricIdentityIndex1];
 
 GO

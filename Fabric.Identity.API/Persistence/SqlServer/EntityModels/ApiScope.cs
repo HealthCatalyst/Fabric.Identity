@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
 {
-    public partial class ApiScope
+    public partial class ApiScope : ISoftDelete
     {
         public ApiScope()
         {
@@ -18,6 +18,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.EntityModels
         public string Name { get; set; }
         public bool Required { get; set; }
         public bool ShowInDiscoveryDocument { get; set; }
+        public bool IsDeleted { get; set; }
 
         public virtual ICollection<ApiScopeClaim> ApiScopeClaims { get; set; }
         public virtual ApiResource ApiResource { get; set; }
