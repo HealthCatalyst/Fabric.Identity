@@ -19,7 +19,9 @@ ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_IdentityResources_Name] ON [IdentityResources] ([Name])
+CREATE UNIQUE INDEX [IX_IdentityResources_Name] 
+	ON [IdentityResources] ([Name])
+	WHERE IsDeleted = 0
 ON [HCFabricIdentityIndex1];
 
 GO
