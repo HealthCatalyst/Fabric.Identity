@@ -41,7 +41,9 @@ ON [HCFabricIdentityData1];
 
 GO
 
-CREATE UNIQUE INDEX [IX_Clients_ClientId] ON [Clients] ([ClientId])
+CREATE UNIQUE INDEX [IX_Clients_ClientId] 
+	ON [Clients] ([ClientId])
+	WHERE IsDeleted = 0
 ON [HCFabricIdentityIndex1];
 
 GO

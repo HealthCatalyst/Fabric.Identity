@@ -149,6 +149,10 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             // Confirm it's deleted.
             response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            // Add the same client again
+            response = await CreateNewClient(testClient);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
         [Fact]
@@ -216,6 +220,6 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             testClient = GetTestClient();
             response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
+        }    
     }
 }
