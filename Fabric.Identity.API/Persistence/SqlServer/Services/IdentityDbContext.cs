@@ -145,6 +145,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
                     .IsRequired()
                     .HasMaxLength(200);
 
+                entity.Property(e => e.IsDeleted).HasDefaultValueSql("0");
+
                 entity.HasOne(d => d.ApiResource)
                     .WithMany(p => p.ApiScopes)
                     .HasForeignKey(d => d.ApiResourceId);

@@ -95,10 +95,16 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task DeleteResourceAsync(string id)
         {
             var apiResourceToDelete =
-                await IdentityDbContext.ApiResources.FirstOrDefaultAsync(a =>
-                    a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
+                await IdentityDbContext.ApiResources
+                    .Where(r => r.Name == id)
+                    .Include(r => r.ApiScopes)
+                    .FirstOrDefaultAsync();
 
             apiResourceToDelete.IsDeleted = true;
+            foreach (var apiScope in apiResourceToDelete.ApiScopes)
+            {
+                apiScope.IsDeleted = true;
+            }
 
             await IdentityDbContext.SaveChangesAsync();
             await EventService.RaiseAsync(

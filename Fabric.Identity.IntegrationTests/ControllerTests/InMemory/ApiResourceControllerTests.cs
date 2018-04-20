@@ -125,6 +125,10 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             response = await HttpClient.SendAsync(
                 new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            // Create the same ApiResource again.
+            response = await CreateNewResource(testApiResource);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
         [Fact]
