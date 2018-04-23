@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {
@@ -472,6 +473,12 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 grant.HasIndex(x => new { x.SubjectId, x.ClientId, x.Type });
             });
-        }       
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.ConfigureWarnings(
+                warnings => warnings.Throw(RelationalEventId.QueryClientEvaluationWarning));
+        }
     }
 }

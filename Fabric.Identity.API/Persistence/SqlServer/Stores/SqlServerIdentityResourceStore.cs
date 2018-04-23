@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task UpdateResourceAsync(string id, IdentityResource resource)
         {
             var existingResource = await IdentityDbContext.IdentityResources
-                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                .Where(r => r.Name == id
                             && !r.IsDeleted)
                 .SingleOrDefaultAsync();
 
@@ -82,7 +82,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var identityResourceEntity = await IdentityDbContext.IdentityResources
                 .Where(i => !i.IsDeleted)
-                .FirstOrDefaultAsync(i => i.Name.Equals(id, StringComparison.CurrentCultureIgnoreCase));
+                .FirstOrDefaultAsync(i => i.Name == id);
 
             return identityResourceEntity?.ToModel();
         }
@@ -91,7 +91,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var identityResourceToDelete =
                 await IdentityDbContext.IdentityResources.FirstOrDefaultAsync(a =>
-                    a.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
+                    a.Name == id);
 
             identityResourceToDelete.IsDeleted = true;
 

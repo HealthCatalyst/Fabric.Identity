@@ -96,7 +96,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task UpdateClientAsync(string clientId, Client client)
         {
             var existingClient = await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
-                c.ClientId.Equals(client.ClientId, StringComparison.OrdinalIgnoreCase));
+                c.ClientId == client.ClientId);
 
             client.ToEntity(existingClient);
 
@@ -116,7 +116,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var clientToDelete =
                 await IdentityDbContext.Clients.FirstOrDefaultAsync(c =>
-                    c.ClientId.Equals(id, StringComparison.OrdinalIgnoreCase));
+                    c.ClientId == id);
 
             clientToDelete.IsDeleted = true;
 

@@ -61,7 +61,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<ApiResource> FindApiResourceAsync(string name)
         {
             var apiResource = await IdentityDbContext.ApiResources
-                .Where(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                .Where(r => r.Name == name)
                 .Include(x => x.ApiSecrets)
                 .Include(x => x.ApiScopes)
                 .ThenInclude(s => s.ApiScopeClaims)
