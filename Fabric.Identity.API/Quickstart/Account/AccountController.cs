@@ -173,9 +173,13 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
                     
                     var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
-                    if (externalUser != null)
+                    if (externalUser?.FirstName != null)
                     {
                         id.AddClaim(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
+                    }
+
+                    if (externalUser?.LastName != null)
+                    {
                         id.AddClaim(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
                     }
 
