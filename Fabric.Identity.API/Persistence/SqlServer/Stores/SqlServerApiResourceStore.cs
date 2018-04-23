@@ -60,7 +60,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task UpdateResourceAsync(string id, ApiResource resource)
         {
             var savedResource = await IdentityDbContext.ApiResources
-                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                .Where(r => r.Name == id
                             && !r.IsDeleted)
                            .SingleOrDefaultAsync();
 
@@ -81,7 +81,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task<ApiResource> GetResourceAsync(string id)
         {
             var apiResource = await IdentityDbContext.ApiResources
-                .Where(r => r.Name.Equals(id, StringComparison.OrdinalIgnoreCase)
+                .Where(r => r.Name == id
                             && !r.IsDeleted)
                 .Include(x => x.ApiSecrets)
                 .Include(x => x.ApiScopes)

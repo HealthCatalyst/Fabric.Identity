@@ -26,7 +26,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntity = await IdentityDbContext.Users
                 .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
-                .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefaultAsync(u => u.SubjectId == subjectId);
 
             var userModel = userEntity.ToModel();
             return userModel;
@@ -37,8 +37,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             var userEntity = await IdentityDbContext.Users
                 .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
-                .FirstOrDefaultAsync(u => u.SubjectId.Equals(subjectId, StringComparison.OrdinalIgnoreCase)
-                                          && u.ProviderName.Equals(provider, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefaultAsync(u => u.SubjectId == subjectId
+                                          && u.ProviderName == provider);
 
             var userModel = userEntity.ToModel();
             return userModel;
@@ -79,8 +79,8 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public async Task UpdateUserAsync(User user)
         {
             var existingUser = await IdentityDbContext.Users
-                .Where(u => u.SubjectId.Equals(user.SubjectId, StringComparison.OrdinalIgnoreCase)
-                            && u.ProviderName.Equals(user.ProviderName, StringComparison.OrdinalIgnoreCase))
+                .Where(u => u.SubjectId == user.SubjectId
+                            && u.ProviderName == user.ProviderName)
                 .Include(u => u.UserLogins)
                 .Include(u => u.Claims)
                 .FirstOrDefaultAsync();
