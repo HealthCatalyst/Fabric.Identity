@@ -112,7 +112,6 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
         IsHidden = $true
         FriendlyName = "Fabric.Identity"
         Description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
-        BuildNumber = "1.1.2017120101"
     }
 
 	$url = "$discoveryUrl/v1/Services"
@@ -536,7 +535,7 @@ $body = @'
 '@
 
 Write-Console "Registering Fabric.Identity registration api."
-$registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body
+$registrationApiSecret = Save-ApiRegistration -authUrl $identityServerUrl -body $body
 
 #Register Fabric.Installer
 $body = @'
@@ -550,7 +549,7 @@ $body = @'
 '@
 
 Write-Console "Registering Fabric.Installer."
-$installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body
+$installerClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body
 
 if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
 
@@ -572,7 +571,7 @@ Write-Console
 $accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installerClientSecret
 
 Write-Console "Registering Fabric.Identity Client"
-$identityClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$identityClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 
 if($identityClientSecret){
     $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
