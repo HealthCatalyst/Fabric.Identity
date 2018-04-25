@@ -92,16 +92,6 @@ function Add-DatabaseSecurity($userName, $role, $connString)
     Write-Success "Database security applied successfully"
 }
 
-function Get-ErrorFromResponse($response)
-{
-    $result = $response.GetResponseStream()
-    $reader = New-Object System.IO.StreamReader($result)
-    $reader.BaseStream.Position = 0
-    $reader.DiscardBufferedData()
-    $responseBody = $reader.ReadToEnd();
-    return $responseBody
-}
-
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
 {	
     $registrationBody = @{
@@ -564,7 +554,7 @@ $body = @'
 
 Write-Console "Registering Fabric.Installer Client."
 $installerClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
-if([string]::IsNullOrWhiteSpace($installerClientSecret){
+if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
     $installerClientSecret = $fabricInstallerSecret
 }
 
