@@ -627,11 +627,7 @@ try{
 	throw $_.Exception
 }
 
-$userEnteredFabricInstallerSecret = Read-Host  "Enter the Fabric Installer Secret or hit enter to accept the default [$fabricInstallerSecret]"
-Write-Host ""
-if(![string]::IsNullOrEmpty($userEnteredFabricInstallerSecret)){   
-     $fabricInstallerSecret = $userEnteredFabricInstallerSecret
-}
+$fabricInstallerSecret = Read-FabricInstallerSecret($fabricInstallerSecret)
 
 $userEnteredDiscoveryServiceUrl = Read-Host  "Enter the URL for the Discovery Service or hit enter to accept the default [$discoveryServiceUrl]"
 Write-Host ""
