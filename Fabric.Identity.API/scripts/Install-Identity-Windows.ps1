@@ -586,7 +586,9 @@ if($identityClientSecret){
 if($registrationApiSecret){
     $encryptedSecret = Get-EncryptedString $encryptionCert $registrationApiSecret
     $environmentVariables.Add("IdentityServerApiSettings__ApiSecret", $encryptedSecret)
+    Write-Console ""
     Write-Success "Fabric.Registration apiSecret: $registrationApiSecret"
+    Write-Console ""
 }
 
 Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
