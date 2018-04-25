@@ -601,6 +601,8 @@ if ($installerClientSecret){
     Write-Console ""
     Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
     Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
+
+    Write-Console ""
 }
 
 Read-Host -Prompt "Installation complete, press Enter to exit"
