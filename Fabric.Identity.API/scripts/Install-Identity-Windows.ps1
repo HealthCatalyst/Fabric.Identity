@@ -26,40 +26,40 @@ function Test-RegistrationComplete($authUrl)
 
 function Add-DatabaseLogin($userName, $connString)
 {
-	$query = "USE master
-			If Not exists (SELECT * FROM sys.server_principals
-				WHERE sid = suser_sid(@userName))
-			BEGIN
-				print '-- creating database login'
+    $query = "USE master
+            If Not exists (SELECT * FROM sys.server_principals
+                WHERE sid = suser_sid(@userName))
+            BEGIN
+                print '-- creating database login'
                 DECLARE @sql nvarchar(4000)
                 set @sql = 'CREATE LOGIN ' + QUOTENAME('$userName') + ' FROM WINDOWS'
                 EXEC sp_executesql @sql
-			END"
-	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+            END"
+    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseUser($userName, $connString)
 {
-	$query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = @userName))
-			BEGIN
-				print '-- Creating user';
-				DECLARE @sql nvarchar(4000)
+    $query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = @userName))
+            BEGIN
+                print '-- Creating user';
+                DECLARE @sql nvarchar(4000)
                 set @sql = 'CREATE USER ' + QUOTENAME('$userName') + ' FOR LOGIN ' + QUOTENAME('$userName')
                 EXEC sp_executesql @sql
-			END"
-	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+            END"
+    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseUserToRole($userName, $connString, $role)
 {
-	$query = "DECLARE @exists int
-			SELECT @exists = IS_ROLEMEMBER(@role, @userName) 
-			IF (@exists IS NULL OR @exists = 0)
-			BEGIN
-				print '-- Adding @role to @userName';
-				EXEC sp_addrolemember @role, @userName;
-			END"
-	Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
+    $query = "DECLARE @exists int
+            SELECT @exists = IS_ROLEMEMBER(@role, @userName) 
+            IF (@exists IS NULL OR @exists = 0)
+            BEGIN
+                print '-- Adding @role to @userName';
+                EXEC sp_addrolemember @role, @userName;
+            END"
+    Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
 }
 
 function Add-ServiceUserToDiscovery($userName, $connString){
@@ -67,29 +67,29 @@ function Add-ServiceUserToDiscovery($userName, $connString){
     $query = "DECLARE @IdentityID int;
                 DECLARE @DiscoveryServiceUserRoleID int;
 
-				SELECT @IdentityID = IdentityID FROM CatalystAdmin.IdentityBASE WHERE IdentityNM = @userName;
-				IF (@IdentityID IS NULL)
-				BEGIN
-					print ''-- Adding Identity'';
-					INSERT INTO CatalystAdmin.IdentityBASE (IdentityNM) VALUES (@userName);
-					SELECT @IdentityID = SCOPE_IDENTITY();
-				END
+                SELECT @IdentityID = IdentityID FROM CatalystAdmin.IdentityBASE WHERE IdentityNM = @userName;
+                IF (@IdentityID IS NULL)
+                BEGIN
+                    print ''-- Adding Identity'';
+                    INSERT INTO CatalystAdmin.IdentityBASE (IdentityNM) VALUES (@userName);
+                    SELECT @IdentityID = SCOPE_IDENTITY();
+                END
 
-				SELECT @DiscoveryServiceUserRoleID = RoleID FROM CatalystAdmin.RoleBASE WHERE RoleNM = 'DiscoveryServiceUser';
-				IF (NOT EXISTS (SELECT 1 FROM CatalystAdmin.IdentityRoleBASE WHERE IdentityID = @IdentityID AND RoleID = @DiscoveryServiceUserRoleID))
-				BEGIN
-					print ''-- Assigning Discovery Service user'';
-					INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
-				END"
-	Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+                SELECT @DiscoveryServiceUserRoleID = RoleID FROM CatalystAdmin.RoleBASE WHERE RoleNM = 'DiscoveryServiceUser';
+                IF (NOT EXISTS (SELECT 1 FROM CatalystAdmin.IdentityRoleBASE WHERE IdentityID = @IdentityID AND RoleID = @DiscoveryServiceUserRoleID))
+                BEGIN
+                    print ''-- Assigning Discovery Service user'';
+                    INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
+                END"
+    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
 function Add-DatabaseSecurity($userName, $role, $connString)
 {
-	Add-DatabaseLogin $userName $connString
-	Add-DatabaseUser $userName $connString
-	Add-DatabaseUserToRole $userName $connString $role
-	Write-Success "Database security applied successfully"
+    Add-DatabaseLogin $userName $connString
+    Add-DatabaseUser $userName $connString
+    Add-DatabaseUserToRole $userName $connString $role
+    Write-Success "Database security applied successfully"
 }
 
 function Get-ErrorFromResponse($response)
@@ -114,20 +114,20 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
         Description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
     }
 
-	$url = "$discoveryUrl/v1/Services"
-	$jsonBody = $registrationBody | ConvertTo-Json	
-	try{
-		Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
-		Write-Success "Fabric.Identity successfully registered with DiscoveryService."
-	}catch{
+    $url = "$discoveryUrl/v1/Services"
+    $jsonBody = $registrationBody | ConvertTo-Json	
+    try{
+        Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
+        Write-Success "Fabric.Identity successfully registered with DiscoveryService."
+    }catch{
         $exception = $_.Exception
-		Write-Error "Unable to register Fabric.Identity with DiscoveryService. Ensure that DiscoveryService is running at $discoveryUrl, that Windows Authentication is enabled for DiscoveryService and Anonymous Authentication is disabled for DiscoveryService. Error $($_.Exception.Message) Halting installation."
+        Write-Error "Unable to register Fabric.Identity with DiscoveryService. Ensure that DiscoveryService is running at $discoveryUrl, that Windows Authentication is enabled for DiscoveryService and Anonymous Authentication is disabled for DiscoveryService. Error $($_.Exception.Message) Halting installation."
         if($exception.Response -ne $null){
             $error = Get-ErrorFromResponse -response $exception.Response
             Write-Error "    There was an error updating the resource: $error."
         }
         throw
-	}
+    }
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
@@ -160,11 +160,11 @@ function Unlock-ConfigurationSections(){
 function Invoke-Sql($connectionString, $sql, $parameters=@{}){    
     $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
     $command = New-Object System.Data.SqlClient.SqlCommand($sql, $connection)
-	
+    
     try {
-		foreach($p in $parameters.Keys){		
-		  $command.Parameters.AddWithValue("@$p",$parameters[$p])
-		 }
+        foreach($p in $parameters.Keys){		
+          $command.Parameters.AddWithValue("@$p",$parameters[$p])
+         }
 
         $connection.Open()    
         $command.ExecuteNonQuery()
@@ -198,8 +198,8 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
         $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"    
 
-		$keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername        
-		$keyPath = [io.path]::combine($keyFolder, $keyname)		
+        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername        
+        $keyPath = [io.path]::combine($keyFolder, $keyname)		
 
         if ([io.file]::exists($keyPath))
         {        
@@ -282,7 +282,7 @@ try{
     $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
     Write-Host ""
     if([string]::IsNullOrEmpty($selectionNumber)){
-		Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens."
+        Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens."
         throw
     }
     $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
@@ -517,12 +517,26 @@ Write-Host ""
 
 Set-Location $workingDirectory
 
+$fabricInstallerSecret = ""
+$accessToken = ""
 
+if(Test-RegistrationComplete $identityServerUrl) {
+    Write-Host "Registration is completed but you can continue with this installation to update settings."
+    Write-Host ""
 
-if(Test-RegistrationComplete $identityServerUrl)
-{
-    Read-Host -Prompt "Installation complete, press Enter to exit"
-    exit 0
+    $installSettings = Get-InstallationSettings "identity"
+    $fabricInstallerSecret = $installSettings.fabricInstallerSecret
+    $fabricInstallerSecret = Read-FabricInstallerSecret($fabricInstallerSecret)
+
+    if([string]::IsNullOrWhiteSpace($fabricInstallerSecret)) {
+        Write-Error "Fabric Installer Secret is required to continue with the registration process. Halting installation."
+        throw
+    }
+    else {
+        Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $signingCert
+    }
+
+    $accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $fabricInstallerSecret
 }
 
 #Register registration api
@@ -534,8 +548,8 @@ $body = @'
 }
 '@
 
-Write-Console "Registering Fabric.Identity registration api."
-$registrationApiSecret = Save-ApiRegistration -authUrl $identityServerUrl -body $body
+Write-Console "Registering Fabric.Identity Registration API."
+$registrationApiSecret = Save-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 
 #Register Fabric.Installer
 $body = @'
@@ -548,11 +562,13 @@ $body = @'
 }
 '@
 
-Write-Console "Registering Fabric.Installer."
-$installerClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body
+Write-Console "Registering Fabric.Installer Client."
+$installerClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+if([string]::IsNullOrWhiteSpace($installerClientSecret){
+    $installerClientSecret = $fabricInstallerSecret
+}
 
-if($installerClientSecret){ Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert }
-
+Add-SecureInstallationSetting "common" "fabricInstallerSecret" $installerClientSecret $signingCert
 
 #register Fabric.Identity client
 $body = @'
@@ -565,10 +581,9 @@ $body = @'
 }
 '@
 
-Write-Console "identity server url " $identityServerUrl
-Write-Console 
-
-$accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installerClientSecret
+if (!$accessToken){
+    $accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installerClientSecret
+}
 
 Write-Console "Registering Fabric.Identity Client"
 $identityClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
@@ -581,16 +596,19 @@ if($identityClientSecret){
 if($registrationApiSecret){
     $encryptedSecret = Get-EncryptedString $encryptionCert $registrationApiSecret
     $environmentVariables.Add("IdentityServerApiSettings__ApiSecret", $encryptedSecret)
+    Write-Success "Fabric.Registration apiSecret: $registrationApiSecret"
 }
 
 Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
 
-Write-Console ""
-Write-Console "Please keep the following secrets in a secure place:"
-Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
-Write-Success "Fabric.Registration apiSecret: $registrationApiSecret"
-Write-Console ""
-Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
-Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
+if ($installerClientSecret){
+    Write-Console ""
+    Write-Console "Please keep the following secrets in a secure place:"
+    Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
+
+    Write-Console ""
+    Write-Console "The Fabric.Installer clientSecret will be needed in subsequent installations:"
+    Write-Success "Fabric.Installer clientSecret: $installerClientSecret"
+}
 
 Read-Host -Prompt "Installation complete, press Enter to exit"
