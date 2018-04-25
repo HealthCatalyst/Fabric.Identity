@@ -539,7 +539,7 @@ $body = @'
 '@
 
 Write-Console "Registering Fabric.Identity Registration API."
-$registrationApiSecret = Save-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 
 #Register Fabric.Installer
 $body = @'
@@ -553,7 +553,7 @@ $body = @'
 '@
 
 Write-Console "Registering Fabric.Installer Client."
-$installerClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
     $installerClientSecret = $fabricInstallerSecret
 }
@@ -576,7 +576,7 @@ if (!$accessToken){
 }
 
 Write-Console "Registering Fabric.Identity Client"
-$identityClientSecret = Save-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$identityClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
 
 if($identityClientSecret){
     $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
