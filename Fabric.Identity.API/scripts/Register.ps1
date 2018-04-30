@@ -363,18 +363,43 @@ function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
         postLogoutRedirectUris = @()
     }
     
-    $atlasUrl = Get-ApplicationUrl -serviceName $client.serviceName -serviceVersion $client.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
+    $serviceUrl = Get-ApplicationUrl -serviceName $client.serviceName -serviceVersion $client.serviceVersion -discoveryServiceUrl $discoveryServiceUrl
+    $serviceUri = [System.Uri]$serviceUrl
+    $scheme = $serviceUri.Scheme
+    $path = $serviceUri.AbsolutePath
+
+    $hostnames = Read-Host "    The hostname that will be configured for $($client.serviceName) with Fabric.Identity is $($serviceUri.Host). If there are additional hostnames that need to be set up, please enter a space-separated list now, otherwise press enter to continue";
+    $hostnames = $hostnames.trim();
+    $hostnames = $hostnames -split '\s+'
 
     foreach($allowedCorsOrigin in $client.allowedCorsOrigins.corsOrigin){
-        $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $atlasUrl)
+        $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $serviceUrl)
+        foreach($hostname in $hostnames){
+            if(![System.String]::IsNullOrWhiteSpace($hostname)){
+                $alternateUrl = [string]::Format("{0}://{1}{2}", $scheme, $hostname, $path)
+                $implicitBody.allowedCorsOrigins += [string]::Format($allowedCorsOrigin, $alternateUrl)
+            }
+        }
     }
 
     foreach($redirectUri in $client.redirectUris.redirectUri){
-        $implicitBody.redirectUris += [string]::Format($redirectUri, $atlasUrl)
+        $implicitBody.redirectUris += [string]::Format($redirectUri, $serviceUrl)
+        foreach($hostname in $hostnames){
+            if(![System.String]::IsNullOrWhiteSpace($hostname)){
+                $alternateUrl = [string]::Format("{0}://{1}{2}", $scheme, $hostname, $path)
+                $implicitBody.redirectUris += [string]::Format($redirectUri, $alternateUrl)
+            }
+        }
     }
 
     foreach($redirectUri in $client.postLogoutRedirectUris.redirectUri){
-        $implicitBody.postLogoutRedirectUris += [string]::Format($redirectUri, $atlasUrl)
+        $implicitBody.postLogoutRedirectUris += [string]::Format($redirectUri, $serviceUrl)
+        foreach($hostname in $hostnames){
+            if(![System.String]::IsNullOrWhiteSpace($hostname)){
+                $alternateUrl = [string]::Format("{0}://{1}{2}", $scheme, $hostname, $path)
+                $implicitBody.postLogoutRedirectUris += [string]::Format($redirectUri, $alternateUrl)
+            }
+        }
     }
     
     return $implicitBody
