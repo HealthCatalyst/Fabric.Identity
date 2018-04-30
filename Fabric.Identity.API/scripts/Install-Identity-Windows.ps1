@@ -254,40 +254,48 @@ try{
     throw
 }
 
-try{
+if ([string]::IsNullOrWhitespace($encryptionCertificateThumbprint) -or [string]::IsNullOrWhitespace($primarySigningCertificateThumbprint)) {
+    try{
+        $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
+        $index = 1
+        $allCerts |
+            ForEach-Object {New-Object PSCustomObject -Property @{
+            'Index'=$index;
+            'Subject'= $_.Subject; 
+            'Name' = $_.FriendlyName; 
+            'Thumbprint' = $_.Thumbprint; 
+            'Expiration' = $_.NotAfter
+            };
+            $index ++} |
+            Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
 
-    $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
-    $index = 1
-    $allCerts |
-        ForEach-Object {New-Object PSCustomObject -Property @{
-        'Index'=$index;
-        'Subject'= $_.Subject; 
-        'Name' = $_.FriendlyName; 
-        'Thumbprint' = $_.Thumbprint; 
-        'Expiration' = $_.NotAfter
-        };
-        $index ++} |
-        Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize
+        $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
+        Write-Host ""
+        if([string]::IsNullOrEmpty($selectionNumber)){
+            Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens."
+            throw
+        }
+        $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
+        if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
+            Write-Error "Please select a certificate with index between 1 and $($allCerts.Count)."
+            throw
+        }
+        $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt
+        
+        if([string]::IsNullOrWhitespace($primarySigningCertificateThumbprint)){
+            $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
+        }
 
-    $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
-    Write-Host ""
-    if([string]::IsNullOrEmpty($selectionNumber)){
-        Write-Error "You must select a certificate so Fabric.Identity can sign access and identity tokens."
-        throw
+        if ([string]::IsNullOrWhitespace($encryptionCertificateThumbprint)){
+            $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
+        }
+
+        }catch{
+            $scriptDirectory =  Get-CurrentScriptDirectory
+            Set-Location $scriptDirectory
+            Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)"
+            throw
     }
-    $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
-    if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
-        Write-Error "Please select a certificate with index between 1 and $($allCerts.Count)."
-        throw
-    }
-    $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt     
-    $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''    
-    $encryptionCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
-    }catch{
-        $scriptDirectory =  Get-CurrentScriptDirectory
-        Set-Location $scriptDirectory
-        Write-Error "Could not set the certificate thumbprint. Error $($_.Exception.Message)"
-        throw
 }
 
 try{
@@ -511,7 +519,7 @@ $fabricInstallerSecret = ""
 $accessToken = ""
 
 if(Test-RegistrationComplete $identityServerUrl) {
-    Write-Host "Registration is completed but you can continue with this installation to update settings."
+    Write-Host "Registration has already been completed, proceeding to update registration settings for the latest version..."
     Write-Host ""
 
     $installSettings = Get-InstallationSettings "identity"
