@@ -195,7 +195,7 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
         {        
             $acl = Get-Acl $keyPath
             $acl.AddAccessRule($allowRule)
-            Set-Acl $keyPath $acl			
+            Set-Acl $keyPath $acl -ErrorAction Stop
             Write-Success "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
         }else{
             Write-Error "No key file was found at '$($keyPath)'. Ensure a valid signing certificate was provided"
@@ -204,7 +204,7 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
     }catch{
         $scriptDirectory =  Get-CurrentScriptDirectory
         Set-Location $scriptDirectory
-        Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Error $($_.Exception.Message)"
+        Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
         throw
     }	
 }
