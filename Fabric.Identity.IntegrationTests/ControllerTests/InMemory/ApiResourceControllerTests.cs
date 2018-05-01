@@ -95,7 +95,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var name = resource.Name;
             var password = resource.ApiSecret;
 
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("POST"),
                 $"/api/ApiResource/{testApiResource.Name}/resetPassword"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

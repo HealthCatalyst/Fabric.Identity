@@ -68,7 +68,7 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
-        [HttpGet("{id}/resetPassword")]
+        [HttpPost("{id}/resetPassword")]
         [SwaggerResponse(200, typeof(ApiResource), "The password was reset.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
