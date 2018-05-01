@@ -186,10 +186,10 @@ function Get-DiscoveryServiceUrl($discoUrl)
 function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
-        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"    
+        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
 
-        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername        
-        $keyPath = [io.path]::combine($keyFolder, $keyname)		
+        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
+        $keyPath = [io.path]::combine($keyFolder, $keyname)
 
         if ([io.file]::exists($keyPath))
         {        
