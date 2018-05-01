@@ -93,7 +93,7 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 }
 
 function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
-{	
+{
     $registrationBody = @{
         ServiceName = "IdentityService"
         Version = 1
@@ -206,7 +206,7 @@ function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
         Set-Location $scriptDirectory
         Write-Error "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
         throw
-    }	
+    }
 }
 
 $installSettings = Get-InstallationSettings "identity"
@@ -365,7 +365,7 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
         Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=848766 -OutFile $env:Temp\bundle.exe
         Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
         net stop was /y
-        net start w3svc			
+        net start w3svc
     }catch{
         Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461"
         throw
