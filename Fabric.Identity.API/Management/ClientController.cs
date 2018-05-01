@@ -64,7 +64,7 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <param name="id">The unique id of the client to reset.</param>
         /// <returns></returns>
-        [HttpGet("{id}/resetPassword")]
+        [HttpPost("{id}/resetPassword")]
         [SwaggerResponse(200, typeof(Client), "The secret for the client has been reset.")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]

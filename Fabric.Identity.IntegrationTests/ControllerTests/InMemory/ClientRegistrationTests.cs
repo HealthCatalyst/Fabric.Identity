@@ -126,7 +126,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var clientId = client.ClientId;
             var password = client.ClientSecret;
 
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}/resetPassword"));
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("POST"), $"/api/Client/{testClient.ClientId}/resetPassword"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             content = await response.Content.ReadAsStringAsync();

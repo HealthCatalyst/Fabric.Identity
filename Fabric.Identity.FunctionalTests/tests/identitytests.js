@@ -226,7 +226,7 @@ describe("identity tests", function () {
     describe("update client", function(){
         it("should be able to reset a clients password and get new access token", function(){
             //call reset password for the func-test client
-            return chakram.get(baseIdentityUrl + "/api/client/func-test/resetPassword", authRequestOptions)
+            return chakram.post(baseIdentityUrl + "/api/client/func-test/resetPassword", null, authRequestOptions)
                 .then(function(clientResponse){
                     expect(clientResponse).to.have.status(200);
                     expect(clientResponse).to.comprise.of.json({ clientId: "func-test" });
