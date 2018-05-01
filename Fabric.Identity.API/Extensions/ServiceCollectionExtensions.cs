@@ -80,7 +80,7 @@ namespace Fabric.Identity.API.Extensions
             HostingOptions hostingOptions,
             IConnectionStrings connectionStrings)
         {
-            serviceCollection.AddSingleton<IProfileService, UserProfileService>();
+            serviceCollection.AddTransient<IProfileService, UserProfileService>();
 
             serviceCollection.AddTransient<ICorsPolicyProvider, FabricCorsPolicyProvider>();
 
