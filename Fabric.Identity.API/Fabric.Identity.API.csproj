@@ -3,6 +3,11 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
     <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+    <Company>Health Catalyst</Company>
+    <Product>Fabric.Identity</Product>
+    <Copyright>Copyright © 2018</Copyright>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' == '' ">1.0.0.0-local</Version>
+    <Version Condition=" '$(BUILD_BUILDNUMBER)' != '' ">$(BUILD_BUILDNUMBER)</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
