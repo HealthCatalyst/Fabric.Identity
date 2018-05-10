@@ -283,7 +283,13 @@ function Test-IsClientRegistered($identityServiceUrl, $clientId, $accessToken){
 function Invoke-UpdateApiRegistration($identityServiceUrl, $body, $apiName, $accessToken){
     $url = "$identityServiceUrl/api/apiresource/$apiName"
     try{
-        $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+        Invoke-Put -url $url -body $body -accessToken $accessToken
+        
+        # always reset secret
+        $apiResponse = Invoke-Post -url "$url/resetPassword" -accessToken $accessToken
+
+        Write-Host "apiSecret type = $($apiResponse.apiSecret.GetType())"
+        return $($apiResponse.apiSecret)
     }catch{
         $exception = $_.Exception
         $error = Get-ErrorFromResponse -response $exception.Response
@@ -295,13 +301,17 @@ function Invoke-UpdateApiRegistration($identityServiceUrl, $body, $apiName, $acc
 function Invoke-UpdateClientRegistration($identityServiceUrl, $body, $clientId, $accessToken){
     $url = "$identityServiceUrl/api/client/$clientId"
     try{
-        $response = Invoke-Put -url $url -body $body -accessToken $accessToken
+        Invoke-Put -url $url -body $body -accessToken $accessToken
+
+        # always reset secret
+        $clientResponse = Invoke-Post -url "$url/resetPassword" -accessToken $accessToken
+        return $($clientResponse.clientSecret)
     }catch{
         $exception = $_.Exception
         $error = Get-ErrorFromResponse -response $exception.Response
         Write-Error "There was an error updating the resource: $error. Halting installation."
         throw $exception
-    }   
+    }
 }
 
 function Get-RegistrationSettings()
@@ -504,30 +514,34 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         Write-Host "    No API resources"
     }
     foreach($api in $apiResources){
+        $apiSecret = [string]::Empty
 		try{
 			Write-Host "    Registering $($api.name)"
 			$body = Get-ApiResourceFromConfig($api)
 			$isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
-			
+
 			if($isApiRegistered){
 				Write-Host "    $($api.name) is already registered, updating"
 				$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
 			}else{
-				$configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
 				$apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
-				Invoke-WriteSecretToConfig -service $api -secret $apiSecret -configPath $configPath
 				Write-Success "    Success"
 				Write-Host ""
-			}
+            }
+            
+            if (![string]::IsNullOrEmpty($apiSecret) -and ![string]::IsNullOrWhiteSpace($apiSecret)) {
+                Write-Host "apiSecret type = $($apiSecret.GetType())"
+                Write-Host "apiSecret = $apiSecret"
+                $configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
+                Invoke-WriteSecretToConfig -service $api -secret $apiSecret -configPath $configPath
+            }
 		}
 		catch{
-			Write-Error "Could not register api $($api.name)"
+			Write-Error "Could not register api $($api.name) (----$apiSecret----)"
 			$exception = $_.Exception
 			Write-Error $exception
 			throw $exception
 		}
-
-        
     }
 }
 
@@ -539,6 +553,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
         Write-Host "    No Clients to register"
     }
     foreach($client in $clients){
+        $clientSecret = [string]::Empty
 		try{
 			Write-Host "    Registering $($client.clientid) with Fabric.Identity"
 			$body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
@@ -548,13 +563,18 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 				Write-Host "    $($client.clientid) is already registered, updating"
 				$clientSecret = Invoke-UpdateClientRegistration -identityServiceUrl $identityServiceUrl -body $body -clientId $client.clientid -accessToken $accessToken
 			}else{
-				$configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
 				$jsonBody = ConvertTo-Json $body
 				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
-				Invoke-WriteSecretToConfig -service $client -secret $clientSecret -configPath $configPath
 				Write-Success "    Success"
 				Write-Host ""
-			}
+            }
+
+            if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret)) {
+                Write-Host "clientSecret type = $($clientSecret.GetType())"
+                Write-Host "clientSecret = $clientSecret"
+                $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
+                Invoke-WriteSecretToConfig -service $client -secret $clientSecret -configPath $configPath
+            }
 
 			Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
 			$authorizationClient = Add-AuthorizationRegistration -authUrl $authorizationServiceURL -clientId $client.clientid -clientName $client.clientName -accessToken $accessToken
@@ -564,7 +584,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 			}
 		}
 		catch{
-			Write-Error "Could not register client $($client.clientid)"
+			Write-Error "Could not register client $($client.clientid) (----$clientSecret----)"
 			$exception = $_.Exception
 			Write-Error $exception
 			throw $exception
