@@ -534,7 +534,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
             }
 		}
 		catch{
-			Write-Error "Could not register api $($api.name) (----$apiSecret----)"
+			Write-Error "Could not register api $($api.name)"
 			$exception = $_.Exception
 			Write-Error $exception
 			throw $exception
@@ -577,7 +577,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 			}
 		}
 		catch{
-			Write-Error "Could not register client $($client.clientid) (----$clientSecret----)"
+			Write-Error "Could not register client $($client.clientid)"
 			$exception = $_.Exception
 			Write-Error $exception
 			throw $exception
