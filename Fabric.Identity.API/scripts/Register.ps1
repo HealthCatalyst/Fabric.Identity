@@ -286,10 +286,9 @@ function Invoke-UpdateApiRegistration($identityServiceUrl, $body, $apiName, $acc
         Invoke-Put -url $url -body $body -accessToken $accessToken
         
         # always reset secret
+        Write-Host "    Resetting $apiName API secret"
         $apiResponse = Invoke-Post -url "$url/resetPassword" -accessToken $accessToken
-
-        Write-Host "apiSecret type = $($apiResponse.apiSecret.GetType())"
-        return $($apiResponse.apiSecret)
+        return $apiResponse.apiSecret
     }catch{
         $exception = $_.Exception
         $error = Get-ErrorFromResponse -response $exception.Response
@@ -304,8 +303,9 @@ function Invoke-UpdateClientRegistration($identityServiceUrl, $body, $clientId, 
         Invoke-Put -url $url -body $body -accessToken $accessToken
 
         # always reset secret
+        Write-Host "    Resetting $clientId client secret"
         $clientResponse = Invoke-Post -url "$url/resetPassword" -accessToken $accessToken
-        return $($clientResponse.clientSecret)
+        return $clientResponse.clientSecret
     }catch{
         $exception = $_.Exception
         $error = Get-ErrorFromResponse -response $exception.Response
@@ -476,7 +476,8 @@ function Invoke-WriteSecretToConfig($service, $secret, $configPath){
     
     if(!([string]::IsNullOrWhiteSpace($service.secretConfig))){
         Add-WebConfigAppSetting -webConfigLocation $configPath -settingKey $service.secretConfig -settingValue $secret | Out-Null
-		Write-Success "    Wrote secret to $($service.serviceName) configuration file located at $configPath (key=$($service.secretConfig), value=$secret)."
+        Write-Success "    Wrote secret to $($service.serviceName) configuration file located at $configPath (key=$($service.secretConfig), value=$secret)."
+        Write-Host ""
     }
 }
 
@@ -514,9 +515,9 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
         Write-Host "    No API resources"
     }
     foreach($api in $apiResources){
-        $apiSecret = [string]::Empty
 		try{
-			Write-Host "    Registering $($api.name)"
+            [string]$apiSecret = [string]::Empty
+			Write-Host "    Registering $($api.name) with Fabric.Identity"
 			$body = Get-ApiResourceFromConfig($api)
 			$isApiRegistered = Test-IsApiRegistered -identityServiceUrl $identityServiceUrl -apiName $api.name -accessToken $accessToken
 
@@ -525,15 +526,11 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
 				$apiSecret = Invoke-UpdateApiRegistration -identityServiceUrl $identityServiceUrl -body $body -apiName $api.name -accessToken $accessToken
 			}else{
 				$apiSecret = Add-ApiRegistration -authUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
-				Write-Success "    Success"
-				Write-Host ""
             }
             
             if (![string]::IsNullOrEmpty($apiSecret) -and ![string]::IsNullOrWhiteSpace($apiSecret)) {
-                Write-Host "apiSecret type = $($apiSecret.GetType())"
-                Write-Host "apiSecret = $apiSecret"
                 $configPath = Get-WebConfigPath -service $api -discoveryServiceUrl $discoveryServiceUrl
-                Invoke-WriteSecretToConfig -service $api -secret $apiSecret -configPath $configPath
+                Invoke-WriteSecretToConfig -service $api -secret $apiSecret.Trim() -configPath $configPath
             }
 		}
 		catch{
@@ -553,8 +550,8 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
         Write-Host "    No Clients to register"
     }
     foreach($client in $clients){
-        $clientSecret = [string]::Empty
 		try{
+            [string]$clientSecret = [string]::Empty
 			Write-Host "    Registering $($client.clientid) with Fabric.Identity"
 			$body = Get-ClientFromConfig -client $client -discoveryServiceUrl $discoveryServiceUrl
 			$isClientRegistered = Test-IsClientRegistered -identityServiceUrl $identityServiceUrl -clientId $client.clientid -accessToken $accessToken
@@ -565,15 +562,11 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 			}else{
 				$jsonBody = ConvertTo-Json $body
 				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
-				Write-Success "    Success"
-				Write-Host ""
             }
 
             if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret)) {
-                Write-Host "clientSecret type = $($clientSecret.GetType())"
-                Write-Host "clientSecret = $clientSecret"
                 $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
-                Invoke-WriteSecretToConfig -service $client -secret $clientSecret -configPath $configPath
+                Invoke-WriteSecretToConfig -service $client -secret $clientSecret.Trim() -configPath $configPath
             }
 
 			Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
