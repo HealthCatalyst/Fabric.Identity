@@ -564,10 +564,10 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
             }
 
-            if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret)) {
+			if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret) -and !$client.allowedGrantTypes.grantType.Contains("hybrid") -and ($client.requirePkce -eq $null -or ![boolean]$client.requirePkce)) {
                 $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
                 Invoke-WriteSecretToConfig -service $client -secret $clientSecret.Trim() -configPath $configPath
-            }
+			}
 
 			Write-Host "    Registering $($client.clientid) with Fabric.Authorization"
 			$authorizationClient = Add-AuthorizationRegistration -authUrl $authorizationServiceURL -clientId $client.clientid -clientName $client.clientName -accessToken $accessToken
