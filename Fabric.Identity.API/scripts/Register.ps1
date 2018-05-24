@@ -361,6 +361,23 @@ function Get-ApiResourceFromConfig($api){
     return $body
 }
 
+function Get-HybridPkceClientFromConfig($client){
+    $hybridPkceBody = @{
+        requireConsent = $false
+        requireClientSecret = $false
+        requirePkce = $true
+        allowOfflineAccess = $true
+        updateAccessTokenClaimsOnRefresh = $true
+        redirectUris = @()
+    }
+
+    foreach($redirectUri in $client.redirectUris.redirectUri){
+        $hybridPkceBody.redirectUris += $redirectUri
+    }
+
+    return $hybridPkceBody
+}
+
 function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
     $implicitBody = @{
         requireConsent = $false
@@ -423,18 +440,21 @@ function Get-ClientFromConfig($client, $discoveryServiceUrl){
             allowedGrantTypes = @()
         }
     
-        foreach($scope in $client.allowedScopes.scope){
-            $body.allowedScopes += $scope
-        }
+    foreach($scope in $client.allowedScopes.scope){
+        $body.allowedScopes += $scope
+    }
 
-        foreach($grantType in $client.allowedGrantTypes.grantType){
-            $body.allowedGrantTypes += $grantType
-        }
+    foreach($grantType in $client.allowedGrantTypes.grantType){
+        $body.allowedGrantTypes += $grantType
+    }
 
     if($body.allowedGrantTypes.Contains("implicit")){
         $implicitBody = Get-ImplicitClientFromConfig -client $client -body $body -discoveryServiceUrl $discoveryServiceUrl
         $body = $implicitBody + $body
-    }
+    }elseif ($body.allowedGrantTypes.Contains("hybrid") -and $client.requirePkce -eq $true) {
+        $hybridPkceBody = Get-HybridPkceClientFromConfig -client $client
+        $body = $hybridPkceBody + $body
+	}
 
     return $body
 }
