@@ -563,7 +563,7 @@ if([string]::IsNullOrWhiteSpace($fabricInstallerSecret) -and [string]::IsNullOrE
 '@
 
     Write-Console "Registering Fabric.Installer Client."
-    $installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
 }
 
 if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
