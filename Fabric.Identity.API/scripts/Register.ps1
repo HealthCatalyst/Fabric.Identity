@@ -16,11 +16,11 @@ function Get-AuthorizationServiceUrl(){
 
 function Get-DiscoveryServiceUrl(){
     $hostName = Get-FullyQualifiedHostName
-    return "$hostName/DiscoveryService"
+    return "$hostName/DiscoveryService/v1"
 }
 
 function Get-ApplicationUrl($serviceName, $serviceVersion, $discoveryServiceUrl){
-    $discoveryRequest = "$discoveryServiceUrl/v1/Services?`$filter=ServiceName eq '$serviceName' and Version eq $serviceVersion&`$select=ServiceUrl&`$orderby=Version desc"
+    $discoveryRequest = "$discoveryServiceUrl/Services?`$filter=ServiceName eq '$serviceName' and Version eq $serviceVersion&`$select=ServiceUrl&`$orderby=Version desc"
     $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
     $serviceUrl = $discoveryResponse.value.ServiceUrl
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
@@ -564,7 +564,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 				$clientSecret = Add-ClientRegistration -authUrl $identityServiceUrl -body $jsonBody -accessToken $accessToken 
             }
 
-            if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret)) {
+            if (![string]::IsNullOrEmpty($clientSecret) -and ![string]::IsNullOrWhiteSpace($clientSecret) -and !$client.allowedGrantTypes.grantType.Contains("hybrid")) {
                 $configPath = Get-WebConfigPath -service $client -discoveryServiceUrl $discoveryServiceUrl
                 Invoke-WriteSecretToConfig -service $client -secret $clientSecret.Trim() -configPath $configPath
             }

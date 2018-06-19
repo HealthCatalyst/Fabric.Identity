@@ -104,7 +104,7 @@ function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
         Description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
     }
 
-    $url = "$discoveryUrl/v1/Services"
+    $url = "$discoveryUrl/Services"
     $jsonBody = $registrationBody | ConvertTo-Json	
     try{
         Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
@@ -177,7 +177,7 @@ function Get-ApplicationEndpoint($appName, $appEndPoint)
 function Get-DiscoveryServiceUrl($discoUrl)
 {
     if([string]::IsNullOrEmpty($discoUrl)){
-        return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService"
+        return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService/v1"
     }else{
         return $discoUrl
     }
@@ -504,7 +504,7 @@ if($identityDbConnStr){
 }
 
 if(!($noDiscoveryService) -and $discoveryServiceUrl){
-    $environmentVariables.Add("DiscoveryServiceEndpoint", "$discoveryServiceUrl/v1/")
+    $environmentVariables.Add("DiscoveryServiceEndpoint", "$discoveryServiceUrl")
     $environmentVariables.Add("UseDiscoveryService", "true")
 }else{
     $environmentVariables.Add("UseDiscoveryService", "false")
