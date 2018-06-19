@@ -547,21 +547,25 @@ $body = @'
 '@
 
 Write-Console "Registering Fabric.Identity Registration API."
-$registrationApiSecret = Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
 
-#Register Fabric.Installer
-$body = @'
+#Register Fabric.Installer if not registered
+if([string]::IsNullOrWhiteSpace($fabricInstallerSecret) -and [string]::IsNullOrEmpty($fabricInstallerSecret))
 {
-    "clientId":"fabric-installer", 
-    "clientName":"Fabric Installer", 
-    "requireConsent":"false", 
-    "allowedGrantTypes": ["client_credentials"], 
-    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
-}
+    $body = @'
+    {
+        "clientId":"fabric-installer", 
+        "clientName":"Fabric Installer", 
+        "requireConsent":"false", 
+        "allowedGrantTypes": ["client_credentials"], 
+        "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
+    }
 '@
 
-Write-Console "Registering Fabric.Installer Client."
-$installerClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+    Write-Console "Registering Fabric.Installer Client."
+    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
+}
+
 if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
     $installerClientSecret = $fabricInstallerSecret
 }
@@ -584,7 +588,7 @@ if (!$accessToken){
 }
 
 Write-Console "Registering Fabric.Identity Client"
-$identityClientSecret = Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken
+$identityClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
 
 if($identityClientSecret){
     $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
