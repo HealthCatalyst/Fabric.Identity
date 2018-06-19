@@ -16,11 +16,11 @@ function Get-AuthorizationServiceUrl(){
 
 function Get-DiscoveryServiceUrl(){
     $hostName = Get-FullyQualifiedHostName
-    return "$hostName/DiscoveryService"
+    return "$hostName/DiscoveryService/v1"
 }
 
 function Get-ApplicationUrl($serviceName, $serviceVersion, $discoveryServiceUrl){
-    $discoveryRequest = "$discoveryServiceUrl/v1/Services?`$filter=ServiceName eq '$serviceName' and Version eq $serviceVersion&`$select=ServiceUrl&`$orderby=Version desc"
+    $discoveryRequest = "$discoveryServiceUrl/Services?`$filter=ServiceName eq '$serviceName' and Version eq $serviceVersion&`$select=ServiceUrl&`$orderby=Version desc"
     $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
     $serviceUrl = $discoveryResponse.value.ServiceUrl
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
