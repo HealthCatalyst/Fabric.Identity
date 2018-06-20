@@ -92,34 +92,6 @@ function Add-DatabaseSecurity($userName, $role, $connString)
     Write-Success "Database security applied successfully"
 }
 
-function Add-DiscoveryRegistration($discoveryUrl, $serviceUrl, $credential)
-{
-    $registrationBody = @{
-        ServiceName = "IdentityService"
-        Version = 1
-        ServiceUrl = $serviceUrl
-        DiscoveryType = "Service"
-        IsHidden = $true
-        FriendlyName = "Fabric.Identity"
-        Description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
-    }
-
-    $url = "$discoveryUrl/v1/Services"
-    $jsonBody = $registrationBody | ConvertTo-Json	
-    try{
-        Invoke-RestMethod -Method Post -Uri "$url" -Body "$jsonBody" -ContentType "application/json" -Credential $credential | Out-Null
-        Write-Success "Fabric.Identity successfully registered with DiscoveryService."
-    }catch{
-        $exception = $_.Exception
-        Write-Error "Unable to register Fabric.Identity with DiscoveryService. Ensure that DiscoveryService is running at $discoveryUrl, that Windows Authentication is enabled for DiscoveryService and Anonymous Authentication is disabled for DiscoveryService. Error $($_.Exception.Message) Halting installation."
-        if($exception.Response -ne $null){
-            $error = Get-ErrorFromResponse -response $exception.Response
-            Write-Error "    There was an error updating the resource: $error."
-        }
-        throw
-    }
-}
-
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
     Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
 }
@@ -452,7 +424,16 @@ $identityServerUrl = $applicationEndpoint
 
 if(!($noDiscoveryService)){
     Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
-    Add-DiscoveryRegistration $discoveryServiceUrl $identityServerUrl $credential
+    $discoveryPostBody = @{
+        buildVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion
+        serviceName = "IdentityService"
+        serviceVersion = 1
+        friendlyName = "Fabric.Identity"
+        description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
+        serviceUrl = $identityServerUrl        
+    }
+
+    Add-DiscoveryRegistration $discoveryServiceUrl $credential $discoveryPostBody
     Write-Host ""
 }
 
