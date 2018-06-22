@@ -422,21 +422,6 @@ if($primarySigningCertificateThumbprint){ Add-InstallationSetting "identity" "pr
 if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" | Out-Null }
 $identityServerUrl = $applicationEndpoint
 
-if(!($noDiscoveryService)){
-    Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
-    $discoveryPostBody = @{
-        buildVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion
-        serviceName = "IdentityService"
-        serviceVersion = 1
-        friendlyName = "Fabric.Identity"
-        description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
-        serviceUrl = $identityServerUrl        
-    }
-
-    Add-DiscoveryRegistration $discoveryServiceUrl $credential $discoveryPostBody
-    Write-Host ""
-}
-
 Unlock-ConfigurationSections
 Write-Host ""
 
@@ -453,6 +438,21 @@ New-App $appName $siteName $appDirectory | Out-Null
 Publish-WebSite $zipPackage $appDirectory $appName $overwriteWebConfig
 Write-Host ""
 Add-DatabaseSecurity $iisUser $identityDatabaseRole $identityDbConnStr
+
+if(!($noDiscoveryService)){
+    Add-ServiceUserToDiscovery $credential.UserName $metadataConnStr
+    $discoveryPostBody = @{
+        buildVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion
+        serviceName = "IdentityService"
+        serviceVersion = 1
+        friendlyName = "Fabric.Identity"
+        description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem."
+        serviceUrl = $identityServerUrl        
+    }
+
+    Add-DiscoveryRegistration $discoveryServiceUrl $credential $discoveryPostBody
+    Write-Host ""
+}
 
 #Write environment variables
 Write-Host ""
