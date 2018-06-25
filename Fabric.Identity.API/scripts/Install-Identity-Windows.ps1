@@ -151,8 +151,8 @@ function Get-DiscoveryServiceUrl($discoUrl)
     if([string]::IsNullOrEmpty($discoUrl)){
         return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService/v1"
     }else{
-		  $hasversion = $discoUrl -match "/v\d"
-		  if (!$hasversion)
+	      $discoUrl = $discoUrl.TrimEnd('/')
+          if ($discoUrl -notmatch "/v\d")
 		  {
 	  		  return $discoUrl + '/v1'
 		  }
