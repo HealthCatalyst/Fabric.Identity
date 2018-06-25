@@ -399,6 +399,8 @@ if(!($noDiscoveryService)){
     if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
          $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
     }
+
+    $discoveryServiceUrl = $discoveryServiceUrl.TrimEnd('/')
 }
 
 
