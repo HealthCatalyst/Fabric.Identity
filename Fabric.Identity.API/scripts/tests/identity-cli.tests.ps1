@@ -1,10 +1,9 @@
-# param(
-#     [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1"
-# )
+param(
+    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1"
+)
 
 # Force re-import to pick up latest changes
-Import-Module ..\identity-cli.psm1 -Force
-#Import-Module $targetFilePath -Force
+Import-Module $targetFilePath -Force
 
 describe 'Get-AccessToken' {
     Context 'Unit Tests' {
