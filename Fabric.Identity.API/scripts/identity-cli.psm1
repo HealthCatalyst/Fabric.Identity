@@ -25,7 +25,7 @@ function Get-AccessToken {
         [Parameter(Mandatory=$True)] [Uri] $identityUrl,
         [Parameter(Mandatory=$True)] [string] $clientId,
         [Parameter(Mandatory=$True)] [string] $secret,
-        [Parameter(Mandatory=$True)] [string] $scope
+        [string[]] $scope
     )
 
     $url = "$identityUrl/connect/token"
@@ -42,7 +42,7 @@ function Get-AccessToken {
 
 <#
     .Synopsis
-    Attempts to get an access token the fabric installer client
+    Attempts to get an access token for the fabric installer client
 
     .Description
     Takes in the identity server url and the installer secret and return the installer access token.
@@ -53,11 +53,8 @@ function Get-AccessToken {
     .Parameter secret
     The secret of the fabric installer client
 
-    .Parameter scopes
-    The scope of the access token to be requested
-
     .Example
-    Get-AccessToken -identityUrl "https://server/identity"-secret "SECrEtStrING" 
+    Get-AccessToken -identityUrl "https://server/identity" -secret "SECrEtStrING" 
 #>
 function Get-FabricInstallerAccessToken {
     param(
@@ -66,9 +63,8 @@ function Get-FabricInstallerAccessToken {
     )
 
     $clientId = "fabric-installer"
-    $scope = "fabric/identity.manageresources"
-    $return =  Get-AccessToken $identityUrl $clientId $secret $scope
-    return $return
+    $scope = "fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"
+    return Get-AccessToken $identityUrl $clientId $secret $scope
 }
 
 function Get-ClientRegistration($identityUrl, $clientId, $accessToken) {
