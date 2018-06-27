@@ -24,8 +24,8 @@ function Get-ApplicationUrl($serviceName, $serviceVersion, $discoveryServiceUrl)
     $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
     $serviceUrl = $discoveryResponse.value.ServiceUrl
     if([string]::IsNullOrWhiteSpace($serviceUrl)){
-	    Write-Error "There was an error getting the service registration for $serviceName, using DiscoveryService url $discoveryRequest."
-        throw "The service $serviceName version $serviceVersion and $serviceUrl is not registered with the Discovery service. Make sure that this version of the service is registered w/ Discovery service before proceeding. Halting installation."
+	    $addToError = "There was an error getting the service registration for $serviceName, using DiscoveryService url $discoveryRequest."
+        throw "The service $serviceName version $serviceVersion and $serviceUrl is not registered with the Discovery service. $addToError Make sure that this version of the service is registered w/ Discovery service before proceeding. Halting installation."
     }
     return $serviceUrl
 }
@@ -677,6 +677,11 @@ if([string]::IsNullOrEmpty($installSettings.discoveryService))
 } else
 {
 	$discoveryServiceUrl = $installSettings.discoveryService
+	$discoveryServiceUrl = $discoveryServiceUrl.TrimEnd("/")
+    if ($discoveryServiceUrl -notmatch "/v\d")
+	{
+	  $discoveryServiceUrl = $discoveryServiceUrl + "/v1"
+	}
 }
 
 try{
