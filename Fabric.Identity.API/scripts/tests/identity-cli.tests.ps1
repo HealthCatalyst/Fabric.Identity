@@ -1,5 +1,6 @@
 param(
-    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1"
+    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1",
+    [Uri] $identityUrl = "http://localhost:5001"
 )
 
 # Force re-import to pick up latest changes
@@ -73,6 +74,23 @@ describe 'Get-FabricInstallerAccessToken' {
     }
 }
 
+describe 'Functional-Tests' {    
+    BeforeAll {
+        # Set up auth/identity
+        Start-Process "$targetFilePath\..\start-auth-identity.sh" -Wait
+    }
+    AfterAll {
+        # Tear down auth/identity
+        Start-Process "$targetFilePath\..\stop-auth-identity.sh" -Wait
+    }
+    
+    It 'Should return the correct issuer' {
+        [Uri] $url = [Uri]"$identityUrl.well-known/openid-configuration"
+
+        $response = Invoke-RestMethod -Method Get -Uri $url
+        $response.issuer | Should -Be "http://functional-identity:5001"
+    }
+}
 describe 'Get-ClientRegistration' {
     Context 'Unit Tests' {
         Context 'Valid Request' {
