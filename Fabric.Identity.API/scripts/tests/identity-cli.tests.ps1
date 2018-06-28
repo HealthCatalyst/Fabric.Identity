@@ -75,10 +75,7 @@ describe 'Get-FabricInstallerAccessToken' {
 }
 
 describe 'Functional-Tests' {    
-    BeforeAll {
-        # Switch docker to linux engine
-        Start-Process $env:programfiles\Docker\Docker\DockerCli.exe  -Wait -ArgumentList -SwitchLinuxEngine
-        
+    BeforeAll {        
         # Set up auth/identity
         Start-Process "$targetFilePath\..\start-auth-identity.sh" -Wait
     }
