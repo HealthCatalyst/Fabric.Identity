@@ -78,8 +78,6 @@ describe 'Get-ClientRegistration' {
         Context 'Valid Request' {
             It 'Should return a client object when valid response' {
                 $mockUrl = New-MockObject -Type Uri
-                $allowedGrantTypes = @("client_credentials", "delegation")
-                $allowedScopes = @("fabric/authorization.read", "dos/metadata", "fabric.profile")
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
                     enabled = 1
                     clientId = "dos-metadata-service"
