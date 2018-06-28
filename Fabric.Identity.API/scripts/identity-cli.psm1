@@ -102,8 +102,72 @@ function Get-ClientRegistration {
     return $clientResponse
 }
 
-function New-ClientRegistration($identityUrl, $body, $accessToken) {
-    throw [System.NotImplementedException]
+<#
+    .Synopsis
+    Attempts to register a new identity client
+
+    .Description
+    Takes in the identity server url and the client body and an access token.
+    Returns a client secret for the new client.
+    If the client already exists, this function updates the client attributes and resets the client secret.
+
+    .Parameter identityUrl
+    The identity url to get the access token from
+
+    .Parameter body
+    the json payload of attributes and values for the new client
+
+    .Parameter accessToken
+    an access token previously retrieved from the identity server
+
+    .Example
+    Get-ClientRegistration -identityUrl "https://server/identity" -body @'{"clientId":"fabric-installer", "clientName":"Fabric Installer" ...... }@' -accessToken "eyJhbGciO"
+#>
+function New-ClientRegistration {
+    param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $body,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    $url = "$identityUrl/api/client"
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+    
+    # attempt to add
+    try{
+        $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body -ContentType "application/json" -Headers $headers
+        return $registrationResponse.clientSecret
+    }catch{
+        $exception = $_.Exception
+        $clientObject = ConvertFrom-Json -InputObject $body
+        if ($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409) {
+            Write-Warning "Client $($clientObject.clientName) is already registered...updating registration settings."
+            try{                
+                Invoke-RestMethod -Method Put -Uri "$url/$($clientObject.clientId)" -Body $body -ContentType "application/json" -Headers $headers
+
+                # Reset client secret
+                $apiResponse = Invoke-RestMethod -Method Post -Uri "$url/$($clientObject.clientId)/resetPassword" -ContentType "application/json" -Headers $headers
+                return $apiResponse.clientSecret
+            }catch{
+                $exception = $_.Exception
+                $error = Get-ErrorFromResponse -response $exception.Response
+                Write-Error "There was an error updating Client $($clientObject.clientName): $error. Halting installation."
+                throw $exception
+            }
+        }
+        else {
+            $error = "Unknown error."
+            $exception = $_.Exception
+            if($exception -ne $null -and $exception.Response -ne $null){
+                $error = Get-ErrorFromResponse -response $exception.Response
+            }
+            Write-Error "There was an error registering client $($clientObject.clientName) with Fabric.Identity: $error, halting installation."
+            throw $exception
+        }
+    }    
 }
 
 function New-ImplicitClientRegistration($identityUrl, $body, $accessToken) {
@@ -150,6 +214,14 @@ function Test-IsApiRegistered($identityUrl, $apiName, $accessToken) {
     throw [System.NotImplementedException]
 }
 
+function Get-ErrorFromResponse($response) {
+    $result = $response.GetResponseStream()
+    $reader = New-Object System.IO.StreamReader($result)
+    $reader.BaseStream.Position = 0
+    $reader.DiscardBufferedData()
+    $responseBody = $reader.ReadToEnd();
+    return $responseBody
+}
 
 Export-ModuleMember -Function Get-AccessToken
 Export-ModuleMember -Function Get-FabricInstallerAccessToken
@@ -166,3 +238,4 @@ Export-ModuleMember -Function New-ApiRegistration
 Export-ModuleMember -Function Invoke-UpdateApiRegistration
 Export-ModuleMember -Function Invoke-UpdateClientPassword
 Export-ModuleMember -Function Test-IsApiRegistered
+Export-ModuleMember -Function Get-ErrorFromResponse

@@ -112,7 +112,37 @@ describe 'Get-ClientRegistration' {
 }
 
 
-describe 'New-ClientRegistration' {}
+describe 'New-ClientRegistration' {
+    Context 'Unit Tests' {
+        Context 'Valid Request' {
+            It 'Should return a client secret when valid new client' {
+                $mockUrl = New-MockObject -Type Uri
+                
+                $newClient = @{}                                                                                                                                                    
+                $newClient.Add("clientId", "cliTestClient")                                                                                                                         
+                $newClient.Add("clientName", "cli Test Client Name")                                                                                                                
+                $newClient.Add("requireConsent", "false")                                                                                                                           
+                $newClient.Add("allowedGrantTypes", @("client_credentials"))                                                                                                        
+                $newClient.Add("allowedScopes", @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.manageclients"))
+
+                $jsonClient = $newClient | ConvertTo-Json
+
+                ## TODO set a parameter so that it returns "newClientSecret on POST only"
+                Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return "{newClientSecret}"}
+                
+
+                $response = New-ClientRegistration -identityUrl $mockUrl -body $jsonClient -accessToken "Bearer goodtoken"                
+
+                ###  TODO this is not the correct return type????
+                $response.Length | Should -Be 1
+                $response[1] | Should -Be "newClientSecret"
+            }
+
+            ## add a test here to check the reset feature, 2 mocks, one for POST the other for PUT
+        }
+    }
+     ## invalid scnearios are: unauthroized, cannot PUT, bad dataa in json
+}
 
 describe 'New-ImplicitClientRegistration' {}
 
