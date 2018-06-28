@@ -67,23 +67,54 @@ function Get-FabricInstallerAccessToken {
     return Get-AccessToken $identityUrl $clientId $secret $scope
 }
 
-function Get-ClientRegistration($identityUrl, $clientId, $accessToken) {
+<#
+    .Synopsis
+    Attempts to retrive information about an existing identity client
+
+    .Description
+    Takes in the identity server url and the clientid and an access token.
+
+    .Parameter identityUrl
+    The identity url to get the access token from
+
+    .Parameter clientId
+    the identifier for the client to retrieve
+
+    .Parameter accessToken
+    an access token previously retrieved from the identity server
+
+    .Example
+    Get-ClientRegistration -identityUrl "https://server/identity" -clientId "sample-client-id" -accessToken "eyJhbGciO"
+#>
+function Get-ClientRegistration {
+    param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $clientId,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    $url = "$identityUrl/api/v1/client/$clientId"
+
+    $headers = @{"Accept" = "application/json"}
+    $headers.Add("Authorization", "Bearer $accessToken")
+
+    $clientResponse = Invoke-RestMethod -Method Get -Uri $url -Headers $headers
+    return $clientResponse
+}
+
+function New-ClientRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
-function Create-ClientRegistration($identityUrl, $body, $accessToken) {
+function New-ImplicitClientRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
-function Create-ImplicitClientRegistration($identityUrl, $body, $accessToken) {
+function New-HybridClientRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
-function Create-HybridClientRegistration($identityUrl, $body, $accessToken) {
-    throw [System.NotImplementedException]
-}
-
-function Create-HybridPkceClientRegistration($identityUrl, $body, $accessToken) {
+function New-HybridPkceClientRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
@@ -103,7 +134,7 @@ function Get-ApiRegistration($identityUrl, $apiName, $accessToken) {
     throw [System.NotImplementedException]
 }
 
-function Create-ApiRegistration($identityUrl, $body, $accessToken) {
+function New-ApiRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
@@ -123,15 +154,15 @@ function Test-IsApiRegistered($identityUrl, $apiName, $accessToken) {
 Export-ModuleMember -Function Get-AccessToken
 Export-ModuleMember -Function Get-FabricInstallerAccessToken
 Export-ModuleMember -Function Get-ClientRegistration
-Export-ModuleMember -Function Create-ClientRegistration
-Export-ModuleMember -Function Create-ImplicitClientRegistration
-Export-ModuleMember -Function Create-HybridClientRegistration
-Export-ModuleMember -Function Create-HybridPkceClientRegistration
+Export-ModuleMember -Function New-ClientRegistration
+Export-ModuleMember -Function New-ImplicitClientRegistration
+Export-ModuleMember -Function New-HybridClientRegistration
+Export-ModuleMember -Function New-HybridPkceClientRegistration
 Export-ModuleMember -Function Invoke-UpdateClientRegistration
 Export-ModuleMember -Function Invoke-UpdateClientPassword
 Export-ModuleMember -Function Test-IsClientRegistered
 Export-ModuleMember -Function Get-ApiRegistration
-Export-ModuleMember -Function Create-ApiRegistration
+Export-ModuleMember -Function New-ApiRegistration
 Export-ModuleMember -Function Invoke-UpdateApiRegistration
 Export-ModuleMember -Function Invoke-UpdateClientPassword
 Export-ModuleMember -Function Test-IsApiRegistered
