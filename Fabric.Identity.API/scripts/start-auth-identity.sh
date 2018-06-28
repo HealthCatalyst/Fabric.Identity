@@ -1,20 +1,20 @@
 #!/bin/bash
 
-docker stop functional-authorization
-docker rm functional-authorization
+# docker stop functional-authorization
+# docker rm functional-authorization
 docker stop functional-identity
 docker rm functional-identity
 
 docker network create functional-tests
 
-docker run -d --name functional-authorization \
-	-p 5004:5004 \
-	-e STORAGEPROVIDER=InMemory \
-	-e IDENTITYSERVERCONFIDENTIALCLIENTSETTINGS__AUTHORITY=http://functional-identity:5001 \
-	--network="functional-tests" \
-	healthcatalyst/fabric.authorization
-echo "started authorization"
-sleep 3
+# docker run -d --name functional-authorization \
+# 	-p 5004:5004 \
+# 	-e STORAGEPROVIDER=InMemory \
+# 	-e IDENTITYSERVERCONFIDENTIALCLIENTSETTINGS__AUTHORITY=http://functional-identity:5001 \
+# 	--network="functional-tests" \
+# 	healthcatalyst/fabric.authorization
+# echo "started authorization"
+# sleep 3
 
 cd ..
 dotnet publish -o obj/Docker/publish

@@ -15,7 +15,7 @@ describe 'Get-AccessToken' {
                     expires_in = 3600
                     token_type =  "Bearer"
                     }
-                }      
+                }
                 $mockUrl = New-MockObject -Type Uri
             }
 
