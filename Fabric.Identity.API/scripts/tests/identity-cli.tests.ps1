@@ -1,12 +1,11 @@
 param(
-    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1",
-    [Uri] $identityUrl = "http://localhost:5001"
+    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1"
 )
 
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
-describe 'Get-AccessToken' {
+Describe 'Get-AccessToken' {
     Context 'Unit Tests' {
         Context 'Valid Request' {
             BeforeAll {
@@ -16,7 +15,7 @@ describe 'Get-AccessToken' {
                     token_type =  "Bearer"
                     }
                 }
-                $mockUrl = New-MockObject -Type Uri
+                [Uri] $mockUrl = "http://identity"
             }
 
             It 'Should return an access token when valid response with single scope' {          
@@ -33,18 +32,19 @@ describe 'Get-AccessToken' {
         Context 'Invalid request' {    
             It 'Should return the error when invalid response' {
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
+                [Uri] $mockUrl = "http://identity"
                 
-                {Get-AccessToken -identityUrl "url" -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
+                {Get-AccessToken -identityUrl $mockUrl -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
             }
         }
     }
 }
 
-describe 'Get-FabricInstallerAccessToken' {
+Describe 'Get-FabricInstallerAccessToken' {
     Context 'Unit Tests' {
         Context 'Valid Request' {
             It 'Should return an access token when valid response' {
-                $mockUrl = New-MockObject -Type Uri
+                [Uri] $mockUrl = "http://identity"
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
                     access_token = "return token"
                     expires_in = 3600
@@ -61,9 +61,10 @@ describe 'Get-FabricInstallerAccessToken' {
         Context 'Invalid Request' {
             It 'Should return an exception when invalid response' {
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Error" }
+                [Uri] $mockUrl = "http://identity"
 
                 try {
-                    Get-FabricInstallerAccessToken  -identityUrl "url" -secret "Secret" 
+                    Get-FabricInstallerAccessToken  -identityUrl $mockUrl -secret "Secret" 
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException 
@@ -74,28 +75,11 @@ describe 'Get-FabricInstallerAccessToken' {
     }
 }
 
-describe 'Functional-Tests' {    
-    BeforeAll {        
-        # Set up auth/identity
-        Start-Process "$targetFilePath\..\start-auth-identity.sh" -Wait
-    }
-    AfterAll {
-        # Tear down auth/identity
-        Start-Process "$targetFilePath\..\stop-auth-identity.sh" -Wait
-    }
-    
-    It 'Should return the correct issuer' {
-        [Uri] $url = [Uri]"$identityUrl.well-known/openid-configuration"
-
-        $response = Invoke-RestMethod -Method Get -Uri $url
-        $response.issuer | Should -Be "http://functional-identity:5001"
-    }
-}
-describe 'Get-ClientRegistration' {
+Describe 'Get-ClientRegistration' {
     Context 'Unit Tests' {
         Context 'Valid Request' {
             It 'Should return a client object when valid response' {
-                $mockUrl = New-MockObject -Type Uri
+                [Uri] $mockUrl = "http://identity"
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
                     enabled = 1
                     clientId = "dos-metadata-service"
@@ -113,14 +97,14 @@ describe 'Get-ClientRegistration' {
 
         Context 'Invalid request' {    
             It 'Should return an error when non existent client' {
-                $mockUrl = New-MockObject -Type Uri
+                [Uri] $mockUrl = "http://identity"
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
                 
                 {Get-ClientRegistration -identityUrl $mockUrl -clientId "someNonExistentClient" -accessToken  "Bearer goodtoken"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
             }
 
             It 'Should return an error when bad token' {
-                $mockUrl = New-MockObject -Type Uri
+                [Uri] $mockUrl = "http://identity"
                 Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
                 
                 {Get-ClientRegistration -identityUrl $mockUrl -clientId "someClient" -accessToken  "Bearer badtoken"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
@@ -130,26 +114,26 @@ describe 'Get-ClientRegistration' {
 }
 
 
-describe 'New-ClientRegistration' {}
+Describe 'New-ClientRegistration' {}
 
-describe 'New-ImplicitClientRegistration' {}
+Describe 'New-ImplicitClientRegistration' {}
 
-describe 'New-HybridClientRegistration' {}
+Describe 'New-HybridClientRegistration' {}
 
-describe 'New-HybridPkceClientRegistration' {}
+Describe 'New-HybridPkceClientRegistration' {}
 
-describe 'Invoke-UpdateClientRegistration' {}
+Describe 'Invoke-UpdateClientRegistration' {}
 
-describe 'Invoke-UpdateClientPassword' {}
+Describe 'Invoke-UpdateClientPassword' {}
 
-describe 'Test-IsClientRegistered' {}
+Describe 'Test-IsClientRegistered' {}
 
-describe 'Get-ApiRegistration' {}
+Describe 'Get-ApiRegistration' {}
 
-describe 'New-ApiRegistration' {}
+Describe 'New-ApiRegistration' {}
 
-describe 'Invoke-UpdateApiRegistration' {}
+Describe 'Invoke-UpdateApiRegistration' {}
 
-describe 'Invoke-UpdateClientPassword' {}
+Describe 'Invoke-UpdateClientPassword' {}
 
-describe 'Test-IsApiRegistered' {}
+Describe 'Test-IsApiRegistered' {}

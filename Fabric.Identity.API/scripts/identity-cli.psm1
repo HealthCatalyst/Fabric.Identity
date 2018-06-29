@@ -27,8 +27,10 @@ function Get-AccessToken {
         [Parameter(Mandatory=$True)] [string] $secret,
         [string[]] $scope
     )
+    
+    $url = ""
+    [System.Uri]::TryCreate($identityUrl, "connect/token", [ref]$url) | Out-Null
 
-    $url = "$identityUrl/connect/token"
     $body = @{
         client_id = "$clientId"
         grant_type = "client_credentials"
@@ -93,7 +95,8 @@ function Get-ClientRegistration {
         [Parameter(Mandatory=$True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/v1/client/$clientId"
+    $url = ""
+    [System.Uri]::TryCreate($identityUrl, "api/v1/client/$clientId", [ref]$url) | Out-Null
 
     $headers = @{"Accept" = "application/json"}
     $headers.Add("Authorization", "Bearer $accessToken")
