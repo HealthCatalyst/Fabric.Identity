@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Fabric.Identity.API.Models
 {
@@ -7,6 +8,7 @@ namespace Fabric.Identity.API.Models
         /// <summary>
         ///     Indicates if this resource is enabled. Defaults to true.
         /// </summary>
+        [DefaultValue(true)]
         public bool Enabled { get; set; } = true;
 
         /// <summary>

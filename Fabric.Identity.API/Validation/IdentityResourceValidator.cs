@@ -22,7 +22,7 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(identityResource => identityResource.UserClaims)
                 .NotNull()
-                .WithMessage("Please specify at least one Uesr Claim for this Identity Resource");
+                .WithMessage("Please specify at least one User Claim for this Identity Resource");
 
             RuleForEach(identityResource => identityResource.UserClaims)
                 .NotEmpty()

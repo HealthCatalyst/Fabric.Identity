@@ -27,7 +27,7 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(apiResource => apiResource.UserClaims)
                 .NotNull()
-                .WithMessage("Please specify at least one Uesr Claim for this Api Resource");
+                .WithMessage("Please specify at least one User Claim for this Api Resource");
 
             RuleForEach(apiResource => apiResource.UserClaims)
                 .NotEmpty()
