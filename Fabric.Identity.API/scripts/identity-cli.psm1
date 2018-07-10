@@ -65,7 +65,7 @@ function Get-FabricInstallerAccessToken {
     )
 
     $clientId = "fabric-installer"
-    $scope = "fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"
+    $scope = "fabric/identity.manageresources"
     return Get-AccessToken $identityUrl $clientId $secret $scope
 }
 
