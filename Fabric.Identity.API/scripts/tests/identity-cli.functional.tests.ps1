@@ -4,8 +4,6 @@ param(
     [string] $installerSecret
 )
 
-Write-Host $PSScriptRoot
-Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
@@ -27,12 +25,24 @@ Describe 'Identity Cli Functional Tests' {
                 # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
                 $response | Should -Not -Be $null
             }
+
+            It 'Should return an access token when valid request and multiple valid scopes' {
+                $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources fabric/authorization.read fabric/authorization.write fabric/authorization.dos.write fabric/authorization.manageclients"
+
+                # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
+                $response | Should -Not -Be $null
+            }
+
+            It 'Should return an access token when request does not have a scope' {
+                $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
+                $response | Should -Not -Be $null
+            }
         }
 
         Context 'Invalid requests' {
-            It 'Should return the error when invalid client id' {
+            It 'Should return an error when request has an invalid client id' {
                 try {
-                    Get-AccessToken  -identityUrl $identityUrl -secret "Secret" -scope "scope" -clientId "id"
+                    Get-AccessToken  -clientId "id" -identityUrl $identityUrl -secret "Secret" -scope "scope"
                 }
                 catch {
                     $error = Get-ErrorFromResponse -response $_.Exception.Response
@@ -42,19 +52,7 @@ Describe 'Identity Cli Functional Tests' {
                 }
             }
 
-            It 'Should return an access token when valid request without a scope' {
-                try {
-                    Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
-                }
-                catch {
-                    $_.Exception | Should -BeOfType System.Net.WebException
-                    $error = Get-ErrorFromResponse -response $_.Exception.Response
-
-                    $error | Should -Be '{"error":"invalid_scope"}'
-                }
-            }
-
-            It 'Should return an access token when valid request without a valid secret' {
+            It 'Should return an exception when request does not have a valid secret' {
                 try {
                     $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret "secret" -scope "fabric/identity.manageresources"
                 }
