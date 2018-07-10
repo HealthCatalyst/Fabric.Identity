@@ -25,17 +25,16 @@ function Get-AccessToken {
         [Parameter(Mandatory=$True)] [Uri] $identityUrl,
         [Parameter(Mandatory=$True)] [string] $clientId,
         [Parameter(Mandatory=$True)] [string] $secret,
-        [string[]] $scope
+        [string] $scope
     )
     
-    $url = ""
-    [System.Uri]::TryCreate($identityUrl, "connect/token", [ref]$url) | Out-Null
+    [Uri] $url = "$($identityUrl.OriginalString)/connect/token"
 
     $body = @{
-        client_id = "$clientId"
+        client_id = $clientId
         grant_type = "client_credentials"
-        scope = "$scope"
-        client_secret = "$secret"
+        scope = $scope
+        client_secret = $secret
     }
 
     $accessTokenResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body
@@ -65,7 +64,7 @@ function Get-FabricInstallerAccessToken {
     )
 
     $clientId = "fabric-installer"
-    $scope = "fabric/identity.manageresources"
+    $scope = "fabric/identity.manageresources fabric/authorization.read fabric/authorization.write fabric/authorization.dos.write fabric/authorization.manageclients"
     return Get-AccessToken $identityUrl $clientId $secret $scope
 }
 
@@ -95,8 +94,7 @@ function Get-ClientRegistration {
         [Parameter(Mandatory=$True)] [string] $accessToken
     )
 
-    $url = ""
-    [System.Uri]::TryCreate($identityUrl, "api/v1/client/$clientId", [ref]$url) | Out-Null
+    [Uri]$url = "$($identityUrl.OriginalString)/api/v1/client/$clientId"
 
     $headers = @{"Accept" = "application/json"}
     $headers.Add("Authorization", "Bearer $accessToken")
