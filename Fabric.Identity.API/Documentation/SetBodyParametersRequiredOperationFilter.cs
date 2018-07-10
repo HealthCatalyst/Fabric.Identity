@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -21,9 +18,9 @@ namespace Fabric.Identity.API.Documentation
 
         private void SetBodyParametersAsRequired(Operation operation)
         {
-            IEnumerable<IParameter> bodyParameters = operation.Parameters.Where(p => p.In == "body");
+            var bodyParameters = operation.Parameters.Where(p => p.In == "body");
 
-            foreach (IParameter bodyParameter in bodyParameters)
+            foreach (var bodyParameter in bodyParameters)
             {
                 bodyParameter.Required = true;
             }

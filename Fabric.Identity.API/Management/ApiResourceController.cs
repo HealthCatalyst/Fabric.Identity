@@ -47,7 +47,7 @@ namespace Fabric.Identity.API.Management
         ///     <see cref="IS4.ApiResource" />
         /// </returns>
         [HttpGet("{id}")]
-        [SwaggerResponse(200, typeof(IS4.ApiResource), "Success")]
+        [SwaggerResponse(200, typeof(ApiResource), "Success")]
         [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         public IActionResult Get(string id)
@@ -98,7 +98,7 @@ namespace Fabric.Identity.API.Management
         /// <param name="apiResource">The <see cref="ApiResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
-        [SwaggerResponse(201, typeof(IS4.ApiResource), "The API resource was created.")]
+        [SwaggerResponse(201, typeof(ApiResource), "The API resource was created.")]
         [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
         [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
         public IActionResult Post([FromBody] ApiResource apiResource)
