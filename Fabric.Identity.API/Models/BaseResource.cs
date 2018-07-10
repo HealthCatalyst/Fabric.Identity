@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Fabric.Identity.API.Models
 {
@@ -12,8 +13,9 @@ namespace Fabric.Identity.API.Models
         public bool Enabled { get; set; } = true;
 
         /// <summary>
-        ///     The unique name of the resource.
+        ///     The unique name of the resource. Required in the request body ONLY for POST operations.
         /// </summary>
+        [Required]
         public string Name { get; set; }
 
         /// <summary>
@@ -29,6 +31,7 @@ namespace Fabric.Identity.API.Models
         /// <summary>
         ///     List of accociated user claims that should be included when this resource is requested.
         /// </summary>
+        [Required]
         public ICollection<string> UserClaims { get; set; } = new HashSet<string>();
     }
 }
