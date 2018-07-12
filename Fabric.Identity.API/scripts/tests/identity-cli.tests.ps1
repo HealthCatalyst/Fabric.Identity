@@ -324,7 +324,7 @@ describe 'Invoke-UpdateClientRegistration' {
             }
         }
 
-        Context 'Invalid request - bad json' {    
+        Context 'Invalid request - bad json' {
             It 'Should return an error when invalid client json' {
                 $authUrl = [System.Uri]'https://some.Server/identity'
     
