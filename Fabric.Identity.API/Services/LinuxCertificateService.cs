@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Fabric.Identity.API.Configuration;
 using Fabric.Platform.Shared.Exceptions;
@@ -38,6 +39,12 @@ namespace Fabric.Identity.API.Services
         public X509Certificate2 GetEncryptionCertificate(SigningCertificateSettings certificateSettings)
         {
             throw new FabricConfigurationException("Do not encrypt settings when running on a Linux container, instead use Docker Secrets to protect sensitive configuration settings.");
+        }
+
+        public RSA GetEncryptionCertificatePrivateKey(SigningCertificateSettings certificateSettings)
+        {
+            var cert = GetEncryptionCertificate(certificateSettings);
+            return cert.GetRSAPrivateKey();
         }
 
         private X509Certificate2 GetCertFromFile(string certPath, string passwordPath)
