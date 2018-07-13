@@ -5,7 +5,7 @@ param(
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
-describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
+Describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
         BeforeAll {
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { return @{
@@ -14,7 +14,7 @@ describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
                     token_type   = "Bearer"
                 }
             }
-            $mockUrl = New-MockObject -Type Uri
+			[Uri] $mockUrl = "http://identity"			
         }
 
         It 'Should return an access token when valid response with single scope' {
@@ -31,16 +31,17 @@ describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
     Context 'Invalid request' {
         It 'Should return the error when invalid response' {
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
-
-            {Get-AccessToken -identityUrl "url" -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
+			[Uri] $mockUrl = "http://identity"
+			
+            {Get-AccessToken -identityUrl $mockUrl -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
         }
     }
 }
 
-describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
+Describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
         It 'Should return an access token when valid response' {
-            $mockUrl = New-MockObject -Type Uri
+			[Uri] $mockUrl = "http://identity"
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { return @{
                     access_token = "return token"
                     expires_in   = 3600
@@ -57,9 +58,10 @@ describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
     Context 'Invalid Request' {
         It 'Should return an exception when invalid response' {
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Error" }
-
+			[Uri] $mockUrl = "http://identity"
+			
             try {
-                Get-FabricInstallerAccessToken  -identityUrl "url" -secret "Secret"
+                Get-FabricInstallerAccessToken  -identityUrl $mockUrl -secret "Secret"
             }
             catch {
                 $_.Exception | Should -BeOfType System.Net.WebException
@@ -69,10 +71,10 @@ describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'Get-ClientRegistration Unit Tests' -tag 'Unit' {
+Describe 'Get-ClientRegistration Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
-        It 'Should return a client object when valid response' {
-            $mockUrl = New-MockObject -Type Uri
+        It 'Should return a client object when valid response' {		
+			[Uri] $mockUrl = "http://identity"
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { return @{
                     enabled           = 1
                     clientId          = "dos-metadata-service"
@@ -90,13 +92,13 @@ describe 'Get-ClientRegistration Unit Tests' -tag 'Unit' {
 
     Context 'Invalid request' {
         It 'Should return an error when non existent client' {
-            $mockUrl = New-MockObject -Type Uri
+			[Uri] $mockUrl = "http://identity"
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
             {Get-ClientRegistration -identityUrl $mockUrl -clientId "someNonExistentClient" -accessToken  "Bearer goodtoken"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
         }
 
         It 'Should return an error when bad token' {
-            $mockUrl = New-MockObject -Type Uri
+			[Uri] $mockUrl = "http://identity"
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
 
             {Get-ClientRegistration -identityUrl $mockUrl -clientId "someClient" -accessToken  "Bearer badtoken"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
@@ -104,7 +106,7 @@ describe 'Get-ClientRegistration Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'New-ClientRegistrationTests Unit Tests' -tag 'Unit' {
+Describe 'New-ClientRegistrationTests Unit Tests' -tag 'Unit' {
     Context 'Valid Request - new client' {
         It 'New Registration should return a client secret when valid new client' {
             $authUrl = [System.Uri]'https://some.Server/identity'
@@ -236,7 +238,7 @@ describe 'New-ClientRegistrationTests Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'New-ClientCredentialsClientBody Unit Tests' -tag 'Unit' {
+Describe 'New-ClientCredentialsClientBody Unit Tests' -tag 'Unit' {
     Context 'Valid Object' {
         It 'New-ClientCredentialsClientBody should return a valid object with required parameters' {
             $myClientId = "validClientCredentialsClient"
@@ -254,7 +256,7 @@ describe 'New-ClientCredentialsClientBody Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'New-ImplicitClientBody Unit Tests' -tag 'Unit' {
+Describe 'New-ImplicitClientBody Unit Tests' -tag 'Unit' {
     Context 'Valid Object' {
         It 'New-ImplicitClientBody should return a valid object with required parameters' {
             $myClientId = "validImplicitClient"
@@ -272,7 +274,7 @@ describe 'New-ImplicitClientBody Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'New-HybridClientBody Unit Tests' -tag 'Unit' {
+Describe 'New-HybridClientBody Unit Tests' -tag 'Unit' {
     Context 'Valid Object' {
         It 'New-HybridClientBody should return a valid object with required parameters' {
             $myClientId = "validHybridClient"
@@ -290,7 +292,7 @@ describe 'New-HybridClientBody Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'New-HybridPkceClientBody Unit Tests' -tag 'Unit' {
+Describe 'New-HybridPkceClientBody Unit Tests' -tag 'Unit' {
     Context 'Valid Object' {
         It 'New-HybridPkceClientBody should return a valid object with required parameters' {
             $myClientId = "validHybridPkceClient"
@@ -308,7 +310,7 @@ describe 'New-HybridPkceClientBody Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'Edit-ClientRegistration Unit Tests' -tag 'Unit' {
+Describe 'Edit-ClientRegistration Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
         It 'Edit-ClientRegistration should return nothing on successful update' {
             $authUrl = [System.Uri]'https://some.Server/identity'
@@ -375,7 +377,7 @@ describe 'Edit-ClientRegistration Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'Reset-ClientPassword Unit Tests' -tag 'Unit' {
+Describe 'Reset-ClientPassword Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
         It 'Reset-ClientPassword should return client string on successful reset' {
             $authUrl = [System.Uri]'https://some.Server/identity'
@@ -409,7 +411,7 @@ describe 'Reset-ClientPassword Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'Test-IsClientRegistered Unit Tests' -tag 'Unit' {
+Describe 'Test-IsClientRegistered Unit Tests' -tag 'Unit' {
     Context 'Valid Request -- Client found' {
         It 'Test-IsClientRegistered should return true if the client id IS found' {
             $authUrl = [System.Uri]'https://some.Server/identity'
@@ -450,12 +452,12 @@ describe 'Test-IsClientRegistered Unit Tests' -tag 'Unit' {
     }
 }
 
-describe 'Get-ApiRegistration' {}
+Describe 'Get-ApiRegistration' {}
 
-describe 'New-ApiRegistration' {}
+Describe 'New-ApiRegistration' {}
 
-describe 'Edit-ApiRegistration' {}
+Describe 'Edit-ApiRegistration' {}
 
-describe 'Reset-ApiPassword' {}
+Describe 'Reset-ApiPassword' {}
 
-describe 'Test-IsApiRegistered' {}
+Describe 'Test-IsApiRegistered' {}
