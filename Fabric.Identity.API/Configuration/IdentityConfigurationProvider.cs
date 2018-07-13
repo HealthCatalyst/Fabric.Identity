@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using Fabric.Identity.API.Services;
+﻿using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Configuration.Docker;
 using Microsoft.Extensions.Configuration;
 
@@ -8,12 +6,10 @@ namespace Fabric.Identity.API.Configuration
 {
     public class IdentityConfigurationProvider
     {
-        private static readonly string EncryptionPrefix = "!!enc!!:";
-        
-        public IAppConfiguration GetAppConfiguration(string baseBath, ICertificateService certificateService)
+        public IAppConfiguration GetAppConfiguration(string baseBath, DecryptionService decryptionService)
         {
             var appConfig = BuildAppConfiguration(baseBath);
-            DecryptEncryptedValues(appConfig, certificateService);
+            DecryptEncryptedValues(appConfig, decryptionService);
             return appConfig;
         }
 
@@ -36,57 +32,33 @@ namespace Fabric.Identity.API.Configuration
                 return appConfig;
         }
 
-        private void DecryptEncryptedValues(IAppConfiguration appConfiguration, ICertificateService certificateService)
+        private void DecryptEncryptedValues(IAppConfiguration appConfiguration, DecryptionService decryptionService)
         {
-            if (appConfiguration.ElasticSearchSettings != null &&
-                IsEncrypted(appConfiguration.ElasticSearchSettings.Password))
+            if (appConfiguration.ElasticSearchSettings != null)
             {
-                appConfiguration.ElasticSearchSettings.Password = DecryptString(
-                    appConfiguration.ElasticSearchSettings.Password,
-                    certificateService,
-                    appConfiguration);
+                appConfiguration.ElasticSearchSettings.Password = decryptionService.DecryptString(
+                    appConfiguration.ElasticSearchSettings.Password, appConfiguration.SigningCertificateSettings);
             }
 
-            if (appConfiguration.CouchDbSettings != null && IsEncrypted(appConfiguration.CouchDbSettings.Password))
+            if (appConfiguration.CouchDbSettings != null)
             {
-                appConfiguration.CouchDbSettings.Password = DecryptString(
-                    appConfiguration.CouchDbSettings.Password,
-                    certificateService,
-                    appConfiguration);
+                appConfiguration.CouchDbSettings.Password = decryptionService.DecryptString(
+                    appConfiguration.CouchDbSettings.Password, appConfiguration.SigningCertificateSettings);
             }
 
-            if (appConfiguration.LdapSettings != null && IsEncrypted(appConfiguration.LdapSettings.Password))
+            if (appConfiguration.LdapSettings != null)
             {
-                appConfiguration.LdapSettings.Password = DecryptString(
-                    appConfiguration.LdapSettings.Password,
-                    certificateService,
-                    appConfiguration);
+                appConfiguration.LdapSettings.Password = decryptionService.DecryptString(
+                    appConfiguration.LdapSettings.Password, appConfiguration.SigningCertificateSettings);
             }
 
-            if (appConfiguration.IdentityServerConfidentialClientSettings != null && IsEncrypted(
-                    appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret))
+            if (appConfiguration.IdentityServerConfidentialClientSettings != null)
             {
-                appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret = DecryptString(
-                    appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret,
-                    certificateService,
-                    appConfiguration);
+                appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret =
+                    decryptionService.DecryptString(
+                        appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret,
+                        appConfiguration.SigningCertificateSettings);
             }
-        }
-
-        private static bool IsEncrypted(string value)
-        {
-            return !string.IsNullOrEmpty(value) && value.StartsWith(EncryptionPrefix);
-        }
-
-        private string DecryptString(string encryptedString, ICertificateService certificateService, IAppConfiguration appConfiguration)
-        {
-
-            var cert = certificateService.GetEncryptionCertificate(appConfiguration.SigningCertificateSettings);
-            var encryptedPasswordAsBytes =
-                System.Convert.FromBase64String(
-                    encryptedString.TrimStart(EncryptionPrefix.ToCharArray()));
-            var decryptedPasswordAsBytes = cert.GetRSAPrivateKey().Decrypt(encryptedPasswordAsBytes, RSAEncryptionPadding.OaepSHA1);
-            return System.Text.Encoding.UTF8.GetString(decryptedPasswordAsBytes);
         }
     }
 }
