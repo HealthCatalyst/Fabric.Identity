@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using Fabric.Identity.API.Configuration;
@@ -35,6 +36,13 @@ namespace Fabric.Identity.API.Services
                 .Find(CleanThumbprint(certificateSettings.EncryptionCertificateThumbprint), false)
                 .FirstOrDefault();
         }
+
+        public RSA GetEncryptionCertificatePrivateKey(SigningCertificateSettings certificateSettings)
+        {
+            var cert = GetEncryptionCertificate(certificateSettings);
+            return cert.GetRSAPrivateKey();
+        }
+
 
         private string CleanThumbprint(string thumbprint)
         {
