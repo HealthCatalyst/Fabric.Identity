@@ -54,7 +54,7 @@ function Get-AccessToken {
     The secret of the fabric installer client
 
     .Example
-    Get-AccessToken -identityUrl "https://server/identity" -secret "SECrEtStrING" 
+    Get-AccessToken -identityUrl "https://server/identity" -secret "SECrEtStrING"
 #>
 function Get-FabricInstallerAccessToken {
     param(
@@ -136,7 +136,7 @@ function New-ClientRegistration {
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
-    
+
     # attempt to add
     try {
         $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -Body $body -ContentType "application/json" -Headers $headers
@@ -145,9 +145,9 @@ function New-ClientRegistration {
     catch {
         $exception = $_.Exception
         $clientObject = ConvertFrom-Json -InputObject $body
-        if ($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409) {
+        if ((Assert-WebExceptionType -exception $exception -typeCode 409)) {
             try {
-                # client ID already exists, update with PUT                
+                # client ID already exists, update with PUT
                 Invoke-RestMethod -Method Put -Uri "$url/$($clientObject.clientId)" -Body $body -ContentType "application/json" -Headers $headers | out-null
 
                 # Reset client secret
@@ -155,20 +155,23 @@ function New-ClientRegistration {
                 return $apiResponse.clientSecret
             }
             catch {
+                $error = "Unknown error attempting to update"
                 $exception = $_.Exception
-                $error = Get-ErrorFromResponse -response $exception.Response
+                if ($null -ne $exception -and $null -ne $exception.Response) {
+                    $error = Get-ErrorFromResponse -response $exception.Response
+                }
                 throw (New-Object -TypeName "System.Net.WebException" "There was an error updating Client $($clientObject.clientName): $error. Halting installation.", $exception)
             }
         }
         else {
-            $error = "Unknown error."
+            $error = "Unknown error attempting to post"
             $exception = $_.Exception
-            if ($exception -ne $null -and $exception.Response -ne $null) {
+            if ($null -ne $exception -and $null -ne $exception.Response) {
                 $error = Get-ErrorFromResponse -response $exception.Response
             }
             throw ( New-Object -TypeName "System.Net.WebException" "There was an error registering client $($clientObject.clientName) with Fabric.Identity: $error, halting installation.", $exception)
         }
-    }    
+    }
 }
 
 <#
@@ -385,9 +388,9 @@ function New-HybridPkceClientBody {
     an access token previously retrieved from the identity server
 
     .Example
-    Invoke-UpdateClientRegistration -identityUrl "https://server/identity" -body @'{"clientId":"fabric-installer", "clientName":"Fabric Installer" ...... }@' -accessToken "eyJhbGciO"
+    Edit-ClientRegistration -identityUrl "https://server/identity" -body @'{"clientId":"fabric-installer", "clientName":"Fabric Installer" ...... }@' -accessToken "eyJhbGciO"
 #>
-function Invoke-UpdateClientRegistration {
+function Edit-ClientRegistration {
     param(
         [Parameter(Mandatory = $True)] [Uri] $identityUrl,
         [Parameter(Mandatory = $True)] [string] $body,
@@ -400,7 +403,7 @@ function Invoke-UpdateClientRegistration {
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
-    
+
     # attempt to PUT
     try {
         $updateReturn = Invoke-RestMethod -Method Put -Uri "$url/$($clientObject.clientId)" -Body $body -ContentType "application/json" -Headers $headers
@@ -409,7 +412,7 @@ function Invoke-UpdateClientRegistration {
     catch {
         $error = "Unknown error."
         $exception = $_.Exception
-        if ($exception -ne $null -and $exception.Response -ne $null) {
+        if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
         throw ( New-Object -TypeName "System.Net.WebException" "There was an error updating client registration $($clientObject.clientName) with Fabric.Identity: $error, halting installation.", $exception)
@@ -433,9 +436,9 @@ function Invoke-UpdateClientRegistration {
     an access token previously retrieved from the identity server
 
     .Example
-    Invoke-UpdateClientPassword -identityUrl "https://server/identity" -clientId "someClient" -accessToken "eyJhbGciO"
+    Reset-ClientPassword -identityUrl "https://server/identity" -clientId "someClient" -accessToken "eyJhbGciO"
 #>
-function Invoke-UpdateClientPassword {
+function Reset-ClientPassword {
     param(
         [Parameter(Mandatory = $True)] [Uri] $identityUrl,
         [Parameter(Mandatory = $True)] [string] $clientId,
@@ -456,7 +459,7 @@ function Invoke-UpdateClientPassword {
     catch {
         $error = "Unknown error."
         $exception = $_.Exception
-        if ($exception -ne $null -and $exception.Response -ne $null) {
+        if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
         throw ( New-Object -TypeName "System.Net.WebException" "There was an error resetting client secret $clientId with Fabric.Identity: $error, halting installation.", $exception)
@@ -497,27 +500,27 @@ function Test-IsClientRegistered {
     try {
         Invoke-RestMethod -Method Get -Uri $url -Headers $headers | Out-Null
         # exception thrown if not found
-         return $True
+        return $True
     }
     catch {
         $exception = $_.Exception
-        if ($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 404) {
+        if (Assert-WebExceptionType -exception $exception -typeCode 404) {
             try {
                 return $false
             }
             catch {
                 $error = "Unknown error."
                 $exception = $_.Exception
-                if ($exception -ne $null -and $exception.Response -ne $null) {
+                if ($null -ne $exception -and $null -ne $exception.Response) {
                     $error = Get-ErrorFromResponse -response $exception.Response
                 }
-                    throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for client $clientId with Fabric.Identity: $error, halting installation.", $exception)
-                }
+                throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for client $clientId with Fabric.Identity: $error, halting installation.", $exception)
+            }
         }
         else {
             $error = "Unknown error."
             $exception = $_.Exception
-            if ($exception -ne $null -and $exception.Response -ne $null) {
+            if ($null -ne $exception -and $null -ne $exception.Response) {
                 $error = Get-ErrorFromResponse -response $exception.Response
             }
             throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for client $clientId with Fabric.Identity: $error, halting installation.", $exception)
@@ -533,12 +536,12 @@ function New-ApiRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
-function Invoke-UpdateApiRegistration($identityUrl, $body, $accessToken) {
+function Edit-ApiRegistration($identityUrl, $body, $accessToken) {
     throw [System.NotImplementedException]
 }
 
 
-function Invoke-UpdateApiPassword($identityUrl, $accessToken) {
+function Reset-ApiPassword($identityUrl, $accessToken) {
     throw [System.NotImplementedException]
 }
 
@@ -546,6 +549,49 @@ function Test-IsApiRegistered($identityUrl, $apiName, $accessToken) {
     throw [System.NotImplementedException]
 }
 
+
+<#
+    .Synopsis
+    checks the exception for type
+
+    .Description
+    checks in the exception for the typeCode
+    Abstracted to facilitate exception inspection
+    returns either $true or $false
+
+    .Parameter exception
+    an exception or object of some kind thrown
+
+    .Parameter typeCode
+    an exception code to find
+
+    .Example
+    Assert-WebExceptionType -exception $exception -typeCode 404
+#>
+function Assert-WebExceptionType( $exception, $typeCode) {
+    if ($null -ne $exception -and $exception.Response.StatusCode.value__ -eq $typeCode) {
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
+<#
+    .Synopsis
+    INTERNAL: function to extract exception response messages
+
+    .Description
+    extracts the exception message if it exists
+    Abstracted to facilitate exception inspection
+    returns the response body (either an object or a string)
+
+    .Parameter response
+    the exception response
+
+    .Example
+    Get-ErrorFromResponse -response $exception.response
+#>
 function Get-ErrorFromResponse($response) {
     $result = $response.GetResponseStream()
     $reader = New-Object System.IO.StreamReader($result)
@@ -563,12 +609,12 @@ Export-ModuleMember -Function New-ClientCredentialsClientBody
 Export-ModuleMember -Function New-ImplicitClientBody
 Export-ModuleMember -Function New-HybridClientBody
 Export-ModuleMember -Function New-HybridPkceClientBody
-Export-ModuleMember -Function Invoke-UpdateClientRegistration
-Export-ModuleMember -Function Invoke-UpdateClientPassword
+Export-ModuleMember -Function Edit-ClientRegistration
+Export-ModuleMember -Function Reset-ClientPassword
 Export-ModuleMember -Function Test-IsClientRegistered
 Export-ModuleMember -Function Get-ApiRegistration
 Export-ModuleMember -Function New-ApiRegistration
-Export-ModuleMember -Function Invoke-UpdateApiRegistration
-Export-ModuleMember -Function Invoke-UpdateApiPassword
+Export-ModuleMember -Function Edit-ApiRegistration
+Export-ModuleMember -Function Reset-ApiPassword
 Export-ModuleMember -Function Test-IsApiRegistered
-Export-ModuleMember -Function Get-ErrorFromResponse
+Export-ModuleMember -Function Assert-WebExceptionType
