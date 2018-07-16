@@ -14,7 +14,7 @@ Describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
                     token_type   = "Bearer"
                 }
             }
-			[Uri] $mockUrl = "http://identity"			
+			[Uri] $mockUrl = "http://identity"
         }
 
         It 'Should return an access token when valid response with single scope' {
@@ -32,7 +32,7 @@ Describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
         It 'Should return the error when invalid response' {
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
 			[Uri] $mockUrl = "http://identity"
-			
+
             {Get-AccessToken -identityUrl $mockUrl -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
         }
     }
@@ -59,7 +59,7 @@ Describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
         It 'Should return an exception when invalid response' {
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Error" }
 			[Uri] $mockUrl = "http://identity"
-			
+
             try {
                 Get-FabricInstallerAccessToken  -identityUrl $mockUrl -secret "Secret"
             }
@@ -73,7 +73,7 @@ Describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
 
 Describe 'Get-ClientRegistration Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
-        It 'Should return a client object when valid response' {		
+        It 'Should return a client object when valid response' {
 			[Uri] $mockUrl = "http://identity"
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { return @{
                     enabled           = 1
@@ -175,7 +175,6 @@ Describe 'New-ClientRegistrationTests Unit Tests' -tag 'Unit' {
                 -clientName "cli Test Client Name" `
                 -allowedScopes @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.manageclients")
 
-            # $newClient.allowedGrantTypes = ""
             $jsonClient = $newClient | ConvertTo-Json
 
             Mock -ModuleName CatalystDosIdentity -CommandName Assert-WebExceptionType -Verifiable -MockWith {
@@ -245,13 +244,13 @@ Describe 'New-ClientCredentialsClientBody Unit Tests' -tag 'Unit' {
             $myClientName = "Valid client credentials client name"
 
             $response = New-ClientCredentialsClientBody -clientId $myClientId -clientName $myClientName -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
-            $response | Should -not -Be :null
+            $response | Should -Not -Be :null
             $response.ClientId | Should -Be $myClientId
 
             #check default values
             $response.allowedGrantTypes | Should -Be "client_credentials"
             $response.allowedScopes | Should -Contain "fabric/authorization.read"
-            $response.allowedScopes.Count | Should -be 3
+            $response.allowedScopes.Count | Should -Be 3
         }
     }
 }
@@ -263,7 +262,7 @@ Describe 'New-ImplicitClientBody Unit Tests' -tag 'Unit' {
             $myClientName = "Valid implicit client name"
 
             $response = New-ImplicitClientBody -clientId $myClientId -clientName $myClientName -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
-            $response | Should -not -Be :null
+            $response | Should -Not -Be :null
             $response.ClientId | Should -Be $myClientId
 
             #check default values
@@ -281,7 +280,7 @@ Describe 'New-HybridClientBody Unit Tests' -tag 'Unit' {
             $myClientName = "Valid hybrid client name"
 
             $response = New-HybridClientBody -clientId $myClientId -clientName $myClientName -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
-            $response | Should -not -Be :null
+            $response | Should -Not -Be :null
             $response.ClientId | Should -Be $myClientId
 
             #check default values
@@ -299,7 +298,7 @@ Describe 'New-HybridPkceClientBody Unit Tests' -tag 'Unit' {
             $myClientName = "Valid Hybrid PKCE client name"
 
             $response = New-HybridPkceClientBody -clientId $myClientId -clientName $myClientName -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
-            $response | Should -not -Be :null
+            $response | Should -Not -Be :null
             $response.ClientId | Should -Be $myClientId
 
             #check default values
@@ -406,7 +405,7 @@ Describe 'Reset-ClientPassword Unit Tests' -tag 'Unit' {
                 throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error registering client"
             } -ParameterFilter {$uri -match "$authUrl"}
 
-            {Reset-ClientPassword -identityUrl $authUrl -clientId "missing client id" -accessToken "goodToken"} | Should -Throw "There was an error resetting client secret" -ExceptionType System.Net.WebException
+            {Reset-ClientPassword -identityUrl $authUrl -clientId "missing client id" -accessToken $myToken} | Should -Throw "There was an error resetting client secret" -ExceptionType System.Net.WebException
         }
     }
 }

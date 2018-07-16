@@ -122,7 +122,7 @@ function Get-ClientRegistration {
     an access token previously retrieved from the identity server
 
     .Example
-    New-ClientRegistration -identityUrl "https://server/identity" -body @'{"clientId":"fabric-installer", "clientName":"Fabric Installer" ...... }@' -accessToken "eyJhbGciO"
+    New-ClientRegistration -identityUrl "https://server/identity" -body '{"clientId":"fabric-installer", "clientName":"Fabric Installer" ...... }' -accessToken "eyJhbGciO"
 #>
 function New-ClientRegistration {
     param(
