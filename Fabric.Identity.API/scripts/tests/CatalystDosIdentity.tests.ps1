@@ -17,7 +17,7 @@ Describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
 			[Uri] $mockUrl = "http://identity"
         }
 
-        It 'Should return an access token when valid response with single scope'  {
+        It 'Should return an access token when valid response with single scope'{
             $response = Get-AccessToken -identityUrl $mockUrl -clientId "id" -secret "secret" -scope "fabric/identity.manageresources"
             $response | Should -Be "return token"
         }
