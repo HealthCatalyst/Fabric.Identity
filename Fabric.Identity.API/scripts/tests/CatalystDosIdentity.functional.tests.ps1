@@ -1,5 +1,5 @@
 param(
-    [string] $targetFilePath = "$PSScriptRoot\..\identity-cli.psm1",
+    [string] $targetFilePath = "$PSScriptRoot\..\CatalystDosIdentity.psm1",
     [Uri] $identityUrl = "http://localhost:5001",
     [string] $installerSecret
 )
