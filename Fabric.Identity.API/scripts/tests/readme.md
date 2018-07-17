@@ -25,7 +25,7 @@ You will need the installer secret created in the setup-samples.sh script to run
 ```
 
 ## Run CatalystDosIdentity Functional Tests
-Run the CatalystDosIdentity.functional.tests.ps1 in PowerShell, and pass in the installerSecret parameter from the setup-samples.sh script (or valid installer secret if created outside of the setsup-samples.sh script).
+Run the CatalystDosIdentity.functional.tests.ps1 in PowerShell, and pass in the installerSecret parameter from the setup-samples.sh script (or valid installer secret if created outside of the setup-samples.sh script).
 
 You can also point the CatalystDosIdentity functional tests to another Identity url by passing the identityUrl parameter.
 
