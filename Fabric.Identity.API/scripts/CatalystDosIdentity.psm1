@@ -27,8 +27,8 @@ function Get-AccessToken {
         [Parameter(Mandatory = $True)] [string] $secret,
         [string] $scope
     )
-
-    [Uri] $url = "$($identityUrl.OriginalString)/connect/token"
+    
+    [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/connect/token"
     $body = @{
         client_id     = $clientId
         grant_type    = "client_credentials"
@@ -94,7 +94,7 @@ function Get-ClientRegistration {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    [Uri]$url = "$($identityUrl.OriginalString)/api/v1/client/$clientId"
+    [Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/v1/client/$clientId"
 
     $headers = @{"Accept" = "application/json"}
     $headers.Add("Authorization", "Bearer $accessToken")
@@ -131,7 +131,8 @@ function New-ClientRegistration {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/client"
+    [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client"
+
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
@@ -398,7 +399,7 @@ function Edit-ClientRegistration {
     )
 
     $clientObject = ConvertFrom-Json -InputObject $body
-    $url = "$identityUrl/api/client"
+    [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client"
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
@@ -445,7 +446,7 @@ function Reset-ClientPassword {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/client"
+    [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client"
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
@@ -492,7 +493,7 @@ function Test-IsClientRegistered {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/v1/client/$clientId"
+    [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client/$clientId"
 
     $headers = @{"Accept" = "application/json"}
     $headers.Add("Authorization", "Bearer $accessToken")
