@@ -12,12 +12,12 @@ Sample call:
 ## Setup Docker
 Docker needs to be up and running and set to run Linux containers.
 
-Run the start-identity.sh script to start the required docker images.
+Run the start-identity.sh script in a BASH shell to start the required docker images.
 
 ## Setup Identity Docker Environment
-Once the identity image is setup, run the setup-samples.sh script.
+Once the identity image is running, run the setup-samples.sh script in a BASH shell to setup the image.
 
-You will need the installer secret from the setup-samples.sh script to run the functional tests.
+You will need the installer secret created in the setup-samples.sh script to run the functional tests.
 
 *Note*: You may need to dot source the setup-samples.sh script so the script is able to parse out secrets to successfully complete:
 ```
@@ -25,7 +25,7 @@ You will need the installer secret from the setup-samples.sh script to run the f
 ```
 
 ## Run CatalystDosIdentity Functional Tests
-Run the CatalystDosIdentity.functional.tests.ps1, and pass in the installerSecret parameter from the setup-samples.sh script (or valid installer secret if created outside of the setsup-samples.sh script).
+Run the CatalystDosIdentity.functional.tests.ps1 in PowerShell, and pass in the installerSecret parameter from the setup-samples.sh script (or valid installer secret if created outside of the setsup-samples.sh script).
 
 You can also point the CatalystDosIdentity functional tests to another Identity url by passing the identityUrl parameter.
 
