@@ -257,6 +257,7 @@ describe("identity tests", function () {
 
     describe("call api with access token", function () {
         it("should be able to add a client to authorization api", function () {
+            this.timeout(10000);                       
             return chakram.post(baseAuthUrl + "/clients", authClientFuncTest, authRequestOptions)
                 .then(function (clientResponse) {
                     expect(clientResponse).to.have.status(201);
