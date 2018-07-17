@@ -451,12 +451,289 @@ Describe 'Test-IsClientRegistered Unit Tests' -tag 'Unit' {
     }
 }
 
-Describe 'Get-ApiRegistration' {}
+Describe 'Get-ApiRegistration Unit Tests' -tag "Unit" {
+    Context 'Valid Request' {
+        It 'Should Return an api object when valid response' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
+                enabled = 1
+                name = "test-Api"
+                scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                userClaims = @("name", "email", "role", "groups")
+            }}
 
-Describe 'New-ApiRegistration' {}
+            $response = Get-ApiRegistration -identityUrl $mockUrl -apiName "someApi" -accessToken  "Bearer goodtoken"
 
-Describe 'Edit-ApiRegistration' {}
+            $response.name | Should -Be "test-Api"
+            $response.userClaims.Length | Should -Be 4
+            $response.scopes.Count | Should -Be 2
+        }}
+    Context 'Invalid Request' {
+        It 'Should return an error when non existent api' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "Exception" }
 
-Describe 'Reset-ApiPassword' {}
+            {Get-ApiRegistration -identityUrl $mockUrl -apiName "someNonExistentApi" -accessToken  "Bearer goodtoken"} | Should -Throw "Exception" -ExceptionType System.Net.WebException
+        }
+    }
+}
 
-Describe 'Test-IsApiRegistered' {}
+Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
+    Context 'Valid Request' {
+        It 'Should Create and Return an api object when valid response' {
+            [Uri] $mockUrl = "http://some.server/identity"
+
+            $newApiResource = New-ApiRegistrationBody `
+                                -apiName "test-Api" `
+                                -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+                                -userClaims @("name", "email", "role", "groups") `
+                                -isEnabled true
+
+            $jsonApi = $newApiResource | ConvertTo-Json
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
+                apiSecret = "someApiSecret"
+                enabled = 1
+                name = "test-Api"
+                scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                userClaims = @("name", "email", "role", "groups")
+            }}
+
+            $response = New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"
+
+            $response | Should -Be "someApiSecret"
+        }}
+    Context 'Valid Request - existing api' {
+        It 'New Registration should return a new api secret when api already exists' {
+            [Uri] $mockUrl = "http://some.server/identity"
+
+            $newApiResource = New-ApiRegistrationBody `
+                                -apiName "test-Api" `
+                                -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+                                -userClaims @("name", "email", "role", "groups") `
+                                -isEnabled true
+
+            $jsonApi = $newApiResource | ConvertTo-Json
+
+            Mock -ModuleName identity-cli -CommandName Assert-WebExceptionType -Verifiable -MockWith {
+                return $true
+            } -ParameterFilter {$typeCode -eq 409}
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod -Verifiable -MockWith {
+                throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "conflict"
+            } -ParameterFilter {$Method -match 'Post' -and $uri -match "$mockUrl/api/apiresource"}
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod -Verifiable -MockWith {
+                return ""
+            } -ParameterFilter { $Method -match 'Put' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            Mock -ModuleName identity-cli -CommandName Reset-ApiPassword { return @{
+                    apiSecret = "someApiSecret"
+                    enabled = 1
+                    name = "test-Api"
+                    scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                    userClaims = @("name", "email", "role", "groups")
+                }}
+
+            $response = New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"
+
+            $response | Should -Be "someApiSecret"
+        }
+    }
+    Context 'Invalid Request - invalid json' {
+        It 'Should return an error when json is invalid' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            $newApiResource.scopes = ""
+
+            $jsonApi = $newApiResource | ConvertTo-Json
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error registering api" } `
+            -ParameterFilter {$Method -match 'Post' -and $uri -match "$mockUrl/api/apiresource"}
+
+            {New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"} | Should -Throw "There was an error registering api" -ExceptionType System.Net.WebException
+        }
+    }
+}
+
+Describe 'Remove-ApiRegistration Unit Tests' -tag 'Unit' {
+    Context 'Valid Request' {
+        It 'Remove Registration should return no content' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod -Verifiable -MockWith {
+                return ""
+            } -ParameterFilter { $Method -match 'Delete' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            $response = Remove-ApiRegistration -identityUrl $mockUrl -apiName $($newApiResource.name) -accessToken  "goodtoken"
+
+            $response | Should -Be ""
+        }
+    }
+    Context 'Invalid Request - Not Found' {
+        It 'Should return an error when not found' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error deleting api" } `
+            -ParameterFilter {$uri -match "$mockUrl"}
+
+            {Remove-ApiRegistration -identityUrl $mockUrl -apiName $($newApiResource.name) -accessToken  "goodtoken"} | Should -Throw "There was an error deleting api" -ExceptionType System.Net.WebException
+        }
+    }
+}
+
+Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
+    Context 'Valid Request - existing api' {
+        It 'Edit Registration should return a new api secret when api already exists' {
+            [Uri] $mockUrl = "http://some.server/identity"
+
+            $newApiResource = New-ApiRegistrationBody `
+                              -apiName "test-Api" `
+                              -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+                              -userClaims @("name", "email", "role", "groups") `
+                              -isEnabled true
+
+            $jsonApi = $newApiResource | ConvertTo-Json
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod -Verifiable -MockWith {
+                return ""
+            } -ParameterFilter { $Method -match 'Put' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            Mock -ModuleName identity-cli -CommandName Reset-ApiPassword { return @{
+                apiSecret = "someApiSecret"
+                enabled = 1
+                name = "test-Api"
+                scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                userClaims = @("name", "email", "role", "groups")
+            }}
+
+            $response = Edit-ApiRegistration -identityUrl $mockUrl -body $jsonApi -apiName $($newApiResource.name) -accessToken  "goodtoken"
+
+            $response | Should -Be "someApiSecret"
+        }
+    }
+    Context 'Invalid Request - invalid json' {
+        It 'Should return an error when json is invalid' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            $newApiResource.scopes = ""
+
+            $jsonApi = $newApiResource | ConvertTo-Json
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error editing api" } `
+            -ParameterFilter { $Method -match 'Put' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            {Edit-ApiRegistration -identityUrl $mockUrl -body $jsonApi -apiName $($newApiResource.name) -accessToken  "goodtoken"} | Should -Throw "There was an error editing api" -ExceptionType System.Net.WebException
+        }
+    }
+}
+
+Describe 'Reset-ApiPassword Unit Tests' -tag 'Unit' {
+    Context 'Valid Request' {
+        It 'Resetting password should return password' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
+                apiSecret = "someApiSecret"
+                enabled = 1
+                name = "test-Api"
+                scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                userClaims = @("name", "email", "role", "groups")
+            }} -ParameterFilter {$Method -match 'Post' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)/resetPassword"}
+
+            $response = Reset-ApiPassword -identityUrl $mockUrl -apiName $($newApiResource.name) -accessToken  "goodtoken"
+
+            $response | Should -Be "someApiSecret"
+        }
+    }
+    Context 'Invalid Request - Not Found' {
+        It 'Should return an error when not found' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error resetting api password" } `
+            -ParameterFilter {$Method -match 'Post' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)/resetPassword"}
+
+            {Reset-ApiPassword -identityUrl $mockUrl -apiName $($newApiResource.name) -accessToken  "goodtoken"} | Should -Throw "There was an error resetting api password" -ExceptionType System.Net.WebException
+        }
+    }
+}
+
+Describe 'Test-IsApiRegistered Unit Tests' -tag "Unit" {
+    Context 'Valid Request' {
+        It 'Should return true if an api object exists' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod { return @{
+                enabled = 1
+                name = "test-Api"
+                scopes = @{"name" = "test-Api"; "displayName" = "Test-API"}
+                userClaims = @("name", "email", "role", "groups")
+            }} -ParameterFilter {$Method -match 'Get' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            $response = Test-IsApiRegistered -identityUrl $mockUrl -apiName $($newApiResource.name) -accessToken  "goodtoken"
+
+            $response | Should -Be $true
+        }
+    }
+    Context 'Invalid Request - Not Found' {
+        It 'Should return false when not found' {
+            [Uri] $mockUrl = "http://some.server/identity"
+            $newApiResource = New-ApiRegistrationBody `
+            -apiName "test-Api" `
+            -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+            -userClaims @("name", "email", "role", "groups") `
+            -isEnabled true
+
+            Mock -ModuleName identity-cli -CommandName Assert-WebExceptionType -Verifiable -MockWith {
+                return $true
+            } -ParameterFilter {$typeCode -eq 404}
+
+            Mock -ModuleName identity-cli -CommandName Invoke-RestMethod -Verifiable -MockWith {
+                throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "not found"
+            } -ParameterFilter {$Method -match 'Get' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
+
+            $response = Test-IsApiRegistered -identityUrl $mockUrl -apiName 'api not found' -accessToken  "goodtoken"
+
+            $response | Should -Be $false
+        }
+    }
+}
+
+
+
+
