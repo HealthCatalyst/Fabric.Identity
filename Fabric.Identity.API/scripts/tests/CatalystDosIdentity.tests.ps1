@@ -480,7 +480,7 @@ Describe 'Get-ApiRegistration Unit Tests' -tag "Unit" {
 
 Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
     Context 'Valid Request' {
-        It 'Should Create and Return an api object when valid response' {
+        It 'Should Create and Return an api secret when valid response' {
             [Uri] $mockUrl = "http://some.server/identity"
 
             $newApiResource = New-ApiRegistrationBody `
@@ -650,7 +650,7 @@ Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
 
 Describe 'Reset-ApiPassword Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
-        It 'Resetting password should return password' {
+        It 'Resetting password should return api secret' {
             [Uri] $mockUrl = "http://some.server/identity"
             $newApiResource = New-ApiRegistrationBody `
             -apiName "test-Api" `

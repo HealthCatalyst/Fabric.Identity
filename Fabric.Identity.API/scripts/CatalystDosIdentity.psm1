@@ -616,7 +616,7 @@ function New-ApiRegistration {
                 if ($null -ne $exception -and $null -ne $exception.Response) {
                     $error = Get-ErrorFromResponse -response $exception.Response
                 }
-                throw (New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name): $error. Halting installation.", $exception)
+                throw (New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name): $error. Registration failure.", $exception)
             }
         }
         else {
@@ -625,7 +625,7 @@ function New-ApiRegistration {
             if ($null -ne $exception -and $null -ne $exception.Response) {
                 $error = Get-ErrorFromResponse -response $exception.Response
             }
-            throw ( New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name) with Fabric.Identity: $error, halting installation.", $exception)
+            throw ( New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name) with Fabric.Identity: $error, Registration failure.", $exception)
         }
     }
 }
@@ -712,7 +712,7 @@ function Remove-ApiRegistration {
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
-        throw ( New-Object -TypeName "System.Net.WebException" "There was an error deleting api $apiName with Fabric.Identity: $error, halting installation.", $exception)   
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error deleting api $apiName with Fabric.Identity: $error, Removing api registration failure.", $exception)   
     }
 }
 
@@ -765,7 +765,7 @@ function Edit-ApiRegistration {
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
-        throw ( New-Object -TypeName "System.Net.WebException" "There was an error editing api $($apiResourceObject.name) with Fabric.Identity: $error, halting installation.", $exception)
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error editing api $($apiResourceObject.name) with Fabric.Identity: $error, Editing registration failure.", $exception)
     }
 }
 
@@ -812,7 +812,7 @@ function Reset-ApiPassword {
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
-        throw ( New-Object -TypeName "System.Net.WebException" "There was an error resetting api password $apiName with Fabric.Identity: $error, halting installation.", $exception)
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error resetting api password $apiName with Fabric.Identity: $error, Resetting api password failure.", $exception)
     }
 }
 
@@ -865,7 +865,7 @@ function Test-IsApiRegistered {
                 if ($null -ne $exception -and $null -ne $exception.Response) {
                     $error = Get-ErrorFromResponse -response $exception.Response
                 }
-                throw (New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name): $error. Halting installation.", $exception)
+                throw (New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name): $error. Registration lookup failure.", $exception)
             }
         }
         else {
@@ -874,7 +874,7 @@ function Test-IsApiRegistered {
             if ($null -ne $exception -and $null -ne $exception.Response) {
                 $error = Get-ErrorFromResponse -response $exception.Response
             }
-            throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name) with Fabric.Identity: $error, halting installation.", $exception)
+            throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name) with Fabric.Identity: $error, Registration lookup failure.", $exception)
         }
     }
 }
