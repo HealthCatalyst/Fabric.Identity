@@ -69,7 +69,7 @@ function Get-FabricInstallerAccessToken {
 
 <#
     .Synopsis
-    Attempts to retrive information about an existing identity client
+    Attempts to retrieve information about an existing identity client
 
     .Description
     Takes in the identity server url, the clientid and an access token.
@@ -180,7 +180,7 @@ function New-ClientRegistration {
     Creates a Client Credentials Identity Client
 
     .Description
-    Retruns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
+    Returns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
 
     .Parameter clientId
     The text identiifier for the client
@@ -192,7 +192,7 @@ function New-ClientRegistration {
     Array of strings representing the allowed scopes for the client
 
     .Example
-    New-ClientCredentialsClientBody -clientId "sample-implicit-client" -clientName "Sample Client using Implicit Registration" -allowesScopes @("dos/metadata.read")
+    New-ClientCredentialsClientBody -clientId "sample-credential-client" -clientName "Sample Client using Client Credentials" -allowesScopes @("dos/metadata.read")
 #>
 function New-ClientCredentialsClientBody {
     param(
@@ -235,7 +235,7 @@ function New-ClientCredentialsClientBody {
     Array of strings representing list of uri's that can request a login redirect
 
     .Parameter postLogoutRedirectUris
-    Array of strings representing list of uri's that are accetable navigation after logout
+    Array of strings representing list of uri's that are acceptable navigation after logout
 
     .Example
     New-ImplicitClientBody -clientId "sample-implicit-client" -clientName "Sample Client using Implicit Registration" -allowesScopes @("dos/metadata.read") -allowesCorsOrigins @('http://some.server', 'https://some.other.server') -redirectUris @('https://some.server/loginRedirect') -postLogoutRedirectUris @('https://some.other.server/logoutRedirect')
@@ -292,10 +292,10 @@ function New-ImplicitClientBody {
     Array of strings representing list of uri's that can request a login redirect
 
     .Parameter postLogoutRedirectUris
-    Array of strings representing list of uri's that are accetable navigation after logout
+    Array of strings representing list of uri's that are acceptable navigation after logout
 
     .Example
-    New-HybridClientBody -clientId "sample-implicit-client" -clientName "Sample Client using Implicit Registration" -allowesScopes @("dos/metadata.read") -allowesCorsOrigins @('http://some.server', 'https://some.other.server') -redirectUris @('https://some.server/loginRedirect') -postLogoutRedirectUris @('https://some.other.server/logoutRedirect')
+    New-HybridClientBody -clientId "sample-hybrid-client" -clientName "Sample Client using Hybrid Registration" -allowesScopes @("dos/metadata.read") -allowesCorsOrigins @('http://some.server', 'https://some.other.server') -redirectUris @('https://some.server/loginRedirect') -postLogoutRedirectUris @('https://some.other.server/logoutRedirect')
 #>
 function New-HybridClientBody {
     param(
@@ -345,7 +345,7 @@ function New-HybridClientBody {
     Array of strings representing list of uri's that can request a login redirect
 
     .Example
-    New-HybridPkceClientBody -clientId "sample-implicit-client" -clientName "Sample Client using Implicit Registration" -allowesScopes @("dos/metadata.read") -redirectUris @('https://some.server/loginRedirect')
+    New-HybridPkceClientBody -clientId "sample-hybridpkce-client" -clientName "Sample Client using Hybrid and PKCE Registration" -allowesScopes @("dos/metadata.read") -redirectUris @('https://some.server/loginRedirect')
 #>
 function New-HybridPkceClientBody {
     param(
@@ -431,7 +431,7 @@ function Edit-ClientRegistration {
     The identity url to get the access token from
 
     .Parameter clientId
-    the text identiified for the client to reset
+    the unique identifier for the client to reset
 
     .Parameter accessToken
     an access token previously retrieved from the identity server
@@ -478,7 +478,7 @@ function Reset-ClientPassword {
     The identity url to get the access token from
 
     .Parameter clientId
-    the text identiified for the client to check
+    the unique identifier for the client to check
 
     .Parameter accessToken
     an access token previously retrieved from the identity server
