@@ -537,7 +537,7 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
 
             $response = New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"
 
-            $response | Should -Be "someApiSecret"
+            $response.apiSecret | Should -Be "someApiSecret"
         }
     }
     Context 'Invalid Request - invalid json' {
@@ -624,7 +624,7 @@ Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
 
             $response = Edit-ApiRegistration -identityUrl $mockUrl -body $jsonApi -apiName $($newApiResource.name) -accessToken  "goodtoken"
 
-            $response | Should -Be "someApiSecret"
+            $response.apiSecret | Should -Be "someApiSecret"
         }
     }
     Context 'Invalid Request - invalid json' {
