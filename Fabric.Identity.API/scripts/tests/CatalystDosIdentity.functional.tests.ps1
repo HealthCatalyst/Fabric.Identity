@@ -141,9 +141,10 @@ Describe 'Identity Cli Functional Tests' {
                 $testApi | Should -Be $true
 
                 # Get an api that is registered
-                $newApi = Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                $getApi = Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
 
-                $newApi | Should -Not -Be $null
+                $getApi | Should -Not -Be $null
+                $getApi.name | Should -Be "test-Api"
 
                 # Edit an api that is registered
                 $newApiResource = New-ApiRegistrationBody `
