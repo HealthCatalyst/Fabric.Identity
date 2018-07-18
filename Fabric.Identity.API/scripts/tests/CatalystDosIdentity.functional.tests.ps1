@@ -90,7 +90,6 @@ Describe 'Identity Cli Functional Tests' {
             }
         }
     }
-    
     Describe 'Get-ClientRegistration' {}
         
     Describe 'New-ClientRegistration' {}
@@ -106,15 +105,150 @@ Describe 'Identity Cli Functional Tests' {
     Describe 'Invoke-UpdateClientPassword' {}
     
     Describe 'Test-IsClientRegistered' {}
-    
-    Describe 'Get-ApiRegistration' {}
-    
-    Describe 'New-ApiRegistration' {}
-    
-    Describe 'Invoke-UpdateApiRegistration' {}
-    
-    Describe 'Invoke-UpdateClientPassword' {}
-    
-    Describe 'Test-IsApiRegistered' {}
 
+    Describe 'Api Registration Functional Tests' -tag "Functional" {
+	    Context 'Api Registration Scenarios' {
+            	# Get Access token from identity to pass to registration
+			    $accessToken = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources"
+
+                # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
+                $accessToken | Should -Not -Be $null
+
+                # New-ApiRegistrationBody returns an apiresource object
+                $newApiResource = New-ApiRegistrationBody `
+                -apiName "test-Api" `
+                -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+                -userClaims @("name", "email", "role", "groups") `
+                -isEnabled true
+
+                $jsonApi = $newApiResource | ConvertTo-Json
+
+            It 'Should not fail to Test, Create, Test, Get, Edit and Delete Registration' {
+
+                # Test an api not registered
+                $testApi = Test-IsApiRegistered -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $testApi | Should -Be $false
+
+                # Create an api not registered
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+
+                $newApi | Should -Not -Be $null
+
+                # Test an api that is registered
+                $testApi = Test-IsApiRegistered -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $testApi | Should -Be $true
+
+                # Get an api that is registered
+                $newApi = Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $newApi | Should -Not -Be $null
+
+                # Edit an api that is registered
+                $newApiResource = New-ApiRegistrationBody `
+                -apiName "test-Api" `
+                -scopes @{"name" = "patient-Api"; "displayName" = "Patient-API"} `
+                -userClaims @("name", "email", "role", "groups") `
+                -isEnabled true
+
+                $jsonApi = $newApiResource | ConvertTo-Json
+
+                $editApi = Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
+
+                $editApi | Should -Not -Be $null
+
+                # Cleanup the registered Api
+                $removeApi = Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $removeApi | Should -Be ""
+            }
+            It 'Should not fail using New-ApiRegistration for an api already registered' {
+
+                # Create the Api
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+
+                $newApi | Should -Not -Be $null
+
+                # Creating the Api again will end up as an edit instead of a conflict
+                $editApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+
+                $editApi | Should -Not -Be $null
+                $editApi | Should -Not -Be $newApi
+
+                # Cleanup the registered Api
+                $removeApi = Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $removeApi | Should -Be ""
+            }
+            It 'Should fail to Edit Registration using url api name different from json body api name' {
+
+                # Create the Api
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+
+                $newApi | Should -Not -Be $null
+
+				try {
+                    Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "sample-Api" -accessToken $accessToken
+                   }
+                   catch {
+                       $_.Exception | Should -BeOfType System.Net.WebException
+
+                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                       $error | Should Match "must match the ApiResource Name in the request body"
+                }
+
+                # Cleanup the registered Api
+                $removeApi = Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+
+                $removeApi | Should -Be ""
+            }
+            It 'Should fail to Get, Edit and Delete Registration and Reset Password for an api not registered' {
+
+				# Error trying to Get an Api not registered
+				try {
+                    Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                   }
+                   catch {
+                       $_.Exception | Should -BeOfType System.Net.WebException
+
+                       $error = Get-ErrorFromResponse -response $_.Exception.Response
+                       $error | Should Match "not found"
+                }
+
+                # Error trying to Edit an Api not registered
+				try {
+                    Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
+                   }
+                   catch {
+                       $_.Exception | Should -BeOfType System.Net.WebException
+
+                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                       $error | Should Match "not found"
+                }
+
+                # Error trying to Remove an Api not registered
+				try {
+                    Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                   }
+                   catch {
+                       $_.Exception | Should -BeOfType System.Net.WebException
+
+                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                       $error | Should Match "not found"
+                }
+
+                # Error trying to Reset a password for an api not registered
+				try {
+                    Reset-ApiPassword -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                   }
+                   catch {
+                       $_.Exception | Should -BeOfType System.Net.WebException
+
+                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                       $error | Should Match "not found"
+                }
+            }
+        }
+	}
 }
