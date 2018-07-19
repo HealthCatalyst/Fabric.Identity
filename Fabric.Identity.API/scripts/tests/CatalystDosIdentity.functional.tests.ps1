@@ -140,8 +140,7 @@ Describe 'Identity Cli Functional Tests' {
             }
             It 'Call New-ClientRegistration again to Upsert the original scopes' {
                 $newClient["clientName"] = "original name"
-                $jsonClient = $newClient | ConvertTo-Json
-                $upsertSecret = New-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
+                $upsertSecret = New-ClientRegistration -identityUrl $identityUrl -body $newClient -accessToken $fabricToken
 
                 $upsertSecret | Should -Not -Be null
                 $upsertSecret | Should -Not -Be $resetSecret
@@ -166,8 +165,7 @@ Describe 'Identity Cli Functional Tests' {
                     -allowedScopes @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.manageclients")
 
                 # Client Credentials New-ClientRegistration (expect client secret)
-                $jsonClient = $newClient | ConvertTo-Json
-                $newResults = New-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
+                $newResults = New-ClientRegistration -identityUrl $identityUrl -body $newClient -accessToken $fabricToken
                 $newResults | Should -Not -Be null
 
                 # Get Client (expect a client credentials )
