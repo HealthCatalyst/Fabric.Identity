@@ -588,7 +588,7 @@ function Get-ApiRegistration {
 function New-ApiRegistration {
 	param(
         [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $body,
+        [Parameter(Mandatory=$True)] $body,
         [Parameter(Mandatory=$True)] [string] $accessToken
     )
 
@@ -599,6 +599,10 @@ function New-ApiRegistration {
     }
 
     try{
+        if(!($body -is [string])) {
+            $body = $body | ConvertTo-Json
+        }
+        
         $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -body $body -ContentType "application/json" -Headers $headers
         return $registrationResponse.apiSecret
     }catch{
@@ -741,7 +745,7 @@ function Remove-ApiRegistration {
 function Edit-ApiRegistration {
 	param(
         [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $body,
+        [Parameter(Mandatory=$True)] $body,
         [Parameter(Mandatory=$True)] [string] $apiName,
         [Parameter(Mandatory=$True)] [string] $accessToken
     )
@@ -752,6 +756,10 @@ function Edit-ApiRegistration {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
     try{
+        if(!($body -is [string])) {
+            $body = $body | ConvertTo-Json
+        }
+
         Invoke-RestMethod -Method Put -uri $url -body $body -ContentType "application/json" -Headers $headers | out-null
 
         # Reset api secret

@@ -489,8 +489,6 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
                                 -userClaims @("name", "email", "role", "groups") `
                                 -isEnabled true
 
-            $jsonApi = $newApiResource | ConvertTo-Json
-
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { return @{
                 apiSecret = "someApiSecret"
                 enabled = 1
@@ -499,7 +497,7 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
                 userClaims = @("name", "email", "role", "groups")
             }}
 
-            $response = New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"
+            $response = New-ApiRegistration -identityUrl $mockUrl -body $newApiResource -accessToken  "goodtoken"
 
             $response | Should -Be "someApiSecret"
         }}
@@ -512,8 +510,6 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
                                 -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
                                 -userClaims @("name", "email", "role", "groups") `
                                 -isEnabled true
-
-            $jsonApi = $newApiResource | ConvertTo-Json
 
             Mock -ModuleName CatalystDosIdentity -CommandName Assert-WebExceptionType -Verifiable -MockWith {
                 return $true
@@ -535,7 +531,7 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
                     userClaims = @("name", "email", "role", "groups")
                 }}
 
-            $response = New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"
+            $response = New-ApiRegistration -identityUrl $mockUrl -body $newApiResource -accessToken  "goodtoken"
 
             $response.apiSecret | Should -Be "someApiSecret"
         }
@@ -551,12 +547,10 @@ Describe 'New-ApiRegistration Unit Tests' -tag "Unit" {
 
             $newApiResource.scopes = ""
 
-            $jsonApi = $newApiResource | ConvertTo-Json
-
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error registering api" } `
             -ParameterFilter {$Method -match 'Post' -and $uri -match "$mockUrl/api/apiresource"}
 
-            {New-ApiRegistration -identityUrl $mockUrl -body $jsonApi -accessToken  "goodtoken"} | Should -Throw "There was an error registering api" -ExceptionType System.Net.WebException
+            {New-ApiRegistration -identityUrl $mockUrl -body $newApiResource -accessToken  "goodtoken"} | Should -Throw "There was an error registering api" -ExceptionType System.Net.WebException
         }
     }
 }
@@ -608,8 +602,6 @@ Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
                               -userClaims @("name", "email", "role", "groups") `
                               -isEnabled true
 
-            $jsonApi = $newApiResource | ConvertTo-Json
-
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod -Verifiable -MockWith {
                 return ""
             } -ParameterFilter { $Method -match 'Put' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
@@ -622,7 +614,7 @@ Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
                 userClaims = @("name", "email", "role", "groups")
             }}
 
-            $response = Edit-ApiRegistration -identityUrl $mockUrl -body $jsonApi -apiName $($newApiResource.name) -accessToken  "goodtoken"
+            $response = Edit-ApiRegistration -identityUrl $mockUrl -body $newApiResource -apiName $($newApiResource.name) -accessToken  "goodtoken"
 
             $response.apiSecret | Should -Be "someApiSecret"
         }
@@ -638,12 +630,10 @@ Describe 'Edit-ApiRegistration Unit Tests' -tag "Unit" {
 
             $newApiResource.scopes = ""
 
-            $jsonApi = $newApiResource | ConvertTo-Json
-
             Mock -ModuleName CatalystDosIdentity -CommandName Invoke-RestMethod { throw  New-Object -TypeName "System.Net.WebException" -ArgumentList "There was an error editing api" } `
             -ParameterFilter { $Method -match 'Put' -and $uri -match "$mockUrl/api/apiresource/$($newApiResource.name)"}
 
-            {Edit-ApiRegistration -identityUrl $mockUrl -body $jsonApi -apiName $($newApiResource.name) -accessToken  "goodtoken"} | Should -Throw "There was an error editing api" -ExceptionType System.Net.WebException
+            {Edit-ApiRegistration -identityUrl $mockUrl -body $newApiResource -apiName $($newApiResource.name) -accessToken  "goodtoken"} | Should -Throw "There was an error editing api" -ExceptionType System.Net.WebException
         }
     }
 }

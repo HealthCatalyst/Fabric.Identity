@@ -460,7 +460,6 @@ Describe 'Identity Cli Functional Tests' {
                 -userClaims @("name", "email", "role", "groups") `
                 -isEnabled true
 
-            $jsonApi = $newApiResource | ConvertTo-Json
 
             It 'Should not fail to Test, Create, Test, Get, Edit and Delete Registration' {
 
@@ -470,7 +469,7 @@ Describe 'Identity Cli Functional Tests' {
                 $testApi | Should -Be $false
 
                 # Create an api not registered
-                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $newApiResource -accessToken $accessToken
 
                 $newApi | Should -Not -Be $null
 
@@ -492,9 +491,7 @@ Describe 'Identity Cli Functional Tests' {
                     -userClaims @("name", "email", "role", "groups") `
                     -isEnabled true
 
-                $jsonApi = $newApiResource | ConvertTo-Json
-
-                $editApi = Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
+                $editApi = Edit-ApiRegistration -identityUrl $identityUrl -body $newApiResource -apiName "test-Api" -accessToken $accessToken
 
                 $editApi | Should -Not -Be $null
 
@@ -517,12 +514,12 @@ Describe 'Identity Cli Functional Tests' {
             It 'Should not fail using New-ApiRegistration for an api already registered' {
 
                 # Create the Api
-                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $newApiResource -accessToken $accessToken
 
                 $newApi | Should -Not -Be $null
 
                 # Creating the Api again will end up as an edit instead of a conflict
-                $editApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+                $editApi = New-ApiRegistration -identityUrl $identityUrl -body $newApiResource -accessToken $accessToken
 
                 $editApi | Should -Not -Be $null
                 $editApi | Should -Not -Be $newApi
@@ -535,13 +532,13 @@ Describe 'Identity Cli Functional Tests' {
             It 'Should fail to Edit Registration using url api name different from json body api name' {
 
                 # Create the Api
-                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $jsonApi -accessToken $accessToken
+                $newApi = New-ApiRegistration -identityUrl $identityUrl -body $newApiResource -accessToken $accessToken
 
                 $newApi | Should -Not -Be $null
 
                 # Editing using a different url api name than in the json body results in an error
                 try {
-                    Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "sample-Api" -accessToken $accessToken
+                    Edit-ApiRegistration -identityUrl $identityUrl -body $newApiResource -apiName "sample-Api" -accessToken $accessToken
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -570,7 +567,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 # Error trying to Edit an Api not registered
                 try {
-                    Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
+                    Edit-ApiRegistration -identityUrl $identityUrl -body $newApiResource -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
