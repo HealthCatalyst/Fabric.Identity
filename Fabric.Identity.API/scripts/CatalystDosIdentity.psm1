@@ -127,11 +127,19 @@ function Get-ClientRegistration {
 function New-ClientRegistration {
     param(
         [Parameter(Mandatory = $True)] [Uri] $identityUrl,
-        [Parameter(Mandatory = $True)] [string] $body,
+        [Parameter(Mandatory = $True)] $body,
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
     [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client"
+
+    if (!($body -is [string])) {
+        $clientObject = $body
+        $body = $body | ConvertTo-Json
+    }
+    else {
+        $clientObject = ConvertFrom-Json -InputObject $body
+    }
 
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
@@ -145,7 +153,6 @@ function New-ClientRegistration {
     }
     catch {
         $exception = $_.Exception
-        $clientObject = ConvertFrom-Json -InputObject $body
         if ((Assert-WebExceptionType -exception $exception -typeCode 409)) {
             try {
                 # client ID already exists, update with PUT
@@ -394,11 +401,18 @@ function New-HybridPkceClientBody {
 function Edit-ClientRegistration {
     param(
         [Parameter(Mandatory = $True)] [Uri] $identityUrl,
-        [Parameter(Mandatory = $True)] [string] $body,
+        [Parameter(Mandatory = $True)] $body,
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    $clientObject = ConvertFrom-Json -InputObject $body
+    if (!($body -is [string])) {
+        $clientObject = $body
+        $body = $body | ConvertTo-Json
+    }
+    else {
+        $clientObject = ConvertFrom-Json -InputObject $body
+    }
+
     [Uri] $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/client"
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
@@ -549,16 +563,16 @@ function Test-IsClientRegistered {
     Get-ApiRegistration -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
 #>
 function Get-ApiRegistration {
-	param(
-        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $apiName,
-        [Parameter(Mandatory=$True)] [string] $accessToken
+    param(
+        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
+        [Parameter(Mandatory = $True)] [string] $apiName,
+        [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
 	[Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
 
@@ -594,7 +608,7 @@ function New-ApiRegistration {
 
     $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource"
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
 
@@ -605,11 +619,12 @@ function New-ApiRegistration {
         
         $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -body $body -ContentType "application/json" -Headers $headers
         return $registrationResponse.apiSecret
-    }catch{
+    }
+    catch {
         $exception = $_.Exception
         $apiResourceObject = ConvertFrom-Json -InputObject $body
         if ((Assert-WebExceptionType -exception $exception -typeCode 409)) {
-            try{
+            try {
                 Invoke-RestMethod -Method Put -Uri "$url/$($apiResourceObject.name)" -Body $body -ContentType "application/json" -Headers $headers | out-null
 
                 # Reset api secret
@@ -658,8 +673,8 @@ function New-ApiRegistration {
     New-ApiRegistrationBody -apiName "this-Api" -userClaims @("name", "email", "role", "groups") -scopes @{"name" = "this-Api"; "displayName" = "This-API"} -isEnabled true
 #>
 function New-ApiRegistrationBody {
-	param(
-        [Parameter(Mandatory=$True)] [string] $apiName,
+    param(
+        [Parameter(Mandatory = $True)] [string] $apiName,
         [string[]] $userClaims,
         [Hashtable[]] $scopes,
         [string] $isEnabled
@@ -694,23 +709,24 @@ function New-ApiRegistrationBody {
     Remove-ApiRegistration -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
 #>
 function Remove-ApiRegistration {
-	param(
-        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $apiName,
-        [Parameter(Mandatory=$True)] [string] $accessToken
+    param(
+        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
+        [Parameter(Mandatory = $True)] [string] $apiName,
+        [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
     [Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
 
-    try{
+    try {
         $clientResponse = Invoke-RestMethod -Method Delete -Uri $url -Headers $headers
         return $clientResponse
-    }catch{
+    }
+    catch {
         $exception = $_.Exception
         $error = "Unknown error attempting to delete api"
         if ($null -ne $exception -and $null -ne $exception.Response) {
@@ -752,7 +768,7 @@ function Edit-ApiRegistration {
 
     $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
     try{
@@ -796,23 +812,24 @@ function Edit-ApiRegistration {
     Reset-ApiPassword -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
 #>
 function Reset-ApiPassword {
-	param(
-        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $apiName,
-        [Parameter(Mandatory=$True)] [string] $accessToken
+    param(
+        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
+        [Parameter(Mandatory = $True)] [string] $apiName,
+        [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
     [Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName/resetPassword"
 
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
-    try{
+    try {
         # Reset api secret
         $apiResponse = Invoke-RestMethod -Method Post -Uri $url -ContentType "application/json" -Headers $headers
         return $apiResponse.apiSecret
-    }catch{
+    }
+    catch {
         $exception = $_.Exception
         $error = "Unknown error attempting to reset api"
         if ($null -ne $exception -and $null -ne $exception.Response) {
@@ -843,29 +860,31 @@ function Reset-ApiPassword {
 #>
 function Test-IsApiRegistered {
     param(
-        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
-        [Parameter(Mandatory=$True)] [string] $apiName,
-        [Parameter(Mandatory=$True)] [string] $accessToken
+        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
+        [Parameter(Mandatory = $True)] [string] $apiName,
+        [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
     $apiExists = $false
     $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
-    if($accessToken){
+    if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
 
-    try{
+    try {
         $getResponse = Invoke-RestMethod -Method Get -Uri $url -ContentType "application/json" -Headers $headers
         $apiExists = $true
         return $apiExists
-    }catch{
+    }
+    catch {
         $exception = $_.Exception
         if ((Assert-WebExceptionType -exception $exception -typeCode 404)) {
-            try{
+            try {
                 return $false
-            }catch{
+            }
+            catch {
                 $error = "Unknown error looking for api"
                 $exception = $_.Exception
                 if ($null -ne $exception -and $null -ne $exception.Response) {
