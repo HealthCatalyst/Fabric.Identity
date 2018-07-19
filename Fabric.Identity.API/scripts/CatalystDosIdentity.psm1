@@ -529,27 +529,356 @@ function Test-IsClientRegistered {
     }
 }
 
-function Get-ApiRegistration($identityUrl, $apiName, $accessToken) {
-    throw [System.NotImplementedException]
+<#
+    .Synopsis
+    Attempts to retrieve information about an existing identity api
+
+    .Description
+    Takes in the identity server url the apiname and an access token.
+
+    .Parameter identityUrl
+    The identity url to get the api registration
+
+    .Parameter apiName
+    The name of the api
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    Get-ApiRegistration -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
+#>
+function Get-ApiRegistration {
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+	[Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName"
+
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+
+    $clientResponse = Invoke-RestMethod -Method Get -Uri $url -Headers $headers
+    return $clientResponse
 }
 
-function New-ApiRegistration($identityUrl, $body, $accessToken) {
-    throw [System.NotImplementedException]
+<#
+    .Synopsis
+    Attempts to register an api with fabric identity
+
+    .Description
+    Takes in the identity server url the json request body and an access token.
+
+    .Parameter identityUrl
+    The identity url to post the api registration
+
+    .Parameter body
+    The json request format for creating the api registration
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    New-ApiRegistration -identityUrl "https://server/identity" -body "{"enabled":true, "name": "sample-api", "userClaims":[], "scopes":[]}" -accessToken "eyJhbGciO"
+#>
+function New-ApiRegistration {
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $body,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    $url = "$identityUrl/api/apiresource"
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+
+    try{
+        $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -body $body -ContentType "application/json" -Headers $headers
+        return $registrationResponse.apiSecret
+    }catch{
+        $exception = $_.Exception
+        $apiResourceObject = ConvertFrom-Json -InputObject $body
+        if ((Assert-WebExceptionType -exception $exception -typeCode 409)) {
+            try{
+                Invoke-RestMethod -Method Put -Uri "$url/$($apiResourceObject.name)" -Body $body -ContentType "application/json" -Headers $headers | out-null
+
+                # Reset api secret
+                $apiResponse = Reset-ApiPassword -identityUrl $url -apiName $($apiResourceObject.name) -accessToken $accessToken
+                return $apiResponse.apiSecret
+            }catch{
+                $error = "Unknown error attempting to post api"
+                $exception = $_.Exception
+                if ($null -ne $exception -and $null -ne $exception.Response) {
+                    $error = Get-ErrorFromResponse -response $exception.Response
+                }
+                throw (New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name): $error. Registration failure.", $exception)
+            }
+        }
+        else {
+            $error = "Unknown error attempting to post"
+            $exception = $_.Exception
+            if ($null -ne $exception -and $null -ne $exception.Response) {
+                $error = Get-ErrorFromResponse -response $exception.Response
+            }
+            throw ( New-Object -TypeName "System.Net.WebException" "There was an error registering api $($apiResourceObject.name) with Fabric.Identity: $error, Registration failure.", $exception)
+        }
+    }
 }
 
-function Edit-ApiRegistration($identityUrl, $body, $accessToken) {
-    throw [System.NotImplementedException]
+<#
+    .Synopsis
+    Attempts to create an apiresource object
+
+    .Description
+    Takes in the apiname userclaims scopes and isenabled.
+
+    .Parameter apiName
+    The name of the api
+    
+    .Parameter userClaims
+    Array of strings representing the user claims
+
+    .Parameter scopes
+    Array of Hashtables representing the scopes for the api
+    
+    .Parameter isEnabled
+    If the apiresource is enabled
+
+    .Example
+    New-ApiRegistrationBody -apiName "this-Api" -userClaims @("name", "email", "role", "groups") -scopes @{"name" = "this-Api"; "displayName" = "This-API"} -isEnabled true
+#>
+function New-ApiRegistrationBody {
+	param(
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [string[]] $userClaims,
+        [Hashtable[]] $scopes,
+        [string] $isEnabled
+    )
+
+    $newApiResource = @{}
+    $newApiResource.Add("name", $apiName)
+    $newApiResource.Add("scopes", $scopes)
+    $newApiResource.Add("userClaims", $userClaims)
+    $newApiResource.Add("enabled", $isEnabled)
+
+    return $newApiResource
 }
 
+<#
+    .Synopsis
+    Attempts to remove the api object
 
-function Reset-ApiPassword($identityUrl, $accessToken) {
-    throw [System.NotImplementedException]
+    .Description
+    Takes in the identity server url an apiname and an access token.
+
+    .Parameter identityUrl
+    The identity url to delete the api registration
+
+    .Parameter apiName
+    The name of the api
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    Remove-ApiRegistration -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
+#>
+function Remove-ApiRegistration {
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    [Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName"
+
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+
+    try{
+        $clientResponse = Invoke-RestMethod -Method Delete -Uri $url -Headers $headers
+        return $clientResponse
+    }catch{
+        $exception = $_.Exception
+        $error = "Unknown error attempting to delete api"
+        $exception = $_.Exception
+        if ($null -ne $exception -and $null -ne $exception.Response) {
+            $error = Get-ErrorFromResponse -response $exception.Response
+        }
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error deleting api $apiName with Fabric.Identity: $error, Removing api registration failure.", $exception)   
+    }
 }
 
-function Test-IsApiRegistered($identityUrl, $apiName, $accessToken) {
-    throw [System.NotImplementedException]
+<#
+    .Synopsis
+    Attempts to edit an api object with fabric identity
+
+    .Description
+    Takes in the identity server url the json request body an apiname and an access token.
+
+    .Parameter identityUrl
+    The identity url to put the api registration
+
+    .Parameter body
+    The json request format for editing the api registration
+
+    .Parameter apiName
+    The name of the api
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    Edit-ApiRegistration -identityUrl "https://server/identity" -body "{"enabled":true, "name": "sample-api", "userClaims":[], "scopes":[]}" -apiName "TestAPI" -accessToken "eyJhbGciO"
+#>
+function Edit-ApiRegistration {
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $body,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    $url = "$identityUrl/api/apiresource/$apiName"
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+    try{
+        Invoke-RestMethod -Method Put -uri "$url" -body $body -ContentType "application/json" -Headers $headers | out-null
+
+        # Reset api secret
+        $apiResponse = Reset-ApiPassword -identityUrl $url -apiName $apiName -accessToken $accessToken
+        return $apiResponse.apiSecret
+    }catch{
+        $exception = $_.Exception
+        $apiResourceObject = ConvertFrom-Json -InputObject $body
+        $error = "Unknown error attempting to edit api"
+        $exception = $_.Exception
+        if ($null -ne $exception -and $null -ne $exception.Response) {
+            $error = Get-ErrorFromResponse -response $exception.Response
+        }
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error editing api $($apiResourceObject.name) with Fabric.Identity: $error, Editing registration failure.", $exception)
+    }
 }
 
+<#
+    .Synopsis
+    Attempts to reset an api object password with fabric identity
+
+    .Description
+    Takes in the identity server url an apiname and an access token.
+
+    .Parameter identityUrl
+    The identity url to reset the api password
+
+    .Parameter apiName
+    The name of the api
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    Reset-ApiPassword -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
+#>
+function Reset-ApiPassword {
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    [Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName/resetPassword"
+
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+    try{
+        # Reset api secret
+        $apiResponse = Invoke-RestMethod -Method Post -Uri $url -ContentType "application/json" -Headers $headers
+        return $apiResponse.apiSecret
+    }catch{
+        $exception = $_.Exception
+        $error = "Unknown error attempting to reset api"
+        $exception = $_.Exception
+        if ($null -ne $exception -and $null -ne $exception.Response) {
+            $error = Get-ErrorFromResponse -response $exception.Response
+        }
+        throw ( New-Object -TypeName "System.Net.WebException" "There was an error resetting api password $apiName with Fabric.Identity: $error, Resetting api password failure.", $exception)
+    }
+}
+
+<#
+    .Synopsis
+    Attempts to get an api object registration
+
+    .Description
+    Takes in the identity server url an apiname and an access token.
+
+    .Parameter identityUrl
+    The identity url to get the api object
+
+    .Parameter apiName
+    The name of the api
+
+    .Parameter accessToken
+    An access token previously retrieved from the identity server
+
+    .Example
+    Test-IsApiRegistered -identityUrl "https://server/identity" -apiName "TestAPI" -accessToken "eyJhbGciO"
+#>
+function Test-IsApiRegistered {
+    param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
+    )
+
+    $apiExists = $false
+    $url = "$identityUrl/api/apiresource/$apiName"
+
+    $headers = @{"Accept" = "application/json"}
+    if($accessToken){
+        $headers.Add("Authorization", "Bearer $accessToken")
+    }
+
+    try{
+        $getResponse = Invoke-RestMethod -Method Get -Uri $url -ContentType "application/json" -Headers $headers
+        $apiExists = $true
+        return $apiExists
+    }catch{
+        $exception = $_.Exception
+        if ((Assert-WebExceptionType -exception $exception -typeCode 404)) {
+            try{
+                return $false
+            }catch{
+                $error = "Unknown error looking for api"
+                $exception = $_.Exception
+                if ($null -ne $exception -and $null -ne $exception.Response) {
+                    $error = Get-ErrorFromResponse -response $exception.Response
+                }
+                throw (New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name): $error. Registration lookup failure.", $exception)
+            }
+        }
+        else {
+            $error = "Unknown error looking for api"
+            $exception = $_.Exception
+            if ($null -ne $exception -and $null -ne $exception.Response) {
+                $error = Get-ErrorFromResponse -response $exception.Response
+            }
+            throw ( New-Object -TypeName "System.Net.WebException" "There was an error looking for api $($apiResourceObject.name) with Fabric.Identity: $error, Registration lookup failure.", $exception)
+        }
+    }
+}
 
 <#
     .Synopsis
@@ -615,6 +944,8 @@ Export-ModuleMember -Function Reset-ClientPassword
 Export-ModuleMember -Function Test-IsClientRegistered
 Export-ModuleMember -Function Get-ApiRegistration
 Export-ModuleMember -Function New-ApiRegistration
+Export-ModuleMember -Function New-ApiRegistrationBody
+Export-ModuleMember -Function Remove-ApiRegistration
 Export-ModuleMember -Function Edit-ApiRegistration
 Export-ModuleMember -Function Reset-ApiPassword
 Export-ModuleMember -Function Test-IsApiRegistered
