@@ -134,6 +134,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 # Reset-ClientPassword (expect new secret)
                 $resetSecret = Reset-ClientPassword -identityUrl $identityUrl -clientId $testClientId -accessToken $fabricToken
+                $resetSecret | Should -Not -Be null
                 $resetSecret | Should -Not -Be $originalSecret
 
                 # New-ClientRegistration (Expect new secret)
@@ -141,6 +142,7 @@ Describe 'Identity Cli Functional Tests' {
                 $jsonClient = $newClient | ConvertTo-Json
                 $upsertSecret = New-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
 
+                $upsertSecret | Should -Not -Be null
                 $upsertSecret | Should -Not -Be $resetSecret
 
                 # Test-IsClientRegistered (expect true)
@@ -286,9 +288,9 @@ Describe 'Identity Cli Functional Tests' {
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
-                    $unauthorizedError = Assert-WebExceptionType $_.Exception 404
+                    $notfoundError = Assert-WebExceptionType $_.Exception 404
 
-                    $unauthorizedError | Should -BeTrue
+                    $notfoundError | Should -BeTrue
                 }
             }
         }
@@ -396,9 +398,9 @@ Describe 'Identity Cli Functional Tests' {
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
-                    $unauthorizedError = Assert-WebExceptionType $_.Exception.InnerException 404
+                    $notfoundError = Assert-WebExceptionType $_.Exception.InnerException 404
 
-                    $unauthorizedError | Should -BeTrue
+                    $notfoundError | Should -BeTrue
                 }
             }
         }
@@ -433,9 +435,9 @@ Describe 'Identity Cli Functional Tests' {
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
-                    $unauthorizedError = Assert-WebExceptionType $_.Exception.InnerException 404
+                    $notfoundError = Assert-WebExceptionType $_.Exception.InnerException 404
 
-                    $unauthorizedError | Should -BeTrue
+                    $notfoundError | Should -BeTrue
                 }
             }
         }

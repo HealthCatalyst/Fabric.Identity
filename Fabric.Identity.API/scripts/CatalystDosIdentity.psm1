@@ -180,7 +180,7 @@ function New-ClientRegistration {
     Creates a Client Credentials Identity Client
 
     .Description
-    Returns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
+    Returns a new hashtable that represents a valid identity client body for use with New-ClientRegistration. Sensible defaults values are included.
 
     .Parameter clientId
     The text identiifier for the client
@@ -192,7 +192,7 @@ function New-ClientRegistration {
     Array of strings representing the allowed scopes for the client
 
     .Example
-    New-ClientCredentialsClientBody -clientId "sample-credential-client" -clientName "Sample Client using Client Credentials" -allowesScopes @("dos/metadata.read")
+    New-ClientCredentialsClientBody -clientId "sample-credential-client" -clientName "Sample Client using Client Credentials" -allowedScopes @("dos/metadata.read")
 #>
 function New-ClientCredentialsClientBody {
     param(
@@ -217,7 +217,7 @@ function New-ClientCredentialsClientBody {
     Creates an Implicit Identity Client
 
     .Description
-    Retruns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
+    Retruns a new hashtable that represents a valid identity client body for use with New-ClientRegistration. Sensible defaults values are included.
 
     .Parameter clientId
     The text identiifier for the client
@@ -274,7 +274,7 @@ function New-ImplicitClientBody {
     Creates an Hybryd Identity Client
 
     .Description
-    Retruns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
+    Retruns a new hashtable that represents a valid identity client body for use with New-ClientRegistration. Sensible defaults values are included.
 
     .Parameter clientId
     The text identiifier for the client
@@ -330,7 +330,7 @@ function New-HybridClientBody {
     Creates an Hybryd and PKCE Identity Client
 
     .Description
-    Retruns a new hashtable that represents a valid identity client body for us with New-ClientRegistration. Sensible defaults values are included.
+    Retruns a new hashtable that represents a valid identity client body for use with New-ClientRegistration. Sensible defaults values are included.
 
     .Parameter clientId
     The text identiifier for the client
