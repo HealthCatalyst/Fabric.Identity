@@ -107,21 +107,22 @@ Describe 'Identity Cli Functional Tests' {
     Describe 'Test-IsClientRegistered' {}
 
     Describe 'Api Registration Functional Tests' -tag "Functional" {
-	    Context 'Api Registration Scenarios' {
-            	# Get Access token from identity to pass to registration
-                $accessToken = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources"
+        Context 'Api Registration Scenarios' {
 
-                # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
-                $accessToken | Should -Not -Be $null
+            # Get Access token from identity to pass to registration
+            $accessToken = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources"
 
-                # New-ApiRegistrationBody returns an apiresource object
-                $newApiResource = New-ApiRegistrationBody `
+            # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
+            $accessToken | Should -Not -Be $null
+
+            # New-ApiRegistrationBody returns an apiresource object
+            $newApiResource = New-ApiRegistrationBody `
                 -apiName "test-Api" `
                 -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
                 -userClaims @("name", "email", "role", "groups") `
                 -isEnabled true
 
-                $jsonApi = $newApiResource | ConvertTo-Json
+            $jsonApi = $newApiResource | ConvertTo-Json
 
             It 'Should not fail to Test, Create, Test, Get, Edit and Delete Registration' {
 
@@ -148,10 +149,10 @@ Describe 'Identity Cli Functional Tests' {
 
                 # Edit an api that is registered
                 $newApiResource = New-ApiRegistrationBody `
-                -apiName "test-Api" `
-                -scopes @{"name" = "patient-Api"; "displayName" = "Patient-API"} `
-                -userClaims @("name", "email", "role", "groups") `
-                -isEnabled true
+                    -apiName "test-Api" `
+                    -scopes @{"name" = "patient-Api"; "displayName" = "Patient-API"} `
+                    -userClaims @("name", "email", "role", "groups") `
+                    -isEnabled true
 
                 $jsonApi = $newApiResource | ConvertTo-Json
 
@@ -166,13 +167,13 @@ Describe 'Identity Cli Functional Tests' {
 
                 # Getting the api that was soft deleted should return not found
                 try {
-                   Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                    Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
-                   $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                   $error = Get-ErrorFromResponse -response $_.Exception.Response
-                   $error | Should Match "not found"
+                    $error = Get-ErrorFromResponse -response $_.Exception.Response
+                    $error | Should Match "not found"
                 }
             }
             It 'Should not fail using New-ApiRegistration for an api already registered' {
@@ -205,10 +206,10 @@ Describe 'Identity Cli Functional Tests' {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "sample-Api" -accessToken $accessToken
                 }
                 catch {
-                       $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
-                       $error | Should Match "must match the ApiResource Name in the request body"
+                    $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                    $error | Should Match "must match the ApiResource Name in the request body"
                 }
 
                 # Cleanup the registered Api
@@ -223,10 +224,10 @@ Describe 'Identity Cli Functional Tests' {
                     Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
-                       $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                       $error = Get-ErrorFromResponse -response $_.Exception.Response
-                       $error | Should Match "not found"
+                    $error = Get-ErrorFromResponse -response $_.Exception.Response
+                    $error | Should Match "not found"
                 }
 
                 # Error trying to Edit an Api not registered
@@ -234,10 +235,10 @@ Describe 'Identity Cli Functional Tests' {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
-                       $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
-                       $error | Should Match "not found"
+                    $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                    $error | Should Match "not found"
                 }
 
                 # Error trying to Remove an Api not registered
@@ -245,10 +246,10 @@ Describe 'Identity Cli Functional Tests' {
                     Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
-                       $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
-                       $error | Should Match "not found"
+                    $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                    $error | Should Match "not found"
                 }
 
                 # Error trying to Reset a password for an api not registered
@@ -256,12 +257,12 @@ Describe 'Identity Cli Functional Tests' {
                     Reset-ApiPassword -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                 }
                 catch {
-                       $_.Exception | Should -BeOfType System.Net.WebException
+                    $_.Exception | Should -BeOfType System.Net.WebException
 
-                       $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
-                       $error | Should Match "not found"
+                    $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
+                    $error | Should Match "not found"
                 }
             }
         }
-	}
+    }
 }
