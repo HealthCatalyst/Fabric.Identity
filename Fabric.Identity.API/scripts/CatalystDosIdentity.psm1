@@ -569,7 +569,7 @@ function Get-ApiRegistration {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    [Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName"
+	[Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
@@ -600,19 +600,23 @@ function Get-ApiRegistration {
     New-ApiRegistration -identityUrl "https://server/identity" -body "{"enabled":true, "name": "sample-api", "userClaims":[], "scopes":[]}" -accessToken "eyJhbGciO"
 #>
 function New-ApiRegistration {
-    param(
-        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
-        [Parameter(Mandatory = $True)] [string] $body,
-        [Parameter(Mandatory = $True)] [string] $accessToken
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] $body,
+        [Parameter(Mandatory=$True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/apiresource"
+    $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource"
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
 
-    try {
+    try{
+        if(!($body -is [string])) {
+            $body = $body | ConvertTo-Json
+        }
+        
         $registrationResponse = Invoke-RestMethod -Method Post -Uri $url -body $body -ContentType "application/json" -Headers $headers
         return $registrationResponse.apiSecret
     }
@@ -624,10 +628,9 @@ function New-ApiRegistration {
                 Invoke-RestMethod -Method Put -Uri "$url/$($apiResourceObject.name)" -Body $body -ContentType "application/json" -Headers $headers | out-null
 
                 # Reset api secret
-                $apiResponse = Reset-ApiPassword -identityUrl $url -apiName $($apiResourceObject.name) -accessToken $accessToken
-                return $apiResponse.apiSecret
-            }
-            catch {
+                $apiResponse = Reset-ApiPassword -identityUrl $($identityUrl.OriginalString) -apiName $($apiResourceObject.name) -accessToken $accessToken
+                return $apiResponse
+            }catch{
                 $error = "Unknown error attempting to post api"
                 $exception = $_.Exception
                 if ($null -ne $exception -and $null -ne $exception.Response) {
@@ -712,7 +715,7 @@ function Remove-ApiRegistration {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    [Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName"
+    [Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
@@ -726,7 +729,6 @@ function Remove-ApiRegistration {
     catch {
         $exception = $_.Exception
         $error = "Unknown error attempting to delete api"
-        $exception = $_.Exception
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
@@ -757,30 +759,32 @@ function Remove-ApiRegistration {
     Edit-ApiRegistration -identityUrl "https://server/identity" -body "{"enabled":true, "name": "sample-api", "userClaims":[], "scopes":[]}" -apiName "TestAPI" -accessToken "eyJhbGciO"
 #>
 function Edit-ApiRegistration {
-    param(
-        [Parameter(Mandatory = $True)] [Uri] $identityUrl,
-        [Parameter(Mandatory = $True)] [string] $body,
-        [Parameter(Mandatory = $True)] [string] $apiName,
-        [Parameter(Mandatory = $True)] [string] $accessToken
+	param(
+        [Parameter(Mandatory=$True)] [Uri] $identityUrl,
+        [Parameter(Mandatory=$True)] $body,
+        [Parameter(Mandatory=$True)] [string] $apiName,
+        [Parameter(Mandatory=$True)] [string] $accessToken
     )
 
-    $url = "$identityUrl/api/apiresource/$apiName"
+    $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
         $headers.Add("Authorization", "Bearer $accessToken")
     }
-    try {
-        Invoke-RestMethod -Method Put -uri "$url" -body $body -ContentType "application/json" -Headers $headers | out-null
+    try{
+        if(!($body -is [string])) {
+            $body = $body | ConvertTo-Json
+        }
+
+        Invoke-RestMethod -Method Put -uri $url -body $body -ContentType "application/json" -Headers $headers | out-null
 
         # Reset api secret
-        $apiResponse = Reset-ApiPassword -identityUrl $url -apiName $apiName -accessToken $accessToken
-        return $apiResponse.apiSecret
-    }
-    catch {
+        $apiResponse = Reset-ApiPassword -identityUrl $($identityUrl.OriginalString) -apiName $apiName -accessToken $accessToken
+        return $apiResponse
+    }catch{
         $exception = $_.Exception
         $apiResourceObject = ConvertFrom-Json -InputObject $body
         $error = "Unknown error attempting to edit api"
-        $exception = $_.Exception
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
@@ -814,7 +818,7 @@ function Reset-ApiPassword {
         [Parameter(Mandatory = $True)] [string] $accessToken
     )
 
-    [Uri]$url = "$($identityUrl.OriginalString)/api/apiresource/$apiName/resetPassword"
+    [Uri]$url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName/resetPassword"
 
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
@@ -828,7 +832,6 @@ function Reset-ApiPassword {
     catch {
         $exception = $_.Exception
         $error = "Unknown error attempting to reset api"
-        $exception = $_.Exception
         if ($null -ne $exception -and $null -ne $exception.Response) {
             $error = Get-ErrorFromResponse -response $exception.Response
         }
@@ -863,7 +866,7 @@ function Test-IsApiRegistered {
     )
 
     $apiExists = $false
-    $url = "$identityUrl/api/apiresource/$apiName"
+    $url = "$($identityUrl.OriginalString.TrimEnd("/"))/api/apiresource/$apiName"
 
     $headers = @{"Accept" = "application/json"}
     if ($accessToken) {
