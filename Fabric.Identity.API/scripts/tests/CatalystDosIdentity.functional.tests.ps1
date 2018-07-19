@@ -109,7 +109,7 @@ Describe 'Identity Cli Functional Tests' {
     Describe 'Api Registration Functional Tests' -tag "Functional" {
 	    Context 'Api Registration Scenarios' {
             	# Get Access token from identity to pass to registration
-			    $accessToken = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources"
+                $accessToken = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret -scope "fabric/identity.manageresources"
 
                 # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
                 $accessToken | Should -Not -Be $null
@@ -163,6 +163,17 @@ Describe 'Identity Cli Functional Tests' {
                 $removeApi = Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
 
                 $removeApi | Should -Be ""
+
+                # Getting the api that was soft deleted should return not found
+                try{
+                   Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                }
+                catch {
+                   $_.Exception | Should -BeOfType System.Net.WebException
+
+                   $error = Get-ErrorFromResponse -response $_.Exception.Response
+                   $error | Should Match "not found"
+                }
             }
             It 'Should not fail using New-ApiRegistration for an api already registered' {
 
@@ -189,10 +200,11 @@ Describe 'Identity Cli Functional Tests' {
 
                 $newApi | Should -Not -Be $null
 
-				try {
+                # Editing using a different url api name than in the json body results in an error
+                try {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "sample-Api" -accessToken $accessToken
-                   }
-                   catch {
+                }
+                catch {
                        $_.Exception | Should -BeOfType System.Net.WebException
 
                        $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
@@ -206,8 +218,8 @@ Describe 'Identity Cli Functional Tests' {
             }
             It 'Should fail to Get, Edit and Delete Registration and Reset Password for an api not registered' {
 
-				# Error trying to Get an Api not registered
-				try {
+                # Error trying to Get an Api not registered
+                try {
                     Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                    }
                    catch {
@@ -218,7 +230,7 @@ Describe 'Identity Cli Functional Tests' {
                 }
 
                 # Error trying to Edit an Api not registered
-				try {
+                try {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $jsonApi -apiName "test-Api" -accessToken $accessToken
                    }
                    catch {
@@ -229,7 +241,7 @@ Describe 'Identity Cli Functional Tests' {
                 }
 
                 # Error trying to Remove an Api not registered
-				try {
+                try {
                     Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                    }
                    catch {
@@ -240,7 +252,7 @@ Describe 'Identity Cli Functional Tests' {
                 }
 
                 # Error trying to Reset a password for an api not registered
-				try {
+                try {
                     Reset-ApiPassword -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
                    }
                    catch {
