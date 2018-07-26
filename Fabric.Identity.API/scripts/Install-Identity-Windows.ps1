@@ -352,8 +352,8 @@ if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
     }
     try{
         Remove-Item $env:Temp\bundle.exe
-    }catch{        
-        $e = $_.Exception        
+    }catch{
+        $e = $_.Exception
         Write-Warning "Unable to remove Server Hosting bundle exe" 
         Write-Warning $e.Message
     }
@@ -422,6 +422,7 @@ if($applicationEndPoint){ Add-InstallationSetting "common" "identityService" "$a
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
 if($encryptionCertificateThumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificateThumbprint | Out-Null }
 if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
+if($appInsightsInstrumentationKey){ Add-InstallationSetting "common" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
 if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" | Out-Null }
 if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" | Out-Null }
 if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" | Out-Null }
