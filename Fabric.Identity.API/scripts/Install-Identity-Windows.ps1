@@ -537,22 +537,19 @@ $body = @'
 Write-Console "Registering Fabric.Identity Registration API."
 $registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
 
-#Register Fabric.Installer if not registered
-if([string]::IsNullOrWhiteSpace($fabricInstallerSecret) -and [string]::IsNullOrEmpty($fabricInstallerSecret))
+#Register Fabric.Installer or update if registered
+$body = @'
 {
-    $body = @'
-    {
-        "clientId":"fabric-installer", 
-        "clientName":"Fabric Installer", 
-        "requireConsent":"false", 
-        "allowedGrantTypes": ["client_credentials"], 
-        "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
-    }
+    "clientId":"fabric-installer", 
+    "clientName":"Fabric Installer", 
+    "requireConsent":"false", 
+    "allowedGrantTypes": ["client_credentials"], 
+    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
+}
 '@
 
-    Write-Console "Registering Fabric.Installer Client."
-    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
-}
+Write-Console "Registering Fabric.Installer Client."
+$installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken -shouldResetSecret $false)).Trim()
 
 if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
     $installerClientSecret = $fabricInstallerSecret
