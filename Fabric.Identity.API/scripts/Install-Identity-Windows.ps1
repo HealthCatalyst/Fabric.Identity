@@ -540,7 +540,7 @@ $body = @'
 Write-Console "Registering Fabric.Identity Registration API."
 $registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
 
-#Register Fabric.Installer if or update if registered
+#Register Fabric.Installer or update if registered
 $body = @'
 {
     "clientId":"fabric-installer", 
