@@ -194,6 +194,7 @@ function Invoke-AddOrGetRole($authUrl, $name, $displayName, $description, $grain
 
 function Invoke-AddOrGetGroup($authUrl, $name, $source, $accessToken){
     try{
+        Write-Host "    Adding group $name..."
         $group = Add-Group -authUrl $authorizationServiceURL -name $name -source $source -accessToken $accessToken
         return $group
     }catch{
@@ -221,7 +222,6 @@ function Add-Group($authUrl, $name, $displayName, $description, $source, $access
 {
     $url = "$authUrl/groups"
     $body = @{
-        id = "$name"
         groupName = "$name"
         groupSource = "$source"
     }
@@ -260,24 +260,31 @@ function Add-PermissionToRole($authUrl, $roleId, $permission, $accessToken)
 
 function Add-RoleToGroup($authUrl, $groupName, $role, $accessToken)
 {
+    $role.permissions = $null
     $encodedGroupName = [System.Web.HttpUtility]::UrlEncode($groupName)
     $url = "$authUrl/groups/$encodedGroupName/roles"
-    $body = $role
+    $body = @($role)
     return Invoke-Post $url $body $accessToken
 }
 
 function Add-RoleToGroupSafe($authUrl, $groupName, $role, $accessToken){
     try{
+        Write-Host "    Adding Role: $($role.name) to Group $groupName..."
         Add-RoleToGroup -authUrl $authUrl -groupName $groupName -role $role -accessToken $accessToken
     }catch{
         $exception = $_.Exception
-        if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
+        if($exception -ne $null -and $exception.Response -ne $null)
         {
-            Write-Success "    Role: $($role.name) has already been associated to the group"
-            Write-Host ""
-        }else{
             $error = Get-ErrorFromResponse -response $exception.Response
-            Write-Error "    There was an error updating the resource: $error. Halting installation."
+            if($error.Contains("$($role.id) already exists")){
+                Write-Success "    Role: $($role.name) has already been associated to the group"
+                Write-Host ""
+            }else{
+                Write-Error "    There was an error updating the resource: $error. Halting installation."
+                throw $exception
+            }
+        }else{
+            Write-Error "    There was an error updating the resource: $exception. Halting installation."
             throw $exception
         }
     }
