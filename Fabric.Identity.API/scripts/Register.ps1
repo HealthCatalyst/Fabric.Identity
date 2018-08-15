@@ -192,6 +192,31 @@ function Invoke-AddOrGetRole($authUrl, $name, $displayName, $description, $grain
     }
 }
 
+function Invoke-AddOrGetGroup($authUrl, $name, $source, $accessToken){
+    try{
+        $group = Add-Group -authUrl $authorizationServiceURL -name $name -source $source -accessToken $accessToken
+        return $group
+    }catch{
+         $exception = $_.Exception
+        if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
+        {
+            Write-Success "    Group: $name has already been created."
+            Write-Host ""
+            $group = Get-Group -authUrl $authUrl -name $name -accessToken $accessToken
+            return $group
+        }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
+            throw $exception
+        }
+    }
+}
+
+function Get-Group($authUrl, $name, $accessToken){
+    $url = "$authUrl/groups/$name"
+    return Invoke-Get -url $url -accessToken $accessToken
+}
+
 function Add-Group($authUrl, $name, $displayName, $description, $source, $accessToken)
 {
     $url = "$authUrl/groups"
@@ -239,6 +264,23 @@ function Add-RoleToGroup($authUrl, $groupName, $role, $accessToken)
     $url = "$authUrl/groups/$encodedGroupName/roles"
     $body = $role
     return Invoke-Post $url $body $accessToken
+}
+
+function Add-RoleToGroupSafe($authUrl, $groupName, $role, $accessToken){
+    try{
+        Add-RoleToGroup -authUrl $authUrl -groupName $groupName -role $role -accessToken $accessToken
+    }catch{
+        $exception = $_.Exception
+        if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 409)
+        {
+            Write-Success "    Role: $($role.name) has already been associated to the group"
+            Write-Host ""
+        }else{
+            $error = Get-ErrorFromResponse -response $exception.Response
+            Write-Error "    There was an error updating the resource: $error. Halting installation."
+            throw $exception
+        }
+    }
 }
 
 function Test-IsApiRegistered($identityServiceUrl, $apiName, $accessToken){
@@ -628,6 +670,10 @@ function Invoke-RegisterRolesAndPermissions($grainName, $securableItemName, $sec
         $roleDescription = $role.description
         Write-Host "    Adding role: $roleName for grain: $grainName and securableItem: $securableItemName"
         $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -displayName $roleDisplayName -description $roleDescription -grain $grainName -securableItem $securableItemName -accessToken $accessToken
+        if(!([string]::IsNullOrEmpty($($role.groupName)))){
+            $group = Invoke-AddOrGetGroup -authUrl $authorizationServiceURL -name $role.groupName -source "custom" -accessToken $accessToken
+            Add-RoleToGroupSafe -authUrl $authorizationServiceURL -groupName $role.groupName -role $addedRole -accessToken $accessToken
+        }
         foreach($permission in $role.permission){
             $permissionName = $permission.name
             Write-Host "    Adding permission: $permissionName for grain: $grainName and securableItem: $securableItemName"
