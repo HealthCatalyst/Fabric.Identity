@@ -220,6 +220,53 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             testClient = GetTestClient();
             response = await CreateNewClient(testClient);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }    
+        }
+
+        [Fact]
+        public async Task AddAndUpdateFormerlyDeletedClient_Succeeds()
+        {
+            var testClient = GetTestClient();
+            HttpResponseMessage response = await CreateNewClient(testClient);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/Client/{testClient.ClientId}"));
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+            // Confirm it's deleted.
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            // Add the same client again
+            response = await CreateNewClient(testClient);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            // Update the client
+            testClient.AllowedScopes.Add(Guid.NewGuid().ToString());
+            var updatedClient = await UpdateClient(testClient);
+            Assert.Equal(testClient.AllowedScopes.Count, updatedClient.AllowedScopes.Count);
+
+            testClient.AllowedScopes.Add(Guid.NewGuid().ToString());
+            updatedClient = await UpdateClient(testClient);
+            Assert.Equal(testClient.AllowedScopes.Count, updatedClient.AllowedScopes.Count);
+        }
+
+        private async Task<Client> UpdateClient(IS4.Client testClient)
+        {
+            // Update the client
+            var stringContent = new StringContent(JsonConvert.SerializeObject(testClient), Encoding.UTF8, "application/json");
+            var response = await HttpClient.PutAsync($"/api/Client/{testClient.ClientId}", stringContent);
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+            // Get the client and confirm expectations
+            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/Client/{testClient.ClientId}"));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var content = await response.Content.ReadAsStringAsync();
+            var updatedClient = (Client)JsonConvert.DeserializeObject(content, typeof(Client));
+
+            Assert.Equal(testClient.AllowedScopes.Count, updatedClient.AllowedScopes.Count);
+
+            return updatedClient;
+        }
     }
 }
