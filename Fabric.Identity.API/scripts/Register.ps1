@@ -518,17 +518,13 @@ function Get-WebConfigPath($service, $discoveryServiceUrl){
 
     $serviceUri = [System.Uri]$serviceUrl
 
-	$serviceAbsolutePath = $serviceUri.AbsolutePath
-	$versionSuffix = "/v$($service.serviceVersion)"
+	$serviceUrlSegments = $serviceUri.AbsolutePath.Split("/", [System.StringSplitOptions]::RemoveEmptyEntries)
+    $serviceRootPath = "/$($serviceUrlSegments[0])"
 
-	if($serviceAbsolutePath.EndsWith($versionSuffix)){
-		$serviceAbsolutePath = $serviceAbsolutePath.Substring(0, $serviceAbsolutePath.Length-$versionSuffix.Length)
-	}
-
-    $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceAbsolutePath}
+    $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceRootPath}
 
     if($app -eq $null){
-        throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl. Halting installation."
+        throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl, at application path: $serviceRootPath. Halting installation."
     }
 
     $appPath = [Environment]::ExpandEnvironmentVariables($app.PhysicalPath)
