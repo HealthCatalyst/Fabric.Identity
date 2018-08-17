@@ -675,7 +675,7 @@ function Invoke-RegisterRolesAndPermissions($grainName, $securableItemName, $sec
         $addedRole = Invoke-AddOrGetRole -authUrl $authorizationServiceURL -name $roleName -displayName $roleDisplayName -description $roleDescription -grain $grainName -securableItem $securableItemName -accessToken $accessToken
         if(!([string]::IsNullOrEmpty($($role.groupName)))){
             $group = Invoke-AddOrGetGroup -authUrl $authorizationServiceURL -name $role.groupName -source "custom" -accessToken $accessToken
-            Add-RoleToGroupSafe -authUrl $authorizationServiceURL -groupName $role.groupName -role $addedRole -accessToken $accessToken
+            Add-RoleToGroupSafe -authUrl $authorizationServiceURL -groupName $role.groupName -role $addedRole -accessToken $accessToken | Out-Null
         }
         foreach($permission in $role.permission){
             $permissionName = $permission.name
