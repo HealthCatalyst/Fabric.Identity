@@ -137,10 +137,14 @@ function Invoke-Sql($connectionString, $sql, $parameters=@{}){
     }    
 }
 
+function Get-FullyQualifiedMachineName() {
+	return "https://$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())"
+}
+
 function Get-ApplicationEndpoint($appName, $appEndPoint)
 {
     if([string]::IsNullOrEmpty($appEndPoint)){
-        return "https://$env:computername.$($env:userdnsdomain.tolower())/$appName"
+        return "$(Get-FullyQualifiedMachineName)/$appName"
     }else{
         return $appEndPoint
     }
@@ -149,7 +153,7 @@ function Get-ApplicationEndpoint($appName, $appEndPoint)
 function Get-DiscoveryServiceUrl($discoUrl)
 {
     if([string]::IsNullOrEmpty($discoUrl)){
-        return "https://$env:computername.$($env:userdnsdomain.tolower())/DiscoveryService/v1"
+        return "$(Get-FullyQualifiedMachineName)/DiscoveryService/v1"
     }else{
 	      $discoUrl = $discoUrl.TrimEnd("/")
           if ($discoUrl -notmatch "/v\d")
