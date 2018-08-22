@@ -473,7 +473,7 @@ if(!($noDiscoveryService)){
         serviceUrl = $identityServerUrl;
         discoveryType = "Service";
     }
-    Add-DiscoveryRegistrationSql $discoveryPostBody $metadataConnStr | Out-Null
+    Add-DiscoveryRegistrationSql -discoveryPostBody $discoveryPostBody -connectionString $metadataConnStr | Out-Null
     Write-Host ""
 }
 
