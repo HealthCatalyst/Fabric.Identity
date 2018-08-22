@@ -461,9 +461,7 @@ Write-Host ""
 Add-DatabaseSecurity $iisUser $identityDatabaseRole $identityDbConnStr
 
 if(!($noDiscoveryService)){
-    $currentUser = "$env:USERDOMAIN\$env:USERNAME"
     Add-ServiceUserToDiscovery $iisUser $metadataConnStr
-    Add-ServiceUserToDiscovery $currentUser $metadataConnStr
 
     $discoveryPostBody = @{
         buildVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion;
@@ -473,8 +471,9 @@ if(!($noDiscoveryService)){
         description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem.";
         identityServerUrl = $identityServerUrl;
         serviceUrl = $identityServerUrl;
+        discoveryType = "Service";
     }
-    Add-DiscoveryRegistration $discoveryServiceUrl $null $discoveryPostBody
+    Add-DiscoveryRegistrationSql $discoveryPostBody $metadataConnStr | Out-Null
     Write-Host ""
 }
 
