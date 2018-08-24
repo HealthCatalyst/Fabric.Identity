@@ -40,8 +40,7 @@ function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
             Write-DosMessage -Level "Information" -Message "Windows Server Hosting Bundle version $version not installed...installing version $version"        
             Invoke-WebRequest -Uri $downloadUrl -OutFile $env:Temp\bundle.exe
             Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
-            net stop was /y
-            net start w3svc
+            Restart-W3SVC
         }catch{
             Write-DosMessage -Level "Error" -Message "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. $downloadUrl"
             throw
@@ -90,6 +89,11 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
         Write-DosMessage -Level "Error" -Message "Could not select a website."
         throw
     }
+}
+
+function Restart-W3SVC(){
+    net stop was /y
+    net start w3svc
 }
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
