@@ -12,4 +12,3 @@ $installSettings = Get-InstallationSettings "identity"
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirecory $PSScriptRoot
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
 $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $false
-Write-DosMessage -Level "Information" -Message "Seleced site: $($selectedSite.Name)"
