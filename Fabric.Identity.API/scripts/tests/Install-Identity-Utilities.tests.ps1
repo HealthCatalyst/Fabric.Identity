@@ -596,3 +596,132 @@ Describe 'Publish-Identity'{
         }
     }
 }
+
+Describe 'Get-DefaultDiscoveryServiceUrl'{
+    Context 'Returns stored URL'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return the stored URL as is'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith {}
+
+                # Act
+                $discoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl "https://host.fabric.local/DiscoveryService/v1"
+
+                # Assert
+                $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+            }
+            It 'Should return the stored URL after trimming the trailing slash'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith {}
+
+                # Act
+                $discoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl "https://host.fabric.local/DiscoveryService/v1/"
+
+                # Assert
+                $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+            }
+            It 'Should return the stored URL after appending a v1'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith {}
+
+                # Act
+                $discoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl "https://host.fabric.local/DiscoveryService/"
+
+                # Assert
+                $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+            }
+        }
+    }
+    Context 'Returns calculated URL'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return the calculated discovery URL'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { "https://host.fabric.local"}
+
+                # Act
+                $discoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl $null
+
+                # Assert
+                $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-DefaultApplicationEndpoint'{
+    Context 'Gets stored app endpoint'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return the stored app endpoint'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith {}
+
+                # Act
+                $appEndpoint = Get-DefaultApplicationEndpoint -appName "identity" -appEndpoint "https://host.fabric.local/identity"
+
+                # Assert
+                $appEndpoint | Should -Be "https://host.fabric.local/identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+            }
+        }
+    }
+    Context 'Gets calculated app endpoint'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return the calculated app endpoint'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { "https://host.fabric.local" }
+
+                # Act
+                $appEndpoint = Get-DefaultApplicationEndpoint -appName "identity" -appEndpoint $null
+
+                # Assert
+                $appEndpoint | Should -Be "https://host.fabric.local/identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Test-ShouldShowCertMenu'{
+    InModuleScope Install-Identity-Utilities{
+        Context 'Interactive Mode'{
+            It 'Should return true when in interactive mode and signing cert thumprint is not present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "" -encryptionCertificateThumbprint "12345" -quiet $false
+                $shouldShow | Should -Be $true
+            }
+            It 'Should return true when in interactive mode and encryption cert thumprint is not present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "12345" -encryptionCertificateThumbprint "" -quiet $false
+                $shouldShow | Should -Be $true
+            }
+            It 'Should return false when in interactive mode and encryption and signing cert thumbprint are present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "12345" -encryptionCertificateThumbprint "12345" -quiet $false
+                $shouldShow | Should -Be $false
+            }
+            It 'Should return true when in interactive mode and no thumbprints are present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "" -encryptionCertificateThumbprint "" -quiet $false
+                $shouldShow | Should -Be $true
+            }
+        }
+        Context 'Quiet Mode'{
+            It 'Should return false when in quiet mode and signing and encryption cert thumbprnts are present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "12345" -encryptionCertificateThumbprint "12345" -quiet $true
+                $shouldShow | Should -Be $false
+            }
+            It 'Should return false when in quiet mode and signing cert thumbprint is not present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "" -encryptionCertificateThumbprint "12345" -quiet $true
+                $shouldShow | Should -Be $false
+            }
+            It 'Should return false when in quiet mode and encryption cert thumbprint is not present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "12345" -encryptionCertificateThumbprint "" -quiet $true
+                $shouldShow | Should -Be $false
+            }
+            It 'Should return false when in quiet mode and no thumbprints are present'{
+                $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "" -encryptionCertificateThumbprint "" -quiet $true
+                $shouldShow | Should -Be $false
+            }
+        }
+    }
+}
