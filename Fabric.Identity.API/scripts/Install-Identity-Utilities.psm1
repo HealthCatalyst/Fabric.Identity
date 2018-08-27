@@ -132,8 +132,6 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
             }
     
         }catch{
-            $scriptDirectory =  Get-CurrentScriptDirectory
-            Set-Location $scriptDirectory
             Write-DosMessage -Level "Error" -Message  "Could not set the certificate thumbprint. Error $($_.Exception.Message)"
             throw
         }
@@ -175,15 +173,7 @@ function Get-IISAppPoolUser([string] $appName, [string] $storedIisUser){
         
             $iisUser = $userEnteredIisUser
             $userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
-            $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
-            [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
-            $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
-            $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
-            $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, [System.DirectoryServices.AccountManagement.ContextOptions]::Negotiate)
-            if(!$isValid){
-                Write-DosMessage -Level "Error" -Message "Incorrect credentials for $iisUser"
-                throw
-            }
+            $credential = Confirm-Credentials -iisUser $iisUser -userEnteredPassword $userEnteredPassword
             Write-DosMessage -Level "Information" -Message "Credentials are valid for user $iisUser"
         }else{
             Write-DosMessage -Level "Error" -Message "No user account was entered, please enter a valid user account."
@@ -192,6 +182,20 @@ function Get-IISAppPoolUser([string] $appName, [string] $storedIisUser){
     }
     if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" | Out-Null }
     return @{UserName = $iisUser; Credential = $credential}
+}
+
+function Confirm-Credentials([string] $iisUser, [SecureString] $userEnteredPassword){
+    $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
+    [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
+    $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
+    $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
+    Write-Host "Confirming credentials"
+    $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, [System.DirectoryServices.AccountManagement.ContextOptions]::Negotiate)
+    if(!$isValid){
+        Write-DosMessage -Level "Error" -Message "Incorrect credentials for $iisUser"
+        throw
+    }
+    return $credential
 }
 
 function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
@@ -278,7 +282,7 @@ function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [bool]$quiet){
     if(!$quiet){
         $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$defaultDiscoUrl] or enter a new URL"
         if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
-            $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
+            $defaultDiscoUrl = $userEnteredDiscoveryServiceUrl
         }
     }
     if($defaultDiscoUrl){ Add-InstallationSetting "common" "discoveryService" "$defaultDiscoUrl" | Out-Null }
