@@ -358,7 +358,6 @@ Describe 'Get-DiscoveryServiceUrl'{
         InModuleScope Install-Identity-Utilities{
             It 'Should return user DiscoveryService URL'{
                 # Arrange
-                # Arrange
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "https://otherhost.fabric.local/DiscoveryService/v1" }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
@@ -371,6 +370,228 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-ApplicationEndpoint'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored ApplicationEndpoint'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -quiet $true
+
+                # Assert
+                $appEndpoint | Should -Be "https://host.fabric.local/identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 2 -Exactly
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user DiscoveryService URL'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "https://otherhost.fabric.local/identity" }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -quiet $false
+
+                # Assert
+                $appEndpoint | Should -Be "https://otherhost.fabric.local/identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 2 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-IdentityDatabaseConnectionString'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored Identity db connection string'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+
+                # Act
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $true
+
+                # Assert
+                $dbConnectionString.DbName | Should -Be "identity"
+                $dbConnectionString.DbConnectionString | Should -Be "Server=host.fabric.local;Database=identity;Trusted_Connection=True;MultipleActiveResultSets=True;"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+
+            It 'Should throw when cannot connect to database'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith { throw }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+
+                # Act/Assert
+                {Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $true } | Should -Throw
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user entered Identity db connection string'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "identity2" }
+
+                # Act
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $false
+
+                # Assert
+                $dbConnectionString.DbName | Should -Be "identity2"
+                $dbConnectionString.DbConnectionString | Should -Be "Server=host.fabric.local;Database=identity2;Trusted_Connection=True;MultipleActiveResultSets=True;"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-MetadataDatabaseConnectionString'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored Metadata db connection string'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+
+                # Act
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $true
+
+                # Assert
+                $dbConnectionString.DbName | Should -Be "EDWAdmin"
+                $dbConnectionString.DbConnectionString | Should -Be "Server=host.fabric.local;Database=EDWAdmin;Trusted_Connection=True;MultipleActiveResultSets=True;"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+
+            It 'Should throw when cannot connect to database'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith { throw }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+
+                # Act/Assert
+                {Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $true } | Should -Throw
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user entered Metadata db connection string'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "EDWAdmin2" }
+
+                # Act
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $false
+
+                # Assert
+                $dbConnectionString.DbName | Should -Be "EDWAdmin2"
+                $dbConnectionString.DbConnectionString | Should -Be "Server=host.fabric.local;Database=EDWAdmin2;Trusted_Connection=True;MultipleActiveResultSets=True;"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Invoke-Sql -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Publish-Identity'{
+    Context 'App pool exists'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should install app and return version and directory'{
+                # Arrange
+                $userName = "fabric\test.user"
+                $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
+                $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password
+                $expectedVersion = "1.4.12345"
+
+                $site = @{Name="Default Web Site"; physicalPath = "C:\inetpub\wwwroot"}
+                $iisUser = @{UserName = $userName; Credential = $credential }
+
+                
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppPool -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-InstalledVersion -MockWith { $expectedVersion }
+
+                # Act
+                $publishedApp = Publish-Identity -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip"
+
+                # Assert
+                $publishedApp.version = "1.4.12345"
+                $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 0 -Exactly
+
+            }
+        }
+    }
+
+    Context 'App pool does not exists'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should install app, create app pool and return version and directory'{
+                # Arrange
+                $userName = "fabric\test.user"
+                $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
+                $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password
+                $expectedVersion = "1.4.12345"
+
+                $site = @{Name="Default Web Site"; physicalPath = "C:\inetpub\wwwroot"}
+                $iisUser = @{UserName = $userName; Credential = $credential }
+
+                
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppPool -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-InstalledVersion -MockWith { $expectedVersion }
+
+                # Act
+                $publishedApp = Publish-Identity -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip"
+
+                # Assert
+                $publishedApp.version = "1.4.12345"
+                $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 1 -Exactly
+
             }
         }
     }
