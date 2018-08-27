@@ -117,3 +117,261 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
         }
     }
 }
+
+Describe 'Get-Certificates' -Tag 'Unit'{
+    Context 'Quiet Mode' {
+        InModuleScope Install-Identity-Utilities {
+            It 'Should return certificates without prompt'{
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $false }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -CommandName Read-Host -MockWith { }
+                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -Times 2 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 3 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                $certs.SigningCertificate.Thumbprint | Should -Be "123456"
+                $certs.EncryptionCertificate.Thumbprint | Should -Be "123456"
+            }
+
+            It 'Should throw an exception if we cannot read the certificate'{
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $false }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { throw }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true } | Should -Throw
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should prompt and return certificates'{
+                # Arrange
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -CommandName Read-Host -MockWith { 2 }
+
+                # Act
+                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true
+
+                # Assert
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -Times 2 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 3 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                $certs.SigningCertificate.Thumbprint | Should -Be "123456"
+                $certs.EncryptionCertificate.Thumbprint | Should -Be "123456"
+            }
+
+            It 'Should throw an exception if no selection is made'{
+                # Arrange
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -CommandName Read-Host -MockWith { $null }
+
+                # Act/Assert
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+            }
+
+            It 'Should throw an exception if a bad selection is made'{
+                # Arrange
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -CommandName Read-Host -MockWith { 3 }
+
+                # Act/Assert
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+            }
+
+            It 'Should throw an exception if certs cannot be retreived from certificate store'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { throw }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
+
+                # Act/Assert
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+            }
+        }
+    }
+}
+
+Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored IIS User'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+                # Act
+                $iisUser = Get-IISAppPoolUser -appName "identity" -storedIisUser "fabric\test.user"
+
+                # Assert
+                $iisUser.UserName | Should -Be "fabric\test.user"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should accept credentials and return a user'{
+                # Arrange
+                $userName = "fabric\test.user"
+                $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $userName}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $password } -ParameterFilter { $AsSecureString -eq $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -MockWith { New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password }
+
+                # Act
+                $iisUser = Get-IISAppPoolUser -appName "identity" -storedIisUser $userName
+
+                # Assert
+                $iisUser.UserName | Should -Be $userName
+                $iisUser.Credential.GetNetworkCredential().UserName | Should -Be "test.user"
+                $iisUser.Credential.GetNetworkCredential().Password | Should -Be "supersecretpassword"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 2 -Exactly
+            }
+
+            It 'Should throw an excpetion if no user was specified'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { $null }
+
+                # Act
+                { Get-IISAppPoolUser -appName "identity" -storedIisUser "fabric/test.user" } | Should -Throw
+            }
+        }
+    }
+}
+
+Describe 'Get-AppInsightsKey'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored app insights key'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -quiet $true
+
+                # Assert
+                $appInsightsKey | Should -Be "123456"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 2 -Exactly
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user entered app insights key'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return "567890" }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+
+                # Act
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -quiet $false
+
+                # Assert
+                $appInsightsKey | Should -Be "567890"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 2 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-SqlServerAddress'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored sql server address'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -quiet $true
+
+                # Assert
+                $sqlServerAddress | Should -Be "somemachine.fabric.local"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user entered sql server address'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return "othermachine.fabric.local" }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+
+                # Act
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -quiet $false
+
+                # Assert
+                $sqlServerAddress | Should -Be "othermachine.fabric.local"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+}
+
+Describe 'Get-DiscoveryServiceUrl'{
+    Context 'Quiet Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return stored DiscoveryService URL'{
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -quiet $true
+
+                # Assert
+                $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+
+    Context 'Interactive Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return user DiscoveryService URL'{
+                # Arrange
+                # Arrange
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "https://otherhost.fabric.local/DiscoveryService/v1" }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                
+                # Act
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -quiet $false
+
+                # Assert
+                $discoUrl | Should -Be "https://otherhost.fabric.local/DiscoveryService/v1"
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 1 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-FullyQualifiedMachineName -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+            }
+        }
+    }
+}
