@@ -329,7 +329,12 @@ function Publish-Identity($site, [string] $appName, $iisUser, [string] $zipPacka
     New-App $appName $site.Name $appDirectory | Out-Null
     Publish-WebSite $zipPackage $appDirectory $appName $true
     Set-Location $PSScriptRoot
-    return @{applicationDirectory = $appDirectory; version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion}
+    $version = Get-InstalledVersion -appDirectory $appDirectory -assemblyPath "Fabric.Identity.API.dll"
+    return @{applicationDirectory = $appDirectory; version = $version }
+}
+
+function Get-InstalledVersion([string] $appDirectory, [string] $assemblyPath){
+    return [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\$assemblyPath").FileVersion
 }
 
 function Register-IdentityWithDiscovery([string] $iisUserName, [string] $metadataConnStr, [string] $version, [string] $identityServerUrl){
