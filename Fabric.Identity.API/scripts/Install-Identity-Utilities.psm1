@@ -325,7 +325,7 @@ function Publish-Identity($site, [string] $appName, $iisUser, [string] $zipPacka
     New-App $appName $site.Name $appDirectory | Out-Null
     Publish-WebSite $zipPackage $appDirectory $appName $true
     Set-Location $PSScriptRoot
-    return [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion
+    return @{applicationDirectory = $appDirectory; version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\Fabric.Identity.API.dll").FileVersion}
 }
 
 function Register-IdentityWithDiscovery([string] $iisUserName, [string] $metadataConnStr, [string] $version, [string] $identityServerUrl){
@@ -351,6 +351,129 @@ function Add-DatabaseSecurity($userName, $role, $connString)
     Add-DatabaseUser $userName $connString
     Add-DatabaseUserToRole $userName $connString $role
     Write-DosMessage -Level "Information" -Message "Database security applied successfully"
+}
+
+function Set-IdentityEnvironmentVariables([string] $appDirectory, `
+    [string] $primarySigningCertificateThumbprint, `
+    [string] $encryptionCertificateThumbprint, `
+    [string] $appInsightsInstrumentationKey, `
+    [string] $applicationEndpoint, `
+    [string] $identityDbConnStr, `
+    [string] $discoveryServiceUrl, `
+    [bool] $noDiscoveryService){
+    $environmentVariables = @{"HostingOptions__StorageProvider" = "SqlServer"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
+
+    if ($primarySigningCertificateThumbprint){
+        $environmentVariables.Add("SigningCertificateSettings__UseTemporarySigningCredential", "false")
+        $environmentVariables.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
+    }
+
+    if ($encryptionCertificateThumbprint){
+        $environmentVariables.Add("SigningCertificateSettings__EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+    }
+
+    if($appInsightsInstrumentationKey){
+        $environmentVariables.Add("ApplicationInsights__Enabled", "true")
+        $environmentVariables.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
+    }
+
+    $environmentVariables.Add("IdentityServerConfidentialClientSettings__Authority", "$applicationEndpoint")
+
+    if($identityDbConnStr){
+        $environmentVariables.Add("ConnectionStrings__IdentityDatabase", $identityDbConnStr)
+    }
+
+    if(!($noDiscoveryService) -and $discoveryServiceUrl){
+        $environmentVariables.Add("DiscoveryServiceEndpoint", "$discoveryServiceUrl")
+        $environmentVariables.Add("UseDiscoveryService", "true")
+    }else{
+        $environmentVariables.Add("UseDiscoveryService", "false")
+    }
+
+    Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
+}
+
+function Add-RegistrationApiRegistration([string] $identityServerUrl, [string] $accessToken){
+    $body = @'
+{
+    "name":"registration-api",
+    "userClaims":["name","email","role","groups"],
+    "scopes":[{"name":"fabric/identity.manageresources"}, {"name":"fabric/identity.read"}, {"name":"fabric/identity.searchusers"}]
+}
+'@
+
+    Write-DosMessage -Level "Information" -Message "Registering Fabric.Identity Registration API."
+    $registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
+    return $registrationApiSecret
+}
+
+function Add-InstallerClientRegistration([string] $identityServerUrl, [string] $accessToken, [string] $fabricInstallerSecret){
+    $body = @'
+{
+    "clientId":"fabric-installer", 
+    "clientName":"Fabric Installer", 
+    "requireConsent":"false", 
+    "allowedGrantTypes": ["client_credentials"], 
+    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
+}
+'@
+
+    Write-DosMessage -Level "Information" -Message "Registering Fabric.Installer Client."
+    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken -shouldResetSecret $false)).Trim()
+    if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
+        $installerClientSecret = $fabricInstallerSecret
+    }
+    return $installerClientSecret
+}
+
+function Add-IdentityClientRegistration([string] $identityServerUrl, [string] $accessToken){
+    $body2 = @'
+{
+    "clientId":"fabric-identity-client", 
+    "clientName":"Fabric Identity Client", 
+    "requireConsent":"false", 
+    "allowedGrantTypes": ["client_credentials"], 
+    "allowedScopes": ["fabric/idprovider.searchusers"]
+}
+'@
+
+    Write-DosMessage -Level "Information" -Message "Registering Fabric.Identity Client."
+    $identityClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body2 -accessToken $accessToken)).Trim()
+    return $identityClientSecret
+}
+
+function Add-SecureIdentityEnvironmentVariables($encryptionCert, [string] $identityClientSecret, [string] $registrationApiSecret, [string] $appDirectory){
+    $environmentVariables = @{}
+    if($identityClientSecret){
+        $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
+        $environmentVariables.Add("IdentityServerConfidentialClientSettings__ClientSecret", $encryptedSecret)
+    }
+    
+    if($registrationApiSecret){
+        $encryptedSecret = Get-EncryptedString $encryptionCert $registrationApiSecret
+        $environmentVariables.Add("IdentityServerApiSettings__ApiSecret", $encryptedSecret)
+    }
+    Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
+}
+
+function Test-RegistrationComplete([string] $authUrl)
+{
+    $url = "$authUrl/api/client/fabric-installer"
+    $headers = @{"Accept" = "application/json"}
+    
+    try {
+        Invoke-RestMethod -Method Get -Uri $url -Headers $headers
+    } catch {
+        $exception = $_.Exception
+    }
+
+    if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 401)
+    {
+        Write-DosMessage -Level "Information" -Message "Fabric registration is already complete."
+        return $true
+    }
+
+    return $false
 }
 
 function Add-DatabaseLogin($userName, $connString)
@@ -467,3 +590,9 @@ Export-ModuleMember Unlock-ConfigurationSections
 Export-ModuleMember Publish-Identity
 Export-ModuleMember Register-IdentityWithDiscovery
 Export-ModuleMember Add-DatabaseSecurity
+Export-ModuleMember Set-IdentityEnvironmentVariables
+Export-ModuleMember Add-RegistrationApiRegistration
+Export-ModuleMember Add-IdentityClientRegistration
+Export-ModuleMember Add-SecureIdentityEnvironmentVariables
+Export-ModuleMember Test-RegistrationComplete
+Export-ModuleMember Add-InstallerClientRegistration
