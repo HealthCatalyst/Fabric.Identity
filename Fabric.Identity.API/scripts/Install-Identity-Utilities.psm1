@@ -477,7 +477,7 @@ function Test-RegistrationComplete([string] $authUrl)
         $exception = $_.Exception
     }
 
-    if($exception -ne $null -and $exception.Response.StatusCode.value__ -eq 401)
+    if($null -ne $exception -and $exception.Response.StatusCode.value__ -eq 401)
     {
         Write-DosMessage -Level "Information" -Message "Fabric registration is already complete."
         return $true
