@@ -403,32 +403,31 @@ function Set-IdentityEnvironmentVariables([string] $appDirectory, `
 }
 
 function Add-RegistrationApiRegistration([string] $identityServerUrl, [string] $accessToken){
-    $body = @'
-{
-    "name":"registration-api",
-    "userClaims":["name","email","role","groups"],
-    "scopes":[{"name":"fabric/identity.manageresources"}, {"name":"fabric/identity.read"}, {"name":"fabric/identity.searchusers"}]
-}
-'@
+    $body = @{
+        Name = "registration-api";
+        UserClaims = @("name","email","role","groups");
+        Scopes = @(@{Name = "fabric/identity.manageresources"}, @{ Name = "fabric/identity.read"}, @{ Name = "fabric/identity.searchusers"});
+    }
+    $jsonBody = ConvertTo-Json $body
 
     Write-DosMessage -Level "Information" -Message "Registering Fabric.Identity Registration API."
-    $registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken)).Trim()
+    $registrationApiSecret = ([string](Add-ApiRegistration -authUrl $identityServerUrl -body $jsonBody -accessToken $accessToken)).Trim()
     return $registrationApiSecret
 }
 
 function Add-InstallerClientRegistration([string] $identityServerUrl, [string] $accessToken, [string] $fabricInstallerSecret){
-    $body = @'
-{
-    "clientId":"fabric-installer", 
-    "clientName":"Fabric Installer", 
-    "requireConsent":"false", 
-    "allowedGrantTypes": ["client_credentials"], 
-    "allowedScopes": ["fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients"]
-}
-'@
+    $body = @{
+        ClientId = "fabric-installer";
+        ClientName = "Fabric Installer";
+        RequireConsent = $false;
+        AllowedGrantTypes = @("client_credentials");
+        AllowedScopes = @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients")
+    }
+    $jsonBody = ConvertTo-Json $body
 
     Write-DosMessage -Level "Information" -Message "Registering Fabric.Installer Client."
-    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body -accessToken $accessToken -shouldResetSecret $false)).Trim()
+    $installerClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $jsonBody -accessToken $accessToken -shouldResetSecret $false)).Trim()
+    
     if([string]::IsNullOrWhiteSpace($installerClientSecret)) {
         $installerClientSecret = $fabricInstallerSecret
     }
@@ -436,18 +435,17 @@ function Add-InstallerClientRegistration([string] $identityServerUrl, [string] $
 }
 
 function Add-IdentityClientRegistration([string] $identityServerUrl, [string] $accessToken){
-    $body2 = @'
-{
-    "clientId":"fabric-identity-client", 
-    "clientName":"Fabric Identity Client", 
-    "requireConsent":"false", 
-    "allowedGrantTypes": ["client_credentials"], 
-    "allowedScopes": ["fabric/idprovider.searchusers"]
-}
-'@
+    $body = @{
+        ClientId = "fabric-identity-client"; 
+        ClientName = "Fabric Identity Client"; 
+        RequireConsent = $false;
+        AllowedGrantTypes = @("client_credentials"); 
+        AllowedScopes = @("fabric/idprovider.searchusers");
+    }
+    $jsonBody = ConvertTo-Json $body
 
     Write-DosMessage -Level "Information" -Message "Registering Fabric.Identity Client."
-    $identityClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $body2 -accessToken $accessToken)).Trim()
+    $identityClientSecret = ([string](Add-ClientRegistration -authUrl $identityServerUrl -body $jsonBody -accessToken $accessToken)).Trim()
     return $identityClientSecret
 }
 
@@ -483,6 +481,13 @@ function Test-RegistrationComplete([string] $authUrl)
     }
 
     return $false
+}
+
+function Test-MeetsMinimumRequiredPowerShellVerion([int] $majorVersion){
+    if($PSVersionTable.PSVersion.Major -lt $majorVersion){
+        Write-DosMessage -Level "Error" -Message "PowerShell version $majorVersion is the minimum required version to run this installation. PowerShell version $($PSVersionTable.PSVersion) is currently installed."
+        throw
+    }
 }
 
 function Add-DatabaseLogin($userName, $connString)
@@ -605,3 +610,4 @@ Export-ModuleMember Add-IdentityClientRegistration
 Export-ModuleMember Add-SecureIdentityEnvironmentVariables
 Export-ModuleMember Test-RegistrationComplete
 Export-ModuleMember Add-InstallerClientRegistration
+Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
