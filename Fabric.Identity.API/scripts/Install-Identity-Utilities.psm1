@@ -201,7 +201,7 @@ function Confirm-Credentials([string] $iisUser, [SecureString] $userEnteredPassw
     return $credential
 }
 
-function Add-PermissionToPrivateKey($iisUser, $signingCert, $permission){
+function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
         $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
@@ -321,7 +321,7 @@ function Unlock-ConfigurationSections(){
     $manager.CommitChanges()
 }
 
-function Publish-Identity($site, [string] $appName, $iisUser, [string] $zipPackage){
+function Publish-Identity([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
     New-AppRoot $appDirectory $iisUser.UserName
 
@@ -357,7 +357,7 @@ function Register-IdentityWithDiscovery([string] $iisUserName, [string] $metadat
     Write-DosMessage -Level "Information" -Message "Identity registered URL: $identityServerUrl with DiscoveryService."
 }
 
-function Add-DatabaseSecurity($userName, $role, $connString)
+function Add-DatabaseSecurity([string] $userName, [string] $role, [string] $connString)
 {
     Add-DatabaseLogin $userName $connString
     Add-DatabaseUser $userName $connString
@@ -452,7 +452,7 @@ function Add-IdentityClientRegistration([string] $identityServerUrl, [string] $a
     return $identityClientSecret
 }
 
-function Add-SecureIdentityEnvironmentVariables($encryptionCert, [string] $identityClientSecret, [string] $registrationApiSecret, [string] $appDirectory){
+function Add-SecureIdentityEnvironmentVariables([System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert, [string] $identityClientSecret, [string] $registrationApiSecret, [string] $appDirectory){
     $environmentVariables = @{}
     if($identityClientSecret){
         $encryptedSecret = Get-EncryptedString $encryptionCert $identityClientSecret
@@ -493,7 +493,7 @@ function Test-MeetsMinimumRequiredPowerShellVerion([int] $majorVersion){
     }
 }
 
-function Add-DatabaseLogin($userName, $connString)
+function Add-DatabaseLogin([string] $userName, [string] $connString)
 {
     $query = "USE master
             If Not exists (SELECT * FROM sys.server_principals
@@ -507,7 +507,7 @@ function Add-DatabaseLogin($userName, $connString)
     Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
-function Add-DatabaseUser($userName, $connString)
+function Add-DatabaseUser([string] $userName, [string] $connString)
 {
     $query = "IF( NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = @userName))
             BEGIN
@@ -519,7 +519,7 @@ function Add-DatabaseUser($userName, $connString)
     Invoke-Sql $connString $query @{userName=$userName} | Out-Null
 }
 
-function Add-DatabaseUserToRole($userName, $connString, $role)
+function Add-DatabaseUserToRole([string] $userName, [string] $connString, [string] $role)
 {
     $query = "DECLARE @exists int
             SELECT @exists = IS_ROLEMEMBER(@role, @userName) 
@@ -530,7 +530,7 @@ function Add-DatabaseUserToRole($userName, $connString, $role)
             END"
     Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
 }
-function Add-ServiceUserToDiscovery($userName, $connString){
+function Add-ServiceUserToDiscovery([string] $userName, [string] $connString){
 
     $query = "DECLARE @IdentityID int;
                 DECLARE @DiscoveryServiceUserRoleID int;
@@ -578,7 +578,7 @@ function Get-DefaultDiscoveryServiceUrl([string] $discoUrl)
     }
 }
 
-function Get-DefaultApplicationEndpoint($appName, $appEndPoint)
+function Get-DefaultApplicationEndpoint([string] $appName, [string] $appEndPoint)
 {
     if([string]::IsNullOrEmpty($appEndPoint)){
         return "$(Get-FullyQualifiedMachineName)/$appName"
