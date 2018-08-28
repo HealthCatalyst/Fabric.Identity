@@ -9,6 +9,8 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 }
 Import-Module -Name $fabricInstallUtilities -Force
 
+Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 4
+
 if(!(Test-IsRunAsAdministrator))
 {
     Write-DosMessage -Level "Error" -Message "You must run this script as an administrator. Halting configuration."
@@ -76,4 +78,6 @@ if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret: $fabricInstallerSecret"
 }
 
-Read-Host -Prompt "Installation complete, press Enter to exit"
+if(!$quiet){
+    Read-Host -Prompt "Installation complete, press Enter to exit"
+}
