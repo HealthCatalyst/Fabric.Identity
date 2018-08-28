@@ -157,6 +157,7 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
 
 function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser){
     if($credential){
+        Confirm-Credentials -credential $credential
         $iisUser = "$($credential.GetNetworkCredential().Domain)\$($credential.GetNetworkCredential().UserName)"
     }
     elseif(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $storedIisUser){
@@ -176,7 +177,7 @@ function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [stri
         
             $iisUser = $userEnteredIisUser
             $userEnteredPassword = Read-Host "Enter the password for $iisUser" -AsSecureString
-            $credential = Confirm-Credentials -iisUser $iisUser -userEnteredPassword $userEnteredPassword
+            $credential = Get-ConfirmedCredentials -iisUser $iisUser -userEnteredPassword $userEnteredPassword
             Write-DosMessage -Level "Information" -Message "Credentials are valid for user $iisUser"
         }else{
             Write-DosMessage -Level "Error" -Message "No user account was entered, please enter a valid user account."
@@ -187,18 +188,22 @@ function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [stri
     return @{UserName = $iisUser; Credential = $credential}
 }
 
-function Confirm-Credentials([string] $iisUser, [SecureString] $userEnteredPassword){
+function Get-ConfirmedCredentials([string] $iisUser, [SecureString] $userEnteredPassword){
     $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $iisUser, $userEnteredPassword
+    Confirm-Credentials -credential $credential
+    return $credential
+}
+
+function Confirm-Credentials([PSCredential] $credential){
     [System.Reflection.Assembly]::LoadWithPartialName("System.DirectoryServices.AccountManagement") | Out-Null
     $ct = [System.DirectoryServices.AccountManagement.ContextType]::Domain
     $pc = New-Object System.DirectoryServices.AccountManagement.PrincipalContext -ArgumentList $ct,$credential.GetNetworkCredential().Domain
     Write-Host "Confirming credentials"
     $isValid = $pc.ValidateCredentials($credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, [System.DirectoryServices.AccountManagement.ContextOptions]::Negotiate)
     if(!$isValid){
-        Write-DosMessage -Level "Error" -Message "Incorrect credentials for $iisUser"
+        Write-DosMessage -Level "Error" -Message "Incorrect credentials for $($credential.GetNetworkCredential().UserName)"
         throw
     }
-    return $credential
 }
 
 function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){

@@ -246,7 +246,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 $iisUser.Credential | Should -Be $credential
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -Times 0 -Exactly
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
 
             }
@@ -262,7 +262,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $userName}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $password } -ParameterFilter { $AsSecureString -eq $true }
-                Mock -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -MockWith { New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-ConfirmedCredentials -MockWith { New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
