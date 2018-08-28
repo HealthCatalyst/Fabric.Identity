@@ -155,8 +155,11 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
     return @{SigningCertificate = $signingCert; EncryptionCertificate = $encryptionCert}
 }
 
-function Get-IISAppPoolUser([string] $appName, [string] $storedIisUser){
-    if(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $storedIisUser){
+function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser){
+    if($credential){
+        $iisUser = "$($credential.GetNetworkCredential().Domain)\$($credential.GetNetworkCredential().UserName)"
+    }
+    elseif(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $storedIisUser){
         $iisUser = $storedIisUser
     }
     else{

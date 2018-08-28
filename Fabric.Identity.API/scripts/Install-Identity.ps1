@@ -1,4 +1,4 @@
-param([switch]$noDiscoveryService, [switch] $quiet)
+param([PSCredential] $credential, [switch]$noDiscoveryService, [switch] $quiet)
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
@@ -22,7 +22,7 @@ $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
 $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet
 $selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -quiet $quiet
-$iisUser = Get-IISAppPoolUser -appName $installSettings.appName -storedIisUser $installSettings.iisUser
+$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser
 Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate read
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -quiet $quiet
@@ -55,8 +55,8 @@ Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDi
 
 $accessToken = ""
 
-if(Test-RegistrationComplete $identityServerUrl) {
-    $accessToken = Get-AccessToken -authUrl $identityServerUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installSettings.fabricInstallerSecret
+if(Test-RegistrationComplete $identityServiceUrl) {
+    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installSettings.fabricInstallerSecret
 }
 
 $registrationApiSecret = Add-RegistrationApiRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
