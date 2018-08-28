@@ -214,12 +214,41 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
+
                 # Act
-                $iisUser = Get-IISAppPoolUser -appName "identity" -storedIisUser "fabric\test.user"
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric\test.user"
 
                 # Assert
                 $iisUser.UserName | Should -Be "fabric\test.user"
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+            }
+        }
+    }
+
+    Context 'Credential Mode'{
+        InModuleScope Install-Identity-Utilities{
+            It 'Should return passed in credential'{
+                # Arrange
+                $userName = "fabric\admin.user"
+                $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
+                $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password
+                Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -MockWith { }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
+                
+                # Act
+                $iisUser = Get-IISAppPoolUser -credential $credential -appName "identity" -storedIisUser "fabric\test.user"
+
+                # Assert
+                $iisUser.UserName | Should -Be $userName
+                $iisUser.Credential | Should -Be $credential
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -Times 0 -Exactly
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 1 -Exactly
+
             }
         }
     }
@@ -234,9 +263,10 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $userName}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { return $password } -ParameterFilter { $AsSecureString -eq $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Confirm-Credentials -MockWith { New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
-                $iisUser = Get-IISAppPoolUser -appName "identity" -storedIisUser $userName
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser $userName
 
                 # Assert
                 $iisUser.UserName | Should -Be $userName
@@ -251,7 +281,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { $null }
 
                 # Act
-                { Get-IISAppPoolUser -appName "identity" -storedIisUser "fabric/test.user" } | Should -Throw
+                { Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric/test.user" } | Should -Throw
             }
         }
     }
