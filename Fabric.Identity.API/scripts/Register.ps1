@@ -1,6 +1,41 @@
-#
-# Register.ps1
-#
+<#
+    .SYNOPSIS
+
+    Registers APIs, clients, grains, roles, and permissions with the authorization service
+
+    .PARAMETER discoveryServiceUrl
+
+    Discovery service endpoint
+
+    .PARAMETER authorizationServiceUrl
+
+    Authorization service endpoint
+
+    .PARAMETER identityServiceUrl
+
+    Identity service endpoint
+
+    .PARAMETER additionalHostNames
+
+    Comma seperated list of host names
+
+    .PARAMETER quiet
+
+    Indicates that this script suppresses all user input. If a required value is not provided, the script will exit with an error
+
+    .EXAMPLE
+
+    .\Register.ps1 -discoveryServiceUrl "http://localhost/discoveryservice/v1" -authorizationServiceUrl "http://localhost/Authorization" -identityServiceUrl "http://localhost/identity" -additionalHostNames "http://localhost,https://localhost" -quiet
+#>
+
+param(
+    [String] $discoveryServiceUrl,
+    [String] $authorizationServiceUrl,
+    [String] $identityServiceUrl,
+    [String] $additionalHostNames,
+    [switch] $quiet
+)
+
 function Get-FullyQualifiedHostName(){
     return "https://$env:computername.$($env:userdnsdomain.tolower())"
 }
@@ -82,6 +117,59 @@ function Get-ErrorFromResponse($response)
     $reader.DiscardBufferedData()
     $responseBody = $reader.ReadToEnd();
     return $responseBody
+}
+
+function Get-UserValueOrDefault {
+    param(
+        [String] $Default,
+        [String] $Prompt
+    )
+
+    $value = Read-Host "$Prompt or hit enter to accept the default value [$Default]"
+
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $Default
+    }
+    else {
+        return $value
+    }
+}
+
+function Get-ConfigValue {
+    param(
+        [String] $Prompt = $(throw "Please specify a prompt message"),
+        [String] $AdditionalPromptInfo,
+        [String] $DefaultFromInstallConfig = $(throw "Please specify a default value"),
+        [String] $DefaultFromParam,
+        [bool] $Required = $true
+    )
+
+    if (-not ([string]::IsNullOrWhiteSpace($DefaultFromParam))) {
+        return $DefaultFromParam
+    }
+    elseif (-not ([string]::IsNullOrWhiteSpace($DefaultFromInstallConfig))) {
+        if ($quiet -eq $true) {
+            return $DefaultFromInstallConfig;
+        }
+        return Get-UserValueOrDefault -Default $DefaultFromInstallConfig -Prompt $Prompt
+    }
+    else {
+        if ($quiet -eq $true) {
+            if ($Required -eq $true) {
+                Write-DosMessage -Level "Error"  -Message "$Prompt is required and was not provided through the command parameter nor the install.config." -ErrorAction Stop
+            }
+        }
+        elseif ($Required -eq $true) {
+            while ([string]::IsNullOrWhiteSpace($result)) {
+                $result = Read-Host "Enter the $Prompt $AdditionalPromptInfo".Trim()
+            }
+        }
+        else {
+            $result = Read-Host "Enter the $Prompt $AdditionalPromptInfo".Trim()
+        }
+
+        return $result
+    }
 }
 
 function Add-AuthorizationRegistration($authUrl, $clientId, $clientName, $accessToken)
@@ -445,7 +533,12 @@ function Get-ImplicitClientFromConfig($client, $discoveryServiceUrl){
     $scheme = $serviceUri.Scheme
     $path = $serviceUri.AbsolutePath
 
-    $hostnames = Read-Host "    The hostname that will be configured for $($client.serviceName) with Fabric.Identity is $($serviceUri.Host). If there are additional hostnames that need to be set up, please enter a space-separated list now, otherwise press enter to continue";
+    if((-not [System.String]::IsNullOrWhiteSpace($additionalHostNames)) -or ($quiet -eq $true)) {
+        $hostnames = if ($additionalHostNames) { $additionalHostNames } else { [string]::Empty }
+    } else {
+        $hostnames = Read-Host "    The hostname that will be configured for $($client.serviceName) with Fabric.Identity is $($serviceUri.Host). If there are additional hostnames that need to be set up, please enter a space-separated list now, otherwise press enter to continue";
+    }
+    
     $hostnames = $hostnames.trim();
     $hostnames = $hostnames -split '\s+'
 
@@ -699,37 +792,37 @@ if(!(Test-IsRunAsAdministrator))
 
 $installSettings = Get-InstallationSettings "identity"
 $fabricInstallerSecret = $installSettings.fabricInstallerSecret
-$discoveryServiceUrl = $installSettings.discoveryService
-$authorizationServiceURL =  $installSettings.authorizationService
-$identityServiceUrl = $installSettings.identityService
+$discoveryServiceUrlConfig = $installSettings.discoveryService
+$authorizationServiceUrlConfig =  $installSettings.authorizationService
+$identityServiceUrlConfig = $installSettings.identityService
 $encryptionCertificateThumbprint = $installSettings.encryptionCertificateThumbprint
 
 if([string]::IsNullOrEmpty($installSettings.identityService))  
 {
-	$identityServiceUrl = Get-IdentityServiceUrl
+	$identityServiceUrlConfig = Get-IdentityServiceUrl
 } else
 {
-	$identityServiceUrl = $installSettings.identityService
+	$identityServiceUrlConfig = $installSettings.identityService
 }
 
 if([string]::IsNullOrEmpty($installSettings.authorizationService))  
 {
-	$authorizationServiceURL = Get-AuthorizationServiceUrl
+	$authorizationServiceUrlConfig = Get-AuthorizationServiceUrl
 } else
 {
-	$authorizationServiceURL = $installSettings.authorizationService
+	$authorizationServiceUrlConfig = $installSettings.authorizationService
 }
 
 if([string]::IsNullOrEmpty($installSettings.discoveryService))  
 {
-	$discoveryServiceUrl = Get-DiscoveryServiceUrl
+	$discoveryServiceUrlConfig = Get-DiscoveryServiceUrl
 } else
 {
-	$discoveryServiceUrl = $installSettings.discoveryService
-	$discoveryServiceUrl = $discoveryServiceUrl.TrimEnd("/")
-    if ($discoveryServiceUrl -notmatch "/v\d")
+	$discoveryServiceUrlConfig = $installSettings.discoveryService
+	$discoveryServiceUrlConfig = $discoveryServiceUrlConfig.TrimEnd("/")
+    if ($discoveryServiceUrlConfig -notmatch "/v\d")
 	{
-	  $discoveryServiceUrl = $discoveryServiceUrl + "/v1"
+	  $discoveryServiceUrlConfig = $discoveryServiceUrlConfig + "/v1"
 	}
 }
 
@@ -740,41 +833,17 @@ try{
 	throw $_.Exception
 }
 
-$fabricInstallerSecret = Read-FabricInstallerSecret($fabricInstallerSecret)
+$fabricInstallerSecret = Get-ConfigValue -Prompt "Fabric Installer Secret" -DefaultFromInstallConfig $fabricInstallerSecret
 
-$userEnteredDiscoveryServiceUrl = Read-Host  "Enter the URL for the Discovery Service or hit enter to accept the default [$discoveryServiceUrl]"
-Write-Host ""
-if(![string]::IsNullOrEmpty($userEnteredDiscoveryServiceUrl)){   
-     $discoveryServiceUrl = $userEnteredDiscoveryServiceUrl
-}
+$discoveryServiceUrl = Get-ConfigValue -Prompt "Discovery Service" -DefaultFromParam $discoveryServiceUrl -DefaultFromInstallConfig $discoveryServiceUrlConfig
 
-$userEnteredAuthorizationServiceURL = Read-Host  "Enter the URL for the Authorization Service or hit enter to accept the default [$authorizationServiceURL]"
-Write-Host ""
-if(![string]::IsNullOrEmpty($userEnteredAuthorizationServiceURL)){   
-     $authorizationServiceURL = $userEnteredAuthorizationServiceURL
-}
+$authorizationServiceUrl = Get-ConfigValue -Prompt "Authorization Service" -DefaultFromParam $authorizationServiceUrl -DefaultFromInstallConfig $authorizationServiceUrlConfig
 
-$userEnteredIdentityServiceURL = Read-Host  "Enter the URL for the Identity Service or hit enter to accept the default [$identityServiceUrl]"
-Write-Host ""
-if(![string]::IsNullOrEmpty($userEnteredIdentityServiceURL)){   
-     $identityServiceUrl = $userEnteredIdentityServiceURL
-}
+$identityServiceUrl = Get-ConfigValue -Prompt "Identity Service" -DefaultFromParam $identityServiceUrl -DefaultFromInstallConfig $identityServiceUrlConfig
 
 if([string]::IsNullOrWhiteSpace($fabricInstallerSecret))
 {
     Write-Error "You must enter a value for the installer secret" -ErrorAction Stop
-}
-if([string]::IsNullOrWhiteSpace($authorizationServiceURL))
-{
-    Write-Error "You must enter a value for the Fabric.Authorization URL" -ErrorAction Stop
-}
-if([string]::IsNullOrWhiteSpace($identityServiceUrl))
-{
-    Write-Error "You must enter a value for the Fabric.Identity URL." -ErrorAction Stop
-}
-if([string]::IsNullOrWhiteSpace($discoveryServiceUrl))
-{
-    Write-Error "You must enter a value for the Discovery Service URL." -ErrorAction Stop
 }
 
 if([string]::IsNullOrWhiteSpace($encryptionCertificateThumbprint))
@@ -800,4 +869,9 @@ Invoke-RegisterClients -clients $clients -identityServiceUrl $identityServiceUrl
 $authorization = Get-RolesAndPermissionsToRegister -registrationConfig $registrationSettings
 Invoke-RegisterSharedRolesAndPermissions -rolesAndPermissions $authorization -identityServiceUrl $identityServiceUrl -accessToken $accessToken
 
-Read-Host -Prompt "Registration complete, press Enter to exit"
+if ($quiet -eq $true) {
+    Write-Host "Registration complete!"
+}
+else {
+    Read-Host -Prompt "Registration complete, press Enter to exit"
+}
