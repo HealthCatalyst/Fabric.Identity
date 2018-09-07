@@ -19,6 +19,10 @@
 
     Comma seperated list of host names
 
+    .PARAMETER registrationFile
+
+    Full path to registration xml file
+
     .PARAMETER quiet
 
     Indicates that this script suppresses all user input. If a required value is not provided, the script will exit with an error
@@ -33,8 +37,13 @@ param(
     [String] $authorizationServiceUrl,
     [String] $identityServiceUrl,
     [String] $additionalHostNames,
+    [String] $registrationFile = "$PSScriptRoot\registration.config",
     [switch] $quiet
 )
+
+if (!(Test-Path $registrationFile)) {
+    throw "registration file $registrationFile not found"
+}
 
 function Get-FullyQualifiedHostName(){
     return "https://$env:computername.$($env:userdnsdomain.tolower())"
@@ -454,7 +463,7 @@ function Invoke-UpdateClientRegistration($identityServiceUrl, $body, $clientId, 
 
 function Get-RegistrationSettings()
 {
-    $registrationConfig = [xml](Get-Content registration.config)
+    $registrationConfig = [xml](Get-Content $registrationFile)
     if($registrationConfig -eq $null){
         Write-Error "There is no configuration defined for the Fabric Registration step."
 		throw
@@ -694,9 +703,7 @@ function Invoke-RegisterApiResources($apiResources, $identityServiceUrl, $access
 		}
 		catch{
 			Write-Error "Could not register api $($api.name)"
-			$exception = $_.Exception
-			Write-Error $exception
-			throw $exception
+			throw $_.Exception
 		}
     }
 }
@@ -737,9 +744,7 @@ function Invoke-RegisterClients($clients, $identityServiceUrl, $accessToken, $di
 		}
 		catch{
 			Write-Error "Could not register client $($client.clientid)"
-			$exception = $_.Exception
-			Write-Error $exception
-			throw $exception
+			throw $_.Exception
 		}
     }
 }
