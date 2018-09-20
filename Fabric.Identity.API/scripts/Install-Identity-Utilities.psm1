@@ -74,8 +74,14 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
                     };} |
                     Format-Table Id,Name,'Physical Path',Bindings -AutoSize | Out-Host
 
-                $selectedSiteId = Read-Host "Select a web site by Id"
-                $selectedSite = $sites[$selectedSiteId - 1]
+                do {
+                    $selectedSiteId = Read-Host "Select a web site by Id"
+                    $selectedSite = $sites[$selectedSiteId - 1]
+                    if([string]::IsNullOrEmpty($selectedSiteId)){
+                        Write-DosMessage -Level "Information" -Message "You must select a web site."
+                    }
+                } while ([string]::IsNullOrEmpty($selectedSiteId))
+                
             }else{
                 $selectedSite = $sites
             }
@@ -93,14 +99,23 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
     }
 }
 
+function New-SigningAndEncryptionCertificate([string] $subject, [string] $certStorelocation)
+{
+    $cert = New-SelfSignedCertificate -Type Custom -Subject $subject -KeyUsage DataEncipherment, DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
+    return $cert
+}
+
 function Get-Certificates([string] $primarySigningCertificateThumbprint, [string] $encryptionCertificateThumbprint, [bool] $quiet){
     if(Test-ShouldShowCertMenu -primarySigningCertificateThumbprint $primarySigningCertificateThumbprint `
                                 -encryptionCertificateThumbprint $encryptionCertificateThumbprint `
                                 -quiet $quiet){
         try{
+            $today = Get-Date
             $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
             $index = 1
-            $allCerts |
+            $attempts = 1
+            $allCerts | 
+                Where-Object { $_.NotAfter -ge $today -and $_.NotBefore -le $today } |
                 ForEach-Object {New-Object PSCustomObject -Property @{
                 'Index'=$index;
                 'Subject'= $_.Subject; 
@@ -110,17 +125,23 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
                 };
                 $index ++} |
                 Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize | Out-Host
-    
-            $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
-            if([string]::IsNullOrEmpty($selectionNumber)){
-                Write-DosMessage -Level "Error" -Message "You must select a certificate so Fabric.Identity can sign access and identity tokens."
-                throw
-            }
-            $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
-            if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
-                Write-DosMessage -Level "Error" -Message  "Please select a certificate with index between 1 and $($allCerts.Count)."
-                throw
-            }
+            do {
+                if($attempts -gt 10){
+                    Write-DosMessage -Level "Error" -Message "An invalid certificate has been selected."
+                    throw
+                }
+                $selectionNumber = Read-Host  "Select a signing and encryption certificate by Index"
+                if([string]::IsNullOrEmpty($selectionNumber)){
+                    Write-DosMessage -Level "Information" -Message "You must select a certificate so Fabric.Identity can sign access and identity tokens."
+                }else{
+                    $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
+                    if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
+                        Write-DosMessage -Level "Information" -Message  "Please select a certificate with index between 1 and $($allCerts.Count)."
+                    }
+                }
+                $attempts++
+            } while ([string]::IsNullOrEmpty($selectionNumber) -or ($selectionNumberAsInt -gt $allCerts.Count) -or ($selectionNumberAsInt -le 0))
+
             $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt
             
             if([string]::IsNullOrWhitespace($primarySigningCertificateThumbprint)){
