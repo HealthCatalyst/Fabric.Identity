@@ -123,7 +123,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
         InModuleScope Install-Identity-Utilities {
             It 'Should return certificates without prompt'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $false }
-                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -CommandName Read-Host -MockWith { }
                 $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true
@@ -147,11 +147,11 @@ Describe 'Get-Certificates' -Tag 'Unit'{
         InModuleScope Install-Identity-Utilities{
             It 'Should prompt and return certificates'{
                 # Arrange
-                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
-                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=server.domain.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=server.domain.local"}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
-                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -CommandName Read-Host -MockWith { 2 }
 
@@ -168,11 +168,11 @@ Describe 'Get-Certificates' -Tag 'Unit'{
 
             It 'Should throw an exception if no selection is made'{
                 # Arrange
-                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
-                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=server.domain.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=server.domain.local"}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
-                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message -eq "You must select a certificate so Fabric.Identity can sign access and identity tokens." }
                 Mock -CommandName Read-Host -MockWith { $null }
@@ -184,11 +184,11 @@ Describe 'Get-Certificates' -Tag 'Unit'{
 
             It 'Should throw an exception if a bad selection is made'{
                 # Arrange
-                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=HC2234.hqcatalyst.local"}
-                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=server.domain.local"}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=server.domain.local"}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
-                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Please select a certificate with index between 1 and") }
                 Mock -CommandName Read-Host -MockWith { 3 }
