@@ -174,10 +174,12 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message -eq "You must select a certificate so Fabric.Identity can sign access and identity tokens." }
                 Mock -CommandName Read-Host -MockWith { $null }
 
                 # Act/Assert
                 {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message -eq "You must select a certificate so Fabric.Identity can sign access and identity tokens." } -Times 10 -Exactly
             }
 
             It 'Should throw an exception if a bad selection is made'{
@@ -188,10 +190,12 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=HC2234.hqcatalyst.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
+                Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Please select a certificate with index between 1 and") }
                 Mock -CommandName Read-Host -MockWith { 3 }
 
                 # Act/Assert
                 {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Please select a certificate with index between 1 and") } -Times 10 -Exactly
             }
 
             It 'Should throw an exception if certs cannot be retreived from certificate store'{
