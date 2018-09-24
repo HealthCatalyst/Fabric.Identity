@@ -5,7 +5,6 @@ param(
 Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
-#Import-Module Pester -Force
 
 Describe 'Get-FullyQualifiedInstallationZipFile Unit Tests' -Tag 'Unit' {
     Context 'Zip File Exists'{
@@ -112,7 +111,10 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
                 $testWebSite =  New-Object -TypeName psobject -Property @{Name = "Test Site"; Id = 2}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-ChildItem -MockWith { return @( $defaultWebSite, $testWebSite) }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { 3 }
+                Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("You must select a web site by id between 1 and") }
+
                 {Get-IISWebSiteForInstall -selectedSiteName "" -quiet $false } | Should -Throw
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("You must select a web site by id between 1 and") } -Times 10 -Exactly
             }
         }
     }
@@ -595,7 +597,7 @@ Describe 'Publish-Identity'{
         }
     }
 
-    Context 'App pool does not exists'{
+    Context 'App pool does not exist'{
         InModuleScope Install-Identity-Utilities{
             It 'Should install app, create app pool and return version and directory'{
                 # Arrange
@@ -722,11 +724,11 @@ Describe 'Get-DefaultApplicationEndpoint'{
 Describe 'Test-ShouldShowCertMenu'{
     InModuleScope Install-Identity-Utilities{
         Context 'Interactive Mode'{
-            It 'Should return true when in interactive mode and signing cert thumprint is not present'{
+            It 'Should return true when in interactive mode and signing cert thumbprint is not present'{
                 $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "" -encryptionCertificateThumbprint "12345" -quiet $false
                 $shouldShow | Should -Be $true
             }
-            It 'Should return true when in interactive mode and encryption cert thumprint is not present'{
+            It 'Should return true when in interactive mode and encryption cert thumbprint is not present'{
                 $shouldShow = Test-ShouldShowCertMenu -primarySigningCertificateThumbprint "12345" -encryptionCertificateThumbprint "" -quiet $false
                 $shouldShow | Should -Be $true
             }
