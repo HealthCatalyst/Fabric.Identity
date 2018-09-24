@@ -1,4 +1,18 @@
-param([PSCredential] $credential, [switch]$noDiscoveryService, [switch] $quiet)
+param(
+    [PSCredential] $credential,
+    [ValidateScript({
+        if (!(Test-Path $_)) {
+            throw "Path $_ does not exist. Please enter valid path to the install.config."
+        }
+        if (!(Test-Path $_ -PathType Leaf)) {
+            throw "Path $_ is not a file. Please enter a valid path to the install.config."
+        }
+        return $true
+    })] 
+    [string] $installConfigPath = "install.config", 
+    [switch] $noDiscoveryService, 
+    [switch] $quiet
+)
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
@@ -9,7 +23,7 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 }
 Import-Module -Name $fabricInstallUtilities -Force
 
-Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 4
+Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 5
 
 if(!(Test-IsRunAsAdministrator))
 {
@@ -17,7 +31,8 @@ if(!(Test-IsRunAsAdministrator))
     throw
 }
 
-$installSettings = Get-InstallationSettings "identity"
+Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
+$installSettings = Get-InstallationSettings "identity" -installConfigPath $installConfigPath
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirecory $PSScriptRoot
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
 $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet

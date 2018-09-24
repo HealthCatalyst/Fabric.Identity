@@ -6,15 +6,24 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 }
 Import-Module -Name $fabricInstallUtilities -Force
 
+# Import Dos Install Utilities
+$minVersion = [System.Version]::new(1, 0, 164 , 0)
 $dosInstallUtilities = Get-Childitem -Path ./**/DosInstallUtilities.psm1 -Recurse
 if ($dosInstallUtilities.length -eq 0) {
-    Install-Module DosInstallUtilities -Scope CurrentUser
-    Import-Module DosInstallUtilities -Force
-    Write-DosMessage -Level "Warning" -Message "Could not find dos install utilities. Manually installing"
+    $installed = Get-Module -Name DosInstallUtilities
+    if ($null -eq $installed) {
+        $installed = Get-InstalledModule -Name DosInstallUtilities
+    }
+
+    if (($null -eq $installed) -or ($installed.Version.CompareTo($minVersion) -lt 0)) {
+        Write-Host "Installing DosInstallUtilities from Powershell Gallery"
+        Install-Module DosInstallUtilities -Scope CurrentUser -MinimumVersion 1.0.164.0 -Force
+        Import-Module DosInstallUtilities -Force
+    }
 }
 else {
+    Write-Host "Installing DosInstallUtilities at $($dosInstallUtilities.FullName)"
     Import-Module -Name $dosInstallUtilities.FullName
-    Write-DosMessage -Level "Verbose" -Message "Installing DosInstallUtilities at $($dosInstallUtilities.FullName)"
 }
 
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
@@ -49,7 +58,7 @@ function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
             Remove-Item $env:Temp\bundle.exe
         }catch{
             $e = $_.Exception
-            Write-DosMessage -Level "Warning" -Message "Unable to remove temporary dowload file for server hosting bundle exe" 
+            Write-DosMessage -Level "Warning" -Message "Unable to remove temporary download file for server hosting bundle exe" 
             Write-DosMessage -Level "Warning" -Message  $e.Message
         }
 
@@ -73,14 +82,23 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
                         'Bindings'=$_.bindings;
                     };} |
                     Format-Table Id,Name,'Physical Path',Bindings -AutoSize | Out-Host
-
+                
+                $attempts = 1
                 do {
+                    if($attempts -gt 10){
+                        Write-DosMessage -Level "Error" -Message "An invalid website has been selected."
+                        throw
+                    }
                     $selectedSiteId = Read-Host "Select a web site by Id"
                     $selectedSite = $sites[$selectedSiteId - 1]
                     if([string]::IsNullOrEmpty($selectedSiteId)){
                         Write-DosMessage -Level "Information" -Message "You must select a web site."
                     }
-                } while ([string]::IsNullOrEmpty($selectedSiteId))
+                    if($null -eq $selectedSite){
+                        Write-DosMessage -Level "Information" -Message "You must select a web site by id between 1 and $($sites.Count)."
+                    }
+                    $attempts++
+                } while ([string]::IsNullOrEmpty($selectedSiteId) -or ($null -eq $selectedSite))
                 
             }else{
                 $selectedSite = $sites
