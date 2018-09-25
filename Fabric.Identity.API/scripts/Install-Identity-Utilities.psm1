@@ -67,7 +67,7 @@ function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
     }
 }
 
-function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
+function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installConfigPath, [bool] $quiet){
     try{
         $sites = Get-ChildItem IIS:\Sites
         if($quiet -eq $true){
@@ -107,7 +107,7 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [bool] $quiet){
         if($null -eq $selectedSite){
             throw "Could not find selected site."
         }
-        if($selectedSite.Name){ Add-InstallationSetting "identity" "siteName" $selectedSite.Name | Out-Null }
+        if($selectedSite.Name){ Add-InstallationSetting "identity" "siteName" $selectedSite.Name $installConfigPath | Out-Null }
 
         return $selectedSite
 
@@ -123,7 +123,7 @@ function New-SigningAndEncryptionCertificate([string] $subject, [string] $certSt
     return $cert
 }
 
-function Get-Certificates([string] $primarySigningCertificateThumbprint, [string] $encryptionCertificateThumbprint, [bool] $quiet){
+function Get-Certificates([string] $primarySigningCertificateThumbprint, [string] $encryptionCertificateThumbprint, [string] $installConfigPath, [bool] $quiet){
     if(Test-ShouldShowCertMenu -primarySigningCertificateThumbprint $primarySigningCertificateThumbprint `
                                 -encryptionCertificateThumbprint $encryptionCertificateThumbprint `
                                 -quiet $quiet){
@@ -188,13 +188,13 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
         Write-DosMessage -Level "Error" -Message  "Could not get encryption certificate with thumbprint $encryptionCertificateThumbprint. Please verify that the encryptionCertificateThumbprint setting in install.config contains a valid thumbprint for a certificate in the Local Machine Personal store."
         throw $_.Exception
     }
-    if($encryptionCert.Thumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint | Out-Null }
-    if($encryptionCert.Thumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint | Out-Null }
-    if($signingCert.Thumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $signingCert.Thumbprint | Out-Null }
+    if($encryptionCert.Thumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint $installConfigPath | Out-Null }
+    if($encryptionCert.Thumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint $installConfigPath | Out-Null }
+    if($signingCert.Thumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $signingCert.Thumbprint $installConfigPath | Out-Null }
     return @{SigningCertificate = $signingCert; EncryptionCertificate = $encryptionCert}
 }
 
-function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser){
+function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser, [string] $installConfigPath){
     if($credential){
         Confirm-Credentials -credential $credential
         $iisUser = "$($credential.GetNetworkCredential().Domain)\$($credential.GetNetworkCredential().UserName)"
@@ -223,7 +223,7 @@ function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [stri
             throw
         }
     }
-    if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" | Out-Null }
+    if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" $installConfigPath | Out-Null }
     return @{UserName = $iisUser; Credential = $credential}
 }
 
@@ -269,7 +269,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
     }
 }
 
-function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [bool] $quiet){
+function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [bool] $quiet){
     if(!$quiet){
         $userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to accept the default [$appInsightsInstrumentationKey]"
 
@@ -277,12 +277,12 @@ function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [bool] $qui
             $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
         }
     }
-    if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
-    if($appInsightsInstrumentationKey){ Add-InstallationSetting "common" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" | Out-Null }
+    if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath | Out-Null }
+    if($appInsightsInstrumentationKey){ Add-InstallationSetting "common" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath  Out-Null }
     return $appInsightsInstrumentationKey
 }
 
-function Get-SqlServerAddress([string] $sqlServerAddress, [bool] $quiet){
+function Get-SqlServerAddress([string] $sqlServerAddress, [string] $installConfigPath, [bool] $quiet){
     if(!$quiet){
         $userEnteredSqlServerAddress = Read-Host "Press Enter to accept the default Sql Server address '$($sqlServerAddress)' or enter a new Sql Server address" 
 
@@ -290,11 +290,11 @@ function Get-SqlServerAddress([string] $sqlServerAddress, [bool] $quiet){
             $sqlServerAddress = $userEnteredSqlServerAddress
         }
     }
-    if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" | Out-Null }
+    if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" $installConfigPath | Out-Null }
     return $sqlServerAddress
 }
 
-function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string] $sqlServerAddress, [bool] $quiet){
+function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string] $sqlServerAddress, [string] $installConfigPath, [bool] $quiet){
     if(!$quiet){
         $userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
         if(![string]::IsNullOrEmpty($userEnteredIdentityDbName)){
@@ -305,11 +305,11 @@ function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string]
 
     Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
     Write-DosMessage -Level "Information" -Message "Identity DB Connection string: $identityDbConnStr verified"
-    if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" | Out-Null }
+    if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" $installConfigPath | Out-Null }
     return @{DbName = $identityDbName; DbConnectionString = $identityDbConnStr}
 }
 
-function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string] $sqlServerAddress, [bool] $quiet){
+function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string] $sqlServerAddress, [string] $installConfigPath, [bool] $quiet){
     if(!($quiet)){
         $userEnteredMetadataDbName = Read-Host "Press Enter to accept the default Metadata DB Name '$($metadataDbName)' or enter a new Metadata DB Name"
         if(![string]::IsNullOrEmpty($userEnteredMetadataDbName)){
@@ -320,11 +320,11 @@ function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string]
 
     Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
     Write-DosMessage -Level "Information" -Message "Metadata DB Connection string: $metadataConnStr verified"
-    if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" | Out-Null }
+    if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" $installConfigPath | Out-Null }
     return @{DbName = $metadataDbName; DbConnectionString = $metadataConnStr}
 }
 
-function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [bool]$quiet){
+function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $installConfigPath, [bool]$quiet){
     $defaultDiscoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl $discoveryServiceUrl
     if(!$quiet){
         $userEnteredDiscoveryServiceUrl = Read-Host "Press Enter to accept the default DiscoveryService URL [$defaultDiscoUrl] or enter a new URL"
@@ -332,11 +332,11 @@ function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [bool]$quiet){
             $defaultDiscoUrl = $userEnteredDiscoveryServiceUrl
         }
     }
-    if($defaultDiscoUrl){ Add-InstallationSetting "common" "discoveryService" "$defaultDiscoUrl" | Out-Null }
+    if($defaultDiscoUrl){ Add-InstallationSetting "common" "discoveryService" "$defaultDiscoUrl" $installConfigPath | Out-Null }
     return $defaultDiscoUrl
 }
 
-function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [bool] $quiet){
+function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [string] $installConfigPath, [bool] $quiet){
     $defaultAppEndpoint = Get-DefaultApplicationEndpoint -appName $appName -appEndPoint $applicationEndpoint
     if(!$quiet){
         $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$defaultAppEndpoint] or enter a new URL"
@@ -344,8 +344,8 @@ function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoin
             $defaultAppEndpoint = $userEnteredApplicationEndpoint
         }
     }
-    if($defaultAppEndpoint){ Add-InstallationSetting "identity" "applicationEndPoint" "$defaultAppEndpoint" | Out-Null }
-    if($defaultAppEndpoint){ Add-InstallationSetting "common" "identityService" "$defaultAppEndpoint" | Out-Null }
+    if($defaultAppEndpoint){ Add-InstallationSetting "identity" "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+    if($defaultAppEndpoint){ Add-InstallationSetting "common" "identityService" "$defaultAppEndpoint" $installConfigPath | Out-Null }
     return $defaultAppEndpoint
 }
 
