@@ -9,7 +9,7 @@ param(
         }
         return $true
     })] 
-    [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config", 
+    [string] $installConfigPath = "$PSScriptRoot\install.config", 
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
