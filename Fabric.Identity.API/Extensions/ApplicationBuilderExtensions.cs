@@ -5,6 +5,7 @@ using Fabric.Identity.API.Configuration;
 using IdentityServer4;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -13,6 +14,36 @@ namespace Fabric.Identity.API.Extensions
 {
     public static class ApplicationBuilderExtensions
     {
+
+
+        public static IApplicationBuilder UseAzureIdentityProvider(this IApplicationBuilder builder,
+                                                                       IAppConfiguration appConfiguration)
+        {
+
+
+            var options = new OpenIdConnectOptions
+            {
+                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+                SignOutScheme = IdentityServerConstants.SignoutScheme,
+
+                DisplayName = "rorbakeroutlook",
+                Authority = "https://login.microsoftonline.com/rorbakeroutlook.onmicrosoft.com",
+                ClientId = "m$ guid",
+                ClientSecret = "dont tell",
+                GetClaimsFromUserInfoEndpoint = true,
+                TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false
+                }
+            };
+            options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            
+            builder.UseOpenIdConnectAuthentication(options);
+
+            return builder;
+        }
+
         public static IApplicationBuilder UseExternalIdentityProviders(this IApplicationBuilder builder,
             IAppConfiguration appConfiguration)
         {

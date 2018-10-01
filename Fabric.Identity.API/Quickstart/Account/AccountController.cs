@@ -242,6 +242,8 @@ namespace IdentityServer4.Quickstart.UI
                 throw new Exception("Unknown userid");
             }
 
+            // 
+
             //remove the user id claim from the claims collection and move to the userId property
             //also set the name of the external authentication provider
             claims.Remove(userIdClaim);

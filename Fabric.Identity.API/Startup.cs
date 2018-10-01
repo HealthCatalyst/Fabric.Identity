@@ -208,7 +208,8 @@ namespace Fabric.Identity.API
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
-            app.UseExternalIdentityProviders(_appConfig);
+            app.UseAzureIdentityProvider(_appConfig);
+            // app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
 
