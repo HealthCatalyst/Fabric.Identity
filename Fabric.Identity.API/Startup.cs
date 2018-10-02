@@ -17,6 +17,7 @@ using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
+using IdentityServer4;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Builder;
@@ -209,6 +210,14 @@ namespace Fabric.Identity.API
 
             app.UseIdentityServer();
             app.UseExternalIdentityProviders(_appConfig);
+            app.UseGoogleAuthentication(new GoogleOptions
+            {
+                AuthenticationScheme = "Google",
+                DisplayName = "Google",
+                SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
+                ClientId = "[Your Google Client Id]",
+                ClientSecret = "[Your Google Client Secret]"
+            });
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
 
