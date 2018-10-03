@@ -209,6 +209,7 @@ namespace Fabric.Identity.API
 
             app.UseIdentityServer();
             app.UseAzureIdentityProvider(_appConfig);
+            
             // app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);

@@ -242,7 +242,21 @@ namespace IdentityServer4.Quickstart.UI
                 throw new Exception("Unknown userid");
             }
 
-            // 
+            var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
+            if (issuerClaim == null)
+            {
+                throw new Exception("Unknown issuerer");
+            }
+
+            var validIssueres = new HashSet<string>();
+            validIssueres.Add("https://sts.windows.net/0ced5a42-fa6e-4d17-bb75-da8c4dbec43c/");
+            validIssueres.Add("https://sts.windows.net/5f8a7ca2-dc7d-4ebe-adc7-317b935d5c65/");
+            validIssueres.Add("https://sts.windows.net/52807a8b-794c-4c07-825f-578847e1257e/");
+
+            if (!validIssueres.Contains(issuerClaim.Issuer))
+            {
+                throw new Exception("forbidden issuerer");
+            }
 
             //remove the user id claim from the claims collection and move to the userId property
             //also set the name of the external authentication provider

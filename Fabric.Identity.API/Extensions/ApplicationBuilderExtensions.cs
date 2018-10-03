@@ -12,6 +12,8 @@ using Serilog;
 
 namespace Fabric.Identity.API.Extensions
 {
+    using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+
     public static class ApplicationBuilderExtensions
     {
 
@@ -27,9 +29,11 @@ namespace Fabric.Identity.API.Extensions
                 SignOutScheme = IdentityServerConstants.SignoutScheme,
 
                 DisplayName = "rorbakeroutlook",
-                Authority = "https://login.microsoftonline.com/rorbakeroutlook.onmicrosoft.com",
-                ClientId = "m$ guid",
-                ClientSecret = "dont tell",
+                Authority = "https://login.microsoftonline.com/common",
+                ResponseType = OpenIdConnectResponseType.CodeIdToken,
+                ClaimsIssuer = "the issuer",
+                ClientId = "some client",
+                ClientSecret = "dont tell anyone",
                 GetClaimsFromUserInfoEndpoint = true,
                 TokenValidationParameters = new TokenValidationParameters
                 {

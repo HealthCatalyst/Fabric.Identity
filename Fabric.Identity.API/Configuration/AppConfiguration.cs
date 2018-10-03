@@ -4,6 +4,8 @@ using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.API.Configuration
 {
+    using System.Collections.Generic;
+
     public class AppConfiguration : IAppConfiguration
     {
         public string IssuerUri { get; set; }
@@ -14,6 +16,7 @@ namespace Fabric.Identity.API.Configuration
         public bool WindowsAuthenticationEnabled { get; set; }
         public bool UseDiscoveryService { get; set; }
         public string DiscoveryServiceEndpoint { get; set; }
+        public IEnumerable<string> ValidIssueres { get; set; }
         public IdentityProviderSearchSettings IdentityProviderSearchSettings { get; set; }
         public SigningCertificateSettings SigningCertificateSettings { get; set; }
         public ElasticSearchSettings ElasticSearchSettings { get; set; }
