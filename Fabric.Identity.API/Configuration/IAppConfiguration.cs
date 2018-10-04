@@ -14,19 +14,18 @@ namespace Fabric.Identity.API.Configuration
         string RegistrationAdminGroup { get; }
         bool AllowLocalLogin { get; }
         bool WindowsAuthenticationEnabled { get; }
-
+        bool AzureAuthenticationEnabled { get; }
         bool UseDiscoveryService { get; }
 
         string DiscoveryServiceEndpoint { get; }
 
-        IEnumerable<string> ValidIssueres { get; }
-            
         IdentityProviderSearchSettings IdentityProviderSearchSettings { get; }
         SigningCertificateSettings SigningCertificateSettings { get; }
         ElasticSearchSettings ElasticSearchSettings { get; }
         HostingOptions HostingOptions { get; }
         CouchDbSettings CouchDbSettings { get; }
         ExternalIdProviderSettings ExternalIdProviderSettings { get; }
+        AzureActiveDirectorySettings AzureActiveDirectorySettings { get; }
         IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; }
         ApplicationInsights ApplicationInsights { get; }
         LdapSettings LdapSettings { get; }

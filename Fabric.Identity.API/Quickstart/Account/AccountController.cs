@@ -44,7 +44,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IExternalIdentityProviderService _externalIdentityProviderService;
         private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
-        
+
         private readonly GroupFilterService _groupFilterService;
 
         public AccountController(
@@ -70,7 +70,7 @@ namespace IdentityServer4.Quickstart.UI
             _accountService = accountService;
             _groupFilterService = groupFilterService;
             _userLoginManager = new UserLoginManager(userStore, _logger);
-            
+
         }
 
         private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
@@ -168,10 +168,10 @@ namespace IdentityServer4.Quickstart.UI
                     props.Items.Add("scheme", AccountOptions.WindowsAuthenticationProviderName);
 
                     var id = new ClaimsIdentity(provider);
-                    
+
                     id.AddClaim(new Claim(JwtClaimTypes.Subject, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
-                    
+
                     var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
                     if (externalUser?.FirstName != null)
                     {
@@ -220,7 +220,8 @@ namespace IdentityServer4.Quickstart.UI
         public async Task<IActionResult> ExternalLoginCallback(string returnUrl)
         {
             //read external identity from the temporary cookie
-            var info = await HttpContext.Authentication.GetAuthenticateInfoAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+            var info = await HttpContext.Authentication.GetAuthenticateInfoAsync(
+                           IdentityServerConstants.ExternalCookieAuthenticationScheme);
             var tempUser = info?.Principal;
             if (tempUser == null)
             {
@@ -237,25 +238,24 @@ namespace IdentityServer4.Quickstart.UI
             {
                 userIdClaim = claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             }
+
             if (userIdClaim == null)
             {
                 throw new Exception("Unknown userid");
             }
 
-            var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
-            if (issuerClaim == null)
+            if (_appConfiguration.AzureAuthenticationEnabled)
             {
-                throw new Exception("Unknown issuerer");
-            }
+                var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
+                if (issuerClaim == null)
+                {
+                    throw new Exception("Unknown issuerer");
+                }
 
-            var validIssueres = new HashSet<string>();
-            validIssueres.Add("https://sts.windows.net/0ced5a42-fa6e-4d17-bb75-da8c4dbec43c/");
-            validIssueres.Add("https://sts.windows.net/5f8a7ca2-dc7d-4ebe-adc7-317b935d5c65/");
-            validIssueres.Add("https://sts.windows.net/52807a8b-794c-4c07-825f-578847e1257e/");
-
-            if (!validIssueres.Contains(issuerClaim.Issuer))
-            {
-                throw new Exception("forbidden issuerer");
+                if (!this._appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim.Issuer))
+                {
+                    throw new Exception("forbidden issuerer");
+                }
             }
 
             //remove the user id claim from the claims collection and move to the userId property
@@ -267,7 +267,7 @@ namespace IdentityServer4.Quickstart.UI
             //get the client id from the auth context
             var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
 
-            var  user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
+            var user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
 
             var additionalClaims = new List<Claim>();
 
@@ -362,6 +362,6 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return View("LoggedOut", vm);
-        }        
+        }
     }
 }

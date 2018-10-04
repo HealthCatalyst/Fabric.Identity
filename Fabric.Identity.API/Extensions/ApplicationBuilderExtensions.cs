@@ -21,27 +21,28 @@ namespace Fabric.Identity.API.Extensions
         public static IApplicationBuilder UseAzureIdentityProvider(this IApplicationBuilder builder,
                                                                        IAppConfiguration appConfiguration)
         {
-
-
             var options = new OpenIdConnectOptions
             {
                 SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
                 SignOutScheme = IdentityServerConstants.SignoutScheme,
 
-                DisplayName = "rorbakeroutlook",
-                Authority = "https://login.microsoftonline.com/common",
+                DisplayName = appConfiguration.AzureActiveDirectorySettings.DisplayName,
+                Authority = appConfiguration.AzureActiveDirectorySettings.Authority,
                 ResponseType = OpenIdConnectResponseType.CodeIdToken,
-                ClaimsIssuer = "the issuer",
-                ClientId = "some client",
-                ClientSecret = "dont tell anyone",
-                GetClaimsFromUserInfoEndpoint = true,
+                ClaimsIssuer = appConfiguration.AzureActiveDirectorySettings.ClaimsIssuer,
+                ClientId = appConfiguration.AzureActiveDirectorySettings.ClientId,
+                ClientSecret = appConfiguration.AzureActiveDirectorySettings.ClientSecret,
+                GetClaimsFromUserInfoEndpoint = true,                
                 TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = false
                 }
             };
-            options.Scope.Add("openid");
-            options.Scope.Add("profile");
+
+            foreach (var s in appConfiguration.AzureActiveDirectorySettings.Scope)
+            {
+                options.Scope.Add(s);
+            }
             
             builder.UseOpenIdConnectAuthentication(options);
 

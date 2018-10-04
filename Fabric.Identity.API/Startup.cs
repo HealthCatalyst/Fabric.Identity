@@ -73,6 +73,8 @@ namespace Fabric.Identity.API
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
 
             services.TryAddSingleton(_appConfig.HostingOptions);
+            services.TryAddSingleton(_appConfig.AzureActiveDirectorySettings);
+
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
 
 
@@ -110,7 +112,7 @@ namespace Fabric.Identity.API
 
             // filter settings
             var filterSettings = _appConfig.FilterSettings ??
-                                 new FilterSettings {GroupFilterSettings = new GroupFilterSettings()};
+                                 new FilterSettings { GroupFilterSettings = new GroupFilterSettings() };
             filterSettings.GroupFilterSettings = filterSettings.GroupFilterSettings ?? new GroupFilterSettings();
             services.TryAddSingleton(filterSettings.GroupFilterSettings);
 
@@ -208,9 +210,11 @@ namespace Fabric.Identity.API
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
-            app.UseAzureIdentityProvider(_appConfig);
-            
-            // app.UseExternalIdentityProviders(_appConfig);
+            if (_appConfig.AzureAuthenticationEnabled)
+            {
+                app.UseAzureIdentityProvider(_appConfig);
+            }
+            app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
 
@@ -225,7 +229,7 @@ namespace Fabric.Identity.API
                 .UseFabricMonitoring(healthCheckService.CheckHealth, _loggingLevelSwitch);
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger(c => { c.RouteTemplate = "swagger/ui/index/{documentName}/swagger.json"; }); 
+            app.UseSwagger(c => { c.RouteTemplate = "swagger/ui/index/{documentName}/swagger.json"; });
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
