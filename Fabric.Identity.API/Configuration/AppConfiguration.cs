@@ -17,7 +17,6 @@ namespace Fabric.Identity.API.Configuration
         public bool AzureAuthenticationEnabled { get; set; }
         public bool UseDiscoveryService { get; set; }
         public string DiscoveryServiceEndpoint { get; set; }
-        public IEnumerable<string> ValidIssueres { get; set; }
         public IdentityProviderSearchSettings IdentityProviderSearchSettings { get; set; }
         public SigningCertificateSettings SigningCertificateSettings { get; set; }
         public ElasticSearchSettings ElasticSearchSettings { get; set; }
