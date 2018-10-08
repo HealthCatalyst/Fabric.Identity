@@ -28,6 +28,10 @@ using Serilog;
 
 namespace IdentityServer4.Quickstart.UI
 {
+    using System.Globalization;
+
+    using Fabric.Identity.API.Exceptions;
+
     /// <summary>
     /// This sample controller implements a typical login/logout/provision workflow for local and external accounts.
     /// The login service encapsulates the interactions with the user data store. This data store is in-memory only and cannot be used for production!
@@ -241,20 +245,23 @@ namespace IdentityServer4.Quickstart.UI
 
             if (userIdClaim == null)
             {
-                throw new Exception("Unknown userid");
+                throw new MissingUserClaimException(ExceptionMessageResources.MissingUserClaimMessage);
             }
 
-            if (_appConfiguration.AzureAuthenticationEnabled)
+            var schemaItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme");
+
+            if (_appConfiguration.AzureAuthenticationEnabled && schemaItem.Value == FabricIdentityConstants.AuthenticationSchemes.Azure)
             {
                 var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
-                if (issuerClaim == null)
+            
+                if (issuerClaim == null )
                 {
-                    throw new Exception("Unknown issuerer");
+                    throw new MissingIssuerClaimException(ExceptionMessageResources.MissingIssuerClaimMessage);
                 }
 
                 if (!this._appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim.Issuer))
                 {
-                    throw new Exception("forbidden issuerer");
+                    throw new ForbiddenIssuerException(String.Format(CultureInfo.CurrentCulture,ExceptionMessageResources.ForbiddenIssuerMessage, issuerClaim.Value));
                 }
             }
 

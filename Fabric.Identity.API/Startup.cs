@@ -73,7 +73,6 @@ namespace Fabric.Identity.API
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
 
             services.TryAddSingleton(_appConfig.HostingOptions);
-            services.TryAddSingleton(_appConfig.AzureActiveDirectorySettings);
 
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
 
@@ -214,6 +213,11 @@ namespace Fabric.Identity.API
             {
                 app.UseAzureIdentityProvider(_appConfig);
             }
+
+            // have to do somthing with the schema for windows (negotiate ot ntlm) so that 
+            //  GetConfiguredIdentityProviders finds a value on line 37
+            
+
             app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);

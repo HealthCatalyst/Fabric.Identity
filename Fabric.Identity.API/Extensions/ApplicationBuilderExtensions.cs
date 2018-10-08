@@ -23,6 +23,7 @@ namespace Fabric.Identity.API.Extensions
         {
             var options = new OpenIdConnectOptions
             {
+                AuthenticationScheme = FabricIdentityConstants.AuthenticationSchemes.Azure,
                 SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
                 SignOutScheme = IdentityServerConstants.SignoutScheme,
 

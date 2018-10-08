@@ -100,5 +100,10 @@
             public const string ClientPost = "ClientPost";
             public const string ApiResourcePost = "ApiResourcePost";
         }
+
+        public static class AuthenticationSchemes
+        {
+            public const string Azure = "OpenIdConnect:CatalystAzureAD";
+        }
     }
 }
