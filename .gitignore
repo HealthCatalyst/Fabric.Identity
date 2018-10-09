@@ -257,3 +257,4 @@ paket-files/
 # Gradle
 .gradle/
 build/
+/Fabric.Identity.API/appsettings.Development.json

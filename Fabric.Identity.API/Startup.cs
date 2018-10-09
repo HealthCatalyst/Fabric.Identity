@@ -50,7 +50,7 @@ namespace Fabric.Identity.API
             _certificateService = MakeCertificateService();
             var decryptionService = new DecryptionService(_certificateService);
             _appConfig =
-                new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, decryptionService);
+                new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, decryptionService, env.EnvironmentName);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
         }

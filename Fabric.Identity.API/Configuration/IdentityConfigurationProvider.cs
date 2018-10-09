@@ -4,24 +4,26 @@ using Microsoft.Extensions.Configuration;
 
 namespace Fabric.Identity.API.Configuration
 {
+
     public class IdentityConfigurationProvider
     {
-        public IAppConfiguration GetAppConfiguration(string baseBath, DecryptionService decryptionService)
+        public IAppConfiguration GetAppConfiguration(string baseBath, DecryptionService decryptionService, string environmentName = "")
         {
-            var appConfig = BuildAppConfiguration(baseBath);
+            var appConfig = BuildAppConfiguration(baseBath, environmentName);
             DecryptEncryptedValues(appConfig, decryptionService);
             return appConfig;
         }
 
         public IAppConfiguration GetAppConfiguration(string basePath)
         {
-            return BuildAppConfiguration(basePath);
+            return BuildAppConfiguration(basePath, string.Empty);
         }
 
-        private IAppConfiguration BuildAppConfiguration(string baseBath)
+        private IAppConfiguration BuildAppConfiguration(string baseBath, string environmentName)
         {
                 var config = new ConfigurationBuilder()
                     .AddJsonFile("appsettings.json")
+                    .AddJsonFile($"appsettings.{environmentName}.json", true)
                     .AddEnvironmentVariables()
                     .AddDockerSecrets(typeof(IAppConfiguration))
                     .SetBasePath(baseBath)
