@@ -73,11 +73,11 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
             Mock -CommandName Get-ChildItem -MockWith { return @( $defaultWebSite, $testWebSite) }
         
             It 'Should return web site given web site name' {
-                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "Default Web Site" -quiet $true
+                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "Default Web Site" -installConfigPath "install.config" -scope "identity" -quiet $true
                 $selectedSite.Name | Should -Be "Default Web Site"
             }
             It 'Should throw an exception if given site name does not exist' {
-                {Get-IISWebSiteForInstall -selectedSiteName "Bad Site" -quiet $true} | Should -Throw
+                {Get-IISWebSiteForInstall -selectedSiteName "Bad Site" -installConfigPath "install.config" -scope "identity" -quiet $true} | Should -Throw
             }
         }
     }
@@ -88,7 +88,7 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
                 $defaultWebSite = New-Object -TypeName psobject -Property @{Name = "Default Web Site"; Id = 1}
                 Mock -CommandName Get-ChildItem -MockWith { return $defaultWebSite }
                 Mock -CommandName Read-Host -MockWith { }
-                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "" -quiet $false
+                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "" -installConfigPath "install.config" -scope "identity" -quiet $false
                 $selectedSite.Name | Should -Be "Default Web Site"
                 Assert-MockCalled -CommandName Read-Host -Times 0 -Exactly
             }  
@@ -102,7 +102,7 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
                 $testWebSite =  New-Object -TypeName psobject -Property @{Name = "Test Site"; Id = 2}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-ChildItem -MockWith { return @( $defaultWebSite, $testWebSite) }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { 2 }
-                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "" -quiet $false
+                $selectedSite = Get-IISWebSiteForInstall -selectedSiteName "" -installConfigPath "install.config" -scope "identity" -quiet $false
                 $selectedSite.Name | Should -Be "Test Site"
             }  
             
@@ -113,7 +113,7 @@ Describe 'Get-IISWebSiteForInstall' -Tag 'Unit' {
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { 3 }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -MockWith { } -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("You must select a web site by id between 1 and") }
 
-                {Get-IISWebSiteForInstall -selectedSiteName "" -quiet $false } | Should -Throw
+                {Get-IISWebSiteForInstall -selectedSiteName "" -installConfigPath "install.config" -scope "identity" -quiet $false } | Should -Throw
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("You must select a web site by id between 1 and") } -Times 10 -Exactly
             }
         }
@@ -128,7 +128,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 Mock -CommandName Read-Host -MockWith { }
-                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true
+                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $true
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -Times 2 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -Times 3 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Read-Host -Times 0 -Exactly
@@ -140,7 +140,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $false }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { throw }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
-                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true } | Should -Throw
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $true } | Should -Throw
             }
         }
     }
@@ -158,7 +158,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -CommandName Read-Host -MockWith { 2 }
 
                 # Act
-                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $true
+                $certs = Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $true
 
                 # Assert
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -Times 2 -Exactly
@@ -180,7 +180,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -CommandName Read-Host -MockWith { $null }
 
                 # Act/Assert
-                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $false} | Should -Throw
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message -eq "You must select a certificate so Fabric.Identity can sign access and identity tokens." } -Times 10 -Exactly
             }
 
@@ -196,7 +196,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -CommandName Read-Host -MockWith { 3 }
 
                 # Act/Assert
-                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $false} | Should -Throw
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Please select a certificate with index between 1 and") } -Times 10 -Exactly
             }
 
@@ -206,7 +206,7 @@ Describe 'Get-Certificates' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
 
                 # Act/Assert
-                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -quiet $false} | Should -Throw
+                {Get-Certificates -primarySigningCertificateThumbprint "123456" -encryptionCertificateThumbprint "123456" -installConfigPath "install.config" -scope "identity" -quiet $false} | Should -Throw
             }
         }
     }
@@ -223,7 +223,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric\test.user"
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath "install.config" -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be "fabric\test.user"
@@ -245,7 +245,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
                 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $credential -appName "identity" -storedIisUser "fabric\test.user"
+                $iisUser = Get-IISAppPoolUser -credential $credential -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath "install.config" -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be $userName
@@ -272,7 +272,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser $userName
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser $userName -installConfigPath "install.config" -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be $userName
@@ -287,7 +287,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { $null }
 
                 # Act
-                { Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric/test.user" } | Should -Throw
+                { Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric/test.user" -installConfigPath "install.config" -scope "identity"} | Should -Throw
             }
         }
     }
@@ -302,7 +302,7 @@ Describe 'Get-AppInsightsKey'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -quiet $true
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath "install.config" -scope "identity" -quiet $true
 
                 # Assert
                 $appInsightsKey | Should -Be "123456"
@@ -320,7 +320,7 @@ Describe 'Get-AppInsightsKey'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
 
                 # Act
-                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -quiet $false
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath "install.config" -scope "identity" -quiet $false
 
                 # Assert
                 $appInsightsKey | Should -Be "567890"
@@ -340,7 +340,7 @@ Describe 'Get-SqlServerAddress'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -quiet $true
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath "install.config" -quiet $true
 
                 # Assert
                 $sqlServerAddress | Should -Be "somemachine.fabric.local"
@@ -358,7 +358,7 @@ Describe 'Get-SqlServerAddress'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
 
                 # Act
-                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -quiet $false
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath "install.config" -quiet $false
 
                 # Assert
                 $sqlServerAddress | Should -Be "othermachine.fabric.local"
@@ -379,7 +379,7 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -quiet $true
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath "install.config" -quiet $true
 
                 # Assert
                 $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
@@ -399,7 +399,7 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -quiet $false
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath "install.config" -quiet $false
 
                 # Assert
                 $discoUrl | Should -Be "https://otherhost.fabric.local/DiscoveryService/v1"
@@ -421,7 +421,7 @@ Describe 'Get-ApplicationEndpoint'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -quiet $true
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath "install.config" -scope "identity" -quiet $true
 
                 # Assert
                 $appEndpoint | Should -Be "https://host.fabric.local/identity"
@@ -441,7 +441,7 @@ Describe 'Get-ApplicationEndpoint'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -quiet $false
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath "install.config" -scope "identity" -quiet $false
 
                 # Assert
                 $appEndpoint | Should -Be "https://otherhost.fabric.local/identity"
@@ -463,7 +463,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act
-                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $true
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "identity"
@@ -480,7 +480,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act/Assert
-                {Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $true } | Should -Throw
+                {Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true } | Should -Throw
             }
         }
     }
@@ -494,7 +494,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "identity2" }
 
                 # Act
-                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -quiet $false
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $false
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "identity2"
@@ -517,7 +517,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act
-                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $true
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "EDWAdmin"
@@ -534,7 +534,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act/Assert
-                {Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $true } | Should -Throw
+                {Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true } | Should -Throw
             }
         }
     }
@@ -548,7 +548,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "EDWAdmin2" }
 
                 # Act
-                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -quiet $false
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $false
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "EDWAdmin2"
@@ -561,7 +561,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
     }
 }
 
-Describe 'Publish-Identity'{
+Describe 'Publish-Application'{
     Context 'App pool exists'{
         InModuleScope Install-Identity-Utilities{
             It 'Should install app and return version and directory'{
@@ -583,7 +583,7 @@ Describe 'Publish-Identity'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-InstalledVersion -MockWith { $expectedVersion }
 
                 # Act
-                $publishedApp = Publish-Identity -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip"
+                $publishedApp = Publish-Application -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip" -assembly "Fabric.Identity.API.dll"
 
                 # Assert
                 $publishedApp.version = "1.4.12345"
@@ -618,7 +618,7 @@ Describe 'Publish-Identity'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-InstalledVersion -MockWith { $expectedVersion }
 
                 # Act
-                $publishedApp = Publish-Identity -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip"
+                $publishedApp = Publish-Application -site $site -appName "identity" -iisUser $iisUser -zipPackage "$env:Temp\identity.zip" -assembly "Fabric.Identity.API.dll"
 
                 # Assert
                 $publishedApp.version = "1.4.12345"

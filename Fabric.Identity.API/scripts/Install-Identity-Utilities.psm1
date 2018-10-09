@@ -67,7 +67,7 @@ function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
     }
 }
 
-function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installConfigPath, [bool] $quiet){
+function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installConfigPath, [string] $scope, [bool] $quiet){
     try{
         $sites = Get-ChildItem IIS:\Sites
         if($quiet -eq $true){
@@ -107,7 +107,7 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installC
         if($null -eq $selectedSite){
             throw "Could not find selected site."
         }
-        if($selectedSite.Name){ Add-InstallationSetting "identity" "siteName" $selectedSite.Name $installConfigPath | Out-Null }
+        if($selectedSite.Name){ Add-InstallationSetting "$scope" "siteName" $selectedSite.Name $installConfigPath | Out-Null }
 
         return $selectedSite
 
@@ -123,7 +123,7 @@ function New-SigningAndEncryptionCertificate([string] $subject, [string] $certSt
     return $cert
 }
 
-function Get-Certificates([string] $primarySigningCertificateThumbprint, [string] $encryptionCertificateThumbprint, [string] $installConfigPath, [bool] $quiet){
+function Get-Certificates([string] $primarySigningCertificateThumbprint, [string] $encryptionCertificateThumbprint, [string] $installConfigPath, [string] $scope, [bool] $quiet){
     if(Test-ShouldShowCertMenu -primarySigningCertificateThumbprint $primarySigningCertificateThumbprint `
                                 -encryptionCertificateThumbprint $encryptionCertificateThumbprint `
                                 -quiet $quiet){
@@ -189,12 +189,12 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
         throw $_.Exception
     }
     if($encryptionCert.Thumbprint){ Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint $installConfigPath | Out-Null }
-    if($encryptionCert.Thumbprint){ Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint $installConfigPath | Out-Null }
-    if($signingCert.Thumbprint){ Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $signingCert.Thumbprint $installConfigPath | Out-Null }
+    if($encryptionCert.Thumbprint){ Add-InstallationSetting "$scope" "encryptionCertificateThumbprint" $encryptionCert.Thumbprint $installConfigPath | Out-Null }
+    if($signingCert.Thumbprint){ Add-InstallationSetting "$scope" "primarySigningCertificateThumbprint" $signingCert.Thumbprint $installConfigPath | Out-Null }
     return @{SigningCertificate = $signingCert; EncryptionCertificate = $encryptionCert}
 }
 
-function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser, [string] $installConfigPath){
+function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [string] $storedIisUser, [string] $installConfigPath, [string] $scope){
     if($credential){
         Confirm-Credentials -credential $credential
         $iisUser = "$($credential.GetNetworkCredential().Domain)\$($credential.GetNetworkCredential().UserName)"
@@ -223,7 +223,7 @@ function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [stri
             throw
         }
     }
-    if($iisUser){ Add-InstallationSetting "identity" "iisUser" "$iisUser" $installConfigPath | Out-Null }
+    if($iisUser){ Add-InstallationSetting "$scope" "iisUser" "$iisUser" $installConfigPath | Out-Null }
     return @{UserName = $iisUser; Credential = $credential}
 }
 
@@ -269,7 +269,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
     }
 }
 
-function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [bool] $quiet){
+function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [string] $scope, [bool] $quiet){
     if(!$quiet){
         $userEnteredAppInsightsInstrumentationKey = Read-Host  "Enter Application Insights instrumentation key or hit enter to accept the default [$appInsightsInstrumentationKey]"
 
@@ -277,8 +277,8 @@ function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $i
             $appInsightsInstrumentationKey = $userEnteredAppInsightsInstrumentationKey
         }
     }
-    if($appInsightsInstrumentationKey){ Add-InstallationSetting "identity" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath | Out-Null }
-    if($appInsightsInstrumentationKey){ Add-InstallationSetting "common" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath  Out-Null }
+    if($appInsightsInstrumentationKey){ Add-InstallationSetting "$scope" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath | Out-Null }
+    if($appInsightsInstrumentationKey){ Add-InstallationSetting "common" "appInsightsInstrumentationKey" "$appInsightsInstrumentationKey" $installConfigPath | Out-Null }
     return $appInsightsInstrumentationKey
 }
 
@@ -336,7 +336,7 @@ function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $install
     return $defaultDiscoUrl
 }
 
-function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [string] $installConfigPath, [bool] $quiet){
+function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [string] $installConfigPath, [string] $scope, [bool] $quiet){
     $defaultAppEndpoint = Get-DefaultApplicationEndpoint -appName $appName -appEndPoint $applicationEndpoint
     if(!$quiet){
         $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$defaultAppEndpoint] or enter a new URL"
@@ -344,8 +344,8 @@ function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoin
             $defaultAppEndpoint = $userEnteredApplicationEndpoint
         }
     }
-    if($defaultAppEndpoint){ Add-InstallationSetting "identity" "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
-    if($defaultAppEndpoint){ Add-InstallationSetting "common" "identityService" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+    if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+    if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
     return $defaultAppEndpoint
 }
 
@@ -365,7 +365,7 @@ function Unlock-ConfigurationSections(){
     $manager.CommitChanges()
 }
 
-function Publish-Identity([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage){
+function Publish-Application([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage, [string] $assembly){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
     New-AppRoot $appDirectory $iisUser.UserName
 
@@ -376,7 +376,7 @@ function Publish-Identity([System.Object] $site, [string] $appName, [hashtable] 
     New-App $appName $site.Name $appDirectory | Out-Null
     Publish-WebSite $zipPackage $appDirectory $appName $true
     Set-Location $PSScriptRoot
-    $version = Get-InstalledVersion -appDirectory $appDirectory -assemblyPath "Fabric.Identity.API.dll"
+    $version = Get-InstalledVersion -appDirectory $appDirectory -assemblyPath $assembly
     return @{applicationDirectory = $appDirectory; version = $version }
 }
 
@@ -648,7 +648,7 @@ Export-ModuleMember Get-MetadataDatabaseConnectionString
 Export-ModuleMember Get-DiscoveryServiceUrl
 Export-ModuleMember Get-ApplicationEndpoint
 Export-ModuleMember Unlock-ConfigurationSections
-Export-ModuleMember Publish-Identity
+Export-ModuleMember Publish-Application
 Export-ModuleMember Register-IdentityWithDiscovery
 Export-ModuleMember Add-DatabaseSecurity
 Export-ModuleMember Set-IdentityEnvironmentVariables
