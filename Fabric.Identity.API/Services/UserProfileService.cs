@@ -63,7 +63,9 @@ namespace Fabric.Identity.API.Services
 
             context.IsActive = user != null;
 
-            if (user != null && _appConfig.AzureAuthenticationEnabled)
+            if (user != null 
+                    && _appConfig.AzureAuthenticationEnabled 
+                    && user.ProviderName == FabricIdentityConstants.AuthenticationSchemes.Azure)
             {
                 var issuerClaim = user.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
                 _logger.Debug($"AzureAuthenticationIssuer =  {issuerClaim?.Value}");

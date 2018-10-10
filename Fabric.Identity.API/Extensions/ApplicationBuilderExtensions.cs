@@ -18,9 +18,14 @@ namespace Fabric.Identity.API.Extensions
     {
 
 
-        public static IApplicationBuilder UseAzureIdentityProvider(this IApplicationBuilder builder,
+        public static IApplicationBuilder UseAzureIdentityProviderIfAccplicable(this IApplicationBuilder builder,
                                                                        IAppConfiguration appConfiguration)
         {
+            if (!appConfiguration.AzureAuthenticationEnabled)
+            {
+                return builder;
+            }
+
             var options = new OpenIdConnectOptions
             {
                 AuthenticationScheme = FabricIdentityConstants.AuthenticationSchemes.Azure,

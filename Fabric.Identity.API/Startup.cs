@@ -209,10 +209,7 @@ namespace Fabric.Identity.API
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
-            if (_appConfig.AzureAuthenticationEnabled)
-            {
-                app.UseAzureIdentityProvider(_appConfig);
-            }
+            app.UseAzureIdentityProviderIfAccplicable(_appConfig);
 
             app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();

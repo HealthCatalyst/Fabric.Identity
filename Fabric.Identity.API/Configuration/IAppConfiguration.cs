@@ -4,8 +4,6 @@ using Fabric.Platform.Shared.Configuration;
 
 namespace Fabric.Identity.API.Configuration
 {
-    using System.Collections.Generic;
-
     public interface IAppConfiguration
     {
         string IssuerUri { get; }
