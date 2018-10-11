@@ -9,15 +9,21 @@ using Serilog;
 
 namespace Fabric.Identity.API.Services
 {
+    using Fabric.Identity.API.Configuration;
+
+    using IdentityModel;
+
     public class UserProfileService : IProfileService
     {
         private readonly ILogger _logger;
         private readonly IUserStore _userStore;
+        private readonly IAppConfiguration _appConfig;
 
-        public UserProfileService(IUserStore userStore, ILogger logger)
+        public UserProfileService(IUserStore userStore, ILogger logger, IAppConfiguration appConfig)
         {
             _userStore = userStore;
             _logger = logger;
+            _appConfig = appConfig;
         }
 
         /// <summary>
@@ -54,7 +60,18 @@ namespace Fabric.Identity.API.Services
             var sub = context.Subject.GetSubjectId();
             _logger.Debug($"found sub from IsActiveContext: {sub}");
             var user = await _userStore.FindBySubjectIdAsync(sub);
+
             context.IsActive = user != null;
+
+            if (user != null 
+                    && _appConfig.AzureAuthenticationEnabled 
+                    && user.ProviderName == FabricIdentityConstants.AuthenticationSchemes.Azure)
+            {
+                var issuerClaim = user.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
+                _logger.Debug($"AzureAuthenticationIssuer =  {issuerClaim?.Value}");
+                context.IsActive = _appConfig.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim?.Value);
+            }
+            
         }
     }
 }
