@@ -18,7 +18,7 @@ namespace Fabric.Identity.API.Extensions
     {
 
 
-        public static IApplicationBuilder UseAzureIdentityProviderIfAccplicable(this IApplicationBuilder builder,
+        public static IApplicationBuilder UseAzureIdentityProviderIfApplicable(this IApplicationBuilder builder,
                                                                        IAppConfiguration appConfiguration)
         {
             if (!appConfiguration.AzureAuthenticationEnabled)
