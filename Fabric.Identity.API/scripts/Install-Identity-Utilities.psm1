@@ -468,7 +468,7 @@ function Add-InstallerClientRegistration([string] $identityServerUrl, [string] $
         ClientName = "Fabric Installer";
         RequireConsent = $false;
         AllowedGrantTypes = @("client_credentials");
-        AllowedScopes = @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients")
+        AllowedScopes = @("fabric/identity.manageresources", "fabric/authorization.read", "fabric/authorization.write", "fabric/authorization.dos.write", "fabric/authorization.manageclients", "dos/metadata", "dos/metadata.serviceAdmin")
     }
     $jsonBody = ConvertTo-Json $body
 
