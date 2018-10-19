@@ -261,7 +261,10 @@ namespace IdentityServer4.Quickstart.UI
 
                 if (!this._appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim.Issuer))
                 {
-                    throw new ForbiddenIssuerException(String.Format(CultureInfo.CurrentCulture,ExceptionMessageResources.ForbiddenIssuerMessage, issuerClaim.Value));
+                    return this.LogAndReturnStatus(
+                        403, 
+                        ExceptionMessageResources.ForbiddenIssuerMessageLog,
+                        String.Format(CultureInfo.CurrentCulture,ExceptionMessageResources.ForbiddenIssuerMessageUser,issuerClaim.Value));
                 }
             }
 
@@ -369,6 +372,14 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             return View("LoggedOut", vm);
+        }
+
+        private ObjectResult LogAndReturnStatus(int statusCode, string logMessage, string userMessage = null)
+        {
+            var returnMessage = userMessage ?? logMessage;
+
+            _logger.Error(logMessage);
+            return this.StatusCode(statusCode, userMessage);
         }
     }
 }
