@@ -72,16 +72,18 @@ function Get-FabricAzureADSecret([string] $objectId) {
 }
 
 
-function New-FabricAzureADApplicationRoot([string] $tenantId, [PSCredential] $credentials) {
+function New-FabricAzureADApplicationRegistration([string] $tenantId, [PSCredential] $credentials) {
+    Write-Host "Registering Identity Provider Search Service with tenant $tenantId"
     # Step 1. Connect to azure tenant
     Connect-AzureAD -Credential $credential -TenantId $tenantId
 
-    # Step 2. Create or update an application    
+    # Step 2. Create or update an application
     $app = New-FabricAzureADApplication
-    
+
     #Step 3. Get Client secret
     # TODO: Store client secret
     $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+    # how to store this? multiple configs?
 
     #Step 4.
     # Give admin consent to application?
@@ -94,9 +96,4 @@ function New-FabricAzureADApplicationRoot([string] $tenantId, [PSCredential] $cr
     Disconnect-AzureAD
 }
 
-
-# Is there a way to specify the tenant you want to connect to? Array in config settings and loop through? Which is the main app to register to also be identity?
-$tenantId = "" # TODO: Get Tenant ID, from config possibly?
-$credentials = Get-Credential # TODO: not automated, it's unlikely we'll have passwords in a config file either, but can pass in as a script parameter
-
-New-FabricAzureADApplicationRoot -tenantId $tenantId -credentials $credentials
+Export-ModuleMember New-FabricAzureADApplicationRegistration

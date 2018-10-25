@@ -14,6 +14,7 @@ param(
     [switch] $quiet
 )
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
+Import-Module -Name .\Install-IdPSS.psm1 -Force
 
 # Import Fabric Install Utilities
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -95,6 +96,9 @@ if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Please keep the following Fabric.Installer secret in a secure place, it will be needed in subsequent installations:"
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret: $fabricInstallerSecret"
 }
+
+# Loop through tenants, should be in a config, and install for each?
+New-FabricAzureADApplicationRegistration -tenantId "" -credentials $credential
 
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
