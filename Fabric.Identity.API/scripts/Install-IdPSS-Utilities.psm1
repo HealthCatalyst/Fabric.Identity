@@ -40,21 +40,22 @@ function Get-GraphApiReadPermissions() {
 }
 
 function New-FabricAzureADApplication() {
+    $appName = "PowerShell Registration Application"
     # Get read permissions
     $readResource = Get-GraphApiReadPermissions
 
     # TODO: Pull out name into a config ?
-    $app = Get-AzureADApplication -Filter "DisplayName eq 'PowerShell Registration Application'" -Top 1
+    $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
         # TODO: if does not exist, create, else update
     if($null -eq $app) {
         # create new application
         # TODO: Get name from config?
         # TODO: Add redirect url
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $readResource -DisplayName "PowerShell Registration Application"
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $readResource -DisplayName $appName
     }
     else {
         # TODO: Add redirect url
-        $app = Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $readWriteAccess -Oauth2AllowImplicitFlow $true 
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $readWriteAccess -Oauth2AllowImplicitFlow $true 
     }
 
     return $app
@@ -64,36 +65,30 @@ function New-FabricAzureADApplication() {
 function Get-FabricAzureADSecret([string] $objectId) {
     # TODO: Remove and recreate on every install?
     $credential = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
-    if($null -eq $app) {
+    if($null -eq $credential) {
         $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId
     }
 
-    return $credential
+    return $credential.KeyId
 }
 
-
-function New-FabricAzureADApplicationRegistration([string] $tenantId, [PSCredential] $credentials) {
-    Write-Host "Registering Identity Provider Search Service with tenant $tenantId"
+function Connect-AzureADTenant {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $tenantId,
+        [Parameter(Mandatory=$true)]
+        [PSCredential] $credentials
+    )
     # Step 1. Connect to azure tenant
-    Connect-AzureAD -Credential $credential -TenantId $tenantId
-
-    # Step 2. Create or update an application
-    $app = New-FabricAzureADApplication
-
-    #Step 3. Get Client secret
-    # TODO: Store client secret
-    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
-    # how to store this? multiple configs?
-
-    #Step 4.
-    # Give admin consent to application?
-    # Can we automate this?
-    # Start-Process -FilePath  "https://login.microsoftonline.com/4d07d6d8-58e4-45a4-8ce9-5d2cfc00c65f/oauth2/authorize?client_id=e4fd028e-51ac-4c69-aee6-de0519566f5b&response_type=code&state=12345&prompt=admin_consent"
-    # Kind of a manual process, but we can put up a window here during an interactive install
-
-
-    # Step 5. Disconnect
-    Disconnect-AzureAD
+    try {
+        Connect-AzureAD -Credential $credentials -TenantId $tenantId | Out-Null
+    }
+    catch {
+        Write-DosMessage -Level "Error" -Message  "Could not sign into tenant '$tenantId' with user '$($credentials.UserName)'"
+        throw $_.Exception
+    }
 }
 
-Export-ModuleMember New-FabricAzureADApplicationRegistration
+Export-ModuleMember Get-FabricAzureADSecret
+Export-ModuleMember Connect-AzureADTenant
+Export-ModuleMember New-FabricAzureADApplication
