@@ -97,9 +97,6 @@ if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret: $fabricInstallerSecret"
 }
 
-# Loop through tenants, should be in a config, and install for each?
-New-FabricAzureADApplicationRegistration -tenantId "" -credentials $credential
-
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
 }
