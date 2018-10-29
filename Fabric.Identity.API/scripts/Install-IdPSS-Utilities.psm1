@@ -40,22 +40,25 @@ function Get-GraphApiReadPermissions() {
 }
 
 function New-FabricAzureADApplication() {
-    $appName = "PowerShell Registration Application"
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $appName,
+        [Parameter(Mandatory=$true)]
+        [string[]] $replyUrls
+    )
     # Get read permissions
     $readResource = Get-GraphApiReadPermissions
 
-    # TODO: Pull out name into a config ?
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
         # TODO: if does not exist, create, else update
     if($null -eq $app) {
         # create new application
-        # TODO: Get name from config?
         # TODO: Add redirect url
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $readResource -DisplayName $appName
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $readResource -DisplayName $appName -ReplyUrls $replyUrls
     }
     else {
         # TODO: Add redirect url
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $readWriteAccess -Oauth2AllowImplicitFlow $true 
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $readResource -Oauth2AllowImplicitFlow $true 
     }
 
     return $app
