@@ -26,6 +26,6 @@ if($null -ne $tenants) {
         Add-InstallationConfigSetting $tenant $clientSecret $clientId $installConfigPath
 
         # Manual process, need to give consent this way for now
-        #Start-Process -FilePath  "https://login.microsoftonline.com/4d07d6d8-58e4-45a4-8ce9-5d2cfc00c65f/oauth2/authorize?client_id=e4fd028e-51ac-4c69-aee6-de0519566f5b&response_type=code&state=12345&prompt=admin_consent"
+        #Start-Process -FilePath  "https://login.microsoftonline.com/$tenantId/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
 }
