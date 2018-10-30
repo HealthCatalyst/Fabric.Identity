@@ -1,45 +1,47 @@
-Import-Module -Name $PSScriptRoot\Install-IdPSS-Utilities.psm1 -Force
-
-function Get-AppSettings {
-    param(
-        [ValidateScript({
-            if (!(Test-Path $_)) {
-                throw "Path $_ does not exist. Please enter valid path to the appsettings.json."
-            }
-            if (!(Test-Path $_ -PathType Leaf)) {
-                throw "Path $_ is not a file. Please enter a valid path to the appsettings.json."
-            }
-            return $true
-        })]  
-        [string] $installConfigPath = "appsettings.json"
-    )
-    $appSettings = Get-Content $installConfigPath -raw | ConvertFrom-Json
-
-    return $appSettings
-}
-
-$appSettingsPath = "$PSScriptRoot\appsettings.json"
-$appSettings = Get-AppSettings $appSettingsPath
-
-$installConfigPath = "$PSScriptRoot\registration.config"
-$installSettings = Get-InstallationConfig -installConfigPath $installConfigPath
-$commonScope = $installSettings.installation.settings.scope | Where-Object {$_.name -eq "common"}
-$tenants = $commonScope.tenants.variable
-
-$newSettings = @()
-
-if($null -ne $tenants) {
-    foreach($tenant in $tenants) {
-        $body = @{
-            ClientId = $tenant.clientid
-            ClientSecret = $tenant.secret
-            TenantId = $tenant.name
-            Scopes = @("https://graph.microsoft.com/.default")
+# This script will be moved into the install-identity script
+param(
+    [ValidateScript({
+        if (!(Test-Path $_)) {
+            throw "Path $_ does not exist. Please enter valid path to the install.config."
         }
-        $newSettings += $body
+        if (!(Test-Path $_ -PathType Leaf)) {
+            throw "Path $_ is not a file. Please enter a valid path to the install.config."
+        }
+        return $true
+    })] 
+    [string] $installConfigPath = "$PSScriptRoot\install.config",
+    [ValidateScript({
+        if (!(Test-Path $_)) {
+            throw "Path $_ does not exist. Please enter valid path to the IdentitySearchProvider directory"
+        }
+        return $true
+    })] 
+    [string] $idpssDirectoryPath = "$PSScriptRoot"
+)
+
+# Import Fabric Install Utilities
+$fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
+if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
+    Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
+    Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities
+}
+#Import-Module -Name $fabricInstallUtilities -Force
+Import-Module -Name "$PSScriptRoot\Install-IdPSS-Utilities.psm1" -Force
+Import-Module -Name "$PSScriptRoot\Fabric-Install-Utilities.psm1" -Force
+
+#$installSettings = Get-InstallationSettings -configSection "common" -installConfigPath ".\install.config"
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "common"}
+    $tenants = $tenantScope.SelectSingleNode('tenants')
+
+$clientSettings = @()
+foreach($tenant in $tenants.ChildNodes) {
+    $tenantSetting = @{
+        clientId = $tenant.clientId
+        clientSecret = $tenant.secret
+        tenantId = $tenant.tenantId
     }
+    $clientSettings += $tenantSetting
 }
 
-$appSettings.AzureActiveDirectoryClientSettings.ClientAppSettings = $newSettings
-
-$appSettings | ConvertTo-Json -Depth 5 | Set-Content $appSettingsPath
+Set-IdentityAppSettings -appDirectory $idpssDirectoryPath -useAzure $true -clientSettings $clientSettings

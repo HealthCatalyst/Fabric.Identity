@@ -89,23 +89,6 @@ function Connect-AzureADTenant {
         throw
     }
 }
-function Get-InstallationConfig {
-    param(
-        [ValidateScript({
-            if (!(Test-Path $_)) {
-                throw "Path $_ does not exist. Please enter valid path to the install.config."
-            }
-            if (!(Test-Path $_ -PathType Leaf)) {
-                throw "Path $_ is not a file. Please enter a valid path to the install.config."
-            }
-            return $true
-        })]  
-        [string] $installConfigPath = "install.config"
-    )
-    $installConfig = [xml](Get-Content $installConfigPath)
-
-    return $installConfig
-}
 
 function Add-InstallationTenantSettings {
     param(
@@ -208,6 +191,7 @@ function Set-IdentityAppSettings {
     )
     $appSettings = @{}
 
+    # TODO: Implement encryption for secrets
     # if ($primarySigningCertificateThumbprint){
     #     $appSettings.Add("SigningCertificateSettings__UseTemporarySigningCredential", "false")
     #     $appSettings.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
@@ -224,6 +208,7 @@ function Set-IdentityAppSettings {
 
     # TODO: Flag to enable
     if($useAzure -eq $true) {
+        $defaultScope = "https://graph.microsoft.com/.default"
         # Azure Ad Setting
         $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
         $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
@@ -236,7 +221,7 @@ function Set-IdentityAppSettings {
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
             
             # Currently only a single default scope is expected
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $setting.scope)
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
         }
     }
     Set-AppSettings $appDirectory $appSettings | Out-Null
@@ -248,4 +233,3 @@ Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
 Export-ModuleMember Add-InstallationTenantSettings
-Export-ModuleMember Get-InstallationConfig
