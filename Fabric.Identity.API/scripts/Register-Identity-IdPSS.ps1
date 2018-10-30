@@ -1,31 +1,47 @@
-Import-Module -Name $PSScriptRoot\Install-IdPSS-Utilities.psm1 -Force
+param(
+    [ValidateScript({
+        if (!(Test-Path $_)) {
+            throw "Path $_ does not exist. Please enter valid path to the install.config."
+        }
+        if (!(Test-Path $_ -PathType Leaf)) {
+            throw "Path $_ is not a file. Please enter a valid path to the install.config."
+        }
+        return $true
+    })] 
+    [string] $installConfigPath = "$PSScriptRoot\install.config",
+    [Parameter(Mandatory=$true)]
+    [string[]] $tenants,
+    [Parameter(Mandatory=$true)]
+    [string[]] $replyUrls
+)
 
-$installConfigPath = "$PSScriptRoot\registration.config"
+Import-Module -Name .\Install-IdPSS-Utilities.psm1 -Force
 
-$installSettings = Get-InstallationConfig -installConfigPath $installConfigPath
-#$tenants = $installSettings.registration.settings.tenants.variable
-$commonScope = $installSettings.installation.settings.scope | Where-Object {$_.name -eq "common"}
-$tenants = $commonScope.tenants.variable
+# Import Fabric Install Utilities
+$fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
+if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
+    Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
+    Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities
+}
+Import-Module -Name $fabricInstallUtilities -Force
 
-
-# TODO: Differentiate between idpss and identity application for extra permissions
+# TODO: Differentiate between idpss and identity application for extra/different permissions
 if($null -ne $tenants) {
-    foreach($tenant in $tenants.name) {
+    foreach($tenant in $tenants) {
         Write-Host "Enter credentials for specified tenant $tenant"
         $credential = Get-Credential
 
-        #New-FabricAzureADApplicationRegistration -tenantId $tenant -credentials $credential
+        Connect-AzureADTenant -tenantId $tenant -credential $credential
 
-        Connect-AzureADTenant -tenantId $tenant -credentials $credential
-        $app = New-FabricAzureADApplication
+        # TODO: This will potentially redirect to an application that may not be installed yet?
+        $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
         Disconnect-AzureAD
-
-        Add-InstallationConfigSetting $tenant $clientSecret $clientId $installConfigPath
+        Add-InstallationTenantSettings -configSection "common" -tenantId $tenant -clientSecret $clientSecret -clientId $clientId -installConfigPath $installConfigPath
 
         # Manual process, need to give consent this way for now
-        #Start-Process -FilePath  "https://login.microsoftonline.com/$tenantId/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+        Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
 }
