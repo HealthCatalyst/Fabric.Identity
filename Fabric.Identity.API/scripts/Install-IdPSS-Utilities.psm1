@@ -180,6 +180,36 @@ function Add-AppSetting($appSettingName, $appSettingValue, $config){
     }
 }
 
+function Get-ClientSettingsFromInstallConfig{
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "common"}
+    $tenants = $tenantScope.SelectSingleNode('tenants')
+
+    $clientSettings = @()
+    foreach($tenant in $tenants.ChildNodes) {
+        $tenantSetting = @{
+            clientId = $tenant.clientId
+            clientSecret = $tenant.secret
+            tenantId = $tenant.tenantId
+        }
+        $clientSettings += $tenantSetting
+    }
+
+    return $clientSettings
+}
+
 function Set-IdentityAppSettings {
     #[string] $primarySigningCertificateThumbprint, `
     #[string] $encryptionCertificateThumbprint, `
@@ -233,3 +263,4 @@ Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
 Export-ModuleMember Add-InstallationTenantSettings
+Export-ModuleMember Get-ClientSettingsFromInstallConfig
