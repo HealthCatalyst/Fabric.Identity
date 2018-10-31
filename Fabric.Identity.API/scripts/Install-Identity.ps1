@@ -11,10 +11,17 @@ param(
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config", 
     [switch] $noDiscoveryService, 
-    [switch] $quiet
+    [switch] $quiet,
+    [ValidateScript({
+        if (!(Test-Path $_)) {
+            throw "Path $_ does not exist. Please enter valid path to the IdentitySearchProvider web.config."
+        }
+        return $true
+    })]
+    [string] $idpssDirectoryPath
 )
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
-Import-Module -Name .\Install-IdPSS.psm1 -Force
+Import-Module -Name .\Install-IdPSS-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -91,6 +98,12 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -identityClientSecret $identityClientSecret `
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
+
+# Alter IdPSS web.config for azure
+if($null -ne $idpssDirectoryPath) {
+    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
+    Set-IdentityAppSettings -appDirectory $idpssDirectoryPath -useAzure $true -clientSettings $clientSettings
+}
 
 if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Please keep the following Fabric.Installer secret in a secure place, it will be needed in subsequent installations:"
