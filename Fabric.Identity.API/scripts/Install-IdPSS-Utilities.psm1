@@ -64,13 +64,8 @@ function New-FabricAzureADApplication() {
 }
 
 function Get-FabricAzureADSecret([string] $objectId) {
-    # TODO: Remove and recreate on every install?
-    $credential = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
-    if($null -eq $credential) {
-        $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId
-    }
-
-    return $credential.KeyId
+    $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId
+    return $credential.Value
 }
 
 function Connect-AzureADTenant {
@@ -109,7 +104,8 @@ function Add-InstallationTenantSettings {
             }
             return $true
         })]  
-        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config"
+        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config",
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCertificate
     )
 
     $installationConfig = [xml](Get-Content $installConfigPath)
@@ -123,6 +119,7 @@ function Add-InstallationTenantSettings {
     }
 
     $existingSetting = $tenantSettings.ChildNodes | Where-Object {$_.tenantId -eq $tenantId}
+    $encryptedSecret = Get-EncryptedString $signingCertificate $clientSecret
 
     if ($null -eq $existingSetting) {
         $setting = $installationConfig.CreateElement("variable")
@@ -131,18 +128,18 @@ function Add-InstallationTenantSettings {
         $nameAttribute.Value = $tenantId
         $setting.Attributes.Append($nameAttribute) | Out-Null
 
-        $valueAttribute = $installationConfig.CreateAttribute("secret")
-        $valueAttribute.Value = $clientSecret
-        $setting.Attributes.Append($valueAttribute) | Out-Null
-
         $clientAttribute = $installationConfig.CreateAttribute("clientid")
         $clientAttribute.Value = $clientId
         $setting.Attributes.Append($clientAttribute) | Out-Null
 
+        $valueAttribute = $installationConfig.CreateAttribute("secret")
+        $valueAttribute.Value = $encryptedSecret
+        $setting.Attributes.Append($valueAttribute) | Out-Null
+
         $tenantSettings.AppendChild($setting) | Out-Null
     }
     else{
-        $existingSetting.secret = $clientSecret
+        $existingSetting.secret = $encryptedSecret
         $existingSetting.clientId = $clientId
     }
     $installationConfig.Save("$installConfigPath") | Out-Null
@@ -201,6 +198,7 @@ function Get-ClientSettingsFromInstallConfig{
     foreach($tenant in $tenants.ChildNodes) {
         $tenantSetting = @{
             clientId = $tenant.clientId
+            # Does not decrypt secret
             clientSecret = $tenant.secret
             tenantId = $tenant.tenantId
         }
@@ -211,35 +209,33 @@ function Get-ClientSettingsFromInstallConfig{
 }
 
 function Set-IdentityAppSettings {
-    #[string] $primarySigningCertificateThumbprint, `
-    #[string] $encryptionCertificateThumbprint, `
-    #[string] $appInsightsInstrumentationKey, `
     param(
+        [string] $primarySigningCertificateThumbprint,
+        [string] $encryptionCertificateThumbprint,
+        [string] $appInsightsInstrumentationKey,
         [string] $appDirectory,
         [object[]] $clientSettings,
-        [string] $useAzure = $false
+        [string] $useAzure = $false,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
     $appSettings = @{}
 
-    # TODO: Implement encryption for secrets
-    # if ($primarySigningCertificateThumbprint){
-    #     $appSettings.Add("SigningCertificateSettings__UseTemporarySigningCredential", "false")
-    #     $appSettings.Add("SigningCertificateSettings__PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
-    # }
+    if ($primarySigningCertificateThumbprint){
+        $appSettings.Add("SigningCertificateSettings:UseTemporarySigningCredential", "false")
+        $appSettings.Add("SigningCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
+    }
 
-    # if ($encryptionCertificateThumbprint){
-    #     $appSettings.Add("SigningCertificateSettings__EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
-    # }
+    if ($encryptionCertificateThumbprint){
+        $appSettings.Add("SigningCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+    }
 
-    # if($appInsightsInstrumentationKey){
-    #     $appSettings.Add("ApplicationInsights__Enabled", "true")
-    #     $appSettings.Add("ApplicationInsights__InstrumentationKey", $appInsightsInstrumentationKey)
-    # }
+    if($appInsightsInstrumentationKey){
+        $appSettings.Add("ApplicationInsights:Enabled", "true")
+        $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
+    }
 
-    # TODO: Flag to enable
     if($useAzure -eq $true) {
         $defaultScope = "https://graph.microsoft.com/.default"
-        # Azure Ad Setting
         $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
         $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
         $appSettings.Add("UseAzureAuthentication", "true")
@@ -247,11 +243,19 @@ function Set-IdentityAppSettings {
         foreach($setting in $clientSettings) {
             $index = $clientSettings.IndexOf($setting)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $setting.clientSecret)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
             
             # Currently only a single default scope is expected
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+
+            $secret = $setting.clientSecret
+            if($secret -is [string] -and $secret.StartsWith("!!enc!!:")){
+                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+            }
+            else{
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+            }
         }
     }
     Set-AppSettings $appDirectory $appSettings | Out-Null
