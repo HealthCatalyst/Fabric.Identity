@@ -102,7 +102,14 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
 # Alter IdPSS web.config for azure
 if($null -ne $idpssDirectoryPath) {
     $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
-    Set-IdentityAppSettings -appDirectory $idpssDirectoryPath -useAzure $true -clientSettings $clientSettings
+
+    Set-IdentityAppSettings -appDirectory $idpssDirectoryPath `
+        -useAzure $true `
+        -clientSettings $clientSettings `
+        -encryptionCert $selectedCerts.SigningCertificate `
+        -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
+        -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+        -appInsightsInstrumentationKey $appInsightsKey
 }
 
 if ($fabricInstallerSecret){
