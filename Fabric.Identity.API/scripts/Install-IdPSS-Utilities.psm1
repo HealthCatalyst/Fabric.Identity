@@ -288,6 +288,112 @@ function Set-IdentityAppSettings {
     Set-AppSettings $appDirectory $appSettings | Out-Null
 }
 
+function Add-NestedSetting {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })]
+        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config",
+        [Parameter(Mandatory=$true)]
+        [string] $parentSetting,
+        [Parameter(Mandatory=$true)]
+        [string] $value
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $scope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $settingNode = $scope.SelectSingleNode($parentSetting)
+
+    # Add a section if not exists
+    if($null -eq $settingNode) {
+        $settingNode = $installationConfig.CreateElement($parentSetting)
+        $scope.AppendChild($settingNode) | Out-Null
+    }
+
+    $existingSetting = $settingNode.Variable | Where-Object {$_.name -eq $value}
+
+    if ($null -eq $existingSetting) {
+        Write-Console "Writing $value to config"
+        $settingElement = $installationConfig.CreateElement("variable")
+
+        $nameAttribute = $installationConfig.CreateAttribute("name")
+        $nameAttribute.Value = $value
+        $settingElement.Attributes.Append($nameAttribute) | Out-Null
+
+        $settingNode.AppendChild($settingElement) | Out-Null
+    }
+    else{
+        Write-Host $value "already exists in config, not overwriting"
+    }
+    $installationConfig.Save("$installConfigPath") | Out-Null
+
+}
+
+function Get-Tenants {
+    param(
+        [string] $installConfigPath
+    )
+    $tenants = @()
+    $scope = "identity"
+    $parentSetting = "tenants"
+    $tenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        -scope $scope `
+        -setting $parentSetting
+
+    if($null -eq $tenants -or $tenants.Count -eq 0){
+        do {
+            $input = Read-Host "Please enter tenant to register Identity with"
+            if(-not [string]::IsNullOrEmpty($input)) {
+                $tenants += $input
+            }
+        } until ([string]::IsNullOrEmpty($input) -and $tenants.Count -ne 0)
+
+        foreach($tenant in $tenants){
+            Add-NestedSetting -configSection $scope `
+                -installConfigPath $installConfigPath `
+                -parentSetting $parentSetting `
+                -value $tenant
+        }
+    }
+
+    return $tenants
+}
+
+function Get-ReplyUrls {
+    param(
+        [string] $installConfigPath
+    )
+    $scope = "identity"
+    $parentSetting = "replyUrls"
+    $replyUrls = @()
+    $replyUrls += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
+
+    if($null -eq $replyUrls -or $replyUrls.Count -eq 0){
+        # Build default identity url
+        $replyUrls += Get-ApplicationEndpoint -appName $scope `
+            -applicationEndpoint $null `
+            -installConfigPath $installConfigPath `
+            -scope $scope `
+            -quiet $true
+
+        foreach($replyUrl in $replyUrls){
+            Add-NestedSetting -configSection $scope `
+                -installConfigPath $installConfigPath `
+                -parentSetting $parentSetting `
+                -value $replyUrl
+        }
+    }
+
+    return $replyUrls
+}
+
 Export-ModuleMember Set-IdentityAppSettings
 Export-ModuleMember Add-EnvironmentVariable
 Export-ModuleMember Get-FabricAzureADSecret
@@ -296,3 +402,5 @@ Export-ModuleMember New-FabricAzureADApplication
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
 Export-ModuleMember Get-SettingsFromInstallConfig
+Export-ModuleMember Get-Tenants
+Export-ModuleMember Get-ReplyUrls
