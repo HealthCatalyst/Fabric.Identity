@@ -110,11 +110,11 @@ function Add-InstallationTenantSettings {
 
     $installationConfig = [xml](Get-Content $installConfigPath)
     $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
-    $tenantSettings = $tenantScope.SelectSingleNode('tenants')
+    $tenantSettings = $tenantScope.SelectSingleNode('registeredApplications')
 
     # Add a tenant section if not exists
     if($null -eq $tenantSettings) {
-        $tenantSettings = $installationConfig.CreateElement("tenants")
+        $tenantSettings = $installationConfig.CreateElement("registeredApplications")
         $tenantScope.AppendChild($tenantSettings) | Out-Null
     }
 
@@ -191,8 +191,8 @@ function Get-ClientSettingsFromInstallConfig{
         [string] $installConfigPath
     )
     $installationConfig = [xml](Get-Content $installConfigPath)
-    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "common"}
-    $tenants = $tenantScope.SelectSingleNode('tenants')
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "identity"}
+    $tenants = $tenantScope.SelectSingleNode('registeredApplications')
 
     $clientSettings = @()
     foreach($tenant in $tenants.ChildNodes) {
@@ -206,6 +206,33 @@ function Get-ClientSettingsFromInstallConfig{
     }
 
     return $clientSettings
+}
+
+function Get-SettingsFromInstallConfig{
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath,
+        [string] $scope,
+        [string] $setting
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $scope}
+    $tempNode = $tenantScope.SelectSingleNode($setting)
+    $settingList = @()
+    foreach($nodeChild in $tempNode.variable){
+        if($nodeChild.name) {
+            $settingList += $nodeChild.name
+        }
+    }
+    return $settingList
 }
 
 function Set-IdentityAppSettings {
@@ -268,3 +295,4 @@ Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
+Export-ModuleMember Get-SettingsFromInstallConfig
