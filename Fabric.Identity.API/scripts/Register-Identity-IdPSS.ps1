@@ -22,19 +22,8 @@ $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings -configSection $installSettingsScope -installConfigPath $installConfigPath
 $selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $installConfigPath -scope $installSettingsScope
 
-$tenants = Get-SettingsFromInstallConfig -installConfigPath $installConfigPath -scope $installSettingsScope -setting "tenants"
-$replyUrls = Get-SettingsFromInstallConfig -installConfigPath $installConfigPath -scope $installSettingsScope -setting "replyUrls"
-
-if($null -eq $tenants){
-    # prompt for these value if not exists
-    # should also write to config if that happens
-    $tenants += @("4d07d6d8-58e4-45a4-8ce9-5d2cfc00c65f")
-}
-
-if($null -eq $replyUrls){
-    # If null, build identity default url, write to install.config
-    $replyUrls += @("http://localhost/identity")
-}
+$tenants = Get-Tenants -installConfigPath $installConfigPath
+$replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
 # TODO: Differentiate between idpss and identity application for extra/different permissions
 if($null -ne $tenants) {
