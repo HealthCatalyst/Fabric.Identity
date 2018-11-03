@@ -6,23 +6,16 @@ param(
 Import-Module $targetFilePath -Force
 
 Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
-    Context 'Credential Exists' {
-        It 'Should return a credential' {
-            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith {return $true}
-            Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith {}
+    Context 'Happy Path' {
+        It 'Should create and return a credential' {
+            $mockObj = @{
+                Value = "value"
+            }
+            Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith { return $mockObj }
 
             $value = Get-FabricAzureADSecret -objectId "value"
-            Assert-MockCalled -CommandName New-AzureADApplicationPasswordCredential -Times 0 -Exactly
-        }
-    }
-
-    Context 'Credential Does not Exist' {
-        It 'Should create and return a credential' {
-            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith {}
-            Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith {}
-
-            Get-FabricAzureADSecret -objectId "value"
             Assert-MockCalled -CommandName New-AzureADApplicationPasswordCredential -Times 1 -Exactly
+            $value | Should -Be $mockObj.Value
         }
     }
 }
@@ -108,7 +101,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
 Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
     Context 'Valid config path' {
         It 'should return a list of client settings' {
-            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="common"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<tenants><variable tenantId="tenant1" secret="secret1" clientid="clientid1" /><variable tenantId="tenant2" secret="secret2" clientid="clientid2" /></tenants></scope><scope name="identity"></scope></settings></installation>'
+            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<registeredApplications><variable tenantId="tenant1" secret="secret1" clientid="clientid1" /><variable tenantId="tenant2" secret="secret2" clientid="clientid2" /></registeredApplications></scope></settings></installation>'
 
             Mock -CommandName Get-Content { return $mockXml }
             $result = Get-ClientSettingsFromInstallConfig -installConfigPath $targetFilePath
@@ -125,4 +118,62 @@ Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
             $secondApp.clientSecret | Should -Be "secret2"
         }
     }
+}
+
+Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
+    Context 'Section Exists' {
+        It 'should return a list of settings' {
+            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
+            Mock -CommandName Get-Content { return $mockXml }
+            $results = Get-SettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "section"
+            $results.Count | Should -Be 2
+        }
+    }
+    Context 'Section Does not exist' {
+        It 'should return nothing' {
+            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
+            Mock -CommandName Get-Content { return $mockXml }
+            $results = Get-SettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "invalid"
+            $results | Should -Be $null
+        }
+    }
+}
+
+Describe 'Get-Tenants' -Tag 'Unit' {
+    Context 'Tenants exists in config' {
+        It 'Should return a list of tenants' {
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @("tenant1", "tenant2")}
+            $tenants = Get-Tenants -installConfigPath $targetFilePath
+            $tenants.Count | Should -Be 2
+            $tenants[0] | Should -Be "tenant1"
+            $tenants[1] | Should -Be "tenant2"
+        }
+    }
+}
+
+Describe 'Get-ReplyUrls' -Tag 'Unit' {
+    Context 'Urls exists in config' {
+        It 'Should return a list of urls' {
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @("url1", "url2")}
+            $urls = Get-ReplyUrls -installConfigPath $targetFilePath
+            $urls.Count | Should -Be 2
+            $urls[0] | Should -Be "url1"
+            $urls[1] | Should -Be "url2"
+        }
+    }
+    Context 'Urls do not exist in config' {
+        InModuleScope Install-IdPSS-Utilities {
+            It 'Should build and add the new replyUrl' {
+                Mock Add-NestedSetting {}
+                Mock Get-ApplicationEndpoint { return "localhost" }
+                Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
+                $urls = Get-ReplyUrls -installConfigPath $targetFilePath
+
+                Assert-MockCalled -CommandName Add-NestedSetting -Times 1 -Exactly
+                $urls.Count | Should -Be 1
+                $urls | Should -Be "localhost"
+            }
+        }
+    }
+
 }

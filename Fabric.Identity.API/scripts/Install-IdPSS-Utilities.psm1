@@ -276,7 +276,7 @@ function Set-IdentityAppSettings {
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
 
             $secret = $setting.clientSecret
-            if($secret -is [string] -and $secret.StartsWith("!!enc!!:")){
+            if($secret -is [string] -and -not $secret.StartsWith("!!enc!!:")){
                 $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
                 $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
             }
@@ -348,10 +348,19 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
+        $failedAttempts = 1
         do {
+            if($failedAttempts -gt 10){
+                Write-DosMessage -Level "Error" -Message "No tenants were entered."
+                throw
+            }
+
             $input = Read-Host "Please enter tenant to register Identity with"
             if(-not [string]::IsNullOrEmpty($input)) {
                 $tenants += $input
+            }
+            else {
+                $failedAttempts++
             }
         } until ([string]::IsNullOrEmpty($input) -and $tenants.Count -ne 0)
 
