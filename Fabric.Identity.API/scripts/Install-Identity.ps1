@@ -92,17 +92,15 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-
-# Look into install.config for this?
-$idpssDirectoryPath = $installSettings.identityProviderSearchServiceConfig
-if($null -eq $idpssDirectoryPath) {
+$idpssConfig = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssConfig) {
     $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
     Add-InstallationSetting $installSettingsScope "identityProviderSearchServiceConfig" $idpssDirectoryPath $installConfigPath | Out-Null
 }
 # Alter IdPSS web.config for azure
 $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
 
-Set-IdentityAppSettings -appDirectory $idpssDirectoryPath `
+Set-IdentityAppSettings -appConfig $idpssConfig `
     -useAzure $true `
     -clientSettings $clientSettings `
     -encryptionCert $selectedCerts.SigningCertificate `
