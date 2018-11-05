@@ -632,7 +632,61 @@ function Get-DefaultApplicationEndpoint([string] $appName, [string] $appEndPoint
 }
 
 function Get-FullyQualifiedMachineName() {
-	return "https://$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())"
+    return "https://$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())"
+}
+
+function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
+    $discoveryRequest = "$discoveryServiceUrl/Services?`$filter=ServiceName eq '$serviceName'&`$select=ServiceUrl&`$orderby=Version desc"
+    $discoveryResponse = Invoke-RestMethod -Method Get -Uri $discoveryRequest -UseDefaultCredentials
+    $serviceUrl = $discoveryResponse.value.ServiceUrl
+    if([string]::IsNullOrWhiteSpace($serviceUrl)){
+        $addToError = "There was an error getting the service registration for $serviceName, using DiscoveryService url $discoveryRequest."
+        throw "The service $serviceName and $serviceUrl is not registered with the Discovery service. $addToError Make sure that this version of the service is registered w/ Discovery service before proceeding. Halting installation."
+    }
+    return $serviceUrl
+}
+
+function Get-WebConfigPath {
+    param(
+        [string] $serviceName,
+        [Uri] $discoveryServiceUrl,
+        [bool] $noDiscoveryService,
+        [bool] $quiet
+    )
+    if($noDiscoveryService) {
+        $serviceUrl = Get-DefaultApplicationEndpoint $serviceName $null
+    }
+    else {
+        $serviceUrl = Get-ApplicationUrl -serviceName $serviceName -discoveryServiceUrl $discoveryServiceUrl
+
+        if([string]::IsNullOrWhiteSpace($serviceUrl) -and $quiet) {
+            $serviceUrl = Get-DefaultApplicationEndpoint $serviceName $null
+        }
+        elseif([string]::IsNullOrWhiteSpace($serviceUrl)){
+            throw "Could not retrieve a registered URL from DiscoveryService for $serviceName Halting installation."
+        }
+    }
+
+    $serviceUri = [System.Uri]$serviceUrl
+
+    $serviceUrlSegments = $serviceUri.AbsolutePath.Split("/", [System.StringSplitOptions]::RemoveEmptyEntries)
+    $serviceRootPath = "/$($serviceUrlSegments[0])"
+
+    $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceRootPath}
+
+    if($null -eq $app){
+        throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl, at application path: $serviceRootPath. Halting installation."
+    }
+
+    $appPath = [Environment]::ExpandEnvironmentVariables($app.PhysicalPath)
+
+    $configPath = [System.IO.Path]::Combine($appPath, "web.config")
+    
+    if(!(Test-Path $configPath)){
+        throw "Could not find a web.config in $appPath for the $($app.Path) application. Halting installation."
+    }
+
+    return $configPath
 }
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
@@ -658,3 +712,4 @@ Export-ModuleMember Add-SecureIdentityEnvironmentVariables
 Export-ModuleMember Test-RegistrationComplete
 Export-ModuleMember Add-InstallerClientRegistration
 Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
+Export-ModuleMember Get-WebConfigPath

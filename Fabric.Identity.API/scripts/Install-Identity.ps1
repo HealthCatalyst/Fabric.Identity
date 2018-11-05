@@ -11,17 +11,10 @@ param(
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config", 
     [switch] $noDiscoveryService, 
-    [switch] $quiet,
-    [ValidateScript({
-        if (!(Test-Path $_)) {
-            throw "Path $_ does not exist. Please enter valid path to the IdentitySearchProvider web.config."
-        }
-        return $true
-    })]
-    [string] $idpssDirectoryPath
+    [switch] $quiet
 )
-Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 Import-Module -Name .\Install-IdPSS-Utilities.psm1 -Force
+Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -99,18 +92,23 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-# Alter IdPSS web.config for azure
-if($null -ne $idpssDirectoryPath) {
-    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
 
-    Set-IdentityAppSettings -appDirectory $idpssDirectoryPath `
-        -useAzure $true `
-        -clientSettings $clientSettings `
-        -encryptionCert $selectedCerts.SigningCertificate `
-        -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
-        -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
-        -appInsightsInstrumentationKey $appInsightsKey
+# Look into install.config for this?
+$idpssDirectoryPath = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssDirectoryPath) {
+    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting $installSettingsScope "identityProviderSearchServiceConfig" $idpssDirectoryPath $installConfigPath | Out-Null
 }
+# Alter IdPSS web.config for azure
+$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
+
+Set-IdentityAppSettings -appDirectory $idpssDirectoryPath `
+    -useAzure $true `
+    -clientSettings $clientSettings `
+    -encryptionCert $selectedCerts.SigningCertificate `
+    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
+    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+    -appInsightsInstrumentationKey $appInsightsKey
 
 if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Please keep the following Fabric.Installer secret in a secure place, it will be needed in subsequent installations:"
