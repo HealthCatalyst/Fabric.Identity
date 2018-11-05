@@ -140,14 +140,14 @@ function Add-InstallationTenantSettings {
     $installationConfig.Save("$installConfigPath") | Out-Null
 }
 
-function Set-AppSettings($appDirectory, $appSettings){
+function Set-AppSettings($appConfig, $appSettings){
     Write-Host "Writing app settings to config..."
-    $webConfig = [xml](Get-Content $appDirectory\web.config)
+    $webConfig = [xml](Get-Content $appConfig)
     foreach ($variable in $appSettings.GetEnumerator()){
         Add-AppSetting $variable.Name $variable.Value $webConfig
     }
 
-    $webConfig.Save("$appDirectory\web.config")
+    $webConfig.Save("$appConfig")
 }
 
 function Add-AppSetting($appSettingName, $appSettingValue, $config){
@@ -235,7 +235,7 @@ function Set-IdentityAppSettings {
         [string] $primarySigningCertificateThumbprint,
         [string] $encryptionCertificateThumbprint,
         [string] $appInsightsInstrumentationKey,
-        [string] $appDirectory,
+        [string] $appConfig,
         [object[]] $clientSettings,
         [string] $useAzure = $false,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
@@ -256,31 +256,37 @@ function Set-IdentityAppSettings {
         $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
     }
 
-    if($useAzure -eq $true) {
-        $defaultScope = "https://graph.microsoft.com/.default"
-        $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
-        $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
-        $appSettings.Add("UseAzureAuthentication", "true")
+    # Set Azure Settings
+    $defaultScope = "https://graph.microsoft.com/.default"
+    $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
+    $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
 
-        foreach($setting in $clientSettings) {
-            $index = $clientSettings.IndexOf($setting)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-            
-            # Currently only a single default scope is expected
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+    foreach($setting in $clientSettings) {
+        $index = $clientSettings.IndexOf($setting)
+        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
+        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+        
+        # Currently only a single default scope is expected
+        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
 
-            $secret = $setting.clientSecret
-            if($secret -is [string] -and -not $secret.StartsWith("!!enc!!:")){
-                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
-            }
-            else{
-                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
-            }
+        $secret = $setting.clientSecret
+        if($secret -is [string] -and -not $secret.StartsWith("!!enc!!:")){
+            $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+        }
+        else{
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
         }
     }
-    Set-AppSettings $appDirectory $appSettings | Out-Null
+
+    if($useAzure -eq $true) {
+        $appSettings.Add("UseAzureAuthentication", "true")
+    }
+    elseif($useAzure -eq $false) {
+        $appSettings.Add("UseAzureAuthentication", "false")
+    }
+
+    Set-AppSettings $appConfig $appSettings | Out-Null
 }
 
 function Add-NestedSetting {
