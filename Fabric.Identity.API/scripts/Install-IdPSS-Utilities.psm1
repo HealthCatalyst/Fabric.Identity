@@ -23,18 +23,13 @@ else {
 
 function Get-GraphApiReadPermissions() {
     $aad = (Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")})[0]
-    $groupRead = $aad.Oauth2Permissions | Where-Object {$_.Value -eq "Group.Read.All"}
-    $userRead = $aad.Oauth2Permissions | Where-Object {$_.Value -eq "User.Read.All"}
+    $directoryRead = $aad.AppRoles | Where-Object {$_.Value -eq "Directory.Read.All"}
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
         ResourceAppId = $aad.AppId;
         ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{
-            Id = $groupRead.Id;
-            Type = "Role"
-        },
-        [Microsoft.Open.AzureAD.Model.ResourceAccess]@{
-            Id = $userRead.Id;
+            Id = $directoryRead.Id;
             Type = "Role"
         }
     }
