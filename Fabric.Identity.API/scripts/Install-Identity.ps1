@@ -51,6 +51,17 @@ if(!$noDiscoveryService){
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 
+$idpssConfig = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssConfig) {
+    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
+}
+$useAzure = $installSettings.useAzure
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+}
+
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
                  -appName $installSettings.appName `
@@ -92,16 +103,11 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-$idpssConfig = $installSettings.identityProviderSearchServiceConfig
-if($null -eq $idpssConfig) {
-    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-    Add-InstallationSetting $installSettingsScope "identityProviderSearchServiceConfig" $idpssDirectoryPath $installConfigPath | Out-Null
-}
 # Alter IdPSS web.config for azure
 $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
 
 Set-IdentityAppSettings -appConfig $idpssConfig `
-    -useAzure $true `
+    -useAzure $useAzure `
     -clientSettings $clientSettings `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `

@@ -58,8 +58,26 @@ function New-FabricAzureADApplication() {
     return $app
 }
 
+function Remove-AzureADClientSecret{
+    param(
+        [string] $objectId,
+        [string] $keyIdentifier
+    )
+    $encoding = [System.Text.Encoding]::ASCII
+    $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
+    $filteredKeys = $output | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
+    foreach($key in $keys) {
+        Write-Host "Removing existing password credential named $($key.CustomKeyIdentifier) with id $($key.KeyId)"
+        Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId
+    }
+}
+
 function Get-FabricAzureADSecret([string] $objectId) {
-    $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId
+    # Cleanup existing secret
+    $keyCredentialName = "PowerShell Created Password"
+    Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
+    Write-Host "Creating password credential named $keyCredentialName"
+    $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId -CustomKeyIdentifier $keyCredentialName
     return $credential.Value
 }
 
