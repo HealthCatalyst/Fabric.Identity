@@ -248,6 +248,23 @@ function Get-SettingsFromInstallConfig{
     return $settingList
 }
 
+function Clear-IdentityAppSettings {
+    param(
+        [string] $appSettingPath
+    )
+    $content = [xml](Get-Content $appSettingPath)
+    $settings = $content.configuration.appSettings
+
+    $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings")})
+    
+    foreach($setting in $azureSettings) {
+        Write-Host "Cleaning up setting: $($setting.key)"
+        $settings.RemoveChild($setting) | Out-Null
+    }
+    $content.Save("$appSettingPath")
+
+}
+
 function Set-IdentityAppSettings {
     param(
         [string] $primarySigningCertificateThumbprint,
@@ -258,6 +275,7 @@ function Set-IdentityAppSettings {
         [string] $useAzure = $false,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
+    Clear-IdentityAppSettings -appSettingPath $appConfig
     $appSettings = @{}
 
     if ($primarySigningCertificateThumbprint){
