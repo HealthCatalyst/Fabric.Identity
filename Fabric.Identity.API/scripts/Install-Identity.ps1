@@ -32,6 +32,12 @@ if(!(Test-IsRunAsAdministrator))
     throw
 }
 
+$idpssConfig = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssConfig) {
+    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
+}
+
 Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
@@ -51,17 +57,6 @@ if(!$noDiscoveryService){
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 
-$idpssConfig = $installSettings.identityProviderSearchServiceConfig
-if($null -eq $idpssConfig) {
-    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
-}
-$useAzure = $installSettings.useAzure
-if($null -eq $useAzure) {
-    $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
-}
-
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
                  -appName $installSettings.appName `
@@ -72,6 +67,12 @@ $installApplication = Publish-Application -site $selectedSite `
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
     Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
+}
+
+$useAzure = $installSettings.useAzure
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
