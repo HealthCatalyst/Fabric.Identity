@@ -65,9 +65,9 @@ function Remove-AzureADClientSecret{
     )
     $encoding = [System.Text.Encoding]::ASCII
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
-    $filteredKeys = $output | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
-    foreach($key in $keys) {
-        Write-Host "Removing existing password credential named $($key.CustomKeyIdentifier) with id $($key.KeyId)"
+    $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
+    foreach($key in $filteredKeys) {
+        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
         Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId
     }
 }
@@ -279,12 +279,11 @@ function Set-IdentityAppSettings {
     $appSettings = @{}
 
     if ($primarySigningCertificateThumbprint){
-        $appSettings.Add("SigningCertificateSettings:UseTemporarySigningCredential", "false")
-        $appSettings.Add("SigningCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
+        $appSettings.Add("EncryptionCertificateSettings:UseTemporarySigningCredential", "false")
+        $appSettings.Add("EncryptionCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
     }
-
     if ($encryptionCertificateThumbprint){
-        $appSettings.Add("SigningCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
     }
 
     if($appInsightsInstrumentationKey){

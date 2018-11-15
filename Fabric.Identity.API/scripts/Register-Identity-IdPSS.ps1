@@ -27,11 +27,9 @@ $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
 # TODO: Differentiate between idpss and identity application for extra/different permissions
 if($null -ne $tenants) {
-    foreach($tenant in $tenants) {
+    foreach($tenant in $tenants) { 
         Write-Host "Enter credentials for specified tenant $tenant"
-        $credential = Get-Credential
-
-        Connect-AzureADTenant -tenantId $tenant -credential $credential
+        Connect-AzureADTenant -tenantId $tenant
 
         # TODO: This will potentially redirect to an application that may not be installed yet?
         $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
