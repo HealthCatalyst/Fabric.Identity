@@ -8,13 +8,24 @@ Import-Module $targetFilePath -Force
 Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     Context 'Happy Path' {
         It 'Should create and return a credential' {
+            $enc = [system.Text.Encoding]::UTF8
+            $mockResp = @{
+                CustomKeyIdentifier = $enc.GetBytes("PowerShell Created Password")
+                KeyId = "Id"
+            }
             $mockObj = @{
                 Value = "value"
             }
+
             Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith { return $mockObj }
+            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
+            Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith {}
+            Mock -CommandName Write-Host {}
 
             $value = Get-FabricAzureADSecret -objectId "value"
             Assert-MockCalled -CommandName New-AzureADApplicationPasswordCredential -Times 1 -Exactly
+            Assert-MockCalled -CommandName Get-AzureADApplicationPasswordCredential -Times 1 -Exactly
+            Assert-MockCalled -CommandName Remove-AzureADApplicationPasswordCredential -Times 1 -Exactly
             $value | Should -Be $mockObj.Value
         }
     }
