@@ -19,25 +19,25 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 Import-Module -Name  ".\Install-IdPSS-Utilities.psm1", ".\Install-Identity-Utilities.psm1", $fabricInstallUtilities -Force
 
 $installSettingsScope = "identity"
-$installSettings = Get-InstallationSettings -configSection $installSettingsScope -installConfigPath $installConfigPath
-$selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $installConfigPath -scope $installSettingsScope
 
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
-# TODO: Differentiate between idpss and identity application for extra/different permissions
 if($null -ne $tenants) {
     foreach($tenant in $tenants) { 
         Write-Host "Enter credentials for specified tenant $tenant"
         Connect-AzureADTenant -tenantId $tenant
 
-        # TODO: This will potentially redirect to an application that may not be installed yet?
         $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
         Disconnect-AzureAD
-        Add-InstallationTenantSettings -configSection $installSettingsScope -tenantId $tenant -clientSecret $clientSecret -clientId $clientId -installConfigPath $installConfigPath -signingCertificate $selectedCerts.SigningCertificate
+        Add-InstallationTenantSettings -configSection $installSettingsScope `
+            -tenantId $tenant `
+            -clientSecret $clientSecret `
+            -clientId $clientId `
+            -installConfigPath $installConfigPath
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
