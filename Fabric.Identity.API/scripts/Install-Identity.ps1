@@ -104,12 +104,9 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-# Alter IdPSS web.config for azure
-$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
-
 Set-IdentityAppSettings -appConfig $idpssConfig `
     -useAzure $useAzure `
-    -clientSettings $clientSettings `
+    -installConfigPath $installConfigPath `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
