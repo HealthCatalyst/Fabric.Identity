@@ -309,7 +309,7 @@ function Set-IdentityAppSettings {
         if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
             $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
             # Encrypt secret in install.config if not encrypted
-            Add-InstallationTenantSettings -configSection "section" `
+            Add-InstallationTenantSettings -configSection "identity" `
                 -tenantId $setting.tenantId `
                 -clientSecret $encryptedSecret `
                 -clientId $setting.clientId `

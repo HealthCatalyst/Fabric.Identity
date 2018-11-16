@@ -32,15 +32,16 @@ if(!(Test-IsRunAsAdministrator))
     throw
 }
 
+Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
+$installSettingsScope = "identity"
+$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
+
 $idpssConfig = $installSettings.identityProviderSearchServiceConfig
 if($null -eq $idpssConfig) {
     $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
     Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
 }
 
-Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
-$installSettingsScope = "identity"
-$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
