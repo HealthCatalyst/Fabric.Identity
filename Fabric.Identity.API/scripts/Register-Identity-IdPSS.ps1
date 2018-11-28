@@ -25,7 +25,7 @@ $selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installS
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
-# TODO: Differentiate between idpss and identity application for extra/different permissions
+#IdentityProviderSearchService registration
 if($null -ne $tenants) {
     foreach($tenant in $tenants) {
         Write-Host "Enter credentials for specified tenant $tenant"
@@ -45,3 +45,11 @@ if($null -ne $tenants) {
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
 }
+
+#identity registration
+#allowedTenants will need to be manually populated in the install.config
+#add an Identity function that does the following.
+#create an application with clientid and clientSecret
+#add allowedTenants xml element
+#add the config location and set the identity app settings in Install-Identity.ps1
+

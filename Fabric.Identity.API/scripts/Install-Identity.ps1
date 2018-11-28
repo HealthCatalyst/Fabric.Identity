@@ -56,6 +56,12 @@ if($null -eq $idpssConfig) {
     $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
     Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
 }
+
+$identityConfig = $installSettings.identityServiceConfig
+if($null -eq $identityConfig) {
+    $identityDirectoryPath = Get-WebConfigPath -service "IdentityService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityServiceConfig" -configValue $identityDirectoryPath -installConfigPath $installConfigPath | Out-Null
+}
 $useAzure = $installSettings.useAzure
 if($null -eq $useAzure) {
     $useAzure = $false
@@ -107,6 +113,14 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
 $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
 
 Set-IdentityAppSettings -appConfig $idpssConfig `
+    -useAzure $useAzure `
+    -clientSettings $clientSettings `
+    -encryptionCert $selectedCerts.SigningCertificate `
+    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
+    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+    -appInsightsInstrumentationKey $appInsightsKey
+
+Set-IdentityEnvironementVariables -appConfig $identityConfig `
     -useAzure $useAzure `
     -clientSettings $clientSettings `
     -encryptionCert $selectedCerts.SigningCertificate `
