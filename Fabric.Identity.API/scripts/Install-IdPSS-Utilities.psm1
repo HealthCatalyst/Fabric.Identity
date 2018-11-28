@@ -65,9 +65,9 @@ function Remove-AzureADClientSecret{
     )
     $encoding = [System.Text.Encoding]::ASCII
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
-    $filteredKeys = $output | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
-    foreach($key in $keys) {
-        Write-Host "Removing existing password credential named $($key.CustomKeyIdentifier) with id $($key.KeyId)"
+    $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
+    foreach($key in $filteredKeys) {
+        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
         Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId
     }
 }
@@ -117,10 +117,8 @@ function Add-InstallationTenantSettings {
             }
             return $true
         })]  
-        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config",
-        [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCertificate
+        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config"
     )
-
     $installationConfig = [xml](Get-Content $installConfigPath)
     $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
     $tenantSettings = $tenantScope.SelectSingleNode('registeredApplications')
@@ -132,7 +130,6 @@ function Add-InstallationTenantSettings {
     }
 
     $existingSetting = $tenantSettings.ChildNodes | Where-Object {$_.tenantId -eq $tenantId}
-    $encryptedSecret = Get-EncryptedString $signingCertificate $clientSecret
 
     if ($null -eq $existingSetting) {
         $setting = $installationConfig.CreateElement("variable")
@@ -146,13 +143,13 @@ function Add-InstallationTenantSettings {
         $setting.Attributes.Append($clientAttribute) | Out-Null
 
         $valueAttribute = $installationConfig.CreateAttribute("secret")
-        $valueAttribute.Value = $encryptedSecret
+        $valueAttribute.Value = $clientSecret
         $setting.Attributes.Append($valueAttribute) | Out-Null
 
         $tenantSettings.AppendChild($setting) | Out-Null
     }
     else{
-        $existingSetting.secret = $encryptedSecret
+        $existingSetting.secret = $clientSecret
         $existingSetting.clientId = $clientId
     }
     $installationConfig.Save("$installConfigPath") | Out-Null
@@ -248,25 +245,46 @@ function Get-SettingsFromInstallConfig{
     return $settingList
 }
 
+function Clear-IdentityAppSettings {
+    param(
+        [string] $appSettingPath
+    )
+    $content = [xml](Get-Content $appSettingPath)
+    $settings = $content.configuration.appSettings
+
+    $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings")})
+    
+    foreach($setting in $azureSettings) {
+        Write-Host "Cleaning up setting: $($setting.key)"
+        $settings.RemoveChild($setting) | Out-Null
+    }
+    $content.Save("$appSettingPath")
+
+}
+
 function Set-IdentityAppSettings {
     param(
         [string] $primarySigningCertificateThumbprint,
         [string] $encryptionCertificateThumbprint,
         [string] $appInsightsInstrumentationKey,
         [string] $appConfig,
-        [object[]] $clientSettings,
+        [string] $installConfigPath,
         [string] $useAzure = $false,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
+
+    # Alter IdPSS web.config for azure
+    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
+
+    Clear-IdentityAppSettings -appSettingPath $appConfig
     $appSettings = @{}
 
     if ($primarySigningCertificateThumbprint){
-        $appSettings.Add("SigningCertificateSettings:UseTemporarySigningCredential", "false")
-        $appSettings.Add("SigningCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
+        $appSettings.Add("EncryptionCertificateSettings:UseTemporarySigningCredential", "false")
+        $appSettings.Add("EncryptionCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
     }
-
     if ($encryptionCertificateThumbprint){
-        $appSettings.Add("SigningCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
     }
 
     if($appInsightsInstrumentationKey){
@@ -283,13 +301,20 @@ function Set-IdentityAppSettings {
         $index = $clientSettings.IndexOf($setting)
         $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
         $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-        
+
         # Currently only a single default scope is expected
         $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
 
         $secret = $setting.clientSecret
-        if($secret -is [string] -and -not $secret.StartsWith("!!enc!!:")){
+        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
             $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+            # Encrypt secret in install.config if not encrypted
+            Add-InstallationTenantSettings -configSection "identity" `
+                -tenantId $setting.tenantId `
+                -clientSecret $encryptedSecret `
+                -clientId $setting.clientId `
+                -installConfigPath $installConfigPath
+
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
         }
         else{

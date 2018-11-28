@@ -35,6 +35,13 @@ if(!(Test-IsRunAsAdministrator))
 Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
+
+$idpssConfig = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssConfig) {
+    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
+}
+
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
@@ -51,23 +58,6 @@ if(!$noDiscoveryService){
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 
-$idpssConfig = $installSettings.identityProviderSearchServiceConfig
-if($null -eq $idpssConfig) {
-    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
-}
-
-$identityConfig = $installSettings.identityServiceConfig
-if($null -eq $identityConfig) {
-    $identityDirectoryPath = Get-WebConfigPath -service "IdentityService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityServiceConfig" -configValue $identityDirectoryPath -installConfigPath $installConfigPath | Out-Null
-}
-$useAzure = $installSettings.useAzure
-if($null -eq $useAzure) {
-    $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
-}
-
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
                  -appName $installSettings.appName `
@@ -78,6 +68,12 @@ $installApplication = Publish-Application -site $selectedSite `
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
     Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
+}
+
+$useAzure = $installSettings.useAzure
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
@@ -109,20 +105,9 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-# Alter IdPSS web.config for azure
-$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
-
 Set-IdentityAppSettings -appConfig $idpssConfig `
     -useAzure $useAzure `
-    -clientSettings $clientSettings `
-    -encryptionCert $selectedCerts.SigningCertificate `
-    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
-    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
-    -appInsightsInstrumentationKey $appInsightsKey
-
-Set-IdentityEnvironementVariables -appConfig $identityConfig `
-    -useAzure $useAzure `
-    -clientSettings $clientSettings `
+    -installConfigPath $installConfigPath `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
