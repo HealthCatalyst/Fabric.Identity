@@ -57,6 +57,17 @@ if(!$noDiscoveryService){
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 
+$idpssConfig = $installSettings.identityProviderSearchServiceConfig
+if($null -eq $idpssConfig) {
+    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
+}
+$useAzure = $installSettings.useAzure
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+}
+
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
                  -appName $installSettings.appName `
@@ -114,6 +125,15 @@ Set-IdentityAppSettings -appConfig $idpssConfig `
     -useAzure $useAzure `
     -useWindows $useWindows `
     -installConfigPath $installConfigPath `
+    -encryptionCert $selectedCerts.SigningCertificate `
+    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
+    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+    -appInsightsInstrumentationKey $appInsightsKey `
+    -appName "Identity Provider Search Service"
+
+Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
+    -useAzure $useAzure `
+    -clientSettings $clientSettings `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
