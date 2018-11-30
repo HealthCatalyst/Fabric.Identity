@@ -274,7 +274,8 @@ function Set-IdentityAppSettings {
     )
 
     # Alter IdPSS web.config for azure
-    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
+    $clientSettings = @()
+    $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
 
     Clear-IdentityAppSettings -appSettingPath $appConfig
     $appSettings = @{}
