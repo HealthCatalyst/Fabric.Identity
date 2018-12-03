@@ -270,6 +270,7 @@ function Set-IdentityAppSettings {
         [string] $appConfig,
         [string] $installConfigPath,
         [string] $useAzure = $false,
+        [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
 
@@ -328,6 +329,13 @@ function Set-IdentityAppSettings {
     }
     elseif($useAzure -eq $false) {
         $appSettings.Add("UseAzureAuthentication", "false")
+    }
+
+    if($useWindows -eq $true) {
+        $appSettings.Add("UseWindowsAuthentication", "true")
+    }
+    elseif($useWindows -eq $false) {
+        $appSettings.Add("UseWindowsAuthentication", "false")
     }
 
     Set-AppSettings $appConfig $appSettings | Out-Null
@@ -393,28 +401,7 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
-        $failedAttempts = 1
-        do {
-            if($failedAttempts -gt 10){
-                Write-DosMessage -Level "Error" -Message "No tenants were entered."
-                throw
-            }
-
-            $input = Read-Host "Please enter tenant to register Identity with"
-            if(-not [string]::IsNullOrEmpty($input)) {
-                $tenants += $input
-            }
-            else {
-                $failedAttempts++
-            }
-        } until ([string]::IsNullOrEmpty($input) -and $tenants.Count -ne 0)
-
-        foreach($tenant in $tenants){
-            Add-NestedSetting -configSection $scope `
-                -installConfigPath $installConfigPath `
-                -parentSetting $parentSetting `
-                -value $tenant
-        }
+        Write-DosMessage -Level "Error" -Message  "No tenants to register where found in the install.config"
     }
 
     return $tenants
@@ -436,6 +423,8 @@ function Get-ReplyUrls {
             -installConfigPath $installConfigPath `
             -scope $scope `
             -quiet $true
+
+        Write-DosMessage -Level "Information" -Message "No reply URLs provided in the install.config, using default identity Url."
 
         foreach($replyUrl in $replyUrls){
             Add-NestedSetting -configSection $scope `
