@@ -4,6 +4,9 @@ param(
 
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
+$directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
+$identityUtilitiesPath = Join-Path -Path $directoryPath -ChildPath "/Install-Identity-Utilities.psm1"
+Import-Module $identityUtilitiesPath -Force
 
 Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     Context 'Happy Path' {

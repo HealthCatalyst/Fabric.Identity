@@ -25,7 +25,7 @@ $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
 if($null -ne $tenants) {
     foreach($tenant in $tenants) { 
-        Write-Host "Enter credentials for specified tenant $tenant"
+        Write-Host "Enter credentials for specified tenant: $tenant"
         Connect-AzureADTenant -tenantId $tenant
 
         $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls

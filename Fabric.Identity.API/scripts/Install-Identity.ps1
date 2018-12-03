@@ -39,7 +39,6 @@ $installSettings = Get-InstallationSettings $installSettingsScope -installConfig
 $idpssConfig = $installSettings.identityProviderSearchServiceConfig
 if($null -eq $idpssConfig) {
     $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "identityProviderSearchServiceConfig" -configValue $idpssDirectoryPath -installConfigPath $installConfigPath | Out-Null
 }
 
 $currentDirectory = $PSScriptRoot
@@ -70,10 +69,16 @@ if(!$noDiscoveryService){
     Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
 }
 
-$useAzure = $installSettings.useAzure
+$useAzure = $installSettings.useAzureAD
 if($null -eq $useAzure) {
     $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzure" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+}
+
+$useWindows = $installSettings.useWindowsAD
+if($null -eq $useWindows) {
+    $useWindows = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
@@ -107,6 +112,7 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
 
 Set-IdentityAppSettings -appConfig $idpssConfig `
     -useAzure $useAzure `
+    -useWindows $useWindows `
     -installConfigPath $installConfigPath `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
