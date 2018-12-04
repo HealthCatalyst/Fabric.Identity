@@ -562,11 +562,8 @@ function Set-IdentityEnvironmentAzureVariables {
     Set-EnvironmentVariables $appConfig $environmentVariables | Out-Null
 }
 
-
-Export-ModuleMember Set-IdentityAppSettings
-Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
-Export-ModuleMember Add-EnvironmentVariable
+Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication

@@ -162,6 +162,10 @@ Describe 'Get-Tenants' -Tag 'Unit' {
             $tenants[0] | Should -Be "tenant1"
             $tenants[1] | Should -Be "tenant2"
         }
+        It 'Should throw when no tenants in install.config' {
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
+            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+        }
     }
 }
 
@@ -177,15 +181,10 @@ Describe 'Get-ReplyUrls' -Tag 'Unit' {
     }
     Context 'Urls do not exist in config' {
         InModuleScope Install-IdPSS-Utilities {
-            It 'Should build and add the new replyUrl' {
+            It 'Should throw when no replyUrl in install.config' {
                 Mock Add-NestedSetting {}
-                Mock Get-ApplicationEndpoint { return "localhost" }
                 Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
-                $urls = Get-ReplyUrls -installConfigPath $targetFilePath
-
-                Assert-MockCalled -CommandName Add-NestedSetting -Times 1 -Exactly
-                $urls.Count | Should -Be 1
-                $urls | Should -Be "localhost"
+                { Get-ReplyUrls -installConfigPath $targetFilePath } | Should -Throw
             }
         }
     }
