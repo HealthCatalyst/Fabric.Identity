@@ -31,6 +31,7 @@ namespace IdentityServer4.Quickstart.UI
     using System.Globalization;
 
     using Fabric.Identity.API.Exceptions;
+    using Fabric.Identity.API.Models;
 
     /// <summary>
     /// This sample controller implements a typical login/logout/provision workflow for local and external accounts.
@@ -249,11 +250,11 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             var schemaItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme");
+            Claim oid = null;
 
             if (_appConfiguration.AzureAuthenticationEnabled && schemaItem.Value == FabricIdentityConstants.AuthenticationSchemes.Azure)
             {
-                var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
-            
+                var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);     
                 if (issuerClaim == null )
                 {
                     throw new MissingIssuerClaimException(ExceptionMessageResources.MissingIssuerClaimMessage);
@@ -266,6 +267,8 @@ namespace IdentityServer4.Quickstart.UI
                         ExceptionMessageResources.ForbiddenIssuerMessageLog,
                         String.Format(CultureInfo.CurrentCulture,ExceptionMessageResources.ForbiddenIssuerMessageUser,issuerClaim.Value));
                 }
+
+                oid = claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative);
             }
 
             //remove the user id claim from the claims collection and move to the userId property
@@ -305,8 +308,10 @@ namespace IdentityServer4.Quickstart.UI
             }
 
             //issue authentication cookie for user
-            await _events.RaiseAsync(new FabricUserLoginSuccessEvent(provider, userId, user.SubjectId, user.Username, context?.ClientId));
-            await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, provider, props, additionalClaims.ToArray());
+            var subjectId = oid?.Value ?? user.SubjectId;
+            await _events.RaiseAsync(new FabricUserLoginSuccessEvent(provider, userId, subjectId, user.Username, context?.ClientId));
+
+            await HttpContext.Authentication.SignInAsync(subjectId, user.Username, provider, props, additionalClaims.ToArray());
 
             //delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
