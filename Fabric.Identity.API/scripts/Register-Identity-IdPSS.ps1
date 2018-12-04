@@ -29,7 +29,6 @@ if($null -ne $tenants) {
         Write-Host "Enter credentials for specified tenant: $tenant"
         Connect-AzureADTenant -tenantId $tenant
 
-		$appName = "Identity Provider Search Service"
 
         $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
         $clientId = $app.AppId
@@ -40,7 +39,7 @@ if($null -ne $tenants) {
             -tenantId $tenant `
             -clientSecret $clientSecret `
             -clientId $clientId `
-            -installConfigPath $installConfigPath
+            -installConfigPath $installConfigPath `
 			-appName $appName
 
         # Manual process, need to give consent this way for now

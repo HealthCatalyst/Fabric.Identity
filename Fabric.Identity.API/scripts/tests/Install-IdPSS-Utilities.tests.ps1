@@ -115,10 +115,10 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
 Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
     Context 'Valid config path' {
         It 'should return a list of client settings' {
-            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<registeredApplications><variable tenantId="tenant1" secret="secret1" clientid="clientid1" /><variable tenantId="tenant2" secret="secret2" clientid="clientid2" /></registeredApplications></scope></settings></installation>'
+            $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<registeredApplications><variable appName="testApp" tenantId="tenant1" secret="secret1" clientid="clientid1" /><variable appName="testApp" tenantId="tenant2" secret="secret2" clientid="clientid2" /></registeredApplications></scope></settings></installation>'
 
             Mock -CommandName Get-Content { return $mockXml }
-            $result = Get-ClientSettingsFromInstallConfig -installConfigPath $targetFilePath
+            $result = Get-ClientSettingsFromInstallConfig -installConfigPath $targetFilePath -appName "testApp"
             $result.length | Should -Be 2
             $firstApp = $result[0]
             $secondApp = $result[1]
