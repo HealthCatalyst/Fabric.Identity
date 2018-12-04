@@ -23,12 +23,15 @@ $installSettingsScope = "identity"
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 
+#IdentityProviderSearchService registration
 if($null -ne $tenants) {
     foreach($tenant in $tenants) { 
         Write-Host "Enter credentials for specified tenant $tenant"
         Connect-AzureADTenant -tenantId $tenant
 
-        $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
+		$appName = "Identity Provider Search Service"
+
+        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
@@ -37,9 +40,13 @@ if($null -ne $tenants) {
             -tenantId $tenant `
             -clientSecret $clientSecret `
             -clientId $clientId `
-            -installConfigPath $installConfigPath
+            -installConfigPath $installConfigPath `
+			-appName $appName
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
 }
+
+#identity registration
+Register-Identity -appName "Identity Service" -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath

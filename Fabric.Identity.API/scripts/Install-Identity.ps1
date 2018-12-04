@@ -111,6 +111,15 @@ Set-IdentityAppSettings -appConfig $idpssConfig `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+    -appInsightsInstrumentationKey $appInsightsKey `
+    -appName "Identity Provider Search Service"
+
+Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
+    -useAzure $useAzure `
+    -installConfigPath $installConfigPath `
+    -encryptionCert $selectedCerts.SigningCertificate `
+    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
+    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey
 
 if ($fabricInstallerSecret){
