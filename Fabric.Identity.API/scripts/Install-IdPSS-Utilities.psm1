@@ -254,7 +254,7 @@ function Get-SettingsFromInstallConfig{
     return $settingList
 }
 
-function Clear-IdentityAppSettings {
+function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
     param(
         [string] $appSettingPath
     )
@@ -289,9 +289,8 @@ function Clear-IdentityEnvironmentAzureSettings {
 
 }
 
-function Set-IdentityAppSettings {
+function Set-IdentityProviderSearchServiceWebConfigSettings {
     param(
-        [string] $primarySigningCertificateThumbprint,
         [string] $encryptionCertificateThumbprint,
         [string] $appInsightsInstrumentationKey,
         [string] $appConfig,
@@ -299,20 +298,15 @@ function Set-IdentityAppSettings {
         [string] $useAzure = $false,
         [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
-		[string] $appName
+        [string] $appName
     )
 
     # Alter IdPSS web.config for azure
     $clientSettings = @()
     $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
 
-    Clear-IdentityAppSettings -appSettingPath $appConfig
+    Clear-IdentityProviderSearchServiceWebConfigAzureSettings -appSettingPath $appConfig
     $appSettings = @{}
-
-    if ($primarySigningCertificateThumbprint){
-        $appSettings.Add("EncryptionCertificateSettings:UseTemporarySigningCredential", "false")
-        $appSettings.Add("EncryptionCertificateSettings:PrimaryCertificateThumbprint", $primarySigningCertificateThumbprint)
-    }
     if ($encryptionCertificateThumbprint){
         $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
     }
@@ -430,7 +424,8 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
-        Write-DosMessage -Level "Error" -Message  "No tenants to register with were found in the install.config"
+        Write-DosMessage -Level "Error" -Message  "No tenants to register where found in the install.config"
+        throw
     }
 
     return $tenants
@@ -446,21 +441,8 @@ function Get-ReplyUrls {
     $replyUrls += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
 
     if($null -eq $replyUrls -or $replyUrls.Count -eq 0){
-        # Build default identity url
-        $replyUrls += Get-ApplicationEndpoint -appName $scope `
-            -applicationEndpoint $null `
-            -installConfigPath $installConfigPath `
-            -scope $scope `
-            -quiet $true
-
-        Write-DosMessage -Level "Information" -Message "No reply URLs provided in the install.config, using default identity Url."
-
-        foreach($replyUrl in $replyUrls){
-            Add-NestedSetting -configSection $scope `
-                -installConfigPath $installConfigPath `
-                -parentSetting $parentSetting `
-                -value $replyUrl
-        }
+        Write-DosMessage -Level "Error" -Message  "No reply urls where found in the install.config."
+        throw
     }
 
     return $replyUrls
@@ -583,6 +565,8 @@ function Set-IdentityEnvironmentAzureVariables {
 
 Export-ModuleMember Set-IdentityAppSettings
 Export-ModuleMember Set-IdentityEnvironmentAzureVariables
+Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
+Export-ModuleMember Add-EnvironmentVariable
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication

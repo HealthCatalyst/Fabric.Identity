@@ -36,10 +36,7 @@ Write-DosMessage -Level "Information" -Message "Using install.config: $installCo
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
 
-$idpssConfig = $installSettings.identityProviderSearchServiceConfig
-if($null -eq $idpssConfig) {
-    $idpssDirectoryPath = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-}
+$idpssConfig = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
@@ -77,7 +74,7 @@ if($null -eq $useAzure) {
 
 $useWindows = $installSettings.useWindowsAD
 if($null -eq $useWindows) {
-    $useWindows = $false
+    $useWindows = $true
     Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
 }
 
@@ -110,12 +107,11 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-Set-IdentityAppSettings -appConfig $idpssConfig `
+Set-IdentityProviderSearchServiceWebConfigSettings -appConfig $idpssConfig `
     -useAzure $useAzure `
     -useWindows $useWindows `
     -installConfigPath $installConfigPath `
     -encryptionCert $selectedCerts.SigningCertificate `
-    -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey `
     -appName "Identity Provider Search Service"
