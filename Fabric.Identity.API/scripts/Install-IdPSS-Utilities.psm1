@@ -271,7 +271,7 @@ function Clear-IdentityAppSettings {
 
 }
 
-function Clear-IdentityEnvironmentSettings {
+function Clear-IdentityEnvironmentAzureSettings {
     param(
         [string] $environmentSettingPath
     )
@@ -430,7 +430,7 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
-        Write-DosMessage -Level "Error" -Message  "No tenants to register where found in the install.config"
+        Write-DosMessage -Level "Error" -Message  "No tenants to register with were found in the install.config"
     }
 
     return $tenants
@@ -477,59 +477,45 @@ function Register-Identity {
 		[Parameter(Mandatory=$true)]
         [string] $installConfigPath
     )
-	$scope = "identity"
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
 	$allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-        -scope $scope `
+        -scope $configSection `
         -setting $allowedTenantsText
 
     $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-        -scope $scope `
+        -scope $configSection `
         -setting $claimsIssuerText
 
-	if($null -eq $allowedTenants)
-	{
-       Add-NestedSetting -configSection $scope `
-       -installConfigPath $installConfigPath `
-       -parentSetting $allowedTenantsText `
-       -value "Missing Allowed Tenant"
-    }
-	if($null -eq $claimsIssuer)
-    {
-       Add-NestedSetting -configSection $scope `
-       -installConfigPath $installConfigPath `
-       -parentSetting $claimsIssuerText `
-       -value "Missing Claims Issuer Tenant"
-    }
-    else
-    {
-       Write-Host "Enter Credentials for identity claims issuer: $claimsIssuer"
-	   Connect-AzureADTenant -tenantId $claimsIssuer
+   if($null -ne $claimsIssuer) {
+    Write-Host "Enter Credentials for identity claims issuer: $claimsIssuer"
+	Connect-AzureADTenant -tenantId $claimsIssuer
 
-	   $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls
-	   $clientId = $app.AppId
-	   $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+	$app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls
+	$clientId = $app.AppId
+	$clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 		 
-	   Disconnect-AzureAD
+	Disconnect-AzureAD
 
-	   Add-InstallationTenantSettings -configSection "identity" `
-	   -tenantId $claimsIssuer `
-	   -clientSecret $clientSecret `
-	   -clientId $clientId `
-	   -installConfigPath $installConfigPath `
-	   -appName $appName
-	}
+	Add-InstallationTenantSettings -configSection $configSection `
+	-tenantId $claimsIssuer `
+	-clientSecret $clientSecret `
+	-clientId $clientId `
+	-installConfigPath $installConfigPath `
+	-appName $appName
+  }
+  else 
+  {
+    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
+  }
 }
 
 function Set-IdentityEnvironmentAzureVariables {
     param (
-        [string] $primarySigningCertificateThumbprint,
-        [string] $encryptionCertificateThumbprint,
-        [string] $appInsightsInstrumentationKey,
         [string] $appConfig,
         [string] $installConfigPath,
         [string] $useAzure = $false,
+        [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
     $scope = "identity"
@@ -543,7 +529,7 @@ function Set-IdentityEnvironmentAzureVariables {
         -scope $scope `
         -setting "claimsIssuerTenant"
 
-	Clear-IdentityEnvironmentSettings -environmentSettingPath $appConfig\web.config
+	Clear-IdentityEnvironmentAzureSettings -environmentSettingPath $appConfig\web.config
     $environmentVariables = @{}
 
 	# Set Azure Settings
@@ -582,6 +568,13 @@ function Set-IdentityEnvironmentAzureVariables {
     }
     elseif($useAzure -eq $false) {
         $environmentVariables.Add("AzureAuthenticationEnabled", "false")
+    }
+
+    if($useWindows -eq $true) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "true")
+    }
+    elseif($useWindows -eq $false) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "false")
     }
 
     Set-EnvironmentVariables $appConfig $environmentVariables | Out-Null

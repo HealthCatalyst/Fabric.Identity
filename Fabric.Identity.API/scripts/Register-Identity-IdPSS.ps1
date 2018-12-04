@@ -8,7 +8,8 @@ param(
         }
         return $true
     })] 
-    [string] $installConfigPath = "$PSScriptRoot\install.config"
+    [string] $installConfigPath = "$PSScriptRoot\install.config",
+	[string[]] $registerApps = ("Identity Service", "Identity Provider Search Service")
 )
 
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -18,19 +19,40 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 }
 Import-Module -Name  ".\Install-IdPSS-Utilities.psm1", ".\Install-Identity-Utilities.psm1", $fabricInstallUtilities -Force
 
+if ($registerApps -eq "Identity Service")
+{
+   $registerIdentity = $true
+}
+else
+{
+   $registerIdentity = $false
+}
+
+if ($registerApps -eq "Identity Provider Search Service")
+{
+   $registerIdPSS = $true
+}
+else
+{
+   $registerIdPSS = $false
+}
+
 $installSettingsScope = "identity"
 
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
+$appNameIdPSS = "Identity Provider Search Service"
+$appNameIdentity = "Identity Service"
 
-#IdentityProviderSearchService registration
-if($null -ne $tenants) {
-    foreach($tenant in $tenants) { 
-        Write-Host "Enter credentials for specified tenant: $tenant"
+if ($registerIdPSS)
+{
+   #IdentityProviderSearchService registration
+   if($null -ne $tenants) {
+      foreach($tenant in $tenants) { 
+        Write-Host "Enter credentials for $appNameIdPSS specified tenant: $tenant"
         Connect-AzureADTenant -tenantId $tenant
-
-
-        $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
+		
+        $app = New-FabricAzureADApplication -appName $appNameIdPSS -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
@@ -40,14 +62,17 @@ if($null -ne $tenants) {
             -clientSecret $clientSecret `
             -clientId $clientId `
             -installConfigPath $installConfigPath `
-			-appName $appName
+			-appName $appNameIdPSS
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
-    }
+      }
+   }
 }
 
-#identity registration
-Register-Identity -appName "Identity Service" -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath
-
+if ($registerIdentity)
+{
+  #identity registration
+  Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath
+}
 
