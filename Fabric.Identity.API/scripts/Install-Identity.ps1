@@ -117,7 +117,14 @@ Set-IdentityAppSettings -appConfig $idpssConfig `
     -encryptionCert $selectedCerts.SigningCertificate `
     -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
     -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
-    -appInsightsInstrumentationKey $appInsightsKey
+    -appInsightsInstrumentationKey $appInsightsKey `
+    -appName "Identity Provider Search Service"
+
+Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
+    -useAzure $useAzure `
+    -useWindows $useWindows `
+    -installConfigPath $installConfigPath `
+    -encryptionCert $selectedCerts.SigningCertificate
 
 if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Please keep the following Fabric.Installer secret in a secure place, it will be needed in subsequent installations:"

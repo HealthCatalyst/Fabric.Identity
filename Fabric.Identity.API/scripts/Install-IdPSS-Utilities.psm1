@@ -102,7 +102,7 @@ function Add-InstallationTenantSettings {
     param(
         [Parameter(Mandatory=$true)]
         [string] $configSection,
-        [Parameter(Mandatory=$true)]
+		[Parameter(Mandatory=$true)]
         [string] $tenantId,
         [Parameter(Mandatory=$true)]
         [string] $clientSecret,
@@ -117,22 +117,27 @@ function Add-InstallationTenantSettings {
             }
             return $true
         })]  
-        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config"
+        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config",
+		[string] $appName
     )
     $installationConfig = [xml](Get-Content $installConfigPath)
-    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
-    $tenantSettings = $tenantScope.SelectSingleNode('registeredApplications')
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $applicationSettings = $identityScope.SelectSingleNode('registeredApplications')
 
-    # Add a tenant section if not exists
-    if($null -eq $tenantSettings) {
-        $tenantSettings = $installationConfig.CreateElement("registeredApplications")
-        $tenantScope.AppendChild($tenantSettings) | Out-Null
+    # Add a application section if not exists
+    if($null -eq $applicationSettings) {
+        $applicationSettings = $installationConfig.CreateElement("registeredApplications")
+        $identityScope.AppendChild($applicationSettings) | Out-Null
     }
 
-    $existingSetting = $tenantSettings.ChildNodes | Where-Object {$_.tenantId -eq $tenantId}
+    $existingSetting = $applicationSettings.ChildNodes | Where-Object {$_.appName -eq $appName -and $_.tenantId -eq $tenantId}
 
     if ($null -eq $existingSetting) {
         $setting = $installationConfig.CreateElement("variable")
+
+	    $appNameAttribute = $installationConfig.CreateAttribute("appName")
+        $appNameAttribute.Value = $appName
+        $setting.Attributes.Append($appNameAttribute) | Out-Null
 
         $nameAttribute = $installationConfig.CreateAttribute("tenantId")
         $nameAttribute.Value = $tenantId
@@ -146,7 +151,7 @@ function Add-InstallationTenantSettings {
         $valueAttribute.Value = $clientSecret
         $setting.Attributes.Append($valueAttribute) | Out-Null
 
-        $tenantSettings.AppendChild($setting) | Out-Null
+        $applicationSettings.AppendChild($setting) | Out-Null
     }
     else{
         $existingSetting.secret = $clientSecret
@@ -198,14 +203,17 @@ function Get-ClientSettingsFromInstallConfig{
             }
             return $true
         })] 
-        [string] $installConfigPath
+        [string] $installConfigPath,
+        [string] $appName
     )
     $installationConfig = [xml](Get-Content $installConfigPath)
     $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "identity"}
     $tenants = $tenantScope.SelectSingleNode('registeredApplications')
 
     $clientSettings = @()
-    foreach($tenant in $tenants.ChildNodes) {
+    foreach($tenant in $tenants.variable) {
+      if ($tenant.appName -eq $appName)
+      {
         $tenantSetting = @{
             clientId = $tenant.clientId
             # Does not decrypt secret
@@ -213,6 +221,7 @@ function Get-ClientSettingsFromInstallConfig{
             tenantId = $tenant.tenantId
         }
         $clientSettings += $tenantSetting
+      }
     }
 
     return $clientSettings
@@ -262,6 +271,24 @@ function Clear-IdentityAppSettings {
 
 }
 
+function Clear-IdentityEnvironmentAzureSettings {
+    param(
+        [string] $environmentSettingPath
+    )
+    $content = [xml](Get-Content $environmentSettingPath)
+    $settings = $content.configuration
+    $environmentVariables = $settings.ChildNodes.aspNetCore.environmentVariables
+
+    $azureSettings = ($environmentVariables.ChildNodes | Where-Object {$_.name.StartsWith("AzureActiveDirectorySettings")})
+    
+    foreach($setting in $azureSettings) {
+        Write-Host "Cleaning up setting: $($setting.name)"
+        $environmentVariables.RemoveChild($setting) | Out-Null
+    }
+    $content.Save("$environmentSettingPath")
+
+}
+
 function Set-IdentityAppSettings {
     param(
         [string] $primarySigningCertificateThumbprint,
@@ -271,12 +298,13 @@ function Set-IdentityAppSettings {
         [string] $installConfigPath,
         [string] $useAzure = $false,
         [string] $useWindows = $true,
-        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
+		[string] $appName
     )
 
     # Alter IdPSS web.config for azure
     $clientSettings = @()
-    $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath
+    $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
 
     Clear-IdentityAppSettings -appSettingPath $appConfig
     $appSettings = @{}
@@ -315,7 +343,8 @@ function Set-IdentityAppSettings {
                 -tenantId $setting.tenantId `
                 -clientSecret $encryptedSecret `
                 -clientId $setting.clientId `
-                -installConfigPath $installConfigPath
+                -installConfigPath $installConfigPath `
+                -appName $appName
 
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
         }
@@ -401,7 +430,7 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
-        Write-DosMessage -Level "Error" -Message  "No tenants to register where found in the install.config"
+        Write-DosMessage -Level "Error" -Message  "No tenants to register with were found in the install.config"
     }
 
     return $tenants
@@ -437,8 +466,123 @@ function Get-ReplyUrls {
     return $replyUrls
 }
 
+function Register-Identity {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $appName,
+		[Parameter(Mandatory=$true)]
+        [string] $replyUrls,
+		[Parameter(Mandatory=$true)]
+        [string] $configSection,
+		[Parameter(Mandatory=$true)]
+        [string] $installConfigPath
+    )
+    $allowedTenantsText = "allowedTenants"
+    $claimsIssuerText = "claimsIssuerTenant"
+	$allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        -scope $configSection `
+        -setting $allowedTenantsText
+
+    $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        -scope $configSection `
+        -setting $claimsIssuerText
+
+   if($null -ne $claimsIssuer) {
+    Write-Host "Enter credentials for $appName specified tenant: $claimsIssuer"
+	Connect-AzureADTenant -tenantId $claimsIssuer
+
+	$app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls
+	$clientId = $app.AppId
+	$clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+		 
+	Disconnect-AzureAD
+
+	Add-InstallationTenantSettings -configSection $configSection `
+	-tenantId $claimsIssuer `
+	-clientSecret $clientSecret `
+	-clientId $clientId `
+	-installConfigPath $installConfigPath `
+	-appName $appName
+  }
+  else 
+  {
+    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
+  }
+}
+
+function Set-IdentityEnvironmentAzureVariables {
+    param (
+        [string] $appConfig,
+        [string] $installConfigPath,
+        [string] $useAzure = $false,
+        [string] $useWindows = $true,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
+    )
+    $scope = "identity"
+	# Alter Identity web.config for azure
+    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+    $allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        -scope $scope `
+        -setting "allowedTenants"
+
+    $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        -scope $scope `
+        -setting "claimsIssuerTenant"
+
+	Clear-IdentityEnvironmentAzureSettings -environmentSettingPath $appConfig\web.config
+    $environmentVariables = @{}
+
+	# Set Azure Settings
+    $environmentVariables.Add("AzureActiveDirectorySettings_Authority", "https://login.microsoftonline.com/common")
+    $environmentVariables.Add("AzureActiveDirectorySettings_DisplayName", "Azure AD")
+	$environmentVariables.Add("AzureActiveDirectorySettings_ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+    $environmentVariables.Add("AzureActiveDirectorySettings_Scope_0", "openid")
+	$environmentVariables.Add("AzureActiveDirectorySettings_Scope_1", "profile")
+    $environmentVariables.Add("AzureActiveDirectorySettings_ClientId", $clientSettings.clientId)
+
+    $secret = $clientSettings.clientSecret
+        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+            $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+            # Encrypt secret in install.config if not encrypted
+            Add-InstallationTenantSettings -configSection "identity" `
+                -tenantId $clientSettings.tenantId `
+                -clientSecret $encryptedSecret `
+                -clientId $clientSettings.clientId `
+                -installConfigPath $installConfigPath `
+                -appName "Identity Service"
+
+            $environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $encryptedSecret)
+        }
+        else{
+            $environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $secret)
+        }
+
+    foreach($allowedTenant in $allowedTenants)
+    {
+      $index = $allowedTenants.IndexOf($allowedTenant)
+      $environmentVariables.Add("AzureActiveDirectorySettings_IssuerWhiteList_$index", "https://sts.windows.net/" + $allowedTenant)
+    }
+
+    if($useAzure -eq $true) {
+        $environmentVariables.Add("AzureAuthenticationEnabled", "true")
+    }
+    elseif($useAzure -eq $false) {
+        $environmentVariables.Add("AzureAuthenticationEnabled", "false")
+    }
+
+    if($useWindows -eq $true) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "true")
+    }
+    elseif($useWindows -eq $false) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "false")
+    }
+
+    Set-EnvironmentVariables $appConfig $environmentVariables | Out-Null
+}
+
+
 Export-ModuleMember Set-IdentityAppSettings
-Export-ModuleMember Add-EnvironmentVariable
+Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
@@ -447,3 +591,4 @@ Export-ModuleMember Get-ClientSettingsFromInstallConfig
 Export-ModuleMember Get-SettingsFromInstallConfig
 Export-ModuleMember Get-Tenants
 Export-ModuleMember Get-ReplyUrls
+Export-ModuleMember Register-Identity

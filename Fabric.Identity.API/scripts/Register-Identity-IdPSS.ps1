@@ -8,7 +8,9 @@ param(
         }
         return $true
     })] 
-    [string] $installConfigPath = "$PSScriptRoot\install.config"
+    [string] $installConfigPath = "$PSScriptRoot\install.config",
+	[switch] $registerIdentity,
+    [switch] $registerIdPSS
 )
 
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -22,13 +24,18 @@ $installSettingsScope = "identity"
 
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
+$appNameIdPSS = "Identity Provider Search Service"
+$appNameIdentity = "Identity Service"
 
-if($null -ne $tenants) {
-    foreach($tenant in $tenants) { 
-        Write-Host "Enter credentials for specified tenant: $tenant"
+if ($registerIdPSS)
+{
+   #IdentityProviderSearchService registration
+   if($null -ne $tenants) {
+      foreach($tenant in $tenants) { 
+        Write-Host "Enter credentials for $appNameIdPSS specified tenant: $tenant"
         Connect-AzureADTenant -tenantId $tenant
-
-        $app = New-FabricAzureADApplication -appName 'Identity Provider Search Service' -replyUrls $replyUrls
+		
+        $app = New-FabricAzureADApplication -appName $appNameIdPSS -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
@@ -37,9 +44,18 @@ if($null -ne $tenants) {
             -tenantId $tenant `
             -clientSecret $clientSecret `
             -clientId $clientId `
-            -installConfigPath $installConfigPath
+            -installConfigPath $installConfigPath `
+			-appName $appNameIdPSS
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
-    }
+      }
+   }
 }
+
+if ($registerIdentity)
+{
+  #identity registration
+  Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath
+}
+
