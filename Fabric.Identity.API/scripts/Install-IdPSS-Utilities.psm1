@@ -279,7 +279,7 @@ function Clear-IdentityEnvironmentAzureSettings {
     $settings = $content.configuration
     $environmentVariables = $settings.ChildNodes.aspNetCore.environmentVariables
 
-    $azureSettings = ($environmentVariables.ChildNodes | Where-Object {$_.name.StartsWith("AzureActiveDirectorySettings") -or $_.name -eq "AzureAuthenticationEnabled"})
+    $azureSettings = ($environmentVariables.ChildNodes | Where-Object {$_.name.StartsWith("AzureActiveDirectorySettings")})
     
     foreach($setting in $azureSettings) {
         Write-Host "Cleaning up setting: $($setting.name)"
@@ -488,7 +488,7 @@ function Register-Identity {
         -setting $claimsIssuerText
 
    if($null -ne $claimsIssuer) {
-    Write-Host "Enter Credentials for identity claims issuer: $claimsIssuer"
+    Write-Host "Enter credentials for $appName specified tenant: $claimsIssuer"
 	Connect-AzureADTenant -tenantId $claimsIssuer
 
 	$app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls

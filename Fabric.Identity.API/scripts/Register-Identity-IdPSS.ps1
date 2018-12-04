@@ -9,7 +9,8 @@ param(
         return $true
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config",
-	[string[]] $registerApps = ("Identity Service", "Identity Provider Search Service")
+	[switch] $registerIdentity,
+    [switch] $registerIdPSS
 )
 
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -18,24 +19,6 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
     Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities
 }
 Import-Module -Name  ".\Install-IdPSS-Utilities.psm1", ".\Install-Identity-Utilities.psm1", $fabricInstallUtilities -Force
-
-if ($registerApps -eq "Identity Service")
-{
-   $registerIdentity = $true
-}
-else
-{
-   $registerIdentity = $false
-}
-
-if ($registerApps -eq "Identity Provider Search Service")
-{
-   $registerIdPSS = $true
-}
-else
-{
-   $registerIdPSS = $false
-}
 
 $installSettingsScope = "identity"
 
