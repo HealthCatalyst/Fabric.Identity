@@ -107,7 +107,7 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-Set-IdentityProviderSearchServiceWebConfigSettings -appConfig $idpssConfig `
+Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -useAzure $useAzure `
     -useWindows $useWindows `
     -installConfigPath $installConfigPath `
