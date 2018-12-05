@@ -160,14 +160,14 @@ function Add-InstallationTenantSettings {
     $installationConfig.Save("$installConfigPath") | Out-Null
 }
 
-function Set-AppSettings($appConfig, $appSettings){
-    Write-Host "Writing app settings to config..."
-    $webConfig = [xml](Get-Content $appConfig)
+function Set-WebConfigAppSettings($webConfigPath, $appSettings){
+    Write-Host "Writing app settings to web config..."
+    $webConfig = [xml](Get-Content $webConfigPath)
     foreach ($variable in $appSettings.GetEnumerator()){
         Add-AppSetting $variable.Name $variable.Value $webConfig
     }
 
-    $webConfig.Save("$appConfig")
+    $webConfig.Save("$webConfigPath")
 }
 
 function Add-AppSetting($appSettingName, $appSettingValue, $config){
@@ -256,9 +256,9 @@ function Get-SettingsFromInstallConfig{
 
 function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
     param(
-        [string] $appSettingPath
+        [string] $webConfigPath
     )
-    $content = [xml](Get-Content $appSettingPath)
+    $content = [xml](Get-Content $webConfigPath)
     $settings = $content.configuration.appSettings
 
     $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings")})
@@ -267,7 +267,7 @@ function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
         Write-Host "Cleaning up setting: $($setting.key)"
         $settings.RemoveChild($setting) | Out-Null
     }
-    $content.Save("$appSettingPath")
+    $content.Save("$webConfigPath")
 
 }
 
@@ -293,7 +293,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
     param(
         [string] $encryptionCertificateThumbprint,
         [string] $appInsightsInstrumentationKey,
-        [string] $appConfig,
+        [string] $webConfigPath,
         [string] $installConfigPath,
         [string] $useAzure = $false,
         [string] $useWindows = $true,
@@ -305,7 +305,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
     $clientSettings = @()
     $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
 
-    Clear-IdentityProviderSearchServiceWebConfigAzureSettings -appSettingPath $appConfig
+    Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
     if ($encryptionCertificateThumbprint){
         $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
@@ -361,7 +361,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         $appSettings.Add("UseWindowsAuthentication", "false")
     }
 
-    Set-AppSettings $appConfig $appSettings | Out-Null
+    Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
 
 function Add-NestedSetting {

@@ -9,7 +9,7 @@ param(
         return $true
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config",
-	[switch] $registerIdentity,
+    [switch] $registerIdentity,
     [switch] $registerIdPSS
 )
 
@@ -29,12 +29,12 @@ $appNameIdentity = "Identity Service"
 
 if ($registerIdPSS)
 {
-   #IdentityProviderSearchService registration
+   # IdentityProviderSearchService registration
    if($null -ne $tenants) {
       foreach($tenant in $tenants) { 
-        Write-Host "Enter credentials for $appNameIdPSS specified tenant: $tenant"
+        Write-Host "Enter credentials for $appNameIdPSS on tenant specified: $tenant"
         Connect-AzureADTenant -tenantId $tenant
-		
+
         $app = New-FabricAzureADApplication -appName $appNameIdPSS -replyUrls $replyUrls
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
@@ -45,7 +45,7 @@ if ($registerIdPSS)
             -clientSecret $clientSecret `
             -clientId $clientId `
             -installConfigPath $installConfigPath `
-			-appName $appNameIdPSS
+            -appName $appNameIdPSS
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
@@ -55,7 +55,7 @@ if ($registerIdPSS)
 
 if ($registerIdentity)
 {
-  #identity registration
+  # Identity registration
   Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath
 }
 
