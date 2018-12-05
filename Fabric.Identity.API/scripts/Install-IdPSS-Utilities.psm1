@@ -5,8 +5,10 @@ Import-Module -Name $fabricInstallUtilities -Force
 $minVersion = [System.Version]::new(2, 0, 2 , 4)
 $azureAD = Get-Childitem -Path ./**/AzureAD.psm1 -Recurse
 if ($azureAD.length -eq 0) {
-    $installed = Get-Module -Name AzureAD
-    if ($null -eq $installed) {
+    try{
+        $installed = Get-Module -Name AzureAD
+    }
+    catch {
         $installed = Get-InstalledModule -Name AzureAD
     }
 
