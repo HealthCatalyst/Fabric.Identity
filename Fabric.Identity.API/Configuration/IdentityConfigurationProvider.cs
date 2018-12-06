@@ -61,6 +61,13 @@ namespace Fabric.Identity.API.Configuration
                         appConfiguration.IdentityServerConfidentialClientSettings.ClientSecret,
                         appConfiguration.SigningCertificateSettings);
             }
+
+            if (appConfiguration.AzureActiveDirectorySettings?.ClientSecret != null)
+            {
+                appConfiguration.AzureActiveDirectorySettings.ClientSecret = decryptionService.DecryptString(
+                    appConfiguration.AzureActiveDirectorySettings.ClientSecret,
+                    appConfiguration.SigningCertificateSettings);
+            }
         }
     }
 }
