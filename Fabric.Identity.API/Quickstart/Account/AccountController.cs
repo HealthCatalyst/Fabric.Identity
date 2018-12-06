@@ -15,13 +15,12 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
-using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Services;
-using Microsoft.AspNetCore.Authentication;
+using IFabricClaimsService = Fabric.Identity.API.Services.IClaimsService;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
 using Serilog;
@@ -32,6 +31,7 @@ namespace IdentityServer4.Quickstart.UI
 
     using Fabric.Identity.API.Exceptions;
     using Fabric.Identity.API.Models;
+    using IdentityServer4.Models;
 
     /// <summary>
     /// This sample controller implements a typical login/logout/provision workflow for local and external accounts.
@@ -47,6 +47,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IAppConfiguration _appConfiguration;
         private readonly ILogger _logger;
         private readonly IExternalIdentityProviderService _externalIdentityProviderService;
+        private readonly IFabricClaimsService _claimsService;
         private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
 
@@ -61,6 +62,7 @@ namespace IdentityServer4.Quickstart.UI
             IUserStore userStore,
             ILogger logger,
             IExternalIdentityProviderService externalIdentityProviderService,
+            IFabricClaimsService claimsService,
             AccountService accountService,
             GroupFilterService groupFilterService,
             TestUserStore users = null)
@@ -73,6 +75,7 @@ namespace IdentityServer4.Quickstart.UI
             _logger = logger;
             _externalIdentityProviderService = externalIdentityProviderService;
             _accountService = accountService;
+            _claimsService = claimsService;
             _groupFilterService = groupFilterService;
             _userLoginManager = new UserLoginManager(userStore, _logger);
 
@@ -227,91 +230,44 @@ namespace IdentityServer4.Quickstart.UI
             //read external identity from the temporary cookie
             var info = await HttpContext.Authentication.GetAuthenticateInfoAsync(
                            IdentityServerConstants.ExternalCookieAuthenticationScheme);
-            var tempUser = info?.Principal;
-            if (tempUser == null)
-            {
-                throw new Exception("External authentication error");
-            }
-
-            //retrieve claims of the external user
-            var claims = tempUser.Claims.ToList();
-
-            //try to determine the unique id of the external user - the most common claim type for that are the sub claim and the NameIdentifier
-            //depending on the external provider, some other claim type might be used
-            var userIdClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Subject);
-            if (userIdClaim == null)
-            {
-                userIdClaim = claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
-            }
-
-            if (userIdClaim == null)
-            {
-                throw new MissingUserClaimException(ExceptionMessageResources.MissingUserClaimMessage);
-            }
-
-            var schemaItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme");
-            Claim oid = null;
-
-            if (_appConfiguration.AzureAuthenticationEnabled && schemaItem.Value == FabricIdentityConstants.AuthenticationSchemes.Azure)
-            {
-                var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);     
-                if (issuerClaim == null )
-                {
-                    throw new MissingIssuerClaimException(ExceptionMessageResources.MissingIssuerClaimMessage);
-                }
-
-                if (!this._appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim.Issuer))
-                {
-                    return this.LogAndReturnStatus(
-                        403, 
-                        ExceptionMessageResources.ForbiddenIssuerMessageLog,
-                        String.Format(CultureInfo.CurrentCulture,ExceptionMessageResources.ForbiddenIssuerMessageUser,issuerClaim.Value));
-                }
-
-                oid = claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative);
-            }
-
-            //remove the user id claim from the claims collection and move to the userId property
-            //also set the name of the external authentication provider
-            claims.Remove(userIdClaim);
-            var provider = info.Properties.Items["scheme"];
-            var userId = userIdClaim.Value;
-
-            //get the client id from the auth context
             var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
 
-            var user = await _userLoginManager.UserLogin(provider, userId, claims, context?.ClientId);
+            //retrieve claims of the external user
+            ClaimsResult claimInformation = null;
 
-            var additionalClaims = new List<Claim>();
-
-            //if the external system sent a session id claim, copy it over
-            var sid = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);
-            if (sid != null)
+            try
             {
-                additionalClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
+                claimInformation = _claimsService.GenerateClaimsForIdentity(info, context);
             }
-
-            //if the external provider issues groups claims, copy it over
-            var groupClaims = claims.Where(c => c.Type == "groups").ToList();
-            if (groupClaims.Any())
+            catch(InvalidIssuerException exc)
             {
-                additionalClaims.AddRange(groupClaims);
-            }
-
-            //if the external provider issued an id_token, we'll keep it for signout
-            AuthenticationProperties props = null;
-            var id_token = info.Properties.GetTokenValue("id_token");
-            if (id_token != null)
-            {
-                props = new AuthenticationProperties();
-                props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
+                return LogAndReturnStatus(403, exc.LogMessage, exc.Message);
             }
 
             //issue authentication cookie for user
-            var subjectId = oid?.Value ?? user.SubjectId;
-            await _events.RaiseAsync(new FabricUserLoginSuccessEvent(provider, userId, subjectId, user.Username, context?.ClientId));
+            var user = await _userLoginManager.UserLogin(
+                claimInformation.Provider,
+                claimInformation.UserId,
+                claimInformation.Claims,
+                claimInformation?.ClientId);
+            
+            var subjectId = _claimsService.GetEffectiveSubjectId(claimInformation, user);
 
-            await HttpContext.Authentication.SignInAsync(subjectId, user.Username, provider, props, additionalClaims.ToArray());
+            var successfulEvent = new FabricUserLoginSuccessEvent(
+                claimInformation.Provider,
+                claimInformation.UserId,
+                subjectId,
+                user?.Username,
+                claimInformation.ClientId);
+
+            await _events.RaiseAsync(successfulEvent);
+
+            await HttpContext.Authentication.SignInAsync(
+                subjectId,
+                user?.Username,
+                claimInformation.Provider,
+                claimInformation.AuthenticationProperties, 
+                claimInformation.AdditionalClaims);
 
             //delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
