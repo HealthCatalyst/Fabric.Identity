@@ -271,24 +271,6 @@ function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
 
 }
 
-function Clear-IdentityEnvironmentAzureSettings {
-    param(
-        [string] $environmentSettingPath
-    )
-    $content = [xml](Get-Content $environmentSettingPath)
-    $settings = $content.configuration
-    $environmentVariables = $settings.ChildNodes.aspNetCore.environmentVariables
-
-    $azureSettings = ($environmentVariables.ChildNodes | Where-Object {$_.name.StartsWith("AzureActiveDirectorySettings") -or $_.name -eq ("WindowsAuthenticationEnabled") -or $_.name -eq ("AzureAuthenticationEnabled")})
-    
-    foreach($setting in $azureSettings) {
-        Write-Host "Cleaning up setting: $($setting.name)"
-        $environmentVariables.RemoveChild($setting) | Out-Null
-    }
-    $content.Save("$environmentSettingPath")
-
-}
-
 function Set-IdentityProviderSearchServiceWebConfigSettings {
     param(
         [string] $encryptionCertificateThumbprint,
@@ -503,7 +485,6 @@ function Set-IdentityEnvironmentAzureVariables {
         [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
-	Clear-IdentityEnvironmentAzureSettings -environmentSettingPath $appConfig\web.config
     $environmentVariables = @{}
 
 	if($useAzure -eq $true)
@@ -520,12 +501,12 @@ function Set-IdentityEnvironmentAzureVariables {
 			-setting "claimsIssuerTenant"
 
 		# Set Azure Settings
-		$environmentVariables.Add("AzureActiveDirectorySettings_Authority", "https://login.microsoftonline.com/common")
-		$environmentVariables.Add("AzureActiveDirectorySettings_DisplayName", "Azure AD")
-		$environmentVariables.Add("AzureActiveDirectorySettings_ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
-		$environmentVariables.Add("AzureActiveDirectorySettings_Scope_0", "openid")
-		$environmentVariables.Add("AzureActiveDirectorySettings_Scope_1", "profile")
-		$environmentVariables.Add("AzureActiveDirectorySettings_ClientId", $clientSettings.clientId)
+		$environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
+		$environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
 
 		$secret = $clientSettings.clientSecret
 			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
@@ -538,16 +519,16 @@ function Set-IdentityEnvironmentAzureVariables {
 					-installConfigPath $installConfigPath `
 					-appName "Identity Service"
 
-				$environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $encryptedSecret)
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
 			}
 			else{
-				$environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $secret)
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
 			}
 
 		foreach($allowedTenant in $allowedTenants)
 		{
 		  $index = $allowedTenants.IndexOf($allowedTenant)
-		  $environmentVariables.Add("AzureActiveDirectorySettings_IssuerWhiteList_$index", "https://sts.windows.net/" + $allowedTenant)
+		  $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
 		}
 	}
 
