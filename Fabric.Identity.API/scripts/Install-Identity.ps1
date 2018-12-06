@@ -13,7 +13,6 @@ param(
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
-Import-Module -Name .\Install-IdPSS-Utilities.psm1 -Force
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
