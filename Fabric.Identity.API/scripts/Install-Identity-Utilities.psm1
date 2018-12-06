@@ -610,15 +610,15 @@ function Get-DefaultDiscoveryServiceUrl([string] $discoUrl)
     if([string]::IsNullOrEmpty($discoUrl)){
         return "$(Get-FullyQualifiedMachineName)/DiscoveryService/v1"
     }else{
-	      $discoUrl = $discoUrl.TrimEnd("/")
+        $discoUrl = $discoUrl.TrimEnd("/")
           if ($discoUrl -notmatch "/v\d")
-		  {
-	  		  return $discoUrl + "/v1"
-		  }
-		  else 
-		  {
-		  	  return $discoUrl
-		  }
+          {
+              return $discoUrl + "/v1"
+          }
+          else 
+          {
+              return $discoUrl
+          }
     }
 }
 
@@ -689,6 +689,330 @@ function Get-WebConfigPath {
     return $configPath
 }
 
+function Get-ClientSettingsFromInstallConfig {
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath,
+        [string] $appName
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "identity"}
+    $tenants = $tenantScope.SelectSingleNode('registeredApplications')
+
+    $clientSettings = @()
+    foreach($tenant in $tenants.variable) {
+      if ($tenant.appName -eq $appName)
+      {
+        $tenantSetting = @{
+            clientId = $tenant.clientId
+            # Does not decrypt secret
+            clientSecret = $tenant.secret
+            tenantId = $tenant.tenantId
+        }
+        $clientSettings += $tenantSetting
+      }
+    }
+
+    return $clientSettings
+}
+
+function Get-SettingsFromInstallConfig {
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath,
+        [string] $scope,
+        [string] $setting
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $scope}
+    $tempNode = $tenantScope.SelectSingleNode($setting)
+    $settingList = @()
+    foreach($nodeChild in $tempNode.variable){
+        if($nodeChild.name) {
+            $settingList += $nodeChild.name
+        }
+    }
+    return $settingList
+}
+
+function Add-InstallationTenantSettings {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $tenantId,
+        [Parameter(Mandatory=$true)]
+        [string] $clientSecret,
+        [Parameter(Mandatory=$true)]
+        [string] $clientId,
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })]  
+        [string] $installConfigPath = "$(Get-CurrentScriptDirectory)\install.config",
+        [string] $appName
+    )
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $applicationSettings = $identityScope.SelectSingleNode('registeredApplications')
+
+    # Add a application section if not exists
+    if($null -eq $applicationSettings) {
+        $applicationSettings = $installationConfig.CreateElement("registeredApplications")
+        $identityScope.AppendChild($applicationSettings) | Out-Null
+    }
+
+    $existingSetting = $applicationSettings.ChildNodes | Where-Object {$_.appName -eq $appName -and $_.tenantId -eq $tenantId}
+
+    if ($null -eq $existingSetting) {
+        $setting = $installationConfig.CreateElement("variable")
+
+        $appNameAttribute = $installationConfig.CreateAttribute("appName")
+        $appNameAttribute.Value = $appName
+        $setting.Attributes.Append($appNameAttribute) | Out-Null
+
+        $nameAttribute = $installationConfig.CreateAttribute("tenantId")
+        $nameAttribute.Value = $tenantId
+        $setting.Attributes.Append($nameAttribute) | Out-Null
+
+        $clientAttribute = $installationConfig.CreateAttribute("clientid")
+        $clientAttribute.Value = $clientId
+        $setting.Attributes.Append($clientAttribute) | Out-Null
+
+        $valueAttribute = $installationConfig.CreateAttribute("secret")
+        $valueAttribute.Value = $clientSecret
+        $setting.Attributes.Append($valueAttribute) | Out-Null
+
+        $applicationSettings.AppendChild($setting) | Out-Null
+    }
+    else{
+        $existingSetting.secret = $clientSecret
+        $existingSetting.clientId = $clientId
+    }
+    $installationConfig.Save("$installConfigPath") | Out-Null
+}
+
+
+function Set-IdentityEnvironmentAzureVariables {
+    param (
+        [string] $appConfig,
+        [string] $installConfigPath,
+        [string] $useAzure = $false,
+        [string] $useWindows = $true,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
+    )
+    $environmentVariables = @{}
+
+	if($useAzure -eq $true)
+	{
+		$scope = "identity"
+		# Alter Identity web.config for azure
+		$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+		$allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+			-scope $scope `
+			-setting "allowedTenants"
+
+		$claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+			-scope $scope `
+			-setting "claimsIssuerTenant"
+
+		# Set Azure Settings
+		$environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
+		$environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
+
+		$secret = $clientSettings.clientSecret
+			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+				# Encrypt secret in install.config if not encrypted
+				Add-InstallationTenantSettings -configSection "identity" `
+					-tenantId $clientSettings.tenantId `
+					-clientSecret $encryptedSecret `
+					-clientId $clientSettings.clientId `
+					-installConfigPath $installConfigPath `
+					-appName "Identity Service"
+
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
+			}
+			else{
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
+			}
+
+		foreach($allowedTenant in $allowedTenants)
+		{
+		  $index = $allowedTenants.IndexOf($allowedTenant)
+		  $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
+		}
+	}
+
+    if($useAzure -eq $true) {
+        $environmentVariables.Add("AzureAuthenticationEnabled", "true")
+    }
+    elseif($useAzure -eq $false) {
+        $environmentVariables.Add("AzureAuthenticationEnabled", "false")
+    }
+
+    if($useWindows -eq $true) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "true")
+    }
+    elseif($useWindows -eq $false) {
+        $environmentVariables.Add("WindowsAuthenticationEnabled", "false")
+    }
+
+    Set-EnvironmentVariables $appConfig $environmentVariables | Out-Null
+}
+
+function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
+    param(
+        [string] $webConfigPath
+    )
+    $content = [xml](Get-Content $webConfigPath)
+    $settings = $content.configuration.appSettings
+
+    $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings") -or $_.Key -eq ("EncryptionCertificateSettings:EncryptionCertificateThumbprint")})
+    
+    foreach($setting in $azureSettings) {
+        Write-Host "Cleaning up setting: $($setting.key)"
+        $settings.RemoveChild($setting) | Out-Null
+    }
+    $content.Save("$webConfigPath")
+
+}
+
+function Add-AppSetting($appSettingName, $appSettingValue, $config){
+    $appSettingsNode = $config.configuration.appSettings
+    $existingAppSettings = $appSettingsNode.add | Where-Object {$_.key -eq $appSettingName}
+    if($null -eq $existingAppSettings){
+        Write-Host "Writing $appSettingName to config"
+        $addElement = $config.CreateElement("add")
+        
+        $keyAttribute = $config.CreateAttribute("key")
+        $keyAttribute.Value = $appSettingName
+        $addElement.Attributes.Append($keyAttribute)
+        
+        $valueAttribute = $config.CreateAttribute("value")
+        $valueAttribute.Value = $appSettingValue
+        $addElement.Attributes.Append($valueAttribute)
+
+        $appSettingsNode.AppendChild($addElement)
+    }else {
+        Write-Host $appSettingName "already exists in config, updating value"
+        $existingAppSettings.Value = $appSettingValue
+    }
+}
+
+function Set-WebConfigAppSettings($webConfigPath, $appSettings){
+    Write-Host "Writing app settings to web config..."
+    $webConfig = [xml](Get-Content $webConfigPath)
+    foreach ($variable in $appSettings.GetEnumerator()){
+        Add-AppSetting $variable.Name $variable.Value $webConfig
+    }
+
+    $webConfig.Save("$webConfigPath")
+}
+
+function Set-IdentityProviderSearchServiceWebConfigSettings {
+    param(
+        [string] $encryptionCertificateThumbprint,
+        [string] $appInsightsInstrumentationKey,
+        [string] $webConfigPath,
+        [string] $installConfigPath,
+        [string] $useAzure = $false,
+        [string] $useWindows = $true,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
+        [string] $appName
+    )
+	Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
+    $appSettings = @{}
+	
+    if($appInsightsInstrumentationKey){
+        $appSettings.Add("ApplicationInsights:Enabled", "true")
+        $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
+    }
+
+	if ($useAzure -eq $true)
+	{
+	    # Alter IdPSS web.config for azure
+		$clientSettings = @()
+		$clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
+
+		if ($encryptionCertificateThumbprint){
+        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+        }
+
+		# Set Azure Settings
+		$defaultScope = "https://graph.microsoft.com/.default"
+		$appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
+		$appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
+
+		foreach($setting in $clientSettings) {
+			$index = $clientSettings.IndexOf($setting)
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+
+			# Currently only a single default scope is expected
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+
+			$secret = $setting.clientSecret
+			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+				# Encrypt secret in install.config if not encrypted
+				Add-InstallationTenantSettings -configSection "identity" `
+					-tenantId $setting.tenantId `
+					-clientSecret $encryptedSecret `
+					-clientId $setting.clientId `
+					-installConfigPath $installConfigPath `
+					-appName $appName
+
+				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+			}
+			else{
+				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+			}
+		}
+	}
+
+    if($useAzure -eq $true) {
+        $appSettings.Add("UseAzureAuthentication", "true")
+    }
+    elseif($useAzure -eq $false) {
+        $appSettings.Add("UseAzureAuthentication", "false")
+    }
+
+    if($useWindows -eq $true) {
+        $appSettings.Add("UseWindowsAuthentication", "true")
+    }
+    elseif($useWindows -eq $false) {
+        $appSettings.Add("UseWindowsAuthentication", "false")
+    }
+
+    Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -713,3 +1037,8 @@ Export-ModuleMember Test-RegistrationComplete
 Export-ModuleMember Add-InstallerClientRegistration
 Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
 Export-ModuleMember Get-WebConfigPath
+Export-ModuleMember Set-IdentityEnvironmentAzureVariables
+Export-ModuleMember Get-SettingsFromInstallConfig
+Export-ModuleMember Add-InstallationTenantSettings
+Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
+Export-ModuleMember Get-ClientSettingsFromInstallConfig
