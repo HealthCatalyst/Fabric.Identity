@@ -33,6 +33,7 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             // Assert
             Assert.NotNull(appConfig);
             Assert.Equal(clientSecret, appConfig.IdentityServerConfidentialClientSettings.ClientSecret);
+            Assert.Equal(clientSecret, appConfig.AzureActiveDirectorySettings.ClientSecret);
             Assert.Equal("InMemory", appConfig.HostingOptions.StorageProvider);
         }
 
@@ -69,6 +70,10 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
                 {
                     Authority = "http://locahost:5001",
                     ClientId = "test-client",
+                    ClientSecret = EncryptString(privateKey, clientSecret)
+                },
+                AzureActiveDirectorySettings = new AzureActiveDirectorySettings
+                {
                     ClientSecret = EncryptString(privateKey, clientSecret)
                 }
             };
