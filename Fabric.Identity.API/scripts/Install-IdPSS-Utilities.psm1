@@ -219,7 +219,6 @@ function Register-Identity {
     Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
   }
 }
-Write-Host "success"
 
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
