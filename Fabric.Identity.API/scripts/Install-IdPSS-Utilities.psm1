@@ -76,12 +76,17 @@ function Remove-AzureADClientSecret{
     $encoding = [System.Text.Encoding]::ASCII
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
     $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
-
     $completed = $false
     [int]$retryCount = 0
+
     foreach($key in $filteredKeys) {
+        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
         do {
-            Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
+            if($retryCount -gt 3) {
+                Write-DosMessage -Level "Error" -Message "Could not create Azure AD application secret."
+                throw
+            }
+
             try {
                 Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
                 $completed = $true
@@ -100,7 +105,6 @@ function Get-FabricAzureADSecret([string] $objectId) {
     $keyCredentialName = "PowerShell Created Password"
     Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
     Write-Host "Creating password credential named $keyCredentialName"
-
     $completed = $false
     [int]$retryCount = 0
 
