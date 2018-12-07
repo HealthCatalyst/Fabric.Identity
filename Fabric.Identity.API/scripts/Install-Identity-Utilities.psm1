@@ -1013,6 +1013,19 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
     Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
 
+function Find-IISAppPoolUser {
+    param(
+        [string] $applicationName
+    )
+    $appPool = (Get-WebApplication -Name "$applicationName").ApplicationPool
+    if($null -eq $appPool) {
+        Write-DosMessage -Level "Error" -Message "Could not find any application named `"$applicationName`""
+    }
+
+    $username = (Get-Item (Join-Path 'IIS:\AppPools\' $appPool)).processModel.username
+    return $username
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1042,3 +1055,4 @@ Export-ModuleMember Get-SettingsFromInstallConfig
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
+Export-ModuleMember Find-IISAppPoolUser
