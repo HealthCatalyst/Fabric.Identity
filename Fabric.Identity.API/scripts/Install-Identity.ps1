@@ -36,8 +36,8 @@ $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
 
 $idpssName = "IdentityProviderSearchService"
-$idpssConfig = Get-WebConfigPath -service $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName
+$idpssConfig = Get-WebConfigPath -applicationName $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory

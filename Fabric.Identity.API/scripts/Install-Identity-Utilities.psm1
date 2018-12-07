@@ -646,24 +646,24 @@ function Get-ApplicationUrl($serviceName, $discoveryServiceUrl){
     return $serviceUrl
 }
 
-function Get-WebConfigPath {
+function Get-WebApplicationFromDiscovery {
     param(
-        [string] $serviceName,
+        [string] $applicationName,
         [Uri] $discoveryServiceUrl,
         [bool] $noDiscoveryService,
         [bool] $quiet
     )
     if($noDiscoveryService) {
-        $serviceUrl = Get-DefaultApplicationEndpoint $serviceName $null
+        $serviceUrl = Get-DefaultApplicationEndpoint $applicationName $null
     }
     else {
-        $serviceUrl = Get-ApplicationUrl -serviceName $serviceName -discoveryServiceUrl $discoveryServiceUrl
+        $serviceUrl = Get-ApplicationUrl -serviceName $applicationName -discoveryServiceUrl $discoveryServiceUrl
 
         if([string]::IsNullOrWhiteSpace($serviceUrl) -and $quiet) {
-            $serviceUrl = Get-DefaultApplicationEndpoint $serviceName $null
+            $serviceUrl = Get-DefaultApplicationEndpoint $applicationName $null
         }
         elseif([string]::IsNullOrWhiteSpace($serviceUrl)){
-            throw "Could not retrieve a registered URL from DiscoveryService for $serviceName Halting installation."
+            throw "Could not retrieve a registered URL from DiscoveryService for $applicationName Halting installation."
         }
     }
 
@@ -673,10 +673,22 @@ function Get-WebConfigPath {
     $serviceRootPath = "/$($serviceUrlSegments[0])"
 
     $app = Get-WebApplication | Where-Object {$_.Path -eq $serviceRootPath}
-
+    
     if($null -eq $app){
         throw "Could not find an installed application that matches the path of the registered URL: $serviceUrl, at application path: $serviceRootPath. Halting installation."
     }
+
+    return $app
+}
+
+function Get-WebConfigPath {
+    param(
+        [string] $applicationName,
+        [Uri] $discoveryServiceUrl,
+        [bool] $noDiscoveryService,
+        [bool] $quiet
+    )
+    $app = Get-WebApplicationFromDiscovery -applicationName $applicationName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
 
     $appPath = [Environment]::ExpandEnvironmentVariables($app.PhysicalPath)
 
@@ -1015,9 +1027,14 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
 
 function Find-IISAppPoolUser {
     param(
-        [string] $applicationName
+        [string] $applicationName,
+        [Uri] $discoveryServiceUrl,
+        [bool] $noDiscoveryService,
+        [bool] $quiet
     )
-    $appPool = (Get-WebApplication -Name "$applicationName").ApplicationPool
+    $app = Get-WebApplicationFromDiscovery -applicationName $applicationName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
+    $appPool = $app.applicationPool
+
     if($null -eq $appPool) {
         Write-DosMessage -Level "Error" -Message "Could not find any application named `"$applicationName`""
     }
