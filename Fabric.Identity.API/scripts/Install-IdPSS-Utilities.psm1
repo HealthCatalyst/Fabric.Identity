@@ -261,31 +261,13 @@ function Clear-IdentityProviderSearchServiceWebConfigAzureSettings {
     $content = [xml](Get-Content $webConfigPath)
     $settings = $content.configuration.appSettings
 
-    $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings")})
+    $azureSettings = ($settings.ChildNodes | Where-Object {$null -ne $_.Key -and $_.Key.StartsWith("AzureActiveDirectoryClientSettings") -or $_.Key -eq ("EncryptionCertificateSettings:EncryptionCertificateThumbprint")})
     
     foreach($setting in $azureSettings) {
         Write-Host "Cleaning up setting: $($setting.key)"
         $settings.RemoveChild($setting) | Out-Null
     }
     $content.Save("$webConfigPath")
-
-}
-
-function Clear-IdentityEnvironmentAzureSettings {
-    param(
-        [string] $environmentSettingPath
-    )
-    $content = [xml](Get-Content $environmentSettingPath)
-    $settings = $content.configuration
-    $environmentVariables = $settings.ChildNodes.aspNetCore.environmentVariables
-
-    $azureSettings = ($environmentVariables.ChildNodes | Where-Object {$_.name.StartsWith("AzureActiveDirectorySettings")})
-    
-    foreach($setting in $azureSettings) {
-        Write-Host "Cleaning up setting: $($setting.name)"
-        $environmentVariables.RemoveChild($setting) | Out-Null
-    }
-    $content.Save("$environmentSettingPath")
 
 }
 
@@ -300,52 +282,55 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
-
-    # Alter IdPSS web.config for azure
-    $clientSettings = @()
-    $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
-
-    Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
+	Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
-    if ($encryptionCertificateThumbprint){
-        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
-    }
-
+	
     if($appInsightsInstrumentationKey){
         $appSettings.Add("ApplicationInsights:Enabled", "true")
         $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
     }
 
-    # Set Azure Settings
-    $defaultScope = "https://graph.microsoft.com/.default"
-    $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
-    $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
+	if ($useAzure -eq $true)
+	{
+	    # Alter IdPSS web.config for azure
+		$clientSettings = @()
+		$clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
 
-    foreach($setting in $clientSettings) {
-        $index = $clientSettings.IndexOf($setting)
-        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
-        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-
-        # Currently only a single default scope is expected
-        $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
-
-        $secret = $setting.clientSecret
-        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-            $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-            # Encrypt secret in install.config if not encrypted
-            Add-InstallationTenantSettings -configSection "identity" `
-                -tenantId $setting.tenantId `
-                -clientSecret $encryptedSecret `
-                -clientId $setting.clientId `
-                -installConfigPath $installConfigPath `
-                -appName $appName
-
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+		if ($encryptionCertificateThumbprint){
+        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
         }
-        else{
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
-        }
-    }
+
+		# Set Azure Settings
+		$defaultScope = "https://graph.microsoft.com/.default"
+		$appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
+		$appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
+
+		foreach($setting in $clientSettings) {
+			$index = $clientSettings.IndexOf($setting)
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+
+			# Currently only a single default scope is expected
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+
+			$secret = $setting.clientSecret
+			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+				# Encrypt secret in install.config if not encrypted
+				Add-InstallationTenantSettings -configSection "identity" `
+					-tenantId $setting.tenantId `
+					-clientSecret $encryptedSecret `
+					-clientId $setting.clientId `
+					-installConfigPath $installConfigPath `
+					-appName $appName
+
+				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+			}
+			else{
+				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+			}
+		}
+	}
 
     if($useAzure -eq $true) {
         $appSettings.Add("UseAzureAuthentication", "true")
@@ -424,7 +409,7 @@ function Get-Tenants {
         -setting $parentSetting
 
     if($null -eq $tenants -or $tenants.Count -eq 0){
-        Write-DosMessage -Level "Error" -Message  "No tenants to register where found in the install.config"
+        Write-DosMessage -Level "Error" -Message  "No tenants to register were found in the install.config"
         throw
     }
 
@@ -500,50 +485,52 @@ function Set-IdentityEnvironmentAzureVariables {
         [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert
     )
-    $scope = "identity"
-	# Alter Identity web.config for azure
-    $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
-    $allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-        -scope $scope `
-        -setting "allowedTenants"
-
-    $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-        -scope $scope `
-        -setting "claimsIssuerTenant"
-
-	Clear-IdentityEnvironmentAzureSettings -environmentSettingPath $appConfig\web.config
     $environmentVariables = @{}
 
-	# Set Azure Settings
-    $environmentVariables.Add("AzureActiveDirectorySettings_Authority", "https://login.microsoftonline.com/common")
-    $environmentVariables.Add("AzureActiveDirectorySettings_DisplayName", "Azure AD")
-	$environmentVariables.Add("AzureActiveDirectorySettings_ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
-    $environmentVariables.Add("AzureActiveDirectorySettings_Scope_0", "openid")
-	$environmentVariables.Add("AzureActiveDirectorySettings_Scope_1", "profile")
-    $environmentVariables.Add("AzureActiveDirectorySettings_ClientId", $clientSettings.clientId)
+	if($useAzure -eq $true)
+	{
+		$scope = "identity"
+		# Alter Identity web.config for azure
+		$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+		$allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+			-scope $scope `
+			-setting "allowedTenants"
 
-    $secret = $clientSettings.clientSecret
-        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-            $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-            # Encrypt secret in install.config if not encrypted
-            Add-InstallationTenantSettings -configSection "identity" `
-                -tenantId $clientSettings.tenantId `
-                -clientSecret $encryptedSecret `
-                -clientId $clientSettings.clientId `
-                -installConfigPath $installConfigPath `
-                -appName "Identity Service"
+		$claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+			-scope $scope `
+			-setting "claimsIssuerTenant"
 
-            $environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $encryptedSecret)
-        }
-        else{
-            $environmentVariables.Add("AzureActiveDirectorySettings_ClientSecret", $secret)
-        }
+		# Set Azure Settings
+		$environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
+		$environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
+		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
+		$environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
 
-    foreach($allowedTenant in $allowedTenants)
-    {
-      $index = $allowedTenants.IndexOf($allowedTenant)
-      $environmentVariables.Add("AzureActiveDirectorySettings_IssuerWhiteList_$index", "https://sts.windows.net/" + $allowedTenant)
-    }
+		$secret = $clientSettings.clientSecret
+			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+				# Encrypt secret in install.config if not encrypted
+				Add-InstallationTenantSettings -configSection "identity" `
+					-tenantId $clientSettings.tenantId `
+					-clientSecret $encryptedSecret `
+					-clientId $clientSettings.clientId `
+					-installConfigPath $installConfigPath `
+					-appName "Identity Service"
+
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
+			}
+			else{
+				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
+			}
+
+		foreach($allowedTenant in $allowedTenants)
+		{
+		  $index = $allowedTenants.IndexOf($allowedTenant)
+		  $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
+		}
+	}
 
     if($useAzure -eq $true) {
         $environmentVariables.Add("AzureAuthenticationEnabled", "true")
