@@ -20,8 +20,20 @@ else {
 }
 
 function Get-GraphApiReadPermissions() {
-    $aad = (Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")})[0]
-    $directoryRead = $aad.AppRoles | Where-Object {$_.Value -eq "Directory.Read.All"}
+    try {
+        $aad = (Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")})[0]
+    }
+    catch {
+        Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
+        throw
+    }
+
+    $directoryReadName = "Directory.Read.All"
+    $directoryRead = $aad.AppRoles | Where-Object {$_.Value -eq $directoryReadName}
+    if($null -eq $directoryRead) {
+        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
+        throw
+    }
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
@@ -64,9 +76,22 @@ function Remove-AzureADClientSecret{
     $encoding = [System.Text.Encoding]::ASCII
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
     $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
+
+    $completed = $false
+    [int]$retryCount = 0
     foreach($key in $filteredKeys) {
-        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
-        Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId
+        do {
+            Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
+            try {
+                Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
+                $completed = $true
+            }
+            catch {
+                Write-DosMessage -Level "Warning" -Message "An error occurred trying to remove the Azure application secret named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId). Retrying.."
+                Start-Sleep 3
+                $retryCount++
+            }
+        } while ($completed -eq $false)
     }
 }
 
@@ -75,7 +100,26 @@ function Get-FabricAzureADSecret([string] $objectId) {
     $keyCredentialName = "PowerShell Created Password"
     Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
     Write-Host "Creating password credential named $keyCredentialName"
-    $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId -CustomKeyIdentifier $keyCredentialName
+
+    $completed = $false
+    [int]$retryCount = 0
+
+    do{
+        if($retryCount -gt 3) {
+            Write-DosMessage -Level "Error" -Message "Could not create Azure AD application secret."
+            throw
+        }
+
+        try {
+            $credential = New-AzureADApplicationPasswordCredential -ObjectId $objectId -CustomKeyIdentifier $keyCredentialName -ErrorAction 'stop'
+            $completed = $true
+        }
+        catch {
+            Write-DosMessage -Level "Warning" -Message "An error occurred trying to create the Azure application secret named $keyCredentialName. Retrying.."
+            Start-Sleep 3
+            $retryCount++
+        }
+    } While ($completed -eq $false)
     return $credential.Value
 }
 
@@ -175,6 +219,7 @@ function Register-Identity {
     Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
   }
 }
+Write-Host "success"
 
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
