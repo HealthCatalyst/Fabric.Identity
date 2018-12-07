@@ -35,7 +35,9 @@ Write-DosMessage -Level "Information" -Message "Using install.config: $installCo
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
 
-$idpssConfig = Get-WebConfigPath -service "IdentityProviderSearchService" -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+$idpssName = "IdentityProviderSearchService"
+$idpssConfig = Get-WebConfigPath -service $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
@@ -44,6 +46,7 @@ $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.site
 $selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 $iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $installConfigPath -scope $installSettingsScope
 Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate read
+Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
