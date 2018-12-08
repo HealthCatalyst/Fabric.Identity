@@ -21,7 +21,7 @@ else {
 
 function Get-GraphApiReadPermissions() {
     try {
-        $aad = (Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")})[0]
+        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
     }
     catch {
         Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."

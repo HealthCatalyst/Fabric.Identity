@@ -32,6 +32,46 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             $value | Should -Be $mockObj.Value
         }
     }
+
+    Context 'Azure AD Errors Creating Secrets' {
+        It 'Should retry before failing when creating a secret' {
+            $enc = [system.Text.Encoding]::UTF8
+            $mockResp = @{
+                CustomKeyIdentifier = $enc.GetBytes("PowerShell Created Password")
+                KeyId = "Id"
+            }
+
+            Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith { throw }
+            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
+            Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith {}
+            Mock -CommandName Start-Sleep {}
+            Mock -CommandName Write-DosMessage {}
+            Mock -CommandName Write-Host {}
+
+            { Get-FabricAzureADSecret -objectId "value" } | Should -Throw
+            Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" } -Times 1 -Exactly
+            Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Warning" } -Times 4 -Exactly
+        }
+    }
+    Context 'Azure AD Errors Removing Secrets' {
+        It 'Should retry before failing when removing a secret' {
+            $enc = [system.Text.Encoding]::UTF8
+            $mockResp = @{
+                CustomKeyIdentifier = $enc.GetBytes("PowerShell Created Password")
+                KeyId = "Id"
+            }
+
+            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
+            Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith { throw }
+            Mock -CommandName New-AzureADApplicationPasswordCredential {}
+            Mock -CommandName Start-Sleep {}
+            Mock -CommandName Write-DosMessage {}
+
+            { Get-FabricAzureADSecret -objectId "value" } | Should -Throw
+            Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Warning" } -Times 4 -Exactly
+            Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" } -Times 1 -Exactly
+        }
+    }
 }
 
 Describe 'Connect-AzureADTenant' -Tag 'Unit' {
@@ -59,11 +99,11 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
     BeforeAll {
         $returnPrincipal = @(
             @{
-                ServicePrincipalNames = @("https://graph.microsoft.com")
-                Oauth2Permissions = @(
+                ServicePrincipalNames = "https://graph.microsoft.com"
+                AppRoles = @(
                     @{
                         Id = 1
-                        Value = "Group.Read.All"
+                        Value = "Directory.Read.All"
                     },
                     @{
                         Id = 2
@@ -76,7 +116,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
                 )
             },
             @{
-                ServicePrincipalNames = @("OtherUrl")
+                ServicePrincipalNames = "OtherUrl"
             }
         )
     }
@@ -165,5 +205,4 @@ Describe 'Get-ReplyUrls' -Tag 'Unit' {
             }
         }
     }
-
 }
