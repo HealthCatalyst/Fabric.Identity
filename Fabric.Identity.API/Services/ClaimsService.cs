@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using static Fabric.Identity.API.FabricIdentityConstants;
 
 namespace Fabric.Identity.API.Services
 {
@@ -25,6 +26,10 @@ namespace Fabric.Identity.API.Services
 
         public ClaimsResult GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
         {
+            CheckWhetherArgumentIsNull(info, nameof(info));
+            // NOTE: context may be null.  because of this, we are not going to 
+            // validate context
+            
             ClaimsResult result = GenerateNewClaimsResult(info, context);
 
             if (this.IsExternalTokenAzureAD(result.SchemeItem))
@@ -45,6 +50,9 @@ namespace Fabric.Identity.API.Services
 
         private ClaimsResult GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
         {
+            // provider and scheme look the same, but if you see the values
+            //  FabricIdentityConstants.AuthenticationSchemes.Azure = "OpenIdConnect:CatalystAzureAD"
+            // you will notice there are 2 different values, one for the provider and the other for the scheme
             var provider = info.Properties.Items["scheme"];
             var schemeItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme").Value;
             var externalUser = info?.Principal;
@@ -66,12 +74,15 @@ namespace Fabric.Identity.API.Services
             };
         }
 
-        public string GetEffectiveSubjectId(ClaimsResult ClaimInformation, User user)
+        public string GetEffectiveSubjectId(ClaimsResult claimInformation, User user)
         {
+            CheckWhetherArgumentIsNull(user, nameof(user));
+            CheckWhetherArgumentIsNull(claimInformation, nameof(claimInformation));
+
             string subjectId = null;
-            if (this.IsExternalTokenAzureAD(ClaimInformation.SchemeItem))
+            if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
             {
-                subjectId = ClaimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)
+                subjectId = claimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
                                   .Value;
             }
 
@@ -155,7 +166,16 @@ namespace Fabric.Identity.API.Services
             return userIdClaim;
         }
 
-        private bool IsExternalTokenAzureAD(string schemaItem) => 
-            _appConfiguration.AzureAuthenticationEnabled && schemaItem == FabricIdentityConstants.AuthenticationSchemes.Azure;
+        private bool IsExternalTokenAzureAD(string schemeItem) => 
+            _appConfiguration.AzureAuthenticationEnabled && schemeItem == FabricIdentityConstants.AuthenticationSchemes.Azure;
+
+        private static void CheckWhetherArgumentIsNull(object objectToCheck, string nameOfObject)
+        {
+            if(objectToCheck == null)
+            {
+                throw new ArgumentNullException(nameOfObject,
+                    string.Format(AuthenticationExceptionMessages.ArgumentNullExceptionMessage, nameOfObject));
+            }
+        }
     }
 }
