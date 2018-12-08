@@ -105,5 +105,10 @@
         {
             public const string Azure = "OpenIdConnect:CatalystAzureAD";
         }
+
+        public static class AuthenticationExceptionMessages
+        {
+            public const string ArgumentNullExceptionMessage = "The object name '{0}' cannot be null.";
+        }
     }
 }

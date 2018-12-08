@@ -10,13 +10,13 @@ namespace Fabric.Identity.API.Models
 {
     public class ClaimsResult
     {
-        public string Provider { get; internal set; }
-        public string UserId { get; internal set; }
-        public string ClientId { get; internal set; }
-        public AuthenticationProperties AuthenticationProperties { get; internal set; }
-        public Claim[] AdditionalClaims { get; internal set; }
-        public string SchemeItem { get; internal set; }
-        public List<Claim> Claims { get; internal set; }
-        public Claim UserIdClaim { get; internal set; }
+        public string Provider { get; set; }
+        public string UserId { get; set; }
+        public string ClientId { get; set; }
+        public AuthenticationProperties AuthenticationProperties { get; set; }
+        public Claim[] AdditionalClaims { get; set; }
+        public string SchemeItem { get; set; }
+        public List<Claim> Claims { get; set; }
+        public Claim UserIdClaim { get; set; }
     }
 }
