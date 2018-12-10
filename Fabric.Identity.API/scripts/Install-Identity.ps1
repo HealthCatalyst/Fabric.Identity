@@ -35,9 +35,20 @@ Write-DosMessage -Level "Information" -Message "Using install.config: $installCo
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
 
+$useAzure = $installSettings.useAzureAD
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+}
+
+$useWindows = $installSettings.useWindowsAD
+if($null -eq $useWindows) {
+    $useWindows = $true
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
+}
+
 $idpssName = "IdentityProviderSearchService"
 $idpssConfig = Get-WebConfigPath -applicationName $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
-$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
@@ -46,7 +57,10 @@ $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.site
 $selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 $iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $installConfigPath -scope $installSettingsScope
 Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate read
-Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
+if($useAzure) {
+    $idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $installSettings.discoveryService -noDiscoveryService $noDiscoveryService -quiet $quiet
+    Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
+}
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
@@ -66,18 +80,6 @@ $installApplication = Publish-Application -site $selectedSite `
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
     Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
-}
-
-$useAzure = $installSettings.useAzureAD
-if($null -eq $useAzure) {
-    $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
-}
-
-$useWindows = $installSettings.useWindowsAD
-if($null -eq $useWindows) {
-    $useWindows = $true
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
