@@ -24,6 +24,12 @@ namespace Fabric.Identity.API.Services
             _appConfiguration = appConfiguration;
         }
 
+        /// <summary>
+        /// Generates all information needed to create an access token for a given user.
+        /// </summary>
+        /// <param name="info">Authentication information</param>
+        /// <param name="context">Authorization Request</param>
+        /// <returns>Returns all the information into an object call ClaimsResult</returns>
         public ClaimsResult GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
         {
             CheckWhetherArgumentIsNull(info, nameof(info));
@@ -47,6 +53,62 @@ namespace Fabric.Identity.API.Services
 
             return result;
         }
+
+        /// <summary>
+        /// Gets the subject id based on the identity provider.
+        /// If provider is Azure AD, then look it up from the claims response from Azure
+        /// Otherwise, the user will have the subject ID to use for everything else
+        /// </summary>
+        /// <param name="claimInformation">Claims information from GenerateClaimsForIdentity</param>
+        /// <param name="user">User generated from logging into Identity</param>
+        /// <returns>The subject id</returns>
+        public string GetEffectiveSubjectId(ClaimsResult claimInformation, User user)
+        {
+            CheckWhetherArgumentIsNull(user, nameof(user));
+            CheckWhetherArgumentIsNull(claimInformation, nameof(claimInformation));
+
+            string subjectId = null;
+            if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
+            {
+                subjectId = AzureADSubjectId(claimInformation);
+            }
+
+            if(subjectId == null)
+            {
+                subjectId = user?.SubjectId;
+            }
+
+            return subjectId;
+        }
+
+        /// <summary>
+        /// Gets the user id to use based on the identity provider.
+        /// if the identity is Azure AD, then use the AzureAD subject Id
+        /// if it is windows Auth (or anything else) then return whatever the userId is.
+        /// </summary>
+        /// <param name="claimInformation">Claims information from GenerateClaimsForIdentity</param>
+        /// <returns>The userid that should be used based on identity provider</returns>
+        public string GetEffectiveUserId(ClaimsResult claimInformation)
+        {
+            CheckWhetherArgumentIsNull(claimInformation, nameof(claimInformation));
+
+            string userId = null;
+            if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
+            {
+                userId = AzureADSubjectId(claimInformation);
+            }
+
+            if(userId == null)
+            {
+                userId = claimInformation.UserId;
+            }
+
+            return userId;
+        }
+
+        private string AzureADSubjectId(ClaimsResult claimInformation) => 
+            claimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
+                            .Value;
 
         private ClaimsResult GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
         {
@@ -72,26 +134,6 @@ namespace Fabric.Identity.API.Services
                 Claims = claims,
                 UserIdClaim = userIdClaim
             };
-        }
-
-        public string GetEffectiveSubjectId(ClaimsResult claimInformation, User user)
-        {
-            CheckWhetherArgumentIsNull(user, nameof(user));
-            CheckWhetherArgumentIsNull(claimInformation, nameof(claimInformation));
-
-            string subjectId = null;
-            if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
-            {
-                subjectId = claimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
-                                  .Value;
-            }
-
-            if(subjectId == null)
-            {
-                subjectId = user?.SubjectId;
-            }
-
-            return subjectId;
         }
 
         private Claim[] GenerateAdditionalClaims(List<Claim> previousClaims)
