@@ -10,5 +10,6 @@ namespace Fabric.Identity.API.Services
     {
         ClaimsResult GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context);
         string GetEffectiveSubjectId(ClaimsResult ClaimInformation, User user);
+        string GetEffectiveUserId(ClaimsResult claimInformation);
     }
 }

@@ -255,7 +255,7 @@ namespace IdentityServer4.Quickstart.UI
 
             var successfulEvent = new FabricUserLoginSuccessEvent(
                 claimInformation.Provider,
-                claimInformation.UserId,
+                _claimsService.GetEffectiveUserId(claimInformation),
                 subjectId,
                 user?.Username,
                 claimInformation.ClientId);
