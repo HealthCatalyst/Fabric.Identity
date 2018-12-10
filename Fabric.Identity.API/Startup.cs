@@ -104,6 +104,7 @@ namespace Fabric.Identity.API
                 .AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>()
                 .AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>()
                 .AddSingleton<IExternalIdentityProviderService, IdPSearchServiceProvider>()
+                .AddSingleton<Services.IClaimsService, ClaimsService>()
                 .AddSingleton<LdapProviderService>()
                 .AddSingleton<PolicyProvider>()
                 .AddSingleton<IHealthCheckerService, HealthCheckerService>()
