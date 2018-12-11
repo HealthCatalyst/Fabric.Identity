@@ -1040,6 +1040,10 @@ function Find-IISAppPoolUser {
     }
 
     $username = (Get-Item (Join-Path 'IIS:\AppPools\' $appPool)).processModel.username
+
+    if($null -eq $username -or [string]::IsNullOrEmpty($username)) {
+        Write-DosMessage -Level "Error" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool user is not a virtual account and the application pool has a valid user."
+    }
     return $username
 }
 
