@@ -113,7 +113,7 @@ namespace Fabric.Identity.API.Services
         private ClaimsResult GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
         {
             // provider and scheme look the same, but if you see the values
-            //  FabricIdentityConstants.AuthenticationSchemes.Azure = "OpenIdConnect:CatalystAzureAD"
+            //  FabricIdentityConstants.AuthenticationSchemes.Azure = "AzureActiveDirectory"
             // you will notice there are 2 different values, one for the provider and the other for the scheme
             var provider = info.Properties.Items["scheme"];
             var schemeItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme").Value;
