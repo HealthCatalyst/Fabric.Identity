@@ -1041,7 +1041,7 @@ function Find-IISAppPoolUser {
     $appPool = (Get-Item (Join-Path 'IIS:\AppPools\' $appPoolName))
 
     if($appPool.processModel.identityType -eq 'ApplicationPoolIdentity') {
-        Write-DosMessage -Level "Error" -Message "Application Pool users of identity type `"ApplicationPoolIdentity`" are not allowed."
+        return "IIS AppPool\$appPoolName"
     }
 
     $username = $appPool.processModel.username
