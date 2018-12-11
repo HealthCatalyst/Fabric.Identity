@@ -103,7 +103,7 @@
 
         public static class AuthenticationSchemes
         {
-            public const string Azure = "OpenIdConnect:CatalystAzureAD";
+            public const string Azure = "AzureActiveDirectory";
         }
 
         public static class AuthenticationExceptionMessages
