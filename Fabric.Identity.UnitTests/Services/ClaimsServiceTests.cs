@@ -196,6 +196,162 @@ namespace Fabric.Identity.UnitTests.Services
             }
         }
 
+        public class GetEffectiveUserId : ClaimsServiceTests
+        {
+            private ClaimsResult claimResult;
+
+            public GetEffectiveUserId() :
+                base()
+            {
+                claimResult = new ClaimsResult()
+                {
+                    SchemeItem = FabricIdentityConstants.AuthenticationSchemes.Azure
+                };
+            }
+            
+            [Fact]
+            public void GetEffectiveUserId_NullClaimResult_ReturnsException()
+            { 
+                Exception excResult = null;
+
+                try
+                {
+                    var result = subject.GetEffectiveUserId(null);
+                    Assert.True(false, "Should not get past this function call.");
+                }
+                catch (Exception exc)
+                {
+                    excResult = exc;
+                }
+
+                Assert.NotNull(excResult);
+                Assert.IsType<ArgumentNullException>(excResult);
+                Assert.True(excResult.Message.Contains("The object name 'claimInformation' cannot be null."));
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_NonAzureADToken_ReturnsUserIdClaim()
+            {
+                var expectedUserId = TestHelper.GenerateRandomString();
+                this.appConfiguration.AzureAuthenticationEnabled = false;
+                claimResult.SchemeItem = "NotAzure";
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(expectedUserId, result);
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_AzureSetToFalse_ReturnsUserIdClaim()
+            {
+                this.appConfiguration.AzureAuthenticationEnabled = false;
+
+                var expectedUserId = TestHelper.GenerateRandomString();
+                var claimSubjectId = TestHelper.GenerateRandomString();
+                claimResult.SchemeItem = FabricIdentityConstants.AuthenticationSchemes.Azure;
+                claimResult.Claims = new List<Claim>()
+                {
+                    new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId)
+                };
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(expectedUserId, result);
+
+                Assert.Equal<string>(expectedUserId, result);
+                Assert.NotEqual<string>(claimSubjectId, result);
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_SchemeItemNotAzure_ReturnsUserIdClaim()
+            {
+                this.appConfiguration.AzureAuthenticationEnabled = true;
+
+                var expectedUserId = TestHelper.GenerateRandomString();
+                var claimSubjectId = TestHelper.GenerateRandomString();
+                claimResult.SchemeItem = "not azure";
+                claimResult.Claims = new List<Claim>()
+                {
+                    new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId)
+                };
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(expectedUserId, result);
+
+                Assert.Equal<string>(expectedUserId, result);
+                Assert.NotEqual<string>(claimSubjectId, result);
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_NoAzureClaims_ReturnsUserIdClaim()
+            {
+                this.appConfiguration.AzureAuthenticationEnabled = true;
+
+                var expectedUserId = TestHelper.GenerateRandomString();
+                var claimSubjectId = TestHelper.GenerateRandomString();
+                claimResult.SchemeItem = FabricIdentityConstants.AuthenticationSchemes.Azure;
+                claimResult.Claims = new List<Claim>()
+                {
+                    
+                };
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(expectedUserId, result);
+
+                Assert.Equal<string>(expectedUserId, result);
+                Assert.NotEqual<string>(claimSubjectId, result);
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_OIDAzureClaim_ReturnsAzureSubjectId()
+            {
+                this.appConfiguration.AzureAuthenticationEnabled = true;
+
+                var expectedUserId = TestHelper.GenerateRandomString();
+                var claimSubjectId = TestHelper.GenerateRandomString();
+                claimResult.SchemeItem = FabricIdentityConstants.AuthenticationSchemes.Azure;
+                claimResult.Claims = new List<Claim>()
+                {
+                    new Claim(AzureActiveDirectoryJwtClaimTypes.OID, claimSubjectId)
+                };
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(claimSubjectId, result);
+
+                Assert.Equal<string>(claimSubjectId, result);
+                Assert.NotEqual<string>(expectedUserId, result);
+            }
+
+            [Fact]
+            public void GetEffectiveUserId_OIDAlternativeAzureClaim_ReturnsAzureSubjectId()
+            {
+                this.appConfiguration.AzureAuthenticationEnabled = true;
+
+                var expectedUserId = TestHelper.GenerateRandomString();
+                var claimSubjectId = TestHelper.GenerateRandomString();
+                claimResult.SchemeItem = FabricIdentityConstants.AuthenticationSchemes.Azure;
+                claimResult.Claims = new List<Claim>()
+                {
+                    new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId)
+                };
+                claimResult.UserId = expectedUserId;
+
+                var result = subject.GetEffectiveUserId(claimResult);
+
+                Assert.Equal<string>(claimSubjectId, result);
+                Assert.Equal<string>(claimSubjectId, result);
+                Assert.NotEqual<string>(expectedUserId, result);
+            }
+        }
+
         public class GenerateClaimsForIdentityTests : ClaimsServiceTests
         {
             private AuthenticateInfo authenticateInfo;

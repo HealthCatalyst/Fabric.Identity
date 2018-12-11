@@ -247,7 +247,7 @@ namespace IdentityServer4.Quickstart.UI
             //issue authentication cookie for user
             var user = await _userLoginManager.UserLogin(
                 claimInformation.Provider,
-                claimInformation.UserId,
+                _claimsService.GetEffectiveUserId(claimInformation),
                 claimInformation.Claims,
                 claimInformation?.ClientId);
             
