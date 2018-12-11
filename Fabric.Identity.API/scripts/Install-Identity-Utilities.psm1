@@ -1036,7 +1036,7 @@ function Find-IISAppPoolUser {
     $appPoolName = $app.applicationPool
 
     if($null -eq $appPoolName) {
-        Write-DosMessage -Level "Error" -Message "Could not find any application named `"$applicationName`""
+        Write-DosMessage -Level "Fatal" -Message "Could not find any application named `"$applicationName`""
     }
     $appPool = (Get-Item (Join-Path 'IIS:\AppPools\' $appPoolName))
 
@@ -1047,7 +1047,7 @@ function Find-IISAppPoolUser {
     $username = $appPool.processModel.username
 
     if($null -eq $username -or [string]::IsNullOrEmpty($username)) {
-        Write-DosMessage -Level "Error" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool has a valid user."
+        Write-DosMessage -Level "Fatal" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool has a valid user."
     }
     return $username
 }
