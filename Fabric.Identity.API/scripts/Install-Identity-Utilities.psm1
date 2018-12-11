@@ -1041,13 +1041,13 @@ function Find-IISAppPoolUser {
     $appPool = (Get-Item (Join-Path 'IIS:\AppPools\' $appPoolName))
 
     if($appPool.processModel.identityType -eq 'ApplicationPoolIdentity') {
-        Write-DosMessage -Level "Error" -Message "Application Pool users of identity type `"ApplicationPoolIdentity`" are not allowed."
+        Write-DosMessage -Level "Fatal" -Message "Application Pool users of identity type `"ApplicationPoolIdentity`" are not allowed."
     }
 
     $username = $appPool.processModel.username
 
     if($null -eq $username -or [string]::IsNullOrEmpty($username)) {
-        Write-DosMessage -Level "Fatal" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool has a valid user."
+        Write-DosMessage -Level "Fatal" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPoolName`". Please verify that the application pool has a valid user."
     }
     return $username
 }
