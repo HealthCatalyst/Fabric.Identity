@@ -1033,16 +1033,21 @@ function Find-IISAppPoolUser {
         [bool] $quiet
     )
     $app = Get-WebApplicationFromDiscovery -applicationName $applicationName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
-    $appPool = $app.applicationPool
+    $appPoolName = $app.applicationPool
 
-    if($null -eq $appPool) {
+    if($null -eq $appPoolName) {
         Write-DosMessage -Level "Error" -Message "Could not find any application named `"$applicationName`""
     }
+    $appPool = (Get-Item (Join-Path 'IIS:\AppPools\' $appPoolName))
 
-    $username = (Get-Item (Join-Path 'IIS:\AppPools\' $appPool)).processModel.username
+    if($appPool.processModel.identityType -eq 'ApplicationPoolIdentity') {
+        Write-DosMessage -Level "Error" -Message "Application Pool users of identity type `"ApplicationPoolIdentity`" are not allowed."
+    }
+
+    $username = $appPool.processModel.username
 
     if($null -eq $username -or [string]::IsNullOrEmpty($username)) {
-        Write-DosMessage -Level "Error" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool user is not a virtual account and the application pool has a valid user."
+        Write-DosMessage -Level "Error" -Message "Could not find user for application `"$applicationName`" with application pool `"$appPool`". Please verify that the application pool has a valid user."
     }
     return $username
 }
