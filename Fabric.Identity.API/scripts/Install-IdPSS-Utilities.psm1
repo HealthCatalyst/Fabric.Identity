@@ -185,7 +185,7 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
-        [string] $replyUrls,
+        [string[]] $replyUrls,
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
