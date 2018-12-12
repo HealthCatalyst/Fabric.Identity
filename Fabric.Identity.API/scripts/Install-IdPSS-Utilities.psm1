@@ -19,7 +19,7 @@ else {
     Import-Module -Name $azureAD.FullName
 }
 
-function Get-GraphApiReadPermissions() {
+function Get-GraphApiDirectoryReadPermissions() {
     try {
         $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
     }
@@ -47,22 +47,50 @@ function Get-GraphApiReadPermissions() {
     return $readAccess
 }
 
+function Get-GraphApiUserReadPermissions() {
+    try {
+        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
+    }
+    catch {
+        Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
+        throw
+    }
+
+    $directoryReadName = "User.Read"
+    $directoryRead = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $directoryReadName}
+    if($null -eq $directoryRead) {
+        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
+        throw
+    }
+
+    # Convert to proper resource...
+    $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
+        ResourceAppId = $aad.AppId;
+        ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{
+            Id = $directoryRead.Id;
+            Type = "Scope"
+        }
+    }
+
+    return $readAccess
+}
+
+
 function New-FabricAzureADApplication() {
     param(
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
-        [string[]] $replyUrls
+        [string[]] $replyUrls,
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission
     )
-    # Get read permissions
-    $readResource = Get-GraphApiReadPermissions
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $readResource -DisplayName $appName -ReplyUrls $replyUrls
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls
     }
     else {
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $readResource -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls
     }
 
     return $app
@@ -205,7 +233,8 @@ function Register-Identity {
     Write-Host "Enter credentials for $appName specified tenant: $claimsIssuer"
     Connect-AzureADTenant -tenantId $claimsIssuer
 
-    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls
+    $permission = Get-GraphApiUserReadPermissions
+    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
     $clientId = $app.AppId
     $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
@@ -224,9 +253,49 @@ function Register-Identity {
   }
 }
 
+function Register-IdPSS {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $appName,
+        [Parameter(Mandatory=$true)]
+        [string[]] $replyUrls,
+        [Parameter(Mandatory=$true)]
+        [string[]] $tenants,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath
+    )
+    # IdentityProviderSearchService registration
+   if($null -ne $tenants) {
+    foreach($tenant in $tenants) { 
+      Write-Host "Enter credentials for $appName on tenant specified: $tenant"
+      Connect-AzureADTenant -tenantId $tenant
+
+      # Get read permissions
+      $permission = Get-GraphApiDirectoryReadPermissions
+      $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
+      $clientId = $app.AppId
+      $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+
+      Disconnect-AzureAD
+      Add-InstallationTenantSettings -configSection $configSection `
+          -tenantId $tenant `
+          -clientSecret $clientSecret `
+          -clientId $clientId `
+          -installConfigPath $installConfigPath `
+          -appName $appName
+
+      # Manual process, need to give consent this way for now
+      Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+    }
+ }
+}
+
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
 Export-ModuleMember Get-Tenants
 Export-ModuleMember Get-ReplyUrls
 Export-ModuleMember Register-Identity
+Export-ModuleMember Register-IdPSS
