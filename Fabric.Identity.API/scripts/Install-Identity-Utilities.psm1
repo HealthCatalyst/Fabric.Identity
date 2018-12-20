@@ -8,7 +8,7 @@ Import-Module -Name $fabricInstallUtilities -Force
 
 # Import Dos Install Utilities
 $minVersion = [System.Version]::new(1, 0, 164 , 0)
-try{
+try {
     Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minVersion -ErrorAction Stop
 } catch {
     Write-Host "Installing DosInstallUtilities from Powershell Gallery"
