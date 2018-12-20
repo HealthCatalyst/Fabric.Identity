@@ -16,6 +16,8 @@ try {
 }
 Import-Module -Name DosInstallUtilities -Force
 
+$ErrorActionPreference = "Stop"
+
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
     {
