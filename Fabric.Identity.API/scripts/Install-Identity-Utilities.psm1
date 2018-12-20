@@ -293,8 +293,14 @@ function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string]
     }
     $identityDbConnStr = "Server=$($sqlServerAddress);Database=$($identityDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
 
-    Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
-    Write-DosMessage -Level "Information" -Message "Identity DB Connection string: $identityDbConnStr verified"
+    try {
+        Invoke-Sql $identityDbConnStr "SELECT TOP 1 ClientId FROM Clients" | Out-Null
+        Write-DosMessage -Level "Information" -Message "Identity DB Connection string: $identityDbConnStr verified"
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Stop
+        throw $_.Exception
+    }
     if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" $installConfigPath | Out-Null }
     return @{DbName = $identityDbName; DbConnectionString = $identityDbConnStr}
 }
@@ -308,8 +314,14 @@ function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string]
     }
     $metadataConnStr = "Server=$($sqlServerAddress);Database=$($metadataDbName);Trusted_Connection=True;MultipleActiveResultSets=True;"
 
-    Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
-    Write-DosMessage -Level "Information" -Message "Metadata DB Connection string: $metadataConnStr verified"
+    try {
+        Invoke-Sql $metadataConnStr "SELECT TOP 1 RoleID FROM CatalystAdmin.RoleBASE" | Out-Null
+        Write-DosMessage -Level "Information" -Message "Metadata DB Connection string: $metadataConnStr verified"
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Stop
+        throw $_.Exception
+    }
     if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" $installConfigPath | Out-Null }
     return @{DbName = $metadataDbName; DbConnectionString = $metadataConnStr}
 }
@@ -538,7 +550,13 @@ function Add-DatabaseLogin([string] $userName, [string] $connString)
                 set @sql = 'CREATE LOGIN ' + QUOTENAME('$userName') + ' FROM WINDOWS'
                 EXEC sp_executesql @sql
             END"
-    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    try {
+        Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Continue
+        throw $_.Exception
+    }
 }
 
 function Add-DatabaseUser([string] $userName, [string] $connString)
@@ -550,7 +568,13 @@ function Add-DatabaseUser([string] $userName, [string] $connString)
                 set @sql = 'CREATE USER ' + QUOTENAME('$userName') + ' FOR LOGIN ' + QUOTENAME('$userName')
                 EXEC sp_executesql @sql
             END"
-    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    try {
+        Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Continue
+        throw $_.Exception
+    }
 }
 
 function Add-DatabaseUserToRole([string] $userName, [string] $connString, [string] $role)
@@ -562,7 +586,13 @@ function Add-DatabaseUserToRole([string] $userName, [string] $connString, [strin
                 print '-- Adding @role to @userName';
                 EXEC sp_addrolemember @role, @userName;
             END"
-    Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
+    try {
+        Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Continue
+        throw $_.Exception
+    }
 }
 function Add-ServiceUserToDiscovery([string] $userName, [string] $connString){
 
@@ -583,7 +613,13 @@ function Add-ServiceUserToDiscovery([string] $userName, [string] $connString){
                     print ''-- Assigning Discovery Service user'';
                     INSERT INTO CatalystAdmin.IdentityRoleBASE (IdentityID, RoleID) VALUES (@IdentityID, @DiscoveryServiceUserRoleID);
                 END"
-    Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    try {
+        Invoke-Sql $connString $query @{userName=$userName} | Out-Null
+    }
+    catch {
+        Write-Error $_.Exception -ErrorAction Continue
+        throw $_.Exception
+    }
 }
 
 function Restart-W3SVC(){
@@ -826,50 +862,50 @@ function Set-IdentityEnvironmentAzureVariables {
     )
     $environmentVariables = @{}
 
-	if($useAzure -eq $true)
-	{
-		$scope = "identity"
-		# Alter Identity web.config for azure
-		$clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
-		$allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-			-scope $scope `
-			-setting "allowedTenants"
+    if($useAzure -eq $true)
+    {
+        $scope = "identity"
+        # Alter Identity web.config for azure
+        $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+        $allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+            -scope $scope `
+            -setting "allowedTenants"
 
-		$claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
-			-scope $scope `
-			-setting "claimsIssuerTenant"
+        $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+            -scope $scope `
+            -setting "claimsIssuerTenant"
 
-		# Set Azure Settings
-		$environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
-		$environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
-		$environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
-		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
-		$environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
-		$environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
+        # Set Azure Settings
+        $environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
+        $environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
+        $environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+        $environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
+        $environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
+        $environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
 
-		$secret = $clientSettings.clientSecret
-			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-				# Encrypt secret in install.config if not encrypted
-				Add-InstallationTenantSettings -configSection "identity" `
-					-tenantId $clientSettings.tenantId `
-					-clientSecret $encryptedSecret `
-					-clientId $clientSettings.clientId `
-					-installConfigPath $installConfigPath `
-					-appName "Identity Service"
+        $secret = $clientSettings.clientSecret
+            if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+                # Encrypt secret in install.config if not encrypted
+                Add-InstallationTenantSettings -configSection "identity" `
+                    -tenantId $clientSettings.tenantId `
+                    -clientSecret $encryptedSecret `
+                    -clientId $clientSettings.clientId `
+                    -installConfigPath $installConfigPath `
+                    -appName "Identity Service"
 
-				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
-			}
-			else{
-				$environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
-			}
+                $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
+            }
+            else{
+                $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
+            }
 
-		foreach($allowedTenant in $allowedTenants)
-		{
-		  $index = $allowedTenants.IndexOf($allowedTenant)
-		  $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
-		}
-	}
+        foreach($allowedTenant in $allowedTenants)
+        {
+          $index = $allowedTenants.IndexOf($allowedTenant)
+          $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
+        }
+    }
 
     if($useAzure -eq $true) {
         $environmentVariables.Add("AzureAuthenticationEnabled", "true")
@@ -948,55 +984,55 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
-	Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
+    Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
-	
+    
     if($appInsightsInstrumentationKey){
         $appSettings.Add("ApplicationInsights:Enabled", "true")
         $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
     }
 
-	if ($useAzure -eq $true)
-	{
-	    # Alter IdPSS web.config for azure
-		$clientSettings = @()
-		$clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
+    if ($useAzure -eq $true)
+    {
+        # Alter IdPSS web.config for azure
+        $clientSettings = @()
+        $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
 
-		if ($encryptionCertificateThumbprint){
+        if ($encryptionCertificateThumbprint){
         $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
         }
 
-		# Set Azure Settings
-		$defaultScope = "https://graph.microsoft.com/.default"
-		$appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
-		$appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
+        # Set Azure Settings
+        $defaultScope = "https://graph.microsoft.com/.default"
+        $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
+        $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
 
-		foreach($setting in $clientSettings) {
-			$index = $clientSettings.IndexOf($setting)
-			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
-			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+        foreach($setting in $clientSettings) {
+            $index = $clientSettings.IndexOf($setting)
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
 
-			# Currently only a single default scope is expected
-			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+            # Currently only a single default scope is expected
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
 
-			$secret = $setting.clientSecret
-			if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-				$encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-				# Encrypt secret in install.config if not encrypted
-				Add-InstallationTenantSettings -configSection "identity" `
-					-tenantId $setting.tenantId `
-					-clientSecret $encryptedSecret `
-					-clientId $setting.clientId `
-					-installConfigPath $installConfigPath `
-					-appName $appName
+            $secret = $setting.clientSecret
+            if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+                # Encrypt secret in install.config if not encrypted
+                Add-InstallationTenantSettings -configSection "identity" `
+                    -tenantId $setting.tenantId `
+                    -clientSecret $encryptedSecret `
+                    -clientId $setting.clientId `
+                    -installConfigPath $installConfigPath `
+                    -appName $appName
 
-				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
-			}
-			else{
-				$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
-			}
-		}
-	}
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+            }
+            else{
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+            }
+        }
+    }
 
     if($useAzure -eq $true) {
         $appSettings.Add("UseAzureAuthentication", "true")
