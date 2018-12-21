@@ -35,9 +35,15 @@ if(!(Test-IsRunAsAdministrator))
     throw
 }
 
+$ErrorActionPreference = "Stop"
+
 Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
+
+$commonSettingsScope = "common"
+$commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $installConfigPath
+Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
