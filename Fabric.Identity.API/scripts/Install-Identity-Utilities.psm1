@@ -16,8 +16,6 @@ try {
 }
 Import-Module -Name DosInstallUtilities -Force
 
-$ErrorActionPreference = "Stop"
-
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
     {
@@ -300,8 +298,7 @@ function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string]
         Write-DosMessage -Level "Information" -Message "Identity DB Connection string: $identityDbConnStr verified"
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Stop
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($identityDbConnStr). Error $($_.Exception)"
     }
     if($identityDbName){ Add-InstallationSetting "identity" "identityDbName" "$identityDbName" $installConfigPath | Out-Null }
     return @{DbName = $identityDbName; DbConnectionString = $identityDbConnStr}
@@ -321,8 +318,7 @@ function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string]
         Write-DosMessage -Level "Information" -Message "Metadata DB Connection string: $metadataConnStr verified"
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Stop
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($metadataConnStr). Error $($_.Exception)"
     }
     if($metadataDbName){ Add-InstallationSetting "common" "metadataDbName" "$metadataDbName" $installConfigPath | Out-Null }
     return @{DbName = $metadataDbName; DbConnectionString = $metadataConnStr}
@@ -556,8 +552,7 @@ function Add-DatabaseLogin([string] $userName, [string] $connString)
         Invoke-Sql $connString $query @{userName=$userName} | Out-Null
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Continue
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($connString). Error $($_.Exception)"
     }
 }
 
@@ -574,8 +569,7 @@ function Add-DatabaseUser([string] $userName, [string] $connString)
         Invoke-Sql $connString $query @{userName=$userName} | Out-Null
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Continue
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($connString). Error $($_.Exception)"
     }
 }
 
@@ -592,8 +586,7 @@ function Add-DatabaseUserToRole([string] $userName, [string] $connString, [strin
         Invoke-Sql $connString $query @{userName=$userName; role=$role} | Out-Null
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Continue
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($connString). Error $($_.Exception)"
     }
 }
 function Add-ServiceUserToDiscovery([string] $userName, [string] $connString){
@@ -619,8 +612,7 @@ function Add-ServiceUserToDiscovery([string] $userName, [string] $connString){
         Invoke-Sql $connString $query @{userName=$userName} | Out-Null
     }
     catch {
-        Write-Error $_.Exception -ErrorAction Continue
-        throw $_.Exception
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($connString). Error $($_.Exception)"
     }
 }
 
@@ -1080,6 +1072,16 @@ function Find-IISAppPoolUser {
     return $username
 }
 
+function Set-LoggingConfiguration{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+    if(!([string]::IsNullOrEmpty($commonConfig.minimumLoggingLevel)) -and !([string]::IsNullOrEmpty($commonConfig.logFilePath))){
+        Set-DosMessageConfiguration -LoggingMode Both -MinimumLoggingLevel $commonConfig.minimumLoggingLevel -LogFilePath $commonConfig.logFilePath
+    }
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1110,3 +1112,4 @@ Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
 Export-ModuleMember Find-IISAppPoolUser
+Export-ModuleMember Set-LoggingConfiguration
