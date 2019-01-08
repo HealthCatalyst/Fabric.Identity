@@ -530,13 +530,6 @@ function Test-RegistrationComplete([string] $authUrl)
     return $false
 }
 
-function Test-MeetsMinimumRequiredPowerShellVerion([int] $majorVersion){
-    if($PSVersionTable.PSVersion.Major -lt $majorVersion){
-        Write-DosMessage -Level "Error" -Message "PowerShell version $majorVersion is the minimum required version to run this installation. PowerShell version $($PSVersionTable.PSVersion) is currently installed."
-        throw
-    }
-}
-
 function Add-DatabaseLogin([string] $userName, [string] $connString)
 {
     $query = "USE master
@@ -1104,7 +1097,6 @@ Export-ModuleMember Add-IdentityClientRegistration
 Export-ModuleMember Add-SecureIdentityEnvironmentVariables
 Export-ModuleMember Test-RegistrationComplete
 Export-ModuleMember Add-InstallerClientRegistration
-Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
 Export-ModuleMember Get-WebConfigPath
 Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Get-SettingsFromInstallConfig

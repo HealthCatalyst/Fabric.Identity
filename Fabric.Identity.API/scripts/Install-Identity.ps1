@@ -17,6 +17,16 @@ param(
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
+# Check powershell version before importing modules that may contain functions that are not available
+function Test-MeetsMinimumRequiredPowerShellVerion([int] $majorVersion){
+    if($PSVersionTable.PSVersion.Major -lt $majorVersion){
+        Write-Error -Message "PowerShell version $majorVersion is the minimum required version to run this installation. PowerShell version $($PSVersionTable.PSVersion) is currently installed."
+        throw
+    }
+}
+
+Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 5
+
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
@@ -26,8 +36,6 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
     Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities
 }
 Import-Module -Name $fabricInstallUtilities -Force
-
-Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 5
 
 if(!(Test-IsRunAsAdministrator))
 {
