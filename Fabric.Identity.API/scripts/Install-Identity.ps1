@@ -18,14 +18,14 @@ param(
     [switch] $quiet
 )
 # Check powershell version before importing modules that may contain functions that are not available
-function Test-MeetsMinimumRequiredPowerShellVerion([int] $majorVersion){
+function Test-MeetsMinimumRequiredPowerShellVersion([int] $majorVersion){
     if($PSVersionTable.PSVersion.Major -lt $majorVersion){
         Write-Error -Message "PowerShell version $majorVersion is the minimum required version to run this installation. PowerShell version $($PSVersionTable.PSVersion) is currently installed."
         throw
     }
 }
 
-Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 5
+Test-MeetsMinimumRequiredPowerShellVersion -majorVersion 5
 
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
