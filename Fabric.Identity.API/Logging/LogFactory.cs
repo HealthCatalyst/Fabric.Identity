@@ -49,7 +49,8 @@ namespace Fabric.Identity.API.Logging
                 .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.FromLogContext()        
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
-                .WriteTo.ColoredConsole();
+                .WriteTo.ColoredConsole()
+                .WriteTo.File("identitylog.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 40);
         }
     }
 }
