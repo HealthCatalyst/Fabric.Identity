@@ -189,12 +189,8 @@ namespace Fabric.Identity.API
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
             });
-            if (_appConfig.ApplicationInsights.Enabled &&
-                !string.IsNullOrWhiteSpace(_appConfig.ApplicationInsights.InstrumentationKey))
-            {
-                services.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
-                services.AddApplicationInsightsTelemetry(_appConfig.ApplicationInsights.InstrumentationKey);
-            }
+
+            services.AddTelemetry(_appConfig.ApplicationInsights);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -29,7 +29,8 @@
 
         public static class FabricClaimTypes
         {
-            public static readonly string Groups = "groups";            
+            public static readonly string Groups = "groups";
+            public static readonly string FabricId = "fid";
         }
 
         public static class FabricCouchDbDesignDocumentDefinitions

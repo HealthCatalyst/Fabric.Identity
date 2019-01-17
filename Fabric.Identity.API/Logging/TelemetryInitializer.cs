@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Fabric.Identity.API.Configuration;
+using IdentityModel;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +40,19 @@ namespace Fabric.Identity.API.Logging
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext != null)
             {
-                //telemetry.Context.User.Id = httpContext.User?.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+                if (httpContext.User?.Claims.FirstOrDefault(
+                        c => c.Type == FabricIdentityConstants.FabricClaimTypes.FabricId) != null)
+                {
+                    telemetry.Context.User.Id = httpContext.User?.Claims
+                        .FirstOrDefault(c => c.Type == FabricIdentityConstants.FabricClaimTypes.FabricId)
+                        ?.Value;
+                }
+                else
+                {
+                    telemetry.Context.User.Id = httpContext.User?.Claims
+                        .FirstOrDefault(c => c.Type == JwtClaimTypes.Subject)
+                        ?.Value;
+                }
             }
         }
     }

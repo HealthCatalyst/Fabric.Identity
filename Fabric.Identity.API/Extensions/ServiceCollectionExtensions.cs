@@ -3,11 +3,13 @@ using System.Linq;
 using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
+using Fabric.Identity.API.Logging;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -121,6 +123,19 @@ namespace Fabric.Identity.API.Extensions
                     FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim,
                     policy => policy.Requirements.Add(new SearchUserScopeRequirement()));
             });
+
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddTelemetry(this IServiceCollection serviceCollection,
+            ApplicationInsights applicationInsights)
+        {
+            if (applicationInsights.Enabled &&
+                !string.IsNullOrWhiteSpace(applicationInsights.InstrumentationKey))
+            {
+                serviceCollection.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
+                serviceCollection.AddApplicationInsightsTelemetry(applicationInsights.InstrumentationKey);
+            }
 
             return serviceCollection;
         }
