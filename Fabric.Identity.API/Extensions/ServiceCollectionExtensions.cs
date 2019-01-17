@@ -130,12 +130,8 @@ namespace Fabric.Identity.API.Extensions
         public static IServiceCollection AddTelemetry(this IServiceCollection serviceCollection,
             ApplicationInsights applicationInsights)
         {
-            if (applicationInsights.Enabled &&
-                !string.IsNullOrWhiteSpace(applicationInsights.InstrumentationKey))
-            {
-                serviceCollection.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
-                serviceCollection.AddApplicationInsightsTelemetry(applicationInsights.InstrumentationKey);
-            }
+            serviceCollection.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
+            serviceCollection.AddApplicationInsightsTelemetry(applicationInsights.InstrumentationKey);
 
             return serviceCollection;
         }
