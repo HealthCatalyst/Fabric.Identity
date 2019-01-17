@@ -12,6 +12,7 @@ using Fabric.Identity.API.Extensions;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Infrastructure.Monitoring;
 using Fabric.Identity.API.Infrastructure.QueryStringBinding;
+using Fabric.Identity.API.Logging;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
@@ -19,6 +20,7 @@ using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -187,6 +189,12 @@ namespace Fabric.Identity.API
                 c.IncludeXmlComments(XmlCommentsFilePath);
                 c.DescribeAllEnumsAsStrings();
             });
+            if (_appConfig.ApplicationInsights.Enabled &&
+                !string.IsNullOrWhiteSpace(_appConfig.ApplicationInsights.InstrumentationKey))
+            {
+                services.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
+                services.AddApplicationInsightsTelemetry(_appConfig.ApplicationInsights.InstrumentationKey);
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

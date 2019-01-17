@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Fabric.Identity.API.Configuration;
 using Serilog;
 using Serilog.Core;
@@ -45,12 +46,13 @@ namespace Fabric.Identity.API.Logging
 
         private static LoggerConfiguration CreateLoggerConfiguration(LoggingLevelSwitch levelSwitch)
         {
+            var logFilePath = Path.Combine("logs", "identitylog.txt");
             return new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.FromLogContext()        
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .WriteTo.ColoredConsole()
-                .WriteTo.File("identitylog.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 40);
+                .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 40);
         }
     }
 }

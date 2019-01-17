@@ -14,7 +14,6 @@ namespace Fabric.Identity.API
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
-                .UseApplicationInsights()
                 .UseIisIntegrationIfConfigured(appConfig)
                 .UseUrls("http://*:5001")
                 .Build();

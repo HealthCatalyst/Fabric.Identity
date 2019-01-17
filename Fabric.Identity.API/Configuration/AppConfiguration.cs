@@ -11,6 +11,7 @@ namespace Fabric.Identity.API.Configuration
         public string IssuerUri { get; set; }
         public bool LogToFile { get; set; }
         public string ClientName { get; set; }
+        public string ClientEnvironment { get; set; }
         public string RegistrationAdminGroup { get; set; }
         public bool AllowLocalLogin { get; set; }
         public bool WindowsAuthenticationEnabled { get; set; }

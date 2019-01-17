@@ -9,6 +9,7 @@ namespace Fabric.Identity.API.Configuration
         string IssuerUri { get; }
         bool LogToFile { get; }
         string ClientName { get; }
+        string ClientEnvironment { get; }
         string RegistrationAdminGroup { get; }
         bool AllowLocalLogin { get; }
         bool WindowsAuthenticationEnabled { get; }
