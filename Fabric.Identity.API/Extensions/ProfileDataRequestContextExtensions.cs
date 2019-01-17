@@ -43,8 +43,7 @@ namespace Fabric.Identity.API.Extensions
         /// <param name="logger">The logger.</param>
         public static void LogProfileRequest(this ProfileDataRequestContext context, ILogger logger)
         {
-            logger.Debug("Get profile called for subject {subject} from client {client} with claim types {claimTypes} via {caller}",
-                context.Subject.GetSubjectId(),
+            logger.Debug("Get profile called for subject from client {client} with claim types {claimTypes} via {caller}",
                 context.Client.ClientName ?? context.Client.ClientId,
                 context.RequestedClaimTypes,
                 context.Caller);

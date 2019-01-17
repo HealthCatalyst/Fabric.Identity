@@ -27,7 +27,7 @@ namespace Fabric.Identity.API.Management
             var user = await _userStore.FindByExternalProviderAsync(provider, subjectId);
             if (user == null)
             {
-                _logger.Information($"user was not found. subjectId: {subjectId} provider: {provider}");
+                _logger.Information($"user was not found. Creating.");
                 user = CreateNewUser(provider, subjectId, claims, clientId);
                 await _userStore.AddUserAsync(user);
                 return user;

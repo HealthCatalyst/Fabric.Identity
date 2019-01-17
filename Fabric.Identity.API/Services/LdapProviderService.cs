@@ -27,10 +27,10 @@ namespace Fabric.Identity.API.Services
         {
             if (!subjectId.Contains(@"\"))
             {
-                _logger.Information("subjectId '{subjectId}' was not in the correct format. Expected DOMAIN\\username.", subjectId);
+                _logger.Information("subjectId was not in the correct format. Expected DOMAIN\\username.", subjectId);
                 return Task.FromResult(new ExternalUser());
             }
-            _logger.Debug("Searching LDAP for '{subjectId}'.", subjectId);
+            _logger.Debug("Searching LDAP for subject.");
             var subjectIdParts = subjectId.Split('\\');
             var accountName = subjectIdParts[subjectIdParts.Length - 1];
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(sAMAccountName={accountName}))";
@@ -55,12 +55,12 @@ namespace Fabric.Identity.API.Services
             catch (LdapException ex)
             {
                 // catch and log the error so we degrade gracefully when we can't connect to LDAP
-                _logger.Error(ex, "LDAP Error when attempting to query LDAD with search: {searchText}", ldapQuery);
+                _logger.Error(ex, "LDAP Error when attempting to query LDAP");
             }
             catch (BrokenCircuitException ex)
             {
                 // catch and log the error so we degrade gracefully when we can't connect to LDAP
-                _logger.Error(ex, "LdapProviderService circuit breaker is in an open state, not attempting to connect to LDAP", ldapQuery);
+                _logger.Error(ex, "LdapProviderService circuit breaker is in an open state, not attempting to connect to LDAP");
             }
             return users;
         }
@@ -75,14 +75,14 @@ namespace Fabric.Identity.API.Services
                     _logger.Warning("Could not get an LDAP connection.");
                     return users;
                 }
-                _logger.Debug("Searching LDAP with query: {ldapQuery} and BaseDN: {baseDn}.", ldapQuery, _ldapConnectionProvider.BaseDn);
+                _logger.Debug("Searching LDAP.", ldapQuery, _ldapConnectionProvider.BaseDn);
                 var results = ldapConnection.Search(_ldapConnectionProvider.BaseDn, LdapConnection.SCOPE_SUB, ldapQuery, null, false);
                 while (results.hasMore())
                 {
                     try
                     {
                         var next = results.next();
-                        _logger.Debug("Found entry with DN: {DN}", next.DN);
+                        _logger.Debug("Found entry", next.DN);
                         var attributeSet = next.getAttributeSet();
                         var user = new ExternalUser
                         {
@@ -98,7 +98,6 @@ namespace Fabric.Identity.API.Services
                             SubjectId = GetSubjectId(attributeSet.getAttribute("SAMACCOUNTNAME")?.StringValue, next.DN)
                         };
                         users.Add(user);
-                        _logger.Debug("User: {@user}", user);
                     }
                     catch (LdapReferralException ex)
                     {

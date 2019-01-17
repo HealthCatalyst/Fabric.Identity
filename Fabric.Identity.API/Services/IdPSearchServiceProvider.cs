@@ -102,7 +102,7 @@ namespace Fabric.Identity.API.Services
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     _logger.Error(
-                        $"no user principal was found for subject id: {subjectId}. response status code: {response.StatusCode}.");
+                        $"no user principal was found. response status code: {response.StatusCode}.");
                     _logger.Error($"response from search service: {responseContent}");
                     return null;
                 }

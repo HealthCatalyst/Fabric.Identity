@@ -344,8 +344,6 @@ namespace IdentityServer4.Quickstart.UI
 
         private ObjectResult LogAndReturnStatus(int statusCode, string logMessage, string userMessage = null)
         {
-            var returnMessage = userMessage ?? logMessage;
-
             _logger.Error(logMessage);
             return this.StatusCode(statusCode, userMessage);
         }

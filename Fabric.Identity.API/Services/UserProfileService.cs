@@ -58,7 +58,7 @@ namespace Fabric.Identity.API.Services
         public async Task IsActiveAsync(IsActiveContext context)
         {
             var sub = context.Subject.GetSubjectId();
-            _logger.Debug($"found sub from IsActiveContext: {sub}");
+            _logger.Debug($"found sub from IsActiveContext");
             var user = await _userStore.FindBySubjectIdAsync(sub);
 
             context.IsActive = user != null;

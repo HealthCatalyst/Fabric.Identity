@@ -20,7 +20,6 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 
         public async Task<User> FindBySubjectIdAsync(string subjectId)
         {
-            _logger.Debug($"finding user with subject id: {subjectId}");
             var user = await _documentDbService.GetDocuments<User>(
                 $"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{subjectId.ToLower()}");
             return user?.FirstOrDefault();
@@ -28,7 +27,6 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
 
         public async Task<User> FindByExternalProviderAsync(string provider, string subjectId)
         {
-            _logger.Debug($"finding user with subject id: {subjectId} and provider: {provider}");
             var user = await _documentDbService.GetDocuments<User>(
                 $"{FabricIdentityConstants.DocumentTypes.UserDocumentType}{GetUserDocumentId(subjectId, provider)}");
 
@@ -43,16 +41,12 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
         public Task<User> AddUserAsync(User user)
         {
             _documentDbService.AddDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
-            _logger.Debug(
-                $"added user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
             return Task.FromResult(user);
         }
 
         public void UpdateUser(User user)
         {
             _documentDbService.UpdateDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
-            _logger.Debug(
-                $"updated user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
         }
 
         public Task UpdateUserAsync(User user)
