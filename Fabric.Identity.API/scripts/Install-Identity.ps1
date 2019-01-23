@@ -68,6 +68,14 @@ $installApplication = Publish-Application -site $selectedSite `
                  -zipPackage $zipPackage `
                  -assembly "Fabric.Identity.API.dll"
 
+# Get Idpss app pool user 
+# Create log directory with read/write permissions for app pool user
+$idpssName = "IdentityProviderSearchService"
+$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
+$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
+New-AppRoot $idpssDirectory $idpssAppPoolUser
+
+
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
     Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
@@ -102,7 +110,6 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-$idpssName = "IdentityProviderSearchService"
 $idpssConfig = Get-WebConfigPath -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
 
 $useAzure = $installSettings.useAzureAD
@@ -118,7 +125,6 @@ if($null -eq $useWindows) {
 }
 
 if($useAzure) {
-    $idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
     Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
 }
 
