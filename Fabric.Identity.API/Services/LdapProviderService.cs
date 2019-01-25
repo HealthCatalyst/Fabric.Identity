@@ -55,7 +55,7 @@ namespace Fabric.Identity.API.Services
             catch (LdapException ex)
             {
                 // catch and log the error so we degrade gracefully when we can't connect to LDAP
-                _logger.Error(ex, "LDAP Error when attempting to query LDAD with search: {searchText}", ldapQuery);
+                _logger.Error(ex, "LDAP Error when attempting to query LDAP with search: {searchText}", ldapQuery);
             }
             catch (BrokenCircuitException ex)
             {
