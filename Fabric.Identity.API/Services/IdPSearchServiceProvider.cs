@@ -43,10 +43,10 @@ namespace Fabric.Identity.API.Services
             }
 
             ExternalUser user = null;
-            
+
             try
             {
-                user = await _policyProvider.IdPSearchServiceErrorPolicy.Execute(() => SearchForUser(subjectId));
+                user = await _policyProvider.IdPSearchServiceErrorPolicy.ExecuteAsync(() => SearchForUser(subjectId));
             }
             catch (BrokenCircuitException ex)
             {
@@ -122,7 +122,7 @@ namespace Fabric.Identity.API.Services
                 var baseException = e.GetBaseException();
 
                 _logger.Error($"there was an error connecting to the search service: {baseException.Message}");
-                return null;
+                throw;
             }
         }
 

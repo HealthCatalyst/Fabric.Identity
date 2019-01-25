@@ -12,6 +12,6 @@ namespace Fabric.Identity.API.Infrastructure
             .CircuitBreaker(5, TimeSpan.FromMinutes(5));
 
         public readonly CircuitBreakerPolicy IdPSearchServiceErrorPolicy = Policy.Handle<HttpRequestException>()
-            .CircuitBreaker(5, TimeSpan.FromMinutes(5));
+            .CircuitBreakerAsync(5, TimeSpan.FromMinutes(5));
     }
 }
