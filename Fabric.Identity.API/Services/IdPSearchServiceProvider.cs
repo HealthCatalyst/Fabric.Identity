@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
@@ -46,7 +47,7 @@ namespace Fabric.Identity.API.Services
 
             try
             {
-                user = await _policyProvider.IdPSearchServicePolicy.ExecuteAsync(() =>  SearchForUser(subjectId));
+                user = await _policyProvider.IdPSearchServicePolicy.ExecuteAsync(() => SearchForUser(subjectId));
             }
             catch (BrokenCircuitException ex)
             {
@@ -94,7 +95,9 @@ namespace Fabric.Identity.API.Services
             {
                 _logger.Information($"searching for user with url: {searchServiceUrl}");
 
-                var response = await _httpClient.SendAsync(httpRequestMessage);
+                var cancellationTokenSource = new CancellationTokenSource(5000);
+                var cancellationToken = cancellationTokenSource.Token;
+                var response = await _httpClient.SendAsync(httpRequestMessage, cancellationToken);
 
                 var responseContent =
                     response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync();
@@ -117,11 +120,16 @@ namespace Fabric.Identity.API.Services
                     SubjectId = result.SubjectId
                 };
             }
+            catch (TaskCanceledException e)
+            {
+                _logger.Error($"The request to the search service was canceled: {e.Message}");
+                throw;
+            }
             catch (HttpRequestException e)
             {
                 var baseException = e.GetBaseException();
 
-                _logger.Error($"there was an error connecting to the search service: {baseException.Message}");
+                _logger.Error($"There was an error connecting to the search service: {baseException.Message}");
                 throw;
             }
         }
