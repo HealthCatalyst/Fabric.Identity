@@ -46,7 +46,7 @@ namespace Fabric.Identity.API.Services
 
             try
             {
-                user = await _policyProvider.IdPSearchServiceErrorPolicy.ExecuteAsync(() => SearchForUser(subjectId));
+                user = await _policyProvider.IdPSearchServicePolicy.ExecuteAsync(() =>  SearchForUser(subjectId));
             }
             catch (BrokenCircuitException ex)
             {
