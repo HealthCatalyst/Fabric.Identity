@@ -13,6 +13,7 @@ namespace IdentityServer4.Quickstart.UI
     {
         public bool AllowRememberLogin { get; set; }
         public bool EnableLocalLogin { get; set; }
+        public bool TestCookieExists { get; set; }
 
         public IEnumerable<ExternalProvider> ExternalProviders { get; set; }
         public IEnumerable<ExternalProvider> VisibleExternalProviders => ExternalProviders.Where(x => !String.IsNullOrWhiteSpace(x.DisplayName));
