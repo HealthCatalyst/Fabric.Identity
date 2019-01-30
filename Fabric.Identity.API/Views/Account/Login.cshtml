@@ -7,32 +7,34 @@
                     <div class="logo item">
                         <img src="~/images/HC_logo.svg" alt="Health Catalyst Logo">
                     </div>
-                    @if (Model.EnableLocalLogin)
+                    @if (Model.TestCookieExists)
                     {
-                        <form asp-route="Login">
-                            <input type="hidden" asp-for="ReturnUrl"/>
-
-                            <label asp-for="Username">Email</label>
-                            <div>
-                                <input asp-for="Username" placeholder="Email" autofocus>
-                            </div>
-                            <label asp-for="Password">Password</label>
-                            <a id="forgotpwd" href="#">Forgot Password?</a>
-                            <div>
-                                <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
-                            </div>
-                            @if (Model.AllowRememberLogin)
+                        <div>
+                            @if (Model.EnableLocalLogin)
                             {
-                                <div class="checkbox">
-                                    <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
-                                </div>
+                                <form asp-route="Login">
+                                    <input type="hidden" asp-for="ReturnUrl" />
+                                    <label asp-for="Username">Email</label>
+                                    <div>
+                                        <input asp-for="Username" placeholder="Email" autofocus>
+                                    </div>
+                                    <label asp-for="Password">Password</label>
+                                    <a id="forgotpwd" href="#">Forgot Password?</a>
+                                    <div>
+                                        <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
+                                    </div>
+                                    @if (Model.AllowRememberLogin)
+                                    {
+                                        <div class="checkbox">
+                                            <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
+                                        </div>
+                                    }
+                                    <p class="legal">
+                                        By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
+                                    </p>
+                                    <input value="Log In" name="login_but" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
+                                </form>
                             }
-                            <p class="legal">
-                                By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
-                            </p>
-                            <input value="Log In" name="login_but" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
-                        </form>
-                    }
                             <label>Log in with:</label>
                             @foreach (var provider in Model.VisibleExternalProviders)
                             {
@@ -45,10 +47,26 @@
                                     </a>
                                 </div>
                             }
-                    <div id="login-footer">
-                        <h5><span>New to Health Catalyst?</span></h5>
-                        <a class="tert-btn" href="#"><span>Create a new account</span></a>
-                    </div>
+                            <div id="login-footer">
+                                <h5><span>New to Health Catalyst?</span></h5>
+                                <a class="tert-btn" href="#"><span>Create a new account</span></a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!--The wording used here is borrowed from the same error message when signing into Azure AD.-->
+                        <h3>We can't sign you in</h3>
+                        <div>
+                            <label>Your browser is currently set to block cookies. You need to allow cookies to use this service.</label>
+                        </div>
+                        <div>
+                            <label>
+                                Cookies are small text files stored on your computer that tell us when you're signed in.
+                                To learn how to allow cookies, check the online help in your web browser.
+                            </label>
+                        </div>
+                    }
                 </div>
             </div>
             <br><br><br>
@@ -73,4 +91,3 @@
             </div>
         </div>
 </div>
-

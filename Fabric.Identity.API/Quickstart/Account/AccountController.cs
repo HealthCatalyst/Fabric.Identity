@@ -94,11 +94,20 @@ namespace IdentityServer4.Quickstart.UI
         /// Show login page
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Login(string returnUrl)
+        public async Task<IActionResult> Login(string returnUrl, bool testCookieSet = false)
         {
+            if (!testCookieSet)
+            {
+                HttpContext.Response.Cookies.Append("testCookie", "test");
+
+                return RedirectToAction("Login", new {returnUrl, testCookieSet = true});
+            }
+
             var vm = await _accountService.BuildLoginViewModelAsync(returnUrl);
 
-            if (vm.IsExternalLoginOnly)
+            vm.TestCookieExists = Request.Cookies.ContainsKey("testCookie");
+
+            if (vm.IsExternalLoginOnly && vm.TestCookieExists)
             {
                 // only one option for logging in
                 return await ExternalLogin(vm.ExternalLoginScheme, returnUrl);
