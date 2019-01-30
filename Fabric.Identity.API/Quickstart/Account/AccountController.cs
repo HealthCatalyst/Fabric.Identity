@@ -98,7 +98,10 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (!testCookieSet)
             {
-                HttpContext.Response.Cookies.Append("testCookie", "test");
+                HttpContext.Response.Cookies.Append("testCookie", "test", new CookieOptions
+                {
+                    Expires = DateTimeOffset.Now.AddSeconds(10)
+                });
 
                 return RedirectToAction("Login", new {returnUrl, testCookieSet = true});
             }
