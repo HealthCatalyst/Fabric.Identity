@@ -82,7 +82,7 @@ namespace Fabric.Identity.API
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
             var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
 
-            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings);
+            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings, _appConfig.ApplicationInsights);
             var serilogEventSink = new SerilogEventSink(eventLogger);
 
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
