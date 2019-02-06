@@ -71,6 +71,11 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             return apiResource?.ToModel();
         }
 
+        public async Task<Resources> GetAllResourcesAsync()
+        {
+            return await GetAllResources();
+        }
+
         public async Task<Resources> GetAllResources()
         {
             var identity = IdentityDbContext.IdentityResources

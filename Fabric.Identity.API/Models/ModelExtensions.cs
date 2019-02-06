@@ -45,7 +45,7 @@ namespace Fabric.Identity.API.Models
                     Enabled = client.Enabled,
                     ClientId = client.ClientId,
                     RequireClientSecret = client.RequireClientSecret,
-                    AllowedGrantTypes = client.AllowedGrantTypes,
+                    AllowedGrantTypes = client.AllowedGrantTypes.ToList(),
                     RequirePkce = client.RequirePkce,
                     AllowPlainTextPkce = client.AllowPlainTextPkce,
                     RedirectUris = client.RedirectUris,
@@ -58,8 +58,8 @@ namespace Fabric.Identity.API.Models
                     PostLogoutRedirectUris = client.PostLogoutRedirectUris,
                     EnableLocalLogin = client.EnableLocalLogin,
                     IdentityProviderRestrictions = client.IdentityProviderRestrictions,
-                    LogoutUri = client.LogoutUri,
-                    LogoutSessionRequired = client.LogoutSessionRequired,
+                    FrontChannelLogoutUri = client.LogoutUri,
+                    FrontChannelLogoutSessionRequired = client.LogoutSessionRequired,
 
                     // Token
                     IdentityTokenLifetime = client.IdentityTokenLifetime,
@@ -76,7 +76,7 @@ namespace Fabric.Identity.API.Models
                     Claims = client.Claims,
                     AlwaysSendClientClaims = client.AlwaysSendClientClaims,
                     AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
-                    PrefixClientClaims = client.PrefixClientClaims,
+                    //PrefixClientClaims = client.PrefixClientClaims,
 
                     // Consent
                     RequireConsent = client.RequireConsent,
@@ -120,8 +120,8 @@ namespace Fabric.Identity.API.Models
                 PostLogoutRedirectUris = client.PostLogoutRedirectUris,
                 EnableLocalLogin = client.EnableLocalLogin,
                 IdentityProviderRestrictions = client.IdentityProviderRestrictions,
-                LogoutUri = client.LogoutUri,
-                LogoutSessionRequired = client.LogoutSessionRequired,
+                LogoutUri = client.FrontChannelLogoutUri,
+                LogoutSessionRequired = client.FrontChannelLogoutSessionRequired,
 
                 // Token
                 IdentityTokenLifetime = client.IdentityTokenLifetime,
@@ -138,7 +138,7 @@ namespace Fabric.Identity.API.Models
                 Claims = client.Claims,
                 AlwaysSendClientClaims = client.AlwaysSendClientClaims,
                 AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
-                PrefixClientClaims = client.PrefixClientClaims,
+                //PrefixClientClaims = client.PrefixClientClaims,
 
                 // Consent
                 RequireConsent = client.RequireConsent,

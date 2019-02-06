@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services

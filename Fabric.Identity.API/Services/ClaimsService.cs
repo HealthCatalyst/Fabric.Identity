@@ -4,13 +4,14 @@ using Fabric.Identity.API.Models;
 using IdentityModel;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http.Authentication;
 using static Fabric.Identity.API.FabricIdentityConstants;
+using AuthenticationProperties = Microsoft.AspNetCore.Http.Authentication.AuthenticationProperties;
 
 namespace Fabric.Identity.API.Services
 {
@@ -156,15 +157,15 @@ namespace Fabric.Identity.API.Services
             return additionalClaims.ToArray();
         }
 
-        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateInfo info)
+        private Microsoft.AspNetCore.Authentication.AuthenticationProperties GenerateAuthenticationProperties(AuthenticateInfo info)
         {
             //if the external provider issued an id_token, we'll keep it for signout
-            AuthenticationProperties props = null;
-            var id_token = info.Properties.GetTokenValue("id_token");
-            if (id_token != null)
+            Microsoft.AspNetCore.Authentication.AuthenticationProperties props = null;
+            var idToken = info.Properties.Items["id_token"];
+            if (idToken != null)
             {
-                props = new AuthenticationProperties();
-                props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
+                props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties();
+                props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = idToken } });
             }
 
             return props;

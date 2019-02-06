@@ -18,6 +18,7 @@ using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
+using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -129,6 +130,17 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
+            var sp = services.BuildServiceProvider();
+            var identityServerOptions = sp.GetService<IdentityServerAuthenticationOptions>();
+
+            services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
+                .AddIdentityServerAuthentication(options =>
+                {
+                    options.Authority = identityServerOptions.Authority;
+                    options.RequireHttpsMetadata = identityServerOptions.RequireHttpsMetadata;
+                    options.ApiName = identityServerOptions.ApiName;
+                });
+
             services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
                 .AddJsonOptions(x =>
                 {
@@ -222,8 +234,6 @@ namespace Fabric.Identity.API
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
-            var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
-            app.UseIdentityServerAuthentication(options);
             app.UseMvcWithDefaultRoute();
 
             var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();

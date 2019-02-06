@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Fabric.Identity.API.Configuration;
 using IdentityServer4;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -28,11 +29,12 @@ namespace Fabric.Identity.API.Extensions
 
             var options = new OpenIdConnectOptions
             {
-                AuthenticationScheme = FabricIdentityConstants.AuthenticationSchemes.Azure,
+                //AuthenticationScheme = FabricIdentityConstants.AuthenticationSchemes.Azure,
+                
                 SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
                 SignOutScheme = IdentityServerConstants.SignoutScheme,
 
-                DisplayName = appConfiguration.AzureActiveDirectorySettings.DisplayName,
+                //DisplayName = appConfiguration.AzureActiveDirectorySettings.DisplayName,
                 Authority = appConfiguration.AzureActiveDirectorySettings.Authority,
                 ResponseType = OpenIdConnectResponseType.CodeIdToken,
                 ClaimsIssuer = appConfiguration.AzureActiveDirectorySettings.ClaimsIssuer,
@@ -50,7 +52,7 @@ namespace Fabric.Identity.API.Extensions
                 options.Scope.Add(s);
             }
             
-            builder.UseOpenIdConnectAuthentication(options);
+            //builder.UseOpenIdConnectAuthentication(options);
 
             return builder;
         }
@@ -68,7 +70,7 @@ namespace Fabric.Identity.API.Extensions
                         SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
                         SignOutScheme = IdentityServerConstants.SignoutScheme,
 
-                        DisplayName = externalIdProvider.DisplayName,
+                        //DisplayName = externalIdProvider.DisplayName,
                         Authority = externalIdProvider.Authority,
                         ClientId = externalIdProvider.ClientId,
                         ClientSecret = externalIdProvider.ClientSecret,
@@ -85,7 +87,7 @@ namespace Fabric.Identity.API.Extensions
                         options.Scope.Add(s);
                     }
 
-                    builder.UseOpenIdConnectAuthentication(options);
+                    //builder.UseOpenIdConnectAuthentication(options);
                 }
             }
 
