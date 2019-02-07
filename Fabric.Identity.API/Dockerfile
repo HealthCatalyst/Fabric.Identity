@@ -1,4 +1,4 @@
-FROM microsoft/aspnetcore:1.1.2
+FROM microsoft/dotnet:2.2-aspnetcore-runtime
 
 ARG source
 WORKDIR /app

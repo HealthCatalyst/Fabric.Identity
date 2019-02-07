@@ -45,7 +45,7 @@
     <PackageReference Include="Fabric.Platform.Http" Version="1.0.2018040605" />
     <PackageReference Include="Fabric.Platform.Logging" Version="1.0.2018042402" />
     <PackageReference Include="FluentValidation" Version="8.1.3" />
-    <PackageReference Include="IdentityServer4" Version="2.3.2" />
+    <PackageReference Include="IdentityServer4" Version="2.3.0" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="2.7.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.2.1" />

@@ -88,12 +88,12 @@ namespace Fabric.Identity.API
 
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
-            services.AddTransient<IHttpRequestMessageFactory>(serviceProvider => new HttpRequestMessageFactory(
-                tokenUriAddress,
-                FabricIdentityConstants.FabricIdentityClient,
-                settings.ClientSecret,
-                null,
-                null));
+            //services.AddTransient<IHttpRequestMessageFactory>(serviceProvider => new HttpRequestMessageFactory(
+            //    tokenUriAddress,
+            //    FabricIdentityConstants.FabricIdentityClient,
+            //    settings.ClientSecret,
+            //    null,
+            //    null));
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                 .AddSingleton<HttpClient>()
@@ -130,10 +130,13 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
+
             var sp = services.BuildServiceProvider();
             var identityServerOptions = sp.GetService<IdentityServerAuthenticationOptions>();
 
-            services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
+            services.AddAuthentication()
+                .AddAzureIdentityProviderIfApplicable(_appConfig)
+                .AddExternalIdentityProviders(_appConfig)
                 .AddIdentityServerAuthentication(options =>
                 {
                     options.Authority = identityServerOptions.Authority;
@@ -226,9 +229,6 @@ namespace Fabric.Identity.API
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
-            app.UseAzureIdentityProviderIfApplicable(_appConfig);
-
-            app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
 

@@ -25,13 +25,13 @@ namespace Fabric.Identity.API.Services
         private readonly HttpClient _httpClient;
         private readonly IHttpRequestMessageFactory _httpRequestMessageFactory;
 
-        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider, HttpClient httpClient, IHttpRequestMessageFactory httpRequestMessageFactory)
+        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider, HttpClient httpClient)
         {
             _appConfig = appConfig;
             _logger = logger;
             _policyProvider = policyProvider;
             _httpClient = httpClient;
-            _httpRequestMessageFactory = httpRequestMessageFactory;
+            //_httpRequestMessageFactory = httpRequestMessageFactory;
         }
 
         public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
