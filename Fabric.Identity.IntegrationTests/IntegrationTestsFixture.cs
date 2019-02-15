@@ -32,11 +32,11 @@ namespace Fabric.Identity.IntegrationTests
     public class IntegrationTestsFixture : IDisposable
     {
         private const string ClientSecret = "secret";
-        private const string IdentityServerUrl = "http://localhost:5001";
+        protected const string IdentityServerUrl = "http://localhost:5001";
         private const string RegistrationApiServerUrl = "http://localhost:5000";
         private const string RegistrationApiName = "registration-api";
         private static readonly IS4.Client Client;
-        private static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
+        protected static readonly string TokenEndpoint = $"{IdentityServerUrl}/connect/token";
         protected static readonly string TestScope = "testscope";
         protected static readonly string TestClientName = "test-client";
         private static readonly long DatabaseNameSuffix = DateTime.UtcNow.Ticks;
@@ -54,7 +54,7 @@ namespace Fabric.Identity.IntegrationTests
 
         private static IDocumentDbService _dbService;
         private readonly TestServer _apiTestServer;
-        private readonly TestServer _identityTestServer;
+        protected readonly TestServer IdentityTestServer;
 
         static IntegrationTestsFixture()
         {
@@ -68,7 +68,7 @@ namespace Fabric.Identity.IntegrationTests
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
-            _identityTestServer = CreateIdentityTestServer(storageProvider);
+            IdentityTestServer = CreateIdentityTestServer(storageProvider);
             _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
             HttpClient = GetHttpClient();
         }
@@ -209,9 +209,9 @@ namespace Fabric.Identity.IntegrationTests
                 Authority = IdentityServerUrl,
                 ApiName = RegistrationApiName,
                 RequireHttpsMetadata = false,
-                JwtBackChannelHandler = _identityTestServer.CreateHandler(),
-                IntrospectionBackChannelHandler = _identityTestServer.CreateHandler(),
-                IntrospectionDiscoveryHandler = _identityTestServer.CreateHandler()
+                JwtBackChannelHandler = IdentityTestServer.CreateHandler(),
+                IntrospectionBackChannelHandler = IdentityTestServer.CreateHandler(),
+                IntrospectionDiscoveryHandler = IdentityTestServer.CreateHandler()
             };
 
             var hostingOptions = new HostingOptions
@@ -251,7 +251,7 @@ namespace Fabric.Identity.IntegrationTests
         {
             var tokenClient =
                 new TokenClient(TokenEndpoint, clientId,
-                    _identityTestServer.CreateHandler())
+                    IdentityTestServer.CreateHandler())
                 {
                     ClientSecret = clientSecret
                 };
@@ -434,7 +434,7 @@ namespace Fabric.Identity.IntegrationTests
             {
                 // free managed resources
                 HttpClient.Dispose();
-                _identityTestServer.Dispose();
+                IdentityTestServer.Dispose();
                 _apiTestServer.Dispose();
             }
         }
