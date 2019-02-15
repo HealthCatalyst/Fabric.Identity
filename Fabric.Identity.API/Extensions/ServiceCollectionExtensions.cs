@@ -91,6 +91,10 @@ namespace Fabric.Identity.API.Extensions
                 options.Events.RaiseErrorEvents = true;
                 options.Events.RaiseInformationEvents = true;
                 options.IssuerUri = appConfiguration.IssuerUri;
+                if (!string.IsNullOrEmpty(appConfiguration.DiscoveryServiceEndpoint))
+                {
+                    options.Discovery.CustomEntries.Add("discovery_uri", appConfiguration.DiscoveryServiceEndpoint);
+                }
             });
 
             new IdentityServerInitializationService(
