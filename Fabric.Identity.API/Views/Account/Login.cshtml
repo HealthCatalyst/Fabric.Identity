@@ -1,76 +1,80 @@
-﻿@model LoginViewModel
+@model LoginViewModel
+
 <div class="login-page">
-    @Html.Partial("_ValidationSummary")
-        <div id="PageOne" class="container">
-            <div class="row row-centered login">
-                <div id="logincontainer" class="col-xs-4 col-centered radiused">
-                    <div class="logo item">
-                        <img src="~/images/HC_logo.svg" alt="Health Catalyst Logo">
-                    </div>
-                    @if (Model.EnableLocalLogin)
-                    {
-                        <form asp-route="Login">
-                            <input type="hidden" asp-for="ReturnUrl"/>
-
-                            <label asp-for="Username">Email</label>
-                            <div>
-                                <input asp-for="Username" placeholder="Email" autofocus>
-                            </div>
-                            <label asp-for="Password">Password</label>
-                            <a id="forgotpwd" href="#">Forgot Password?</a>
-                            <div>
-                                <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
-                            </div>
-                            @if (Model.AllowRememberLogin)
-                            {
-                                <div class="checkbox">
-                                    <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
-                                </div>
-                            }
-                            <p class="legal">
-                                By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
-                            </p>
-                            <input value="Log In" name="login_but" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
-                        </form>
-                    }
-                            <label>Log in with:</label>
-                            @foreach (var provider in Model.VisibleExternalProviders)
-                            {
-                                <div>
-                                    <a class="btn btn-default login_but"
-                                       asp-action="ExternalLogin"
-                                       asp-route-provider="@provider.AuthenticationScheme"
-                                       asp-route-returnUrl="@Model.ReturnUrl">
-                                        @provider.DisplayName
-                                    </a>
-                                </div>
-                            }
-                    <div id="login-footer">
-                        <h5><span>New to Health Catalyst?</span></h5>
-                        <a class="tert-btn" href="#"><span>Create a new account</span></a>
-                    </div>
-                </div>
-            </div>
-            <br><br><br>
-            <div class="footerWrapper" align="center">
-                <div class="footerBottom" align="center">
-                    <div>
-                        <a href="#">Customer Community</a>
-                    </div>
-                    <div>
-                        <a href="#"> Terms of Use </a>
-                    </div>
-                    <div>
-                        <a href="#">Privacy</a>
-                    </div>
-                    <div>
-                        <a href="#">Legal &amp; Trademark Notices</a>
-                    </div>
-                    <div>
-                        <a href="www.healthcatalyst.com">HealthCatalyst.com</a>
-                    </div>
-                </div>
-            </div>
+  <partial name="_ValidationSummary" />
+  <div id="PageOne" class="container">
+    <div class="row row-centered login">
+      <div id="logincontainer" class="col-xs-4 col-centered radiused">
+        <div class="logo item">
+          <img src="~/images/HC_logo.svg" alt="Health Catalyst Logo">
         </div>
-</div>
 
+        @if (Model.EnableLocalLogin)
+        {
+
+        <form asp-route="Login">
+          <input type="hidden" asp-for="ReturnUrl" />
+
+          <label asp-for="Username">Email</label>
+          <div>
+            <input asp-for="Username" placeholder="Email" autofocus>
+          </div>
+          <label asp-for="Password">Password</label>
+          <a id="forgotpwd" href="#">Forgot Password?</a>
+          <div>
+            <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
+          </div>
+          @if (Model.AllowRememberLogin)
+          {
+            <div class="checkbox">
+              <label class="check-label" asp-for="RememberLogin"><input asp-for="RememberLogin">Remember me</label>
+            </div>
+          }
+          <p class="legal">
+            By signing in you agree to our <br> <a href="#">Terms of Use</a> and <a href="#">Privacy Statement</a>
+          </p>
+          <input value="Login" name="button" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">
+          @*<input value="Cancel" name="button" type="submit" id="login_but" class="button allow-in-read-only allow-in-safe-mode login_but">*@
+        </form>
+        }
+
+        @if (Model.VisibleExternalProviders.Any())
+        {
+          <label>Log in with:</label>
+          foreach (var provider in Model.VisibleExternalProviders)
+          {
+            <div>
+              <a class="btn btn-default login_but"
+                 asp-controller="External"
+                 asp-action="Challenge"
+                 asp-route-provider="@provider.AuthenticationScheme"
+                 asp-route-returnUrl="@Model.ReturnUrl">
+                @provider.DisplayName
+              </a>
+            </div>
+          }
+        }
+      </div>
+    </div>
+    <br><br><br>
+    <div class="footerWrapper" align="center">
+      <div class="footerBottom" align="center">
+        <div>
+          <a href="#">Customer Community</a>
+        </div>
+        <div>
+          <a href="#"> Terms of Use </a>
+        </div>
+        <div>
+          <a href="#">Privacy</a>
+        </div>
+        <div>
+          <a href="#">Legal &amp; Trademark Notices</a>
+        </div>
+        <div>
+          <a href="www.healthcatalyst.com">HealthCatalyst.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -12,5 +12,6 @@ namespace Fabric.Identity.API.Models
         public IEnumerable<string> GrantsSupported { get; set; }
         public IEnumerable<string> ScopesSupported { get; set; }
         public int ClientCount { get; set; }
+        public string FabricIdentityVersion { get; set; }
     }
 }

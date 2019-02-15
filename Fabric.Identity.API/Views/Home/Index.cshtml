@@ -1,41 +1,41 @@
-﻿@model Fabric.Identity.API.Models.IdentityStatusModel
+@model Fabric.Identity.API.Models.IdentityStatusModel
 <div class="welcome-page">
-    <div class="row">
-        <div class="col-sm-12 radiused">
-            <h1>
-                <img class="icon" src="~/images/TriFlameMultiColored.svg" width="28">
-                Welcome to Fabric.Identity
-            </h1>
-            <p>
-                Fabric.Identity publishes a
-                <a href="~/.well-known/openid-configuration">discovery document</a>
-                where you can find metadata and links to all the endpoints, key material, etc.
-                Listed below are the current Scopes and Grants that are supported, in addition to the number of registered client applications.
-            </p>
-        </div>
+  <div class="row">
+    <div class="col-sm-12 radiused">
+      <h1>
+        <img class="icon" src="~/images/TriFlameMultiColored.svg" width="28">
+        Welcome to Fabric.Identity version @Model.FabricIdentityVersion
+      </h1>
+      <p>
+        Fabric.Identity publishes a
+        <a href="~/.well-known/openid-configuration">discovery document</a>
+        where you can find metadata and links to all the endpoints, key material, etc.
+        Listed below are the current Scopes and Grants that are supported, in addition to the number of registered client applications.
+      </p>
     </div>
-    <div class="row">
-        <div class="col-sm-12 radiused">
-            <h3>Scopes Supported:</h3>
-            <ul>
-            @foreach (var scope in Model.ScopesSupported)
-            {
-                <li>@scope</li> 
-            }
-            </ul>
-            <h3>Grants Supported:</h3>
-            <ul>
-            @foreach (var grant in Model.GrantsSupported)
-            {
-                <li>@grant</li>
-            }
-            </ul>
-            <p>
-                <h3>Clients Registered: @Model.ClientCount</h3>
-            </p>
-            <p>
-                Click <a href="~/grants">here</a> to manage your stored grants.
-            </p>
-        </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12 radiused">
+      <h3>Scopes Supported:</h3>
+      <ul>
+        @foreach (var scope in Model.ScopesSupported)
+        {
+          <li>@scope</li> 
+        }
+      </ul>
+      <h3>Grants Supported:</h3>
+      <ul>
+        @foreach (var grant in Model.GrantsSupported)
+        {
+          <li>@grant</li>
+        }
+      </ul>
+      <p>
+        <h3>Clients Registered: @Model.ClientCount</h3>
+      </p>
+      <p>
+        Click <a href="~/grants">here</a> to manage your stored grants.
+      </p>
     </div>
+  </div>
 </div>

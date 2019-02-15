@@ -1,11 +1,9 @@
-﻿@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
-@using IdentityServer4.Extensions
+﻿@using IdentityServer4.Extensions
 @{
     string name = null;
     if (!true.Equals(ViewData["signed-out"]))
     {
-        var user = Context.User;
-        name = user?.FindFirst("name")?.Value;
+        name = Context.User?.GetDisplayName();
     }
 }
 <!DOCTYPE html>
@@ -14,10 +12,11 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fabric.Identity</title>
+  <title>Fabric.Identity</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" />
-    @Html.Raw(JavaScriptSnippet.FullScript)
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
@@ -31,13 +30,12 @@
                 </button>
                 <a href="~/">
                     <span class="navbar-brand">
-                        <img src="~/images/HC_logo.svg" width="150" class="icon-banner">
-                        
+                      <img src="~/images/HC_logo.svg" width="150" class="icon-banner">
                     </span>
                 </a>
             </div>
 
-            @if (name != null)
+            @if (!string.IsNullOrWhiteSpace(name))
             {
                 <ul class="nav navbar-nav">
                     <li class="dropdown">

@@ -1,85 +1,68 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
 using IdentityModel;
+using IdentityServer4.Events;
+using IdentityServer4.Extensions;
+using IdentityServer4.Models;
 using IdentityServer4.Services;
 using IdentityServer4.Stores;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
-using System.Security.Principal;
 using System.Threading.Tasks;
-using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Management;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Services;
-using IFabricClaimsService = Fabric.Identity.API.Services.IClaimsService;
-using IdentityServer4.Events;
-using IdentityServer4.Extensions;
 using Serilog;
 
 namespace IdentityServer4.Quickstart.UI
 {
-    using System.Globalization;
-
-    using Fabric.Identity.API.Exceptions;
-    using Fabric.Identity.API.Models;
-    using IdentityServer4.Models;
-
     /// <summary>
     /// This sample controller implements a typical login/logout/provision workflow for local and external accounts.
     /// The login service encapsulates the interactions with the user data store. This data store is in-memory only and cannot be used for production!
     /// The interaction service provides a way for the UI to communicate with identityserver for validation and context retrieval
     /// </summary>
-    [TypeFilter(typeof(SecurityHeadersAttribute))]
+    [SecurityHeaders]
+    [AllowAnonymous]
     public class AccountController : Controller
     {
         private readonly TestUserStore _users;
         private readonly IIdentityServerInteractionService _interaction;
+        private readonly IClientStore _clientStore;
         private readonly IEventService _events;
-        private readonly IAppConfiguration _appConfiguration;
         private readonly ILogger _logger;
-        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
-        private readonly IFabricClaimsService _claimsService;
-        private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
-
-        private readonly GroupFilterService _groupFilterService;
+        private readonly AccountService _accountService;
 
         public AccountController(
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,
-            IHttpContextAccessor httpContextAccessor,
             IEventService events,
             IAppConfiguration appConfiguration,
             IUserStore userStore,
             ILogger logger,
-            IExternalIdentityProviderService externalIdentityProviderService,
-            IFabricClaimsService claimsService,
             AccountService accountService,
-            GroupFilterService groupFilterService,
             TestUserStore users = null)
         {
             // if the TestUserStore is not in DI, then we'll just use the global users collection
+            // this is where you would plug in your own custom identity management library (e.g. ASP.NET Identity)
             _users = users ?? MakeTestUserStore(appConfiguration);
-            _interaction = interaction;
-            _events = events;
-            _appConfiguration = appConfiguration;
-            _logger = logger;
-            _externalIdentityProviderService = externalIdentityProviderService;
-            _accountService = accountService;
-            _claimsService = claimsService;
-            _groupFilterService = groupFilterService;
-            _userLoginManager = new UserLoginManager(userStore, _logger);
 
+            _interaction = interaction;
+            _clientStore = clientStore;
+            _events = events;
+            _logger = logger;
+            _accountService = accountService;
+            _userLoginManager = new UserLoginManager(userStore, _logger);
         }
 
         private TestUserStore MakeTestUserStore(IAppConfiguration appConfiguration)
@@ -92,17 +75,18 @@ namespace IdentityServer4.Quickstart.UI
         }
 
         /// <summary>
-        /// Show login page
+        /// Entry point into the login workflow
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Login(string returnUrl)
         {
+            // build a model so we know what to show on the login page
             var vm = await _accountService.BuildLoginViewModelAsync(returnUrl);
 
             if (vm.IsExternalLoginOnly)
             {
-                // only one option for logging in
-                return await ExternalLogin(vm.ExternalLoginScheme, returnUrl);
+                // we only have one option for logging in and it's an external provider
+                return RedirectToAction("Challenge", "External", new { provider = vm.ExternalLoginScheme, returnUrl });
             }
 
             return View(vm);
@@ -113,16 +97,50 @@ namespace IdentityServer4.Quickstart.UI
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginInputModel model)
+        public async Task<IActionResult> Login(LoginInputModel model, string button, string login_but)
         {
+            // check if we are in the context of an authorization request
+            var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
+
+            // the user clicked the "cancel" button
+            if (button != "Login")
+            {
+                if (context != null)
+                {
+                    // if the user cancels, send a result back into IdentityServer as if they 
+                    // denied the consent (even if this client does not require consent).
+                    // this will send back an access denied OIDC error response to the client.
+                    await _interaction.GrantConsentAsync(context, ConsentResponse.Denied);
+
+                    // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
+                    if (await _clientStore.IsPkceClientAsync(context.ClientId))
+                    {
+                        // if the client is PKCE then we assume it's native, so this change in how to
+                        // return the response is for better UX for the end user.
+                        return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+                    }
+
+                    return Redirect(model.ReturnUrl);
+                }
+                else
+                {
+                    // since we don't have a valid context, then we just go back to the home page
+                    return Redirect("~/");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // validate username/password against in-memory store
                 if (_users.ValidateCredentials(model.Username, model.Password))
                 {
+                    var user = _users.FindByUsername(model.Username);
+                    await _userLoginManager.UserLogin("test", user.SubjectId, user.Claims.ToList(), context?.ClientId);
+                    await _events.RaiseAsync(new FabricUserLoginSuccessEvent("test", user.Username, user.SubjectId, user.Username, context?.ClientId));
+
+                    // only set explicit expiration here if user chooses "remember me". 
+                    // otherwise we rely upon expiration configured in cookie middleware.
                     AuthenticationProperties props = null;
-                    // only set explicit expiration here if persistent. 
-                    // otherwise we reply upon expiration configured in cookie middleware.
                     if (AccountOptions.AllowRememberLogin && model.RememberLogin)
                     {
                         props = new AuthenticationProperties
@@ -133,25 +151,39 @@ namespace IdentityServer4.Quickstart.UI
                     };
 
                     // issue authentication cookie with subject ID and username
-                    var user = _users.FindByUsername(model.Username);
-                    //get the client id from the auth context
-                    var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
-                    await _userLoginManager.UserLogin("test", user.SubjectId, user.Claims.ToList(), context?.ClientId);
-                    await _events.RaiseAsync(new FabricUserLoginSuccessEvent("test", user.Username, user.SubjectId, user.Username, context?.ClientId));
                     await HttpContext.SignInAsync(user.SubjectId, user.Username, props);
 
-                    // make sure the returnUrl is still valid, and if yes - redirect back to authorize endpoint or a local page
-                    if (_interaction.IsValidReturnUrl(model.ReturnUrl) || Url.IsLocalUrl(model.ReturnUrl))
+                    if (context != null)
                     {
+                        if (await _clientStore.IsPkceClientAsync(context.ClientId))
+                        {
+                            // if the client is PKCE then we assume it's native, so this change in how to
+                            // return the response is for better UX for the end user.
+                            return View("Redirect", new RedirectViewModel { RedirectUrl = model.ReturnUrl });
+                        }
+
+                        // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
                         return Redirect(model.ReturnUrl);
                     }
 
-                    return Redirect("~/");
+                    // request for a local page
+                    if (Url.IsLocalUrl(model.ReturnUrl))
+                    {
+                        return Redirect(model.ReturnUrl);
+                    }
+                    else if (string.IsNullOrEmpty(model.ReturnUrl))
+                    {
+                        return Redirect("~/");
+                    }
+                    else
+                    {
+                        // user might have clicked on a malicious link - should be logged
+                        throw new Exception("invalid return URL");
+                    }
                 }
 
                 await _events.RaiseAsync(new UserLoginFailureEvent(model.Username, "invalid credentials"));
-
-                ModelState.AddModelError("", AccountOptions.InvalidCredentialsErrorMessage);
+                ModelState.AddModelError(string.Empty, AccountOptions.InvalidCredentialsErrorMessage);
             }
 
             // something went wrong, show form with error
@@ -159,147 +191,20 @@ namespace IdentityServer4.Quickstart.UI
             return View(vm);
         }
 
-        /// <summary>
-        /// initiate roundtrip to external authentication provider
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> ExternalLogin(string provider, string returnUrl)
-        {
-            returnUrl = Url.Action("ExternalLoginCallback", new { returnUrl = returnUrl });
-
-            //windows authentication is modeled as external in the asp.net core authentication manager, so we need special handling
-            if (AccountOptions.WindowsAuthenticationSchemes.Contains(provider))
-            {
-                //"but they don't support the redirect uri, so this URL is re-triggered when we call challenge
-                if (HttpContext.User is WindowsPrincipal wp)
-                {
-                    var props = new AuthenticationProperties();
-                    props.Items.Add("scheme", AccountOptions.WindowsAuthenticationProviderName);
-
-                    var id = new ClaimsIdentity(provider);
-
-                    id.AddClaim(new Claim(JwtClaimTypes.Subject, HttpContext.User.Identity.Name));
-                    id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
-                    var windowsIdentity = HttpContext.User.Identity as WindowsIdentity;
-                    if (windowsIdentity != null)
-                    {
-                        id.AddClaim(new Claim(FabricIdentityConstants.FabricClaimTypes.FabricId, windowsIdentity.Owner?.Value));
-                    }
-                    
-
-                    var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
-                    if (externalUser?.FirstName != null)
-                    {
-                        id.AddClaim(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
-                    }
-
-                    if (externalUser?.LastName != null)
-                    {
-                        id.AddClaim(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
-                    }
-
-                    //add the groups as claims -- be careful if the number of groups is too large
-                    if (AccountOptions.IncludeWindowsGroups)
-                    {
-                        var wi = wp.Identity as WindowsIdentity;
-                        var groups = wi.Groups.Translate(typeof(NTAccount));
-                        var roles = groups.Select(x => new Claim(JwtClaimTypes.Role, x.Value));
-                        id.AddClaims(_groupFilterService.FilterClaims(roles));
-                    }
-
-                    await HttpContext.SignInAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme, new ClaimsPrincipal(id), props);
-                    return Redirect(returnUrl);
-                }
-                else
-                {
-                    //this triggers all of the windows auth schemes we're supporting so the browser can use what it supports
-                    return new ChallengeResult(AccountOptions.WindowsAuthenticationSchemes);
-                }
-            }
-            else
-            {
-                //start challenge and roundtrip the return URL
-                var props = new AuthenticationProperties
-                {
-                    RedirectUri = returnUrl,
-                    Items = { { "scheme", provider } }
-                };
-
-                return new ChallengeResult(provider, props);
-            }
-        }
-
-        /// <summary>
-        /// Post processing of external authentication
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> ExternalLoginCallback(string returnUrl)
-        {
-            //read external identity from the temporary cookie
-            var info = await HttpContext.Authentication.GetAuthenticateInfoAsync(
-                           IdentityServerConstants.ExternalCookieAuthenticationScheme);
-            var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-
-            //retrieve claims of the external user
-            ClaimsResult claimInformation = null;
-
-            try
-            {
-                claimInformation = _claimsService.GenerateClaimsForIdentity(info, context);
-            }
-            catch(InvalidIssuerException exc)
-            {
-                return LogAndReturnStatus(403, exc.LogMessage, exc.Message);
-            }
-
-            //issue authentication cookie for user
-            var user = await _userLoginManager.UserLogin(
-                claimInformation.Provider,
-                _claimsService.GetEffectiveUserId(claimInformation),
-                claimInformation.Claims,
-                claimInformation?.ClientId);
-            
-            var subjectId = _claimsService.GetEffectiveSubjectId(claimInformation, user);
-
-            var successfulEvent = new FabricUserLoginSuccessEvent(
-                claimInformation.Provider,
-                claimInformation.UserId,
-                subjectId,
-                user?.Username,
-                claimInformation.ClientId);
-
-            await _events.RaiseAsync(successfulEvent);
-            
-            await HttpContext.SignInAsync(
-                subjectId,
-                user?.Username,
-                claimInformation.Provider,
-                claimInformation.AuthenticationProperties, 
-                claimInformation.AdditionalClaims);
-
-            //delete temporary cookie used during external authentication
-            await HttpContext.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
-
-            //validate return URL and redirect back to authorization endpoint or a local page
-            if (_interaction.IsValidReturnUrl(returnUrl) || Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-
-            return Redirect("~/");
-        }
-
+        
         /// <summary>
         /// Show logout page
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Logout(string logoutId)
         {
+            // build a model so the logout page knows what to display
             var vm = await _accountService.BuildLogoutViewModelAsync(logoutId);
 
             if (vm.ShowLogoutPrompt == false)
             {
-                // no need to show prompt
+                // if the request for logout was properly authenticated from IdentityServer, then
+                // we don't need to show the prompt and can just log the user out directly.
                 return await Logout(vm);
             }
 
@@ -313,40 +218,31 @@ namespace IdentityServer4.Quickstart.UI
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout(LogoutInputModel model)
         {
+            // build a model so the logged out page knows what to display
             var vm = await _accountService.BuildLoggedOutViewModelAsync(model.LogoutId);
-            if (vm.TriggerExternalSignout)
+
+            if (User?.Identity.IsAuthenticated == true)
             {
-                string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
-                try
-                {
-                    // hack: try/catch to handle social providers that throw
-                    await HttpContext.SignOutAsync(vm.ExternalAuthenticationScheme,
-                        new AuthenticationProperties { RedirectUri = url });
-                }
-                catch (NotSupportedException) // this is for the external providers that don't have signout
-                {
-                }
-                catch (InvalidOperationException) // this is for Windows/Negotiate
-                {
-                }
+                // delete local authentication cookie
+                await HttpContext.SignOutAsync();
+
+                // raise the logout event
+                await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
             }
 
-            // delete local authentication cookie
-            await HttpContext.SignOutAsync();
-
-            var user = HttpContext.User;
-            if (user != null)
+            // check if we need to trigger sign-out at an upstream identity provider
+            if (vm.TriggerExternalSignout)
             {
-                await _events.RaiseAsync(new UserLogoutSuccessEvent(user.GetSubjectId(), user.GetName()));
+                // build a return URL so the upstream provider will redirect back
+                // to us after the user has logged out. this allows us to then
+                // complete our single sign-out processing.
+                string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
+
+                // this triggers a redirect to the external provider for sign-out
+                return SignOut(new AuthenticationProperties { RedirectUri = url }, vm.ExternalAuthenticationScheme);
             }
 
             return View("LoggedOut", vm);
-        }
-
-        private ObjectResult LogAndReturnStatus(int statusCode, string logMessage, string userMessage = null)
-        {
-            _logger.Error(logMessage);
-            return this.StatusCode(statusCode, userMessage);
         }
     }
 }

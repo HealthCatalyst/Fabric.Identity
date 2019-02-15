@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using Fabric.Identity.API.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -10,29 +9,30 @@ namespace IdentityServer4.Quickstart.UI
 {
     public class SecurityHeadersAttribute : ActionFilterAttribute
     {
-        private readonly HostingOptions _hostingOptions;
-
-        public SecurityHeadersAttribute(HostingOptions hostingOptions)
-        {
-            _hostingOptions = hostingOptions;
-        }
-
         public override void OnResultExecuting(ResultExecutingContext context)
         {
             var result = context.Result;
             if (result is ViewResult)
             {
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
                 if (!context.HttpContext.Response.Headers.ContainsKey("X-Content-Type-Options"))
                 {
                     context.HttpContext.Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 }
+
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
                 if (!context.HttpContext.Response.Headers.ContainsKey("X-Frame-Options"))
                 {
                     context.HttpContext.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
                 }
 
-                var csp = GetContentSecurityPolicy();
-                
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+                var csp = "default-src 'self'; object-src 'none'; frame-ancestors 'none'; sandbox allow-forms allow-same-origin allow-scripts; base-uri 'self';";
+                // also consider adding upgrade-insecure-requests once you have HTTPS in place for production
+                //csp += "upgrade-insecure-requests;";
+                // also an example if you need client images to be displayed from twitter
+                // csp += "img-src 'self' https://pbs.twimg.com;";
+
                 // once for standards compliant browsers
                 if (!context.HttpContext.Response.Headers.ContainsKey("Content-Security-Policy"))
                 {
@@ -43,16 +43,14 @@ namespace IdentityServer4.Quickstart.UI
                 {
                     context.HttpContext.Response.Headers.Add("X-Content-Security-Policy", csp);
                 }
-            }
-        }
 
-        private string GetContentSecurityPolicy()
-        {
-            if (_hostingOptions.AllowUnsafeEval)
-            {
-                return "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src: 'self' 'unsafe-inline' 'unsafe-eval';";
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+                var referrer_policy = "no-referrer";
+                if (!context.HttpContext.Response.Headers.ContainsKey("Referrer-Policy"))
+                {
+                    context.HttpContext.Response.Headers.Add("Referrer-Policy", referrer_policy);
+                }
             }
-            return "default-src 'self';";
         }
     }
 }

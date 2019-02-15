@@ -1,10 +1,13 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
 using System.Collections.Generic;
 using IdentityServer4.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Models;
@@ -13,16 +16,21 @@ using IdentityModel.Client;
 
 namespace IdentityServer4.Quickstart.UI
 {
-    [TypeFilter(typeof(SecurityHeadersAttribute))]
+    [SecurityHeaders]
+    [AllowAnonymous]
     public class HomeController : Controller
     {
         private readonly IIdentityServerInteractionService _interaction;
+        private readonly IHostingEnvironment _environment;
+        private readonly ILogger _logger;
         private readonly IAppConfiguration _appConfiguration;
         private readonly IClientManagementStore _clientManagementStore;
 
-        public HomeController(IIdentityServerInteractionService interaction, IAppConfiguration appConfiguration, IClientManagementStore clientStore)
+        public HomeController(IIdentityServerInteractionService interaction, IHostingEnvironment environment, ILogger<HomeController> logger, IAppConfiguration appConfiguration, IClientManagementStore clientStore)
         {
             _interaction = interaction;
+            _environment = environment;
+            _logger = logger;
             _appConfiguration = appConfiguration;
             _clientManagementStore = clientStore;
         }
@@ -42,6 +50,8 @@ namespace IdentityServer4.Quickstart.UI
                 model.GrantsSupported = discoveryDocument?.GrantTypesSupported ?? new List<string>();
             }
             model.ClientCount = _clientManagementStore.GetClientCount();
+            model.FabricIdentityVersion = typeof(Fabric.Identity.API.FabricIdentityConstants).Assembly.GetName()
+                .Version.ToString();
 
             return View(model);
         }
@@ -58,6 +68,12 @@ namespace IdentityServer4.Quickstart.UI
             if (message != null)
             {
                 vm.Error = message;
+
+                if (!_environment.IsDevelopment())
+                {
+                    // only show in development
+                    message.ErrorDescription = null;
+                }
             }
 
             return View("Error", vm);

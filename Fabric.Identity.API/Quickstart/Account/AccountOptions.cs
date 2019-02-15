@@ -3,27 +3,22 @@
 
 
 using System;
-using Fabric.Identity.API;
 
 namespace IdentityServer4.Quickstart.UI
 {
     public class AccountOptions
     {
-        public static bool AllowLocalLogin = false;
+        public static bool AllowLocalLogin = true;
         public static bool AllowRememberLogin = true;
         public static TimeSpan RememberMeLoginDuration = TimeSpan.FromDays(30);
 
         public static bool ShowLogoutPrompt = true;
-        public static bool AutomaticRedirectAfterSignOut = true;
+        public static bool AutomaticRedirectAfterSignOut = false;
 
-        // to enable windows authentication, the host (IIS or IIS Express) also must have 
-        // windows auth enabled.
-        public static bool WindowsAuthenticationEnabled = true;
-        public static bool IncludeWindowsGroups = true;
-        // specify the Windows authentication schemes you want to use for authentication
-        public static readonly string[] WindowsAuthenticationSchemes = new string[] { "Negotiate", "NTLM" };
-        public static readonly string WindowsAuthenticationProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
-        public static readonly string WindowsAuthenticationDisplayName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
+        // specify the Windows authentication scheme being used
+        public static readonly string WindowsAuthenticationSchemeName = Microsoft.AspNetCore.Server.IISIntegration.IISDefaults.AuthenticationScheme;
+        // if user uses windows auth, should we load the groups from windows
+        public static bool IncludeWindowsGroups = false;
 
         public static string InvalidCredentialsErrorMessage = "Invalid username or password";
     }

@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
-using Fabric.Identity.API.Models;
+using System.Threading.Tasks;
+using IdentityServer4.Quickstart.UI;
 
 namespace Fabric.Identity.API.Services
 {
     public interface IIdentityProviderConfigurationService
     {
-        ICollection<ExternalProvider> GetConfiguredIdentityProviders();
+        Task<ICollection<ExternalProvider>> GetConfiguredIdentityProviders();
     }
 }
