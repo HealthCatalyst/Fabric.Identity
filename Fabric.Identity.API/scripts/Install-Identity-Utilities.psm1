@@ -132,7 +132,7 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
                 'Expiration' = $_.NotAfter
                 };
                 $index ++} |
-                Format-Table Index,Name,Subject,Expiration,Thumbprint  -AutoSize | Out-Host
+                Format-Table Index, Thumbprint, Name, Subject, Expiration -AutoSize | Out-Host
             do {
                 if($attempts -gt 10){
                     Write-DosMessage -Level "Error" -Message "An invalid certificate has been selected."
