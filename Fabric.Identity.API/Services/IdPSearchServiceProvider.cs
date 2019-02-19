@@ -25,14 +25,22 @@ namespace Fabric.Identity.API.Services
         private readonly PolicyProvider _policyProvider;
         private readonly HttpClient _httpClient;
         private readonly IHttpRequestMessageFactory _httpRequestMessageFactory;
+        private readonly Task _idPSSInitializationTask;
 
-        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider, HttpClient httpClient, IHttpRequestMessageFactory httpRequestMessageFactory)
+        public IdPSearchServiceProvider(
+            IAppConfiguration appConfig,
+            ILogger logger,
+            PolicyProvider policyProvider,
+            HttpClient httpClient,
+            IHttpRequestMessageFactory httpRequestMessageFactory,
+            IdPSearchServiceUrlInitializer idPSearchServiceUrlInitializer)
         {
             _appConfig = appConfig;
             _logger = logger;
             _policyProvider = policyProvider;
             _httpClient = httpClient;
             _httpRequestMessageFactory = httpRequestMessageFactory;
+            _idPSSInitializationTask = idPSearchServiceUrlInitializer.InitializeAsync();
         }
 
         public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
@@ -80,7 +88,8 @@ namespace Fabric.Identity.API.Services
                     $"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
             }
 
-            var baseUri = _appConfig.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
+            await _idPSSInitializationTask;
+            var baseUri = _appConfig.IdentityProviderSearchSettings.BaseUrl;
 
             var searchServiceUrl =
                 $"{baseUri}{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint}{subjectId}";
@@ -147,5 +156,43 @@ namespace Fabric.Identity.API.Services
         public string MiddleName { get; set; }
         public string LastName { get; set; }
         public string PrincipalType { get; set; }
+    }
+
+    public class IdPSearchServiceUrlInitializer
+    {
+        private static string _effectiveBaseUrl;
+        private readonly IAppConfiguration _appConfiguration;
+        private readonly ILogger _logger;
+
+        public IdPSearchServiceUrlInitializer(IAppConfiguration appConfiguration, ILogger logger)
+        {
+            _appConfiguration = appConfiguration;
+            _logger = logger;
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (!string.IsNullOrEmpty(_effectiveBaseUrl)) return;
+
+            _effectiveBaseUrl = await GetBaseUrlAsync();
+            _appConfiguration.IdentityProviderSearchSettings.BaseUrl = _effectiveBaseUrl;
+            _logger.Information($"Initialized _appConfiguration.IdentityProviderSearchSettings.BaseUrl to {_appConfiguration.IdentityProviderSearchSettings.BaseUrl}");
+        }
+
+        private async Task<string> GetBaseUrlAsync()
+        {
+            if (!_appConfiguration.UseDiscoveryService)
+            {
+                return _appConfiguration.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
+            }
+
+            using (var discoveryServiceClient = new DiscoveryServiceClient(_appConfiguration.DiscoveryServiceEndpoint))
+            {
+                var serviceRegistration = await discoveryServiceClient.GetServiceAsync("IdentityProviderSearchService", 1);
+                return !string.IsNullOrEmpty(serviceRegistration?.ServiceUrl)
+                    ? serviceRegistration.ServiceUrl.EnsureTrailingSlash()
+                    : _appConfiguration.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
+            }
+        }
     }
 }

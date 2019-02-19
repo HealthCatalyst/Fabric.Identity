@@ -69,7 +69,6 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            _appConfig.ConfigureIdentitySearchProviderServiceUrl();
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
 
             services.TryAddSingleton(_appConfig.HostingOptions);
@@ -103,6 +102,7 @@ namespace Fabric.Identity.API
                 .AddSingleton<ISerializationSettings, SerializationSettings>()
                 .AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>()
                 .AddSingleton<IExternalIdentityProviderServiceResolver, ExternalIdentityProviderServiceResolver>()
+                .AddSingleton<IdPSearchServiceUrlInitializer>()
                 .AddSingleton<IExternalIdentityProviderService, IdPSearchServiceProvider>()
                 .AddSingleton<Services.IClaimsService, ClaimsService>()
                 .AddSingleton<LdapProviderService>()
