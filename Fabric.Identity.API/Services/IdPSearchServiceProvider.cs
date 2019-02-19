@@ -25,18 +25,44 @@ namespace Fabric.Identity.API.Services
         private readonly PolicyProvider _policyProvider;
         private readonly HttpClient _httpClient;
         private readonly IHttpRequestMessageFactory _httpRequestMessageFactory;
+        private static DiscoveryServiceClient _discoveryServiceClient;
 
-        public IdPSearchServiceProvider(IAppConfiguration appConfig, ILogger logger, PolicyProvider policyProvider, HttpClient httpClient, IHttpRequestMessageFactory httpRequestMessageFactory)
+        private static string _idPSSBaseUrl = null;
+
+        public IdPSearchServiceProvider(IAppConfiguration appConfig,
+            ILogger logger,
+            PolicyProvider policyProvider,
+            HttpClient httpClient,
+            IHttpRequestMessageFactory httpRequestMessageFactory,
+            DiscoveryServiceClient discoveryServiceClient)
         {
             _appConfig = appConfig;
             _logger = logger;
             _policyProvider = policyProvider;
             _httpClient = httpClient;
             _httpRequestMessageFactory = httpRequestMessageFactory;
+            _discoveryServiceClient = discoveryServiceClient;
+        }
+
+        private static string FormatUrl(string url)
+        {
+            return !url.EndsWith("/") ? $"{url}/" : url;
         }
 
         public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
         {
+            if (_appConfig.UseDiscoveryService && string.IsNullOrWhiteSpace(_idPSSBaseUrl))
+            {
+                var serviceRegistration =
+                    await _discoveryServiceClient.GetServiceAsync("IdentityProviderSearchService", 1);
+
+                if (!string.IsNullOrEmpty(serviceRegistration?.ServiceUrl))
+                {
+                    _appConfig.IdentityProviderSearchSettings.BaseUrl =
+                        FormatUrl(serviceRegistration.ServiceUrl);
+                }
+            }
+
             if (!_appConfig.IdentityProviderSearchSettings.IsEnabled)
             {
                 _logger.Information("Identity provider search service is disabled");
