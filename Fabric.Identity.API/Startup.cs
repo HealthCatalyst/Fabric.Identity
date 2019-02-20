@@ -69,13 +69,11 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            _appConfig.ConfigureIdentitySearchProviderServiceUrl();
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
 
             services.TryAddSingleton(_appConfig.HostingOptions);
 
             services.TryAddSingleton<IConnectionStrings>(_appConfig.ConnectionStrings);
-
 
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
             var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();

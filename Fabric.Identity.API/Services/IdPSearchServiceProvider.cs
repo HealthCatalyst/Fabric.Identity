@@ -80,7 +80,7 @@ namespace Fabric.Identity.API.Services
                     $"Failed to get access token, error message is: {accessTokenResponse.ErrorDescription}");
             }
 
-            var baseUri = _appConfig.IdentityProviderSearchSettings.BaseUrl.EnsureTrailingSlash();
+            var baseUri = await _appConfig.IdentityProviderSearchSettings.GetEffectiveBaseUrl(_appConfig);
 
             var searchServiceUrl =
                 $"{baseUri}{_appConfig.IdentityProviderSearchSettings.GetUserEndpoint}{subjectId}";
