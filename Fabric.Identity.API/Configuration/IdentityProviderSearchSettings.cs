@@ -13,7 +13,7 @@ namespace Fabric.Identity.API.Configuration
         public string GetUserEndpoint { get; set; }
         public bool IsEnabled { get; set; }
 
-        private static string _effectiveBaseUrl;
+        private string _effectiveBaseUrl;
 
         public async Task<string> GetEffectiveBaseUrl(IAppConfiguration appConfig)
         {
