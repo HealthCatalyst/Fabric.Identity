@@ -1082,6 +1082,82 @@ function Set-LoggingConfiguration{
     }
 }
 
+function Set-IdentityUri {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $identityUri,
+        [Parameter(Mandatory=$true)]
+        [string] $connString
+    )
+
+    $query = "DECLARE
+                 @AttributeNM VARCHAR(255) = 'IdentityUri';
+              
+              IF NOT EXISTS (SELECT
+                               1
+                             FROM
+                               CatalystAdmin.AttributeBASE
+                             WHERE
+                               AttributeNM = @AttributeNM)
+              BEGIN
+              
+                INSERT INTO
+                  CatalystAdmin.AttributeBASE
+                    (AttributeNM
+                    ,AttributeDSC
+                    ,AttributeTypeCD
+                    ,CapSystemFLG)
+                VALUES
+                  (@AttributeNM
+                  ,'Provides the url connection address for Identity'
+                  ,'string'
+                  ,1);
+              
+              END
+              
+              IF EXISTS (SELECT
+                           1
+                         FROM
+                           CatalystAdmin.ObjectAttributeBASE
+                         WHERE
+                           AttributeNM = @AttributeNM)
+              BEGIN
+              
+                UPDATE
+                  CatalystAdmin.ObjectAttributeBASE
+                SET
+                  AttributeValueTXT = @identityUri
+                WHERE
+                  AttributeNM = @AttributeNM;
+              
+              END
+              ELSE
+              BEGIN
+              
+                INSERT INTO
+                  CatalystAdmin.ObjectAttributeBASE
+                    (ObjectID
+                    ,ObjectTypeCD
+                    ,AttributeNM
+                    ,AttributeTypeCD
+                    ,AttributeValueTXT)
+                VALUES
+                  (0
+                  ,'System'
+                  ,@AttributeNM
+                  ,'string'
+                  ,@identityUri);
+              
+              END;"
+
+    try {
+        Invoke-Sql $connString $query @{identityUri=$identityUri} | Out-Null
+    }
+    catch {
+        Write-DosMessage -Level "Fatal" -Message "An error occurred while executing the command. Connection String: $($connString). Error $($_.Exception)"
+    }
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1113,3 +1189,4 @@ Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
 Export-ModuleMember Find-IISAppPoolUser
 Export-ModuleMember Set-LoggingConfiguration
+Export-ModuleMember Set-IdentityUri
