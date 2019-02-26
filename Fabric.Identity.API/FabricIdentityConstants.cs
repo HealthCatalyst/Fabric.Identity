@@ -11,6 +11,11 @@
         public static readonly string AuditEventCategory = "Audit";
         public static readonly string FabricIdentityClient = "fabric-identity-client";
 
+        public static class PublicClaimTypes
+        {
+            public static readonly string UserPrincipalName = "upn";
+        }
+
         public static class StorageProviders
         {
             public const string InMemory = "inmemory";

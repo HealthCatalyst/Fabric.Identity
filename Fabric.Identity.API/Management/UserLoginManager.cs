@@ -44,13 +44,10 @@ namespace Fabric.Identity.API.Management
 
         private void SetNamePropertiesFromClaims(User user)
         {
+            user.Username = GetUserName(user);
             foreach (var userClaim in user.Claims)
             {
-                if (userClaim.Type == JwtClaimTypes.Name)
-                {
-                    user.Username = userClaim.Value;
-                }
-                else if (userClaim.Type == JwtClaimTypes.GivenName)
+                if (userClaim.Type == JwtClaimTypes.GivenName)
                 {
                     user.FirstName = userClaim.Value;
                 }
@@ -63,6 +60,22 @@ namespace Fabric.Identity.API.Management
                     user.MiddleName = userClaim.Value;
                 }
             }
+        }
+
+        private string GetUserName(User user)
+        {
+            var userName = string.Empty;
+            var upn = user.Claims.FirstOrDefault(c => c.Type == FabricIdentityConstants.PublicClaimTypes.UserPrincipalName)?.Value;
+            var name = user.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Name)?.Value;
+            if (!string.IsNullOrEmpty(upn))
+            {
+                userName = upn;
+            }
+            else if (!string.IsNullOrEmpty(name))
+            {
+                userName = name;
+            }
+            return userName;
         }
 
         private User CreateNewUser(string provider, string subjectId, IEnumerable<Claim> claims, string clientId)
@@ -84,11 +97,12 @@ namespace Fabric.Identity.API.Management
         private List<Claim> FilterClaims(IEnumerable<Claim> incomingClaims)
         {
             var filtered = new List<Claim>();
+            var incomingClaimsList = incomingClaims.ToList();
 
-            foreach (var claim in incomingClaims)
+            foreach (var claim in incomingClaimsList)
             {
-                // if the external system sends a display name - translate that to the standard OIDC name claim
-                if (claim.Type == ClaimTypes.Name)
+                // if the external system sends a display name - translate that to the standard OIDC name claim, but only if we don't already have a name claim
+                if (claim.Type == ClaimTypes.Name && incomingClaimsList.All(c => c.Type != JwtClaimTypes.Name))
                 {
                     filtered.Add(new Claim(JwtClaimTypes.Name, claim.Value));
                 }
