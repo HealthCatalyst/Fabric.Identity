@@ -64,17 +64,8 @@ namespace Fabric.Identity.API.Management
 
         private string GetUserName(User user)
         {
-            var userName = string.Empty;
             var upn = user.Claims.FirstOrDefault(c => c.Type == FabricIdentityConstants.PublicClaimTypes.UserPrincipalName)?.Value;
-            var name = user.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(upn))
-            {
-                userName = upn;
-            }
-            else if (!string.IsNullOrEmpty(name))
-            {
-                userName = name;
-            }
+            var userName = !string.IsNullOrEmpty(upn) ? upn : user.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Name)?.Value;
             return userName;
         }
 
