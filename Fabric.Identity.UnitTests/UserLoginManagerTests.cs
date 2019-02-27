@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -107,6 +108,54 @@ namespace Fabric.Identity.UnitTests
             Assert.Equal(1, newUser.Claims.Count(c => c.Type == JwtClaimTypes.Role));
             Assert.Equal(1, newUser.LastLoginDatesByClient.Count);
             Assert.Equal(clientId, newUser.LastLoginDatesByClient.First().ClientId);
+        }
+
+        [Fact]
+        public async Task UserLoginManager_UserLogin_NewUserWithTwoNameClaims()
+        {
+            var userLoginManager = new UserLoginManager(
+                new InMemoryUserStore(new InMemoryDocumentService()),
+                new Mock<ILogger>().Object);
+
+            var subjectId = Guid.NewGuid().ToString();
+            var clientId = "test";
+            var userPrincipalName = "bob.gomez@someplace.org";
+            var userDisplayName = "Bob Gomez";
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, userPrincipalName),
+                new Claim(JwtClaimTypes.Name, userDisplayName),
+                new Claim(FabricIdentityConstants.PublicClaimTypes.UserPrincipalName, userPrincipalName)
+            };
+
+            var newUser = await userLoginManager.UserLogin(FabricIdentityConstants.AuthenticationSchemes.Azure,
+                subjectId, claims, clientId);
+
+            var nameClaims = newUser.Claims.Where(c => c.Type == JwtClaimTypes.Name).ToList();
+
+            Assert.Equal(subjectId, newUser.SubjectId);
+            Assert.Equal(userPrincipalName, newUser.Username);
+            Assert.Equal(1, nameClaims.Count);
+            Assert.Equal(userDisplayName, nameClaims.Single().Value);
+        }
+
+        [Fact]
+        public async Task UserLoginManager_UserLogin_NoNameOrUpnClaim()
+        {
+            var userLoginManager = new UserLoginManager(
+                new InMemoryUserStore(new InMemoryDocumentService()),
+                new Mock<ILogger>().Object);
+
+            var subjectId = Guid.NewGuid().ToString();
+            var clientId = "test";
+
+            var claims = new List<Claim>();
+            var newUser = await userLoginManager.UserLogin(FabricIdentityConstants.AuthenticationSchemes.Azure,
+                subjectId, claims, clientId);
+
+            Assert.Equal(subjectId, newUser.SubjectId);
+            Assert.Equal(subjectId, newUser.Username);
         }
     }
 }
