@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using Fabric.Identity.API.Persistence.SqlServer.EntityModels;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
-using IdentityServer4.Models;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using IdentityResource = IdentityServer4.Models.IdentityResource;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Services
 {
@@ -28,7 +29,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
         public void AddResources(IEnumerable<IdentityResource> resources)
         {
-            var existingResources = _identityDbContext.IdentityResources.ToList();
+            var existingResources = _identityDbContext.IdentityResources.Include(r => r.IdentityClaims).ToList();
             foreach (var identityResource in resources)
             {
                 var existingResource = existingResources.FirstOrDefault(i =>
@@ -36,10 +37,19 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Services
 
                 if (existingResource != null)
                 {
-                    continue;
+                    var existingClaims = existingResource.IdentityClaims.ToList();
+                    foreach (var identityResourceUserClaim in identityResource.UserClaims)
+                    {
+                        if (existingClaims.All(c => c.Type != identityResourceUserClaim))
+                        {
+                            existingResource.IdentityClaims.Add(new IdentityClaim {Type = identityResourceUserClaim});
+                        }
+                    }
                 }
-
-                _identityDbContext.IdentityResources.Add(identityResource.ToEntity());
+                else
+                {
+                    _identityDbContext.IdentityResources.Add(identityResource.ToEntity());
+                }
             }
 
             try
