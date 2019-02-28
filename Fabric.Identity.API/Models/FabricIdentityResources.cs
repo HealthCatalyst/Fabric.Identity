@@ -12,7 +12,7 @@ namespace Fabric.Identity.API.Models
                 Name = "fabric.profile";
                 DisplayName = "Fabric Profile";
                 Emphasize = true;
-                UserClaims = new[] {JwtClaimTypes.Role, FabricIdentityConstants.FabricClaimTypes.Groups};
+                UserClaims = new[] {JwtClaimTypes.Role, FabricIdentityConstants.FabricClaimTypes.Groups, FabricIdentityConstants.PublicClaimTypes.UserPrincipalName};
             }
         }
     }
