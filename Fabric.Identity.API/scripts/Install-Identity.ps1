@@ -147,8 +147,7 @@ Set-IdentityUri -identityUri $identityServiceUrl `
     -connString $metadataDatabase.DbConnectionString
 
 if ($fabricInstallerSecret){
-    Write-DosMessage -Level "Information" -Message "Please keep the following Fabric.Installer secret in a secure place, it will be needed in subsequent installations:"
-    Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret: $fabricInstallerSecret"
+    Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret has been created."
 }
 
 if(!$quiet){
