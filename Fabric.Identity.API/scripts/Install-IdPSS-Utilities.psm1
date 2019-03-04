@@ -82,15 +82,16 @@ function New-FabricAzureADApplication() {
         [string] $appName,
         [Parameter(Mandatory=$true)]
         [string[]] $replyUrls,
-        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission,
+        [bool] $isMultiTenant = $false
     )
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls -AvailableToOtherTenants $isMultiTenant
     }
     else {
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls -AvailableToOtherTenants $isMultiTenant
     }
 
     return $app
@@ -234,7 +235,7 @@ function Register-Identity {
     Connect-AzureADTenant -tenantId $claimsIssuer
 
     $permission = Get-GraphApiUserReadPermissions
-    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
+    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
     $clientId = $app.AppId
     $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
 
