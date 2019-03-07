@@ -2,7 +2,11 @@
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
 if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
     Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
-    Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities
+    $originalProgressPreference = $progressPreference
+    try { 
+        $progressPreference = 'silentlyContinue'
+        Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control" = "no-cache"} -OutFile $fabricInstallUtilities -UseBasicParsing
+    } finally { $progressPreference = $originalProgressPreference }
 }
 Import-Module -Name $fabricInstallUtilities -Force
 
@@ -37,7 +41,11 @@ function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
     {    
         try{
             Write-DosMessage -Level "Information" -Message "Windows Server Hosting Bundle version $version not installed...installing version $version"        
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $env:Temp\bundle.exe
+            $originalProgressPreference = $progressPreference
+            try { 
+                $progressPreference = 'silentlyContinue'
+                Invoke-WebRequest -Uri $downloadUrl -OutFile $env:Temp\bundle.exe -UseBasicParsing
+            } finally { $progressPreference = $originalProgressPreference }
             Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
             Restart-W3SVC
         }catch{
