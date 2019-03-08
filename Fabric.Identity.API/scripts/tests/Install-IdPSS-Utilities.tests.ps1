@@ -128,7 +128,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             Mock -CommandName Set-AzureADApplication {}
             Mock -CommandName Get-AzureADServicePrincipal {return $returnPrincipal}
 
-            New-FabricAzureADApplication -appName "app" -replyUrls @("url")
+            New-FabricAzureADApplication -appName "app" -replyUrls @(@{name="url"})
             Assert-MockCalled -CommandName New-AzureADApplication -Times 1 -Exactly
             Assert-MockCalled -CommandName Set-AzureADApplication -Times 0 -Exactly
         }
@@ -145,7 +145,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             Mock -CommandName Set-AzureADApplication {}
             Mock -CommandName Get-AzureADServicePrincipal {return $returnPrincipal}
 
-            New-FabricAzureADApplication -appName "app" -replyUrls @("url")
+            New-FabricAzureADApplication -appName "app" -replyUrls @(@{name="url"})
             Assert-MockCalled -CommandName New-AzureADApplication -Times 0 -Exactly
             Assert-MockCalled -CommandName Set-AzureADApplication -Times 1 -Exactly
         }
@@ -157,7 +157,7 @@ Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
         It 'should return a list of settings' {
             $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
             Mock -CommandName Get-Content { return $mockXml }
-            $results = Get-SettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "section"
+            $results = Get-TenantSettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "section"
             $results.Count | Should -Be 2
         }
     }
@@ -165,7 +165,7 @@ Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
         It 'should return nothing' {
             $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
             Mock -CommandName Get-Content { return $mockXml }
-            $results = Get-SettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "invalid"
+            $results = Get-TenantSettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "invalid"
             $results | Should -Be $null
         }
     }
@@ -174,7 +174,7 @@ Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
 Describe 'Get-Tenants' -Tag 'Unit' {
     Context 'Tenants exists in config' {
         It 'Should return a list of tenants' {
-            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @(@{name="tenant1";alias="alias1"}, @{name="tenant2";alias="alias2"})}
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1";alias="alias1"}, @{name="tenant2";alias="alias2"})}
             $tenants = Get-Tenants -installConfigPath $targetFilePath
             $tenants.Count | Should -Be 2
             $tenants[0].name | Should -Be "tenant1"
@@ -183,11 +183,11 @@ Describe 'Get-Tenants' -Tag 'Unit' {
             $tenants[1].alias | Should -Be "alias2"
         }
         It 'Should throw when no tenants in install.config' {
-            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig {}
             { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
         }
         It 'Should throw when no tenants alias in install.config' {
-            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @(@{name="tenant1"}, @{name="tenant2"})}
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1"}, @{name="tenant2"})}
             { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
         }
     }
@@ -196,7 +196,7 @@ Describe 'Get-Tenants' -Tag 'Unit' {
 Describe 'Get-ReplyUrls' -Tag 'Unit' {
     Context 'Urls exists in config' {
         It 'Should return a list of urls' {
-            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @("url1", "url2")}
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @("url1", "url2")}
             $urls = Get-ReplyUrls -installConfigPath $targetFilePath
             $urls.Count | Should -Be 2
             $urls[0] | Should -Be "url1"
@@ -206,7 +206,7 @@ Describe 'Get-ReplyUrls' -Tag 'Unit' {
     Context 'Urls do not exist in config' {
         InModuleScope Install-IdPSS-Utilities {
             It 'Should throw when no replyUrl in install.config' {
-                Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
+                Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig {}
                 { Get-ReplyUrls -installConfigPath $targetFilePath } | Should -Throw
             }
         }
