@@ -756,7 +756,7 @@ function Get-ClientSettingsFromInstallConfig {
     return $clientSettings
 }
 
-function Get-SettingsFromInstallConfig {
+function Get-TenantSettingsFromInstallConfig {
     param(
         [ValidateScript({
             if (!(Test-Path $_)) {
@@ -787,6 +787,8 @@ function Add-InstallationTenantSettings {
         [string] $configSection,
         [Parameter(Mandatory=$true)]
         [string] $tenantId,
+        [Parameter(Mandatory=$true)]
+        [string] $tenantAlias,
         [Parameter(Mandatory=$true)]
         [string] $clientSecret,
         [Parameter(Mandatory=$true)]
@@ -825,6 +827,10 @@ function Add-InstallationTenantSettings {
         $nameAttribute = $installationConfig.CreateAttribute("tenantId")
         $nameAttribute.Value = $tenantId
         $setting.Attributes.Append($nameAttribute) | Out-Null
+        
+        $nameAttribute = $installationConfig.CreateAttribute("tenantAlias")
+        $nameAttribute.Value = $tenantAlias
+        $setting.Attributes.Append($nameAttribute) | Out-Null
 
         $clientAttribute = $installationConfig.CreateAttribute("clientid")
         $clientAttribute.Value = $clientId
@@ -859,11 +865,11 @@ function Set-IdentityEnvironmentAzureVariables {
         $scope = "identity"
         # Alter Identity web.config for azure
         $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
-        $allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "allowedTenants"
 
-        $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+        $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "claimsIssuerTenant"
 
@@ -1181,7 +1187,7 @@ Export-ModuleMember Add-InstallerClientRegistration
 Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
 Export-ModuleMember Get-WebConfigPath
 Export-ModuleMember Set-IdentityEnvironmentAzureVariables
-Export-ModuleMember Get-SettingsFromInstallConfig
+Export-ModuleMember Get-TenantSettingsFromInstallConfig
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
