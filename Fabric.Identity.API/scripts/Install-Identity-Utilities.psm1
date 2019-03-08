@@ -776,9 +776,7 @@ function Get-SettingsFromInstallConfig {
     $tempNode = $tenantScope.SelectSingleNode($setting)
     $settingList = @()
     foreach($nodeChild in $tempNode.variable){
-        if($nodeChild.name) {
-            $settingList += $nodeChild.name
-        }
+        $settingList += @{name = $nodeChild.name; alias = $nodeChild.alias}
     }
     return $settingList
 }
