@@ -56,6 +56,13 @@ $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSett
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $installSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
+
+# using methods in DosInstallUtilites to install idpss, which will make it easier to migrate the identity code later 
+$configStore = @{Type = "File"; Format = "XML"; Path = $installConfigPath}
+$idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "idpss"
+$commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
+
+
 if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $installSettings.discoveryService -installConfigPath $installConfigPath -quiet $quiet
 }
@@ -68,17 +75,51 @@ $installApplication = Publish-Application -site $selectedSite `
                  -zipPackage $zipPackage `
                  -assembly "Fabric.Identity.API.dll"
 
-# Get Idpss app pool user 
-# Create log directory with read/write permissions for app pool user
+# Get idpss app pool user if discoveryservice is installed
+# Install idpss if discoveryservice isn't installed
 $idpssName = "IdentityProviderSearchService"
-$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
+
+if (!$noDiscoveryService){
+    $idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
+}
+else{
+    # install IdPSS
+    $idpssSettingsScope = "idpss"
+    $idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $installConfigPath -scope $idpssSettingsScope -quiet $quiet
+    
+    $idpssWebDeployParameters = Get-WebDeployParameters -serviceConfig $idpssConfigStore -commonConfig $commonConfigStore
+    $idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
+    $idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
+    $idpssInstallPackagePath = Get-WebDeployPackagePath -standalonePath $idpssStandalonePath -installerPath $idpssInstallerPath
+
+    if($null -eq $credential)
+    {
+     $credential = Get-Credential -Message "Enter credential for Idpss app pool account"
+    }
+
+    $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
+                              -WebDeployParameters $idpssWebDeployParameters `
+                              -AppPoolName $idpssConfigStore.appPoolName `
+                              -AppPoolCredential $credential `
+                              -AuthenticationType "Windows" `
+                              -WebDeploy `
+
+    $idpssAppPoolUser = $credential.UserName
+}
 $idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
 New-AppRoot $idpssDirectory $idpssAppPoolUser
 
-
+# Register identity with discovery if discoveryservice is installed
+# Register idpss to the database if discoveryservice isn't installed
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
-    Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
+    Register-ServiceWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -serverUrl $identityServiceUrl `
+    -serviceName "IdentityService" -friendlyName "Fabric.Identity" -description "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem.";
+}
+else
+{
+    Register-ServiceWithDiscovery -iisUserName $idpssAppPoolUser -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
+    -serviceName "IdentityProviderSearchService" -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `

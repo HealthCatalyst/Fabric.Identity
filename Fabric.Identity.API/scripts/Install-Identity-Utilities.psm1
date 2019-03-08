@@ -384,21 +384,31 @@ function Get-InstalledVersion([string] $appDirectory, [string] $assemblyPath){
     return [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$appDirectory\$assemblyPath").FileVersion
 }
 
-function Register-IdentityWithDiscovery([string] $iisUserName, [string] $metadataConnStr, [string] $version, [string] $identityServerUrl){
+function Register-ServiceWithDiscovery
+(
+  [string] $iisUserName, 
+  [string] $metadataConnStr, 
+  [string] $version, 
+  [string] $serverUrl, 
+  [string] $serviceName, 
+  [string] $friendlyName, 
+  [string] $description
+)
+{
     Add-ServiceUserToDiscovery $iisUserName $metadataConnStr
 
     $discoveryPostBody = @{
         buildVersion = $version;
-        serviceName = "IdentityService";
+        serviceName = $serviceName;
         serviceVersion = 1;
-        friendlyName = "Fabric.Identity";
-        description = "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem.";
-        identityServerUrl = $identityServerUrl;
-        serviceUrl = $identityServerUrl;
+        friendlyName = $friendlyName;
+        description = $description;
+        serverUrl = $serverUrl;
+        serviceUrl = $serverUrl;
         discoveryType = "Service";
     }
     Add-DiscoveryRegistrationSql -discoveryPostBody $discoveryPostBody -connectionString $metadataConnStr | Out-Null
-    Write-DosMessage -Level "Information" -Message "Identity registered URL: $identityServerUrl with DiscoveryService."
+    Write-DosMessage -Level "Information" -Message "$($serviceName) registered URL: $serverUrl with DiscoveryService."
 }
 
 function Add-DatabaseSecurity([string] $userName, [string] $role, [string] $connString)
@@ -1168,6 +1178,114 @@ function Set-IdentityUri {
     }
 }
 
+function Get-WebDeployPackagePath{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $standalonePath,
+        [Parameter(Mandatory=$true)]
+        [string] $installerPath
+    )
+    if(Test-Path $standalonePath){
+        return Resolve-Path $standalonePath
+    }
+    if(Test-Path $installerPath){
+        return Resolve-Path $installerPath
+    }
+    Write-DosMessage -Level "Fatal" -Message "Could not find the web deploy package at $standalonePath or $installerPath."
+}
+
+function Get-WebDeployParameters{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $serviceConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+
+    Confirm-ServiceConfig -commonConfig $commonConfig -serviceConfig $serviceConfig 
+    $metaDataConnectionString = Get-MetadataConnectionString -commonConfig $commonConfig -serviceConfig $serviceConfig
+    
+    $webDeployParameters = @(
+                                @{
+                                    Name = "IIS Web Application Name";
+                                    Value = "$($serviceConfig.siteName)/$($serviceConfig.appName)"
+                                },
+                                @{
+                                    Name = "Application Endpoint Address";
+                                    Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
+                                },
+                                @{
+                                    Name =  "MetadataContext-Deployment-Deployment Connection String";
+                                    Value = $metaDataConnectionString
+                                },
+                                @{
+                                    Name = "MetadataContext-Web.config Connection String";
+                                    Value = $metaDataConnectionString
+                                }
+                            )
+    
+    return $webDeployParameters
+}
+
+function Confirm-ServiceConfig{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $serviceConfig
+    )
+
+    Confirm-SettingIsNotNull -settingName "common.sqlServerAddress" -settingValue $commonConfig.sqlServerAddress
+    Confirm-SettingIsNotNull -settingName "common.metadataDbName" -settingValue $commonConfig.metadataDbName
+    Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfig.webServerDomain
+    Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfig.clientEnvironment
+    Confirm-SettingIsNotNull -settingName "$serviceConfig.appName" -settingValue $serviceConfig.appName
+    Confirm-SettingIsNotNull -settingName "$serviceConfig.appPoolName" -settingValue $serviceConfig.appPoolName
+    Confirm-SettingIsNotNull -settingName "$serviceConfig.siteName" -settingValue $serviceConfig.siteName
+}
+
+function Confirm-SettingIsNotNull{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $settingName,
+        [string] $settingValue
+    )
+
+    if([string]::IsNullOrEmpty($settingValue)){
+        Write-DosMessage -Level "Fatal" -Message "You must specify a valid $settingName in config."
+    }
+}
+
+function Get-MetadataConnectionString{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $serviceConfig
+    )
+    
+    $metaDataConnectionString =  "Data Source=$($commonConfig.sqlServerAddress);Initial Catalog=$($commonConfig.metadataDbName);Integrated Security=True;Application Name=$($serviceConfig.appName);"
+    Confirm-DatabaseConnection -connectionString $metaDataConnectionString
+    return $metaDataConnectionString
+}
+
+function Confirm-DatabaseConnection{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $connectionString
+    )
+
+    Write-DosMessage -Level "Information" -Message "Confirming connection string '$connectionString'."
+    $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
+    try{
+        $connection.Open()
+    }catch{
+        Write-DosMessage -Level "Fatal" -Message "Could not connect to '$connectionString' please check database connection settings in install config."
+    }finally{
+        $connection.Close();
+    }
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1182,7 +1300,7 @@ Export-ModuleMember Get-DiscoveryServiceUrl
 Export-ModuleMember Get-ApplicationEndpoint
 Export-ModuleMember Unlock-ConfigurationSections
 Export-ModuleMember Publish-Application
-Export-ModuleMember Register-IdentityWithDiscovery
+Export-ModuleMember Register-ServiceWithDiscovery
 Export-ModuleMember Add-DatabaseSecurity
 Export-ModuleMember Set-IdentityEnvironmentVariables
 Export-ModuleMember Add-RegistrationApiRegistration
@@ -1200,3 +1318,5 @@ Export-ModuleMember Get-ClientSettingsFromInstallConfig
 Export-ModuleMember Find-IISAppPoolUser
 Export-ModuleMember Set-LoggingConfiguration
 Export-ModuleMember Set-IdentityUri
+Export-ModuleMember Get-WebDeployPackagePath
+Export-ModuleMember Get-WebDeployParameters
