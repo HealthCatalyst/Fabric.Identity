@@ -81,17 +81,17 @@ function New-FabricAzureADApplication() {
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
-        [string[]] $replyUrls,
+        [Hashtable[]] $replyUrls,
         [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission,
         [bool] $isMultiTenant = $false
     )
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls -AvailableToOtherTenants $isMultiTenant
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant
     }
     else {
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls -AvailableToOtherTenants $isMultiTenant
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant
     }
 
     return $app
@@ -180,7 +180,7 @@ function Get-Tenants {
     $tenants = @()
     $scope = "identity"
     $parentSetting = "tenants"
-    $tenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $tenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
         -scope $scope `
         -setting $parentSetting
 
@@ -200,7 +200,7 @@ function Get-ReplyUrls {
     $scope = "identity"
     $parentSetting = "replyUrls"
     $replyUrls = @()
-    $replyUrls += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
+    $replyUrls += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
 
     if($null -eq $replyUrls -or $replyUrls.Count -eq 0){
         Write-DosMessage -Level "Error" -Message  "No reply urls where found in the install.config."
@@ -215,7 +215,7 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
-        [string[]] $replyUrls,
+        [HashTable[]] $replyUrls,
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
@@ -223,17 +223,19 @@ function Register-Identity {
     )
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
-    $allowedTenants += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
         -scope $configSection `
         -setting $allowedTenantsText
 
-    $claimsIssuer += Get-SettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
         -scope $configSection `
         -setting $claimsIssuerText
+    Confirm-Tenants -tenants $allowedTenants
+    Confirm-Tenants -tenants $claimsIssuer
 
-   if($null -ne $claimsIssuer) {
-    Write-Host "Enter credentials for $appName specified tenant: $claimsIssuer"
-    Connect-AzureADTenant -tenantId $claimsIssuer
+   if($null -ne $claimsIssuer.name) {
+    Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
+    Connect-AzureADTenant -tenantId $claimsIssuer.name
 
     $permission = Get-GraphApiUserReadPermissions
     $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
@@ -243,7 +245,8 @@ function Register-Identity {
     Disconnect-AzureAD
 
     Add-InstallationTenantSettings -configSection $configSection `
-    -tenantId $claimsIssuer `
+    -tenantId $claimsIssuer.name `
+    -tenantAlias $claimsIssuer.alias `
     -clientSecret $clientSecret `
     -clientId $clientId `
     -installConfigPath $installConfigPath `
@@ -260,9 +263,9 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
-        [string[]] $replyUrls,
+        [HashTable[]] $replyUrls,
         [Parameter(Mandatory=$true)]
-        [string[]] $tenants,
+        [HashTable[]] $tenants,
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
@@ -270,10 +273,9 @@ function Register-IdPSS {
     )
     # IdentityProviderSearchService registration
    if($null -ne $tenants) {
-    
     foreach($tenant in $tenants) { 
-      Write-Host "Enter credentials for $appName on tenant specified: $tenant"
-      Connect-AzureADTenant -tenantId $tenant
+      Write-Host "Enter credentials for $appName on tenant specified: $($tenant.name)"
+      Connect-AzureADTenant -tenantId $tenant.name
 
       # Get read permissions
       $permission = Get-GraphApiDirectoryReadPermissions
@@ -283,14 +285,15 @@ function Register-IdPSS {
 
       Disconnect-AzureAD
       Add-InstallationTenantSettings -configSection $configSection `
-          -tenantId $tenant `
+          -tenantId $tenant.name `
+          -tenantAlias $tenant.alias `
           -clientSecret $clientSecret `
           -clientId $clientId `
           -installConfigPath $installConfigPath `
           -appName $appName
 
       # Manual process, need to give consent this way for now
-      Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+      Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
  }
 }
