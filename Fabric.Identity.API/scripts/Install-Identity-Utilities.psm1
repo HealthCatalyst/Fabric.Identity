@@ -739,7 +739,7 @@ function Get-ClientSettingsFromInstallConfig {
     $tenantScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq "identity"}
     $tenants = $tenantScope.SelectSingleNode('registeredApplications')
 
-    $clientSettings = @()
+    $clientSettings = New-Object System.Collections.Generic.List[HashTable]
     foreach($tenant in $tenants.variable) {
       if ($tenant.appName -eq $appName)
       {
@@ -748,8 +748,9 @@ function Get-ClientSettingsFromInstallConfig {
             # Does not decrypt secret
             clientSecret = $tenant.secret
             tenantId = $tenant.tenantId
+            tenantAlias = $tenant.tenantAlias
         }
-        $clientSettings += $tenantSetting
+        $clientSettings.Add($tenantSetting)
       }
     }
 
@@ -876,7 +877,8 @@ function Set-IdentityEnvironmentAzureVariables {
         # Set Azure Settings
         $environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
         $environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
-        $environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer)
+        $environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer.name)
+        $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias", $claimsIssuer.alias)
         $environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
         $environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
         $environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
@@ -887,6 +889,7 @@ function Set-IdentityEnvironmentAzureVariables {
                 # Encrypt secret in install.config if not encrypted
                 Add-InstallationTenantSettings -configSection "identity" `
                     -tenantId $clientSettings.tenantId `
+                    -tenantAlias $clientSettings.tenantAlias `
                     -clientSecret $encryptedSecret `
                     -clientId $clientSettings.clientId `
                     -installConfigPath $installConfigPath `
@@ -901,7 +904,8 @@ function Set-IdentityEnvironmentAzureVariables {
         foreach($allowedTenant in $allowedTenants)
         {
           $index = $allowedTenants.IndexOf($allowedTenant)
-          $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant + "/")
+          $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant.name + "/")
+          $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias__$index", $allowedTenant.alias)
         }
     }
 
@@ -1009,6 +1013,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
             $index = $clientSettings.IndexOf($setting)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
 
             # Currently only a single default scope is expected
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
@@ -1019,6 +1024,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
                 # Encrypt secret in install.config if not encrypted
                 Add-InstallationTenantSettings -configSection "identity" `
                     -tenantId $setting.tenantId `
+                    -tenantAlias $setting.tenantAlias `
                     -clientSecret $encryptedSecret `
                     -clientId $setting.clientId `
                     -installConfigPath $installConfigPath `
