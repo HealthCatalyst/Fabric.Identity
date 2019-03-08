@@ -36,35 +36,6 @@ function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $w
     }
 }
 
-function Install-DotNetCoreIfNeeded([string] $version, [string] $downloadUrl){
-    if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" $version))
-    {    
-        try{
-            Write-DosMessage -Level "Information" -Message "Windows Server Hosting Bundle version $version not installed...installing version $version"        
-            $originalProgressPreference = $progressPreference
-            try { 
-                $progressPreference = 'silentlyContinue'
-                Invoke-WebRequest -Uri $downloadUrl -OutFile $env:Temp\bundle.exe -UseBasicParsing
-            } finally { $progressPreference = $originalProgressPreference }
-            Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
-            Restart-W3SVC
-        }catch{
-            Write-DosMessage -Level "Error" -Message "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. $downloadUrl"
-            throw
-        }
-        try{
-            Remove-Item $env:Temp\bundle.exe
-        }catch{
-            $e = $_.Exception
-            Write-DosMessage -Level "Warning" -Message "Unable to remove temporary download file for server hosting bundle exe" 
-            Write-DosMessage -Level "Warning" -Message  $e.Message
-        }
-
-    }else{
-        Write-DosMessage -Level "Information" -Message  ".NET Core Windows Server Hosting Bundle (v$version) installed and meets expectations."
-    }
-}
-
 function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installConfigPath, [string] $scope, [bool] $quiet){
     try{
         $sites = Get-ChildItem IIS:\Sites
