@@ -174,14 +174,20 @@ Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
 Describe 'Get-Tenants' -Tag 'Unit' {
     Context 'Tenants exists in config' {
         It 'Should return a list of tenants' {
-            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @("tenant1", "tenant2")}
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @(@{name="tenant1";alias="alias1"}, @{name="tenant2";alias="alias2"})}
             $tenants = Get-Tenants -installConfigPath $targetFilePath
             $tenants.Count | Should -Be 2
-            $tenants[0] | Should -Be "tenant1"
-            $tenants[1] | Should -Be "tenant2"
+            $tenants[0].name | Should -Be "tenant1"
+            $tenants[0].alias | Should -Be "alias1"
+            $tenants[1].name | Should -Be "tenant2"
+            $tenants[1].alias | Should -Be "alias2"
         }
         It 'Should throw when no tenants in install.config' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig {}
+            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+        }
+        It 'Should throw when no tenants alias in install.config' {
+            Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-SettingsFromInstallConfig { return @(@{name="tenant1"}, @{name="tenant2"})}
             { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
         }
     }

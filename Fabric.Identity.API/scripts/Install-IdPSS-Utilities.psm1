@@ -188,6 +188,7 @@ function Get-Tenants {
         Write-DosMessage -Level "Error" -Message  "No tenants to register were found in the install.config"
         throw
     }
+    Confirm-Tenants $tenants
 
     return $tenants
 }
@@ -269,6 +270,7 @@ function Register-IdPSS {
     )
     # IdentityProviderSearchService registration
    if($null -ne $tenants) {
+    
     foreach($tenant in $tenants) { 
       Write-Host "Enter credentials for $appName on tenant specified: $tenant"
       Connect-AzureADTenant -tenantId $tenant
@@ -291,6 +293,18 @@ function Register-IdPSS {
       Start-Process -FilePath  "https://login.microsoftonline.com/$tenant/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
  }
+}
+
+function Confirm-Tenants {
+    param(
+        [Parameter(Mandatory=$true)]
+        [Object[]] $tenants
+    )
+    foreach($tenant in $tenants) {
+        if([string]::IsNullOrEmpty($tenant.name) -or [string]::IsNullOrEmpty($tenant.alias)) {
+            Write-DosMessage -Level "Fatal" -Message "Tenant alias and name must be provided for each tenant."
+        }
+    }
 }
 
 Export-ModuleMember Get-FabricAzureADSecret
