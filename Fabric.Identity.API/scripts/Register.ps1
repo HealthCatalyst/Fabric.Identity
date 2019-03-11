@@ -786,7 +786,11 @@ function Invoke-RegisterRolesAndPermissions($grainName, $securableItemName, $sec
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
-	Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1
+    $originalProgressPreference = $progressPreference
+    try { 
+        $progressPreference = 'silentlyContinue'
+        Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -OutFile Fabric-Install-Utilities.psm1 -UseBasicParsing
+    } finally { $progressPreference = $originalProgressPreference }
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 

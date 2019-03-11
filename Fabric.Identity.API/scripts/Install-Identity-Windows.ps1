@@ -93,7 +93,11 @@ function Add-DatabaseSecurity($userName, $role, $connString)
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
-    Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
+    $originalProgressPreference = $progressPreference
+    try { 
+        $progressPreference = 'silentlyContinue'
+        Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1 -UseBasicParsing
+    } finally { $progressPreference = $originalProgressPreference }
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
@@ -349,15 +353,19 @@ if((Test-Path $zipPackage))
 
 if(!(Test-PrerequisiteExact "*.NET Core*Windows Server Hosting*" 1.1.30503.82))
 {    
+    $originalProgressPreference = $progressPreference
     try{
-        Write-Console "Windows Server Hosting Bundle version 1.1.30503.82 not installed...installing version 1.1.30503.82"        
-        Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=848766 -OutFile $env:Temp\bundle.exe
+        Write-Console "Windows Server Hosting Bundle version 1.1.30503.82 not installed...installing version 1.1.30503.82"
+        $progressPreference = 'silentlyContinue'        
+        Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=848766 -OutFile $env:Temp\bundle.exe -UseBasicParsing
         Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
         net stop was /y
         net start w3svc
     }catch{
         Write-Error "Could not install .NET Windows Server Hosting bundle. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461"
         throw
+    }finally{
+        $progressPreference = $originalProgressPreference
     }
     try{
         Remove-Item $env:Temp\bundle.exe

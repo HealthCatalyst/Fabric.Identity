@@ -36,15 +36,18 @@ function Create-CouchDb($couchDbUsername, $couchDbPassword, $couchDbServer)
 
     } catch [System.Management.Automation.CommandNotFoundException]{
 		
+        $originalProgressPreference = $progressPreference
 		try{
 			Write-Host "Docker not installed, downloading and installing CouchDB for Windows..."
-			Invoke-WebRequest -Uri https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi -OutFile $env:Temp\apache-couchdb-2.1.0.msi
+            $progressPreference = 'silentlyContinue'
+            Invoke-WebRequest -Uri https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi -OutFile $env:Temp\apache-couchdb-2.1.0.msi -UseBasicParsing
 			Write-Host "Launching CouchDB interactive installation..."
 			Start-Process $env:Temp\apache-couchdb-2.1.0.msi -Wait
 		}catch{
 			Write-Error "Could not download and launch CouchDB installer. Please install CouchDB manually: https://dl.bintray.com/apache/couchdb/win/2.1.0/apache-couchdb-2.1.0.msi. Halting installation."
 			throw
 		}finally{
+            $progressPreference = $originalProgressPreference
 			Remove-Item $env:Temp\apache-couchdb-2.1.0.msi
 		}
 
@@ -67,16 +70,20 @@ function Invoke-InstallHostingComponents()
 	
     if(!(Test-Prerequisite '*.NET Core*Windows Server Hosting*' 1.1.30327.81))
     {
+        $originalProgressPreference = $progressPreference
 		try{
 			Write-Host "Windows Server Hosting Bundle minimum version 1.1.30327.81 not installed...installing version 1.1.30327.81"
-			Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile $env:Temp\bundle.exe
+            $progressPreference = 'silentlyContinue'
+            Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=844461 -OutFile $env:Temp\bundle.exe -UseBasicParsing
 			Start-Process $env:Temp\bundle.exe -Wait -ArgumentList '/quiet /install'
 			net stop was /y
 			net start w3svc
 			Remove-Item $env:Temp\bundle.exe
 		}catch{
 			Write-Error "Could not install .NET Windows Server Hosting bundle is installed. Please install the hosting bundle before proceeding. https://go.microsoft.com/fwlink/?linkid=844461" -ErrorAction Stop
-		}
+		}finally{
+            $progressPreference = $originalProgressPreference
+        }
     }else{
         Write-Host ".NET Core Windows Server Hosting Bundle installed and meets expectations."
     }
@@ -326,7 +333,10 @@ function Invoke-RegisterFabricAuthorizationApi($identityServerUrl, $accessToken)
 }
 
 if(!(Test-Path .\Fabric-Install-Utilities.psm1)){
-    Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1
+    try { 
+        $progressPreference = 'silentlyContinue'
+        Invoke-WebRequest -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -Headers @{"Cache-Control"="no-cache"} -OutFile Fabric-Install-Utilities.psm1 -UseBasicParsing
+    } finally { $progressPreference = $originalProgressPreference }
 }
 Import-Module -Name .\Fabric-Install-Utilities.psm1 -Force
 
