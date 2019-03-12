@@ -89,7 +89,7 @@ Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDi
 -applicationEndpoint $identityServiceUrl `
 -identityDbConnStr $identityDatabase.DbConnectionString`
 -discoveryServiceUrl $discoveryServiceUrl `
--noDiscoveryService $true
+-noDiscoveryService $noDiscoveryService
 
 $accessToken = ""
 
