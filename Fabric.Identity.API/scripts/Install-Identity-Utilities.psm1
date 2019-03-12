@@ -408,7 +408,7 @@ function Register-ServiceWithDiscovery
         discoveryType = "Service";
     }
     Add-DiscoveryRegistrationSql -discoveryPostBody $discoveryPostBody -connectionString $metadataConnStr | Out-Null
-    Write-DosMessage -Level "Information" -Message "$($serviceName) registered URL: $serverUrl with DiscoveryService."
+    Write-DosMessage -Level "Information" -Message "$serviceName registered URL: $serverUrl with DiscoveryService."
 }
 
 function Add-DatabaseSecurity([string] $userName, [string] $role, [string] $connString)
