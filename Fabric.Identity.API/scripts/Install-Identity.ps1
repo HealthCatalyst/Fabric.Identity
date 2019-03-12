@@ -148,10 +148,7 @@ $idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallPackagePath = Get-WebDeployPackagePath -standalonePath $idpssStandalonePath -installerPath $idpssInstallerPath
 
-if($null -eq $credential)
-{
-  $idpssIISUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $installConfigPath -scope $idpssSettingsScope
-}
+$idpssIISUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $installConfigPath -scope $idpssSettingsScope
 
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
