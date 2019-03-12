@@ -158,7 +158,7 @@ $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssIn
                       -AppPoolName $idpssConfigStore.appPoolName `
                       -AppPoolCredential $idpssIISUser.credential `
                       -AuthenticationType "Windows" `
-                      -WebDeploy `
+                      -WebDeploy
 
 $idpssAppPoolUser = $idpssIISUser.UserName
 
