@@ -13,6 +13,16 @@ param(
     [switch] $registerIdPSS
 )
 
+if(!($registerIdentity) -and !($registerIdPSS))
+{
+	Write-Host " You must register either Identity and/or IdPSS by adding their respective switch.
+	Examples:
+		.\Register-Identity-IdPSS.ps1 -registerIdentity
+		.\Register-Identity-IdPSS.ps1 -registerIdPSS
+		.\Register-Identity-IdPSS.ps1 -registerIdentity -registerIdPSS" -ForegroundColor Red -BackgroundColor Black
+	exit
+}
+
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
 if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
     Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
