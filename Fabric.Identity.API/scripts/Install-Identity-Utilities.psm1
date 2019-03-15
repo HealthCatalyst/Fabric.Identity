@@ -472,6 +472,41 @@ function Add-RegistrationApiRegistration([string] $identityServerUrl, [string] $
     return $registrationApiSecret
 }
 
+function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerSecret)
+{
+    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope fabric/identity.manageresources
+
+    Write-DosMessage -Level Information "Registering IdentitySearchProvider API with Fabric.Identity..."
+    $apiName = "identitySearchProvider-service-api"
+    try{
+        [string]$apiSecret = [string]::Empty
+        Write-Host "    Registering $($apiName) with Fabric.Identity"
+        $body = New-APIRegistrationBody -apiName $apiName -userClaims @("name", "email", "roles", "group") -scopes @{"name" = "fabric/idprovider.searchusers"} -isEnabled $true
+
+        $isApiRegistered = Test-IsApiRegistered -identityUrl $identityServiceUrl -apiName $apiName -accessToken $accessToken
+
+        if($isApiRegistered){
+            Write-Host "    $($apiName) is already registered, updating"
+            $apiSecret = Edit-ApiRegistration -identityUrl $identityServiceUrl -body $body -apiName $apiName -accessToken $accessToken
+        }else{
+            $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+        }
+
+        if (![string]::IsNullOrEmpty($apiSecret) -and ![string]::IsNullOrWhiteSpace($apiSecret)) {
+		  return $apiSecret
+        }
+		else
+		{
+		  Write-Error "Could not register api $($apiName), apiSecret is empty"
+		}
+    }
+    catch{
+        Write-Error "Could not register api $($apiName)"
+        throw $_.Exception
+    }
+}
+
+
 function Add-InstallerClientRegistration([string] $identityServerUrl, [string] $accessToken, [string] $fabricInstallerSecret){
     $body = @{
         ClientId = "fabric-installer";
@@ -758,7 +793,7 @@ function Get-ClientSettingsFromInstallConfig {
             # Does not decrypt secret
             clientSecret = $tenant.secret
             tenantId = $tenant.tenantId
-            tenantAlias = $tenant.tenantAlias
+			tenantAlias = $tenant.tenantAlias
         }
         $clientSettings.Add($tenantSetting)
       }
@@ -1023,7 +1058,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
             $index = $clientSettings.IndexOf($setting)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
+			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
 
             # Currently only a single default scope is expected
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
@@ -1034,7 +1069,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
                 # Encrypt secret in install.config if not encrypted
                 Add-InstallationTenantSettings -configSection "identity" `
                     -tenantId $setting.tenantId `
-                    -tenantAlias $setting.tenantAlias `
+					-tenantAlias $setting.tenantAlias `
                     -clientSecret $encryptedSecret `
                     -clientId $setting.clientId `
                     -installConfigPath $installConfigPath `
@@ -1194,12 +1229,16 @@ function Get-WebDeployPackagePath{
     Write-DosMessage -Level "Fatal" -Message "Could not find the web deploy package at $standalonePath or $installerPath."
 }
 
-function Get-WebDeployParameters{
+function Get-IdpssWebDeployParameters{
     param(
         [Parameter(Mandatory=$true)]
         [Hashtable] $serviceConfig,
         [Parameter(Mandatory=$true)]
-        [Hashtable] $commonConfig
+        [Hashtable] $commonConfig,
+        [PSCredential] $credential,
+        [string] $discoveryServiceUrl,
+        [string] $noDiscoveryService,
+        [string] $registrationApiSecret
     )
 
     Confirm-ServiceConfig -commonConfig $commonConfig -serviceConfig $serviceConfig 
@@ -1211,8 +1250,12 @@ function Get-WebDeployParameters{
                                     Value = "$($serviceConfig.siteName)/$($serviceConfig.appName)"
                                 },
                                 @{
+                                    Name = "App Pool Account";
+                                    Value = $($credential.UserName)
+                                },
+                                @{
                                     Name = "Application Endpoint Address";
-                                    Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
+                                    Value = "$($serviceConfig.applicationEndPoint)"
                                 },
                                 @{
                                     Name =  "MetadataContext-Deployment-Deployment Connection String";
@@ -1221,6 +1264,26 @@ function Get-WebDeployParameters{
                                 @{
                                     Name = "MetadataContext-Web.config Connection String";
                                     Value = $metaDataConnectionString
+                                }
+                                ,
+                                @{
+                                    Name = "Discovery Service Endpoint";
+                                    Value = $discoveryServiceUrl
+                                }
+                                ,
+                                @{
+                                    Name = "Use Discovery Service";
+                                    Value = $noDiscoveryService
+                                }
+                                ,
+                                @{
+                                    Name = "Current Domain";
+                                    Value = $commonConfig.webServerDomain
+                                }
+                                ,
+                                @{
+                                    Name = "Identity Provider Search Service Api Secret";
+                                    Value = $registrationApiSecret
                                 }
                             )
     
@@ -1286,6 +1349,56 @@ function Confirm-DatabaseConnection{
     }
 }
 
+function New-AppRoot($appDirectory, $iisUser){
+    # Create the necessary directories for the app
+    $logDirectory = "$appDirectory\logs"
+
+    if(!(Test-Path $appDirectory)) {
+        Write-Console "Creating application directory: $appDirectory."
+        mkdir $appDirectory | Out-Null
+    }else{
+        Write-Console "Application directory: $appDirectory exists."
+    }
+
+    
+    if(!(Test-Path $logDirectory)) {
+        Write-Console "Creating application log directory: $logDirectory."
+        mkdir $logDirectory | Out-Null
+        Write-Console "Setting Write and Read access for $iisUser on $logDirectory."
+        $acl = Get-Acl $logDirectory
+        $writeAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $readAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Read", "ContainerInherit,ObjectInherit", "None", "Allow")
+
+        try {			
+            $acl.AddAccessRule($writeAccessRule)
+        } catch [System.InvalidOperationException]
+        {
+            # Attempt to fix parent identity directory before log directory
+            RepairAclCanonicalOrder(Get-Acl $appDirectory)
+            RepairAclCanonicalOrder($acl)
+            $acl.AddAccessRule($writeAccessRule)
+        }
+		
+        try {
+            $acl.AddAccessRule($readAccessRule)
+        } catch [System.InvalidOperationException]
+        {
+            RepairAclCanonicalOrder($acl)
+            $acl.AddAccessRule($readAccessRule)
+        }
+		
+		try {
+            Set-Acl -Path $logDirectory $acl
+        } catch [System.InvalidOperationException]
+        {
+            RepairAclCanonicalOrder($acl)
+            Set-Acl -Path $logDirectory $acl
+        }
+    }else{
+        Write-Console "Log directory: $logDirectory exists"
+    }
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1304,6 +1417,7 @@ Export-ModuleMember Register-ServiceWithDiscovery
 Export-ModuleMember Add-DatabaseSecurity
 Export-ModuleMember Set-IdentityEnvironmentVariables
 Export-ModuleMember Add-RegistrationApiRegistration
+Export-ModuleMember Add-IdpssApiResourceRegistration
 Export-ModuleMember Add-IdentityClientRegistration
 Export-ModuleMember Add-SecureIdentityEnvironmentVariables
 Export-ModuleMember Test-RegistrationComplete
@@ -1319,4 +1433,5 @@ Export-ModuleMember Find-IISAppPoolUser
 Export-ModuleMember Set-LoggingConfiguration
 Export-ModuleMember Set-IdentityUri
 Export-ModuleMember Get-WebDeployPackagePath
-Export-ModuleMember Get-WebDeployParameters
+Export-ModuleMember Get-IdpssWebDeployParameters
+Export-ModuleMember New-AppRoot

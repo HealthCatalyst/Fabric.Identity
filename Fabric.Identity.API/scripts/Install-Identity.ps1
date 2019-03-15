@@ -57,12 +57,6 @@ $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlS
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $installSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 
-# using methods in DosInstallUtilites to install idpss, which will make it easier to migrate the identity code later 
-$configStore = @{Type = "File"; Format = "XML"; Path = $installConfigPath}
-$idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "idpss"
-$commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
-
-
 if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $installSettings.discoveryService -installConfigPath $installConfigPath -quiet $quiet
 }
@@ -81,7 +75,6 @@ if(!$noDiscoveryService){
     -serviceName "IdentityService" -friendlyName "Fabric.Identity" -description "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem.";
 }
 
-# uses discovery getting set to true causes identity service to be in error, should be fixed in more recent fabric.identity
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
 -primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
 -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
@@ -136,62 +129,9 @@ if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret has been created."
 }
 
+# Call the Idpss powershell script
+.\Install-IdentityProviderSearchService.ps1 -certificates $($selectedCerts)
 
-# install IdPSS TODO move out to IdPSS ps1 script #######################################################################
-# Get Idpss app pool user 
-# Create log directory with read/write permissions for app pool user
-$idpssSettingsScope = "idpss"
-$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $installConfigPath -scope $idpssSettingsScope -quiet $quiet
-    
-$idpssWebDeployParameters = Get-WebDeployParameters -serviceConfig $idpssConfigStore -commonConfig $commonConfigStore
-$idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
-$idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
-$idpssInstallPackagePath = Get-WebDeployPackagePath -standalonePath $idpssStandalonePath -installerPath $idpssInstallerPath
-
-$idpssIISUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $installConfigPath -scope $idpssSettingsScope
-
-$idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
-                      -WebDeployParameters $idpssWebDeployParameters `
-                      -AppPoolName $idpssConfigStore.appPoolName `
-                      -AppPoolCredential $idpssIISUser.credential `
-                      -AuthenticationType "Windows" `
-                      -WebDeploy
-
-$idpssAppPoolUser = $idpssIISUser.UserName
-
-# uses Discovery url, we should be able to remove since I Get-IISAppPoolUser above
-$idpssName = "IdentityProviderSearchService"
-#$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $true -quiet $quiet
-
-if($useAzure) {
-    Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
-}
-
-$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
-New-AppRoot $idpssDirectory $idpssAppPoolUser
-
-Add-DatabaseSecurity $idpssAppPoolUser $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
-
-Register-ServiceWithDiscovery -iisUserName $idpssAppPoolUser -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
--serviceName $idpssName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
-
-#$registrationApiSecret = Add-RegistrationApiRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
-
-# uses discovery url similar to above
-#$idpssConfig = Get-WebConfigPath -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $true -quiet $quiet
-$siteName = $idpssConfigStore.siteName
-$sitePath = $(get-item "iis:\sites\$siteName").physicalPath
-$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($sitePath), $idpssName)
-$idpssConfig = $idpssDirectory + "\web.config"
-
-Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
-    -useAzure $useAzure `
-    -useWindows $useWindows `
-    -installConfigPath $installConfigPath `
-    -encryptionCert $selectedCerts.SigningCertificate `
-    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
-    -appInsightsInstrumentationKey $appInsightsKey `
-    -appName $idpssName 
 
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
