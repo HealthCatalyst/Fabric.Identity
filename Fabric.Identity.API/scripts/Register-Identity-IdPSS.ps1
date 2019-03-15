@@ -15,12 +15,11 @@ param(
 
 if(!($registerIdentity) -and !($registerIdPSS))
 {
-	Write-Host " You must register either Identity and/or IdPSS by adding their respective switch.
+	throw " You must register either Identity and/or IdPSS by adding their respective switch.
 	Examples:
 		.\Register-Identity-IdPSS.ps1 -registerIdentity
 		.\Register-Identity-IdPSS.ps1 -registerIdPSS
-		.\Register-Identity-IdPSS.ps1 -registerIdentity -registerIdPSS" -ForegroundColor Red -BackgroundColor Black
-	exit
+		.\Register-Identity-IdPSS.ps1 -registerIdentity -registerIdPSS"
 }
 
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
