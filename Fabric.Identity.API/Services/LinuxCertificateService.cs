@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Fabric.Identity.API.Configuration;
 using Fabric.Platform.Shared.Exceptions;
-using RestSharp.Extensions;
 
 namespace Fabric.Identity.API.Services
 {
@@ -49,11 +48,8 @@ namespace Fabric.Identity.API.Services
 
         private X509Certificate2 GetCertFromFile(string certPath, string passwordPath)
         {
-            using (var certStream = new FileStream(certPath, FileMode.Open, FileAccess.Read))
-            {
-                var password = File.ReadAllText(passwordPath).Trim();
-                return new X509Certificate2(certStream.ReadAsBytes(), password);
-            }
+            var password = File.ReadAllText(passwordPath).Trim();
+            return new X509Certificate2(certPath, password);
         }
     }
 }
