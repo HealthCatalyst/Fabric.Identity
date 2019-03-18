@@ -477,14 +477,14 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
     $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope fabric/identity.manageresources
 
     Write-DosMessage -Level Information "Registering IdentitySearchProvider API with Fabric.Identity..."
-    $apiName = "identitySearchProvider-service-api"
+    $apiName = "idpsearch-api"
     try{
         [string]$apiSecret = [string]::Empty
         Write-Host "    Registering $($apiName) with Fabric.Identity"
         $body = New-APIRegistrationBody -apiName $apiName -userClaims @("name", "email", "roles", "group") -scopes @{"name" = "fabric/idprovider.searchusers"} -isEnabled $true
         $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
 
-        if (![string]::IsNullOrEmpty($apiSecret) -and ![string]::IsNullOrWhiteSpace($apiSecret)) {
+        if (![string]::IsNullOrWhiteSpace($apiSecret)) {
 		  return $apiSecret
         }
 		else

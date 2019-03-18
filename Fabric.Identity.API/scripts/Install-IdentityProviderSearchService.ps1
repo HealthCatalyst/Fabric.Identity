@@ -12,7 +12,6 @@ Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 # Create log directory with read/write permissions for app pool user
 # using methods in DosInstallUtilites to install idpss, which will make it easier to migrate the identity code later 
 $idpssSettingsScope = "identityProviderSearchService"
-$configStore = @{Type = "File"; Format = "XML"; Path = $installConfigPath}
 $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
 
