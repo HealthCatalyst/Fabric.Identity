@@ -1,5 +1,4 @@
 ﻿param(
-    [Parameter(Mandatory = $True)]
     [PSCredential] $credential, 
     [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
     [Hashtable] $certificates,
@@ -15,6 +14,12 @@ $idpssSettingsScope = "identityProviderSearchService"
 $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
 
+if($null -eq $credential)
+{
+  $idpssIisUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $configStore.Path -scope $idpssSettingsScope
+  $credential = $idpssIisUser.Credential
+}
+
 $idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $installConfigPath -scope $idpssSettingsScope -quiet $quiet
     
 $idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
@@ -27,7 +32,7 @@ $decryptedSecret = Unprotect-DosInstallerSecret -CertificateThumprint $commonCon
 
 $registrationApiSecret = Add-IdpssApiResourceRegistration -identityServiceUrl $commonConfigStore.identityService -fabricInstallerSecret $decryptedSecret
 
-$idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssConfigStore -commonConfig $commonConfigStore -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -registrationApiSecret $registrationApiSecret -credential $credential
+$idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssConfigStore -commonConfig $commonConfigStore -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -credential $credential -registrationApiSecret $registrationApiSecret
 
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `

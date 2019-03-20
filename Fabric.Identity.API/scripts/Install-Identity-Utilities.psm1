@@ -489,11 +489,11 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
         }
 		else
 		{
-		  Write-Error "Could not register api $($apiName), apiSecret is empty"
+		  Write-DosMessage -Level Error -Message "Could not register api $($apiName), apiSecret is empty"
 		}
     }
     catch{
-        Write-Error "Could not register api $($apiName)"
+        Write-DosMessage -Level Error -Message "Could not register api $($apiName)"
         throw $_.Exception
     }
 }
@@ -1240,14 +1240,10 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "IIS Web Application Name";
                                     Value = "$($serviceConfig.siteName)/$($serviceConfig.appName)"
-                                },
-                                @{
-                                    Name = "App Pool Account";
-                                    Value = $($credential.UserName)
-                                },
+                                }
                                 @{
                                     Name = "Application Endpoint Address";
-                                    Value = "$($serviceConfig.applicationEndPoint)"
+                                    Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
                                 },
                                 @{
                                     Name =  "MetadataContext-Deployment-Deployment Connection String";
