@@ -476,7 +476,7 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
 {
     $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope fabric/identity.manageresources
 
-    Write-DosMessage -Level Information "Registering IdentitySearchProvider API with Fabric.Identity..."
+    Write-DosMessage -Level "Information" -Message "Registering IdentitySearchProvider API with Fabric.Identity..."
     $apiName = "idpsearch-api"
     try{
         [string]$apiSecret = [string]::Empty
@@ -489,11 +489,11 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
         }
 		else
 		{
-		  Write-DosMessage -Level Error -Message "Could not register api $($apiName), apiSecret is empty"
+		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
 		}
     }
     catch{
-        Write-DosMessage -Level Error -Message "Could not register api $($apiName)"
+        Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
         throw $_.Exception
     }
 }
