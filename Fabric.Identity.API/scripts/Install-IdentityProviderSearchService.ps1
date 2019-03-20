@@ -13,7 +13,15 @@ Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 $idpssSettingsScope = "identityProviderSearchService"
 $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
+Set-LoggingConfiguration -commonConfig $commonConfigStore
 
+# Pre-check requirements to run this script
+if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
+{
+  Write-DosMessage -Level "Fatal" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config"
+}
+
+# Prompt for the credential if it is null
 if($null -eq $credential)
 {
   $idpssIisUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $configStore.Path -scope $idpssSettingsScope
