@@ -367,7 +367,7 @@ function Unlock-ConfigurationSections(){
 
 function Publish-Application([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage, [string] $assembly){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
-    New-AppRoot $appDirectory $iisUser.UserName
+    New-LogsDirectoryForApp $appDirectory $iisUser.UserName
 
     if(!(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $iisUser.UserName)){
         New-AppPool $appName $iisUser.UserName $iisUser.Credential
@@ -1230,11 +1230,11 @@ function Get-IdpssWebDeployParameters{
         [PSCredential] $credential,
         [string] $discoveryServiceUrl,
         [string] $noDiscoveryService,
-        [string] $registrationApiSecret
+        [string] $registrationApiSecret,
+        [string] $metaDataConnectionString
     )
 
     Confirm-ServiceConfig -commonConfig $commonConfig -serviceConfig $serviceConfig 
-    $metaDataConnectionString = Get-MetadataConnectionString -commonConfig $commonConfig -serviceConfig $serviceConfig
     
     $webDeployParameters = @(
                                 @{
@@ -1307,37 +1307,7 @@ function Confirm-SettingIsNotNull{
     }
 }
 
-function Get-MetadataConnectionString{
-    param(
-        [Parameter(Mandatory=$true)]
-        [Hashtable] $commonConfig,
-        [Parameter(Mandatory=$true)]
-        [Hashtable] $serviceConfig
-    )
-    
-    $metaDataConnectionString =  "Data Source=$($commonConfig.sqlServerAddress);Initial Catalog=$($commonConfig.metadataDbName);Integrated Security=True;Application Name=$($serviceConfig.appName);"
-    Confirm-DatabaseConnection -connectionString $metaDataConnectionString
-    return $metaDataConnectionString
-}
-
-function Confirm-DatabaseConnection{
-    param(
-        [Parameter(Mandatory=$true)]
-        [string] $connectionString
-    )
-
-    Write-DosMessage -Level "Information" -Message "Confirming connection string '$connectionString'."
-    $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
-    try{
-        $connection.Open()
-    }catch{
-        Write-DosMessage -Level "Fatal" -Message "Could not connect to '$connectionString' please check database connection settings in install config."
-    }finally{
-        $connection.Close();
-    }
-}
-
-function New-AppRoot($appDirectory, $iisUser){
+function New-LogsDirectoryForApp($appDirectory, $iisUser){
     # Create the necessary directories for the app
     $logDirectory = "$appDirectory\logs"
 
@@ -1422,5 +1392,5 @@ Export-ModuleMember Set-LoggingConfiguration
 Export-ModuleMember Set-IdentityUri
 Export-ModuleMember Get-WebDeployPackagePath
 Export-ModuleMember Get-IdpssWebDeployParameters
-Export-ModuleMember New-AppRoot
+Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull

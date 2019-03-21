@@ -1,7 +1,7 @@
 ﻿param(
     [PSCredential] $credential, 
     [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
-    [Hashtable] $certificates,
+    [switch] $noDiscoveryService, 
     [switch] $quiet
 )
 
@@ -13,25 +13,17 @@ Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 $idpssSettingsScope = "identityProviderSearchService"
 $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
+$identitySettingsScope = "identity"
+$identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
 Set-LoggingConfiguration -commonConfig $commonConfigStore
+$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonConfigStore.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonConfigStore.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 
 # Pre-check requirements to run this script
-do {
-    if($retryCount -gt 3) {
-        Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
-        throw
-    }
-    try {
-         $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
-         Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfigStore.webServerDomain
-         Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfigStore.clientEnvironment
-    }
-    catch {
-        Write-DosMessage -Level "Warning" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config"
-        Start-Sleep 60
-        $retryCount++
-    }
-} while ([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
+if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
+{
+  Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
+}
 
 # Prompt for the credential if it is null
 if($null -eq $credential)
@@ -40,7 +32,7 @@ if($null -eq $credential)
   $credential = $idpssIisUser.Credential
 }
 
-$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $installConfigPath -scope $idpssSettingsScope -quiet $quiet
+$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
     
 $idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
@@ -52,33 +44,59 @@ $decryptedSecret = Unprotect-DosInstallerSecret -CertificateThumprint $commonCon
 
 $registrationApiSecret = Add-IdpssApiResourceRegistration -identityServiceUrl $commonConfigStore.identityService -fabricInstallerSecret $decryptedSecret
 
-$idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssConfigStore -commonConfig $commonConfigStore -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -credential $credential -registrationApiSecret $registrationApiSecret
+$idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssConfigStore `
+                        -commonConfig $commonConfigStore `
+                        -discoveryServiceUrl $discoveryServiceUrl `
+                        -noDiscoveryService $noDiscoveryService `
+                        -credential $credential `
+                        -registrationApiSecret $registrationApiSecret `
+                        -metadataConnectionString $metadataDatabase.DbConnectionString
 
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `
                       -AppPoolCredential $credential `
                       -AuthenticationType "Anonymous" `
-                      -WebDeploy `
+                      -WebDeploy
 
 $idpssAppPoolUser = $credential.UserName
 
 $idpssName = "IdentityProviderSearchService"
 
+$certificates = Get-Certificates -primarySigningCertificateThumbprint $identityConfigStore.primarySigningCertificateThumbprint `
+            -encryptionCertificateThumbprint $identityConfigStore.encryptionCertificateThumbprint `
+            -installConfigPath $configStore.Path `
+            -scope $identitySettingsScope `
+            -quiet $quiet
+
 Add-PermissionToPrivateKey $idpssAppPoolUser $certificates.SigningCertificate read
 
 $idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
-New-AppRoot $idpssDirectory $idpssAppPoolUser
+New-LogsDirectoryForApp $idpssDirectory $idpssAppPoolUser
 
 Register-ServiceWithDiscovery -iisUserName $idpssAppPoolUser -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
 -serviceName $idpssName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
 
 $idpssConfig = $idpssDirectory + "\web.config"
 
+$useAzure = $identityConfigStore.useAzureAD
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path  | Out-Null
+}
+
+$useWindows = $identityConfigStore.useWindowsAD
+if($null -eq $useWindows) {
+    $useWindows = $true
+    Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $configStore.Path  | Out-Null
+}
+
+$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
+
 Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -useAzure $useAzure `
     -useWindows $useWindows `
-    -installConfigPath $installConfigPath `
+    -installConfigPath $configStore.Path `
     -encryptionCert $certificates.SigningCertificate `
     -encryptionCertificateThumbprint $certificates.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey `
