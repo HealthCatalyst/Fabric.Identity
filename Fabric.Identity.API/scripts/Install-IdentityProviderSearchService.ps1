@@ -16,10 +16,22 @@ $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "commo
 Set-LoggingConfiguration -commonConfig $commonConfigStore
 
 # Pre-check requirements to run this script
-if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
-{
-  Write-DosMessage -Level "Fatal" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config"
-}
+do {
+    if($retryCount -gt 3) {
+        Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
+        throw
+    }
+    try {
+         $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
+         Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfigStore.webServerDomain
+         Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfigStore.clientEnvironment
+    }
+    catch {
+        Write-DosMessage -Level "Warning" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config"
+        Start-Sleep 60
+        $retryCount++
+    }
+} while ([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
 
 # Prompt for the credential if it is null
 if($null -eq $credential)

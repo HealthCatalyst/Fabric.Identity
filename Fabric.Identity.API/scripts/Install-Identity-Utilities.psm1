@@ -1423,3 +1423,4 @@ Export-ModuleMember Set-IdentityUri
 Export-ModuleMember Get-WebDeployPackagePath
 Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-AppRoot
+Export-ModuleMember Confirm-SettingIsNotNull
