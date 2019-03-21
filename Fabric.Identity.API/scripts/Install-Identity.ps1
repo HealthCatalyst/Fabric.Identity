@@ -136,7 +136,7 @@ if ($fabricInstallerSecret){
 }
 
 # Call the Idpss powershell script
-.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential
+.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential -noDiscoveryService $noDiscoveryService -quiet $quiet
 
 
 if(!$quiet){
