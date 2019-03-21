@@ -45,6 +45,12 @@ $commonSettingsScope = "common"
 $commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $installConfigPath
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
+# Pre-check requirements to run this script
+if([string]::IsNullOrEmpty($commonInstallSettings.webServerDomain) -or [string]::IsNullOrEmpty($commonInstallSettings.clientEnvironment))
+{
+  Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
+}
+
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
@@ -55,7 +61,8 @@ Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate r
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
-$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $installSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
+$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
+
 if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $installSettings.discoveryService -installConfigPath $installConfigPath -quiet $quiet
 }
@@ -68,17 +75,10 @@ $installApplication = Publish-Application -site $selectedSite `
                  -zipPackage $zipPackage `
                  -assembly "Fabric.Identity.API.dll"
 
-# Get Idpss app pool user 
-# Create log directory with read/write permissions for app pool user
-$idpssName = "IdentityProviderSearchService"
-$idpssAppPoolUser = Find-IISAppPoolUser -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
-$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
-New-AppRoot $idpssDirectory $idpssAppPoolUser
-
-
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
-    Register-IdentityWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -identityServerUrl $identityServiceUrl
+    Register-ServiceWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -serverUrl $identityServiceUrl `
+    -serviceName "IdentityService" -friendlyName "Fabric.Identity" -description "The Fabric.Identity service provides centralized authentication across the Fabric ecosystem.";
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
@@ -110,8 +110,6 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
 
-$idpssConfig = Get-WebConfigPath -applicationName $idpssName -discoveryServiceUrl $discoveryServiceUrl -noDiscoveryService $noDiscoveryService -quiet $quiet
-
 $useAzure = $installSettings.useAzureAD
 if($null -eq $useAzure) {
     $useAzure = $false
@@ -123,19 +121,6 @@ if($null -eq $useWindows) {
     $useWindows = $true
     Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
 }
-
-if($useAzure) {
-    Add-PermissionToPrivateKey $idpssAppPoolUser $selectedCerts.SigningCertificate read
-}
-
-Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
-    -useAzure $useAzure `
-    -useWindows $useWindows `
-    -installConfigPath $installConfigPath `
-    -encryptionCert $selectedCerts.SigningCertificate `
-    -encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
-    -appInsightsInstrumentationKey $appInsightsKey `
-    -appName "Identity Provider Search Service"
 
 Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
     -useAzure $useAzure `
@@ -150,6 +135,11 @@ if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret has been created."
 }
 
+# Call the Idpss powershell script
+.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential
+
+
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
 }
+
