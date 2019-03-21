@@ -7,6 +7,9 @@
 
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
+# Especially calling this script from another script, this message is helpful
+Write-DosMessage -Level "Information" -Message "Starting IdentityProviderSearchService installation..."
+
 # Get Idpss app pool user 
 # Create log directory with read/write permissions for app pool user
 # using methods in DosInstallUtilites to install idpss, which will make it easier to migrate the identity code later 
@@ -18,6 +21,7 @@ $identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $ide
 Set-LoggingConfiguration -commonConfig $commonConfigStore
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonConfigStore.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonConfigStore.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
 
 # Pre-check requirements to run this script
 if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
@@ -90,8 +94,6 @@ if($null -eq $useWindows) {
     $useWindows = $true
     Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $configStore.Path  | Out-Null
 }
-
-$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
 
 Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -useAzure $useAzure `
