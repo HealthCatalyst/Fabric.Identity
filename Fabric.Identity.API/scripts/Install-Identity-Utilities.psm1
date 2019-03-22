@@ -1240,7 +1240,7 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "IIS Web Application Name";
                                     Value = "$($serviceConfig.siteName)/$($serviceConfig.appName)"
-                                }
+                                },
                                 @{
                                     Name = "Application Endpoint Address";
                                     Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
@@ -1252,29 +1252,29 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "MetadataContext-Web.config Connection String";
                                     Value = $metaDataConnectionString
-                                }
-                                ,
-                                @{
-                                    Name = "Discovery Service Endpoint";
-                                    Value = $discoveryServiceUrl
-                                }
-                                ,
-                                @{
-                                    Name = "Use Discovery Service";
-                                    Value = $noDiscoveryService
-                                }
-                                ,
+                                },
                                 @{
                                     Name = "Current Domain";
                                     Value = $commonConfig.webServerDomain
-                                }
-                                ,
+                                },
                                 @{
                                     Name = "Identity Provider Search Service Api Secret";
                                     Value = $registrationApiSecret
                                 }
                             )
-    
+
+    if(!$noDiscoveryService)
+    {
+     [HashTable] $discovery = @{Name = "Discovery Service Endpoint"; Value = $discoveryServiceUrl}
+     $webDeployParameters += $discovery
+     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $true}
+     $webDeployParameters += $useDiscovery
+    }
+    else
+    {
+     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $false}
+     $webDeployParameters += $useDiscovery
+    }
     return $webDeployParameters
 }
 
