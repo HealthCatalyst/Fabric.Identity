@@ -1267,14 +1267,8 @@ function Get-IdpssWebDeployParameters{
     {
      [HashTable] $discovery = @{Name = "Discovery Service Endpoint"; Value = $discoveryServiceUrl}
      $webDeployParameters += $discovery
-     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $true}
-     $webDeployParameters += $useDiscovery
     }
-    else
-    {
-     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $false}
-     $webDeployParameters += $useDiscovery
-    }
+
     return $webDeployParameters
 }
 
