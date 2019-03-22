@@ -1255,16 +1255,6 @@ function Get-IdpssWebDeployParameters{
                                 }
                                 ,
                                 @{
-                                    Name = "Discovery Service Endpoint";
-                                    Value = $discoveryServiceUrl
-                                }
-                                ,
-                                @{
-                                    Name = "Use Discovery Service";
-                                    Value = $noDiscoveryService
-                                }
-                                ,
-                                @{
                                     Name = "Current Domain";
                                     Value = $commonConfig.webServerDomain
                                 }
@@ -1274,7 +1264,19 @@ function Get-IdpssWebDeployParameters{
                                     Value = $registrationApiSecret
                                 }
                             )
-    
+
+    if(!$noDiscoveryService)
+    {
+     [HashTable] $discovery = @{Name = "Discovery Service Endpoint"; Value = $discoveryServiceUrl}
+     $webDeployParameters += $discovery
+     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $true}
+     $webDeployParameters += $useDiscovery
+    }
+    else
+    {
+     [HashTable] $useDiscovery = @{Name = "Use Discovery Service"; Value = $false}
+     $webDeployParameters += $useDiscovery
+    }
     return $webDeployParameters
 }
 

@@ -19,9 +19,6 @@ $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "commo
 $identitySettingsScope = "identity"
 $identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
 Set-LoggingConfiguration -commonConfig $commonConfigStore
-$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonConfigStore.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
-$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonConfigStore.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
-$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
 
 # Pre-check requirements to run this script
 if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
@@ -29,11 +26,19 @@ if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsN
   Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
 }
 
-# Prompt for the credential if it is null
-if($null -eq $credential)
-{
-  $idpssIisUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $configStore.Path -scope $idpssSettingsScope
-  $credential = $idpssIisUser.Credential
+$certificates = Get-Certificates -primarySigningCertificateThumbprint $identityConfigStore.primarySigningCertificateThumbprint `
+            -encryptionCertificateThumbprint $identityConfigStore.encryptionCertificateThumbprint `
+            -installConfigPath $configStore.Path `
+            -scope $identitySettingsScope `
+            -quiet $quiet
+$idpssIisUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $configStore.Path -scope $idpssSettingsScope
+Add-PermissionToPrivateKey $idpssIisUser.UserName $certificates.SigningCertificate read
+$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
+$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonConfigStore.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonConfigStore.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+
+if(!$noDiscoveryService){
+    $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonConfigStore.discoveryService -installConfigPath $configStore.Path -quiet $quiet
 }
 
 $idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
@@ -52,33 +57,23 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
                         -commonConfig $commonConfigStore `
                         -discoveryServiceUrl $discoveryServiceUrl `
                         -noDiscoveryService $noDiscoveryService `
-                        -credential $credential `
+                        -credential $idpssIisUser.Credential `
                         -registrationApiSecret $registrationApiSecret `
                         -metadataConnectionString $metadataDatabase.DbConnectionString
 
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `
-                      -AppPoolCredential $credential `
+                      -AppPoolCredential $idpssIisUser.Credential `
                       -AuthenticationType "Anonymous" `
                       -WebDeploy
 
-$idpssAppPoolUser = $credential.UserName
-
 $idpssName = "IdentityProviderSearchService"
 
-$certificates = Get-Certificates -primarySigningCertificateThumbprint $identityConfigStore.primarySigningCertificateThumbprint `
-            -encryptionCertificateThumbprint $identityConfigStore.encryptionCertificateThumbprint `
-            -installConfigPath $configStore.Path `
-            -scope $identitySettingsScope `
-            -quiet $quiet
-
-Add-PermissionToPrivateKey $idpssAppPoolUser $certificates.SigningCertificate read
-
 $idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
-New-LogsDirectoryForApp $idpssDirectory $idpssAppPoolUser
+New-LogsDirectoryForApp $idpssDirectory $idpssIisUser.UserName
 
-Register-ServiceWithDiscovery -iisUserName $idpssAppPoolUser -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
+Register-ServiceWithDiscovery -iisUserName $idpssIisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
 -serviceName $idpssName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
 
 $idpssConfig = $idpssDirectory + "\web.config"
