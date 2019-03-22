@@ -136,8 +136,8 @@ if ($fabricInstallerSecret){
 }
 
 # Call the Idpss powershell script
-.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential
-
+$configStore = @{Type = "File"; Format = "XML"; Path = "$installConfigPath"}
+.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
