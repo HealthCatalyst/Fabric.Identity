@@ -54,6 +54,8 @@ namespace IdentityServer4.Quickstart.UI
 
         private readonly GroupFilterService _groupFilterService;
 
+        private const string TEST_COOKIE_NAME = "testCookie";
+
         public AccountController(
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,
@@ -99,17 +101,14 @@ namespace IdentityServer4.Quickstart.UI
         {
             if (!testCookieSet)
             {
-                HttpContext.Response.Cookies.Append("testCookie", "test", new CookieOptions
-                {
-                    Expires = DateTimeOffset.Now.AddSeconds(10)
-                });
+                HttpContext.Response.Cookies.Append(TEST_COOKIE_NAME, "test");
 
                 return RedirectToAction("Login", new {returnUrl, testCookieSet = true});
             }
 
             var vm = await _accountService.BuildLoginViewModelAsync(returnUrl);
 
-            vm.TestCookieExists = Request.Cookies.ContainsKey("testCookie");
+            vm.TestCookieExists = Request.Cookies.ContainsKey(TEST_COOKIE_NAME);
 
             if (vm.IsExternalLoginOnly && vm.TestCookieExists)
             {
@@ -152,6 +151,8 @@ namespace IdentityServer4.Quickstart.UI
                     await _events.RaiseAsync(new FabricUserLoginSuccessEvent("test", user.Username, user.SubjectId, user.Username, context?.ClientId));
                     await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, props);
 
+                    RemoveTestCookie();
+
                     // make sure the returnUrl is still valid, and if yes - redirect back to authorize endpoint or a local page
                     if (_interaction.IsValidReturnUrl(model.ReturnUrl) || Url.IsLocalUrl(model.ReturnUrl))
                     {
@@ -177,6 +178,8 @@ namespace IdentityServer4.Quickstart.UI
         [HttpGet]
         public async Task<IActionResult> ExternalLogin(string provider, string returnUrl)
         {
+            RemoveTestCookie();
+
             returnUrl = Url.Action("ExternalLoginCallback", new { returnUrl = returnUrl });
 
             //windows authentication is modeled as external in the asp.net core authentication manager, so we need special handling
@@ -355,6 +358,11 @@ namespace IdentityServer4.Quickstart.UI
 
             _logger.Error(logMessage);
             return this.StatusCode(statusCode, userMessage);
+        }
+
+        private void RemoveTestCookie()
+        {
+            HttpContext.Response.Cookies.Delete(TEST_COOKIE_NAME);
         }
     }
 }
