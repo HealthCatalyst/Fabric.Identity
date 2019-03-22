@@ -1240,7 +1240,7 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "IIS Web Application Name";
                                     Value = "$($serviceConfig.siteName)/$($serviceConfig.appName)"
-                                }
+                                },
                                 @{
                                     Name = "Application Endpoint Address";
                                     Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
@@ -1252,13 +1252,11 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "MetadataContext-Web.config Connection String";
                                     Value = $metaDataConnectionString
-                                }
-                                ,
+                                },
                                 @{
                                     Name = "Current Domain";
                                     Value = $commonConfig.webServerDomain
-                                }
-                                ,
+                                },
                                 @{
                                     Name = "Identity Provider Search Service Api Secret";
                                     Value = $registrationApiSecret
