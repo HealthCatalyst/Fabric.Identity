@@ -180,10 +180,10 @@ namespace Fabric.Identity.API.Services
 
             if(!this._appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList.Contains(issuerClaim.Issuer))
             {
-                var exception = new InvalidIssuerException(
-                    String.Format(CultureInfo.CurrentCulture, ExceptionMessageResources.ForbiddenIssuerMessageUser, issuerClaim?.Value))
+                var exception = new InvalidIssuerException(ExceptionMessageResources.ForbiddenIssuerMessageUser)
                 {
-                    LogMessage = ExceptionMessageResources.ForbiddenIssuerMessageLog
+                    LogMessage = string.Format(CultureInfo.CurrentCulture,
+                        ExceptionMessageResources.ForbiddenIssuerMessageLog, issuerClaim?.Value)
                 };
 
                 throw exception;
