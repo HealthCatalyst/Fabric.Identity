@@ -258,6 +258,7 @@ namespace IdentityServer4.Quickstart.UI
             }
             catch(InvalidIssuerException exc)
             {
+                await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
                 return LogAndReturnStatus(403, exc.LogMessage, exc.Message);
             }
 
