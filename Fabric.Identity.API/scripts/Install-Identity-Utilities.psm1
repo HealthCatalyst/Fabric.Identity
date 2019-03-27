@@ -1228,10 +1228,12 @@ function Get-IdpssWebDeployParameters{
         [Parameter(Mandatory=$true)]
         [Hashtable] $commonConfig,
         [PSCredential] $credential,
+        [string] $applicationEndpoint,
         [string] $discoveryServiceUrl,
         [string] $noDiscoveryService,
         [string] $registrationApiSecret,
-        [string] $metaDataConnectionString
+        [string] $metaDataConnectionString,
+        [string] $currentDomain
     )
 
     Confirm-ServiceConfig -commonConfig $commonConfig -serviceConfig $serviceConfig 
@@ -1243,7 +1245,7 @@ function Get-IdpssWebDeployParameters{
                                 },
                                 @{
                                     Name = "Application Endpoint Address";
-                                    Value = "https://$($commonConfig.webServerDomain)/$($serviceConfig.appName)"
+                                    Value = "$applicationEndpoint"
                                 },
                                 @{
                                     Name =  "MetadataContext-Deployment-Deployment Connection String";
@@ -1255,7 +1257,7 @@ function Get-IdpssWebDeployParameters{
                                 },
                                 @{
                                     Name = "Current Domain";
-                                    Value = $commonConfig.webServerDomain
+                                    Value = $currentDomain
                                 },
                                 @{
                                     Name = "Identity Provider Search Service Api Secret";
@@ -1282,8 +1284,6 @@ function Confirm-ServiceConfig{
 
     Confirm-SettingIsNotNull -settingName "common.sqlServerAddress" -settingValue $commonConfig.sqlServerAddress
     Confirm-SettingIsNotNull -settingName "common.metadataDbName" -settingValue $commonConfig.metadataDbName
-    Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfig.webServerDomain
-    Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfig.clientEnvironment
     Confirm-SettingIsNotNull -settingName "$serviceConfig.appName" -settingValue $serviceConfig.appName
     Confirm-SettingIsNotNull -settingName "$serviceConfig.appPoolName" -settingValue $serviceConfig.appPoolName
     Confirm-SettingIsNotNull -settingName "$serviceConfig.siteName" -settingValue $serviceConfig.siteName
@@ -1351,6 +1351,22 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
     }
 }
 
+function Get-CurrentUserDomain
+{
+    param(
+        [Parameter(Mandatory=$true)]
+        [bool] $quiet
+    )
+    $currentUserDomain = $env:userdomain
+    if(!$quiet){
+        $userEnteredDomain = Read-Host "Press Enter to accept the default domain '$($currentUserDomain)' that the user/group who will administrate dos is a member or enter a new domain" 
+        if (![string]::IsNullOrEmpty($userEnteredDomain)) {
+            $currentUserDomain = $userEnteredDomain
+        }
+    }
+    return $currentUserDomain
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1388,3 +1404,4 @@ Export-ModuleMember Get-WebDeployPackagePath
 Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull
+Export-ModuleMember Get-CurrentUserDomain
