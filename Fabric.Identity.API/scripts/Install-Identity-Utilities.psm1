@@ -1262,6 +1262,10 @@ function Get-IdpssWebDeployParameters{
                                 @{
                                     Name = "Identity Provider Search Service Api Secret";
                                     Value = $registrationApiSecret
+                                },
+                                @{
+                                    Name = "Discovery Service Endpoint";
+                                    Value = $commonConfig.DiscoveryService
                                 }
                             )
 
