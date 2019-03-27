@@ -45,12 +45,6 @@ $commonSettingsScope = "common"
 $commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $installConfigPath
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
-# Pre-check requirements to run this script
-if([string]::IsNullOrEmpty($commonInstallSettings.webServerDomain) -or [string]::IsNullOrEmpty($commonInstallSettings.clientEnvironment))
-{
-  Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
-}
-
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"

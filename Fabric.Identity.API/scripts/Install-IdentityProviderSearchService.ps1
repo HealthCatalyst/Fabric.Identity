@@ -20,12 +20,6 @@ $identitySettingsScope = "identity"
 $identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
 Set-LoggingConfiguration -commonConfig $commonConfigStore
 
-# Pre-check requirements to run this script
-if([string]::IsNullOrEmpty($commonConfigStore.webServerDomain) -or [string]::IsNullOrEmpty($commonConfigStore.clientEnvironment))
-{
-  Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' and 'clientEnvironment' populated in install.config."
-}
-
 $certificates = Get-Certificates -primarySigningCertificateThumbprint $identityConfigStore.primarySigningCertificateThumbprint `
             -encryptionCertificateThumbprint $identityConfigStore.encryptionCertificateThumbprint `
             -installConfigPath $configStore.Path `
@@ -42,6 +36,7 @@ if(!$noDiscoveryService){
 }
 
 $idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
+$currentUserDomain = Get-CurrentUserDomain -quiet $quiet
     
 $idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
@@ -55,11 +50,13 @@ $registrationApiSecret = Add-IdpssApiResourceRegistration -identityServiceUrl $c
 
 $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssConfigStore `
                         -commonConfig $commonConfigStore `
+                        -applicationEndpoint $idpssServiceUrl `
                         -discoveryServiceUrl $discoveryServiceUrl `
                         -noDiscoveryService $noDiscoveryService `
                         -credential $idpssIisUser.Credential `
                         -registrationApiSecret $registrationApiSecret `
-                        -metadataConnectionString $metadataDatabase.DbConnectionString
+                        -metadataConnectionString $metadataDatabase.DbConnectionString `
+                        -currentDomain $currentUserDomain
 
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
