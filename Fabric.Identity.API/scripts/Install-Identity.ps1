@@ -36,7 +36,7 @@ if(!(Test-IsRunAsAdministrator))
 }
 
 $ErrorActionPreference = "Stop"
-
+$configStore = @{Type = "File"; Format = "XML"; Path = "$installConfigPath"}
 Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
 $installSettingsScope = "identity"
 $installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
@@ -44,6 +44,9 @@ $installSettings = Get-InstallationSettings $installSettingsScope -installConfig
 $commonSettingsScope = "common"
 $commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $installConfigPath
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
+
+$idpssSettingsScope = "identityProviderSearchService"
+$idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
@@ -61,6 +64,7 @@ if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonInstallSettings.discoveryService -installConfigPath $installConfigPath -quiet $quiet
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
+$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
 
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
@@ -130,8 +134,7 @@ if ($fabricInstallerSecret){
 }
 
 # Call the Idpss powershell script
-$configStore = @{Type = "File"; Format = "XML"; Path = "$installConfigPath"}
-.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
+.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet
 
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
