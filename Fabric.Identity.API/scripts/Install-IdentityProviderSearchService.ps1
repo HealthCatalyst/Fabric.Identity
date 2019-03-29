@@ -96,4 +96,4 @@ Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -encryptionCert $certificates.SigningCertificate `
     -encryptionCertificateThumbprint $certificates.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey `
-    -appName $idpssName 
+    -appName "Identity Provider Search Service" 
