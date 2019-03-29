@@ -1023,6 +1023,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
+    Write-Host "Setting IdPSS Web Config Settings."
     Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
     
@@ -1088,6 +1089,8 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
     elseif($useWindows -eq $false) {
         $appSettings.Add("UseWindowsAuthentication", "false")
     }
+
+    Write-Host "Web Config Path: $($webConfigPath)"
 
     Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
