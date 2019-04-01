@@ -16,6 +16,16 @@ if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
 }
 Import-Module -Name $fabricInstallUtilities -Force
 
+# Import CatalystDosIdentity
+$minDosIdentityVersion = [System.Version]::new(1, 4, 18200 , 12)
+try{
+    Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minDosIdentityVersion -ErrorAction Stop
+} catch{
+    Write-Host "Installing CatalystDosIdentity from Powershell Gallery"
+    Install-Module CatalystDosIdentity -Scope CurrentUser -MinimumVersion $minDosIdentityVersion -Force
+}
+Import-Module -Name CatalystDosIdentity -MinimumVersion $minVersion -Force
+
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
     {
