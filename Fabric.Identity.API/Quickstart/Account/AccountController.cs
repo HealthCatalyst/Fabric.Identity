@@ -262,12 +262,21 @@ namespace IdentityServer4.Quickstart.UI
                 return LogAndReturnStatus(403, exc.LogMessage, exc.Message);
             }
 
-            //issue authentication cookie for user
-            var user = await _userLoginManager.UserLogin(
-                claimInformation.Provider,
-                _claimsService.GetEffectiveUserId(claimInformation),
-                claimInformation.Claims,
-                claimInformation?.ClientId);
+            User user = null;
+            try
+            {
+                //issue authentication cookie for user
+                user = await _userLoginManager.UserLogin(
+                    claimInformation.Provider,
+                    _claimsService.GetEffectiveUserId(claimInformation),
+                    claimInformation.Claims,
+                    claimInformation?.ClientId);
+            }
+            catch (Exception e)
+            {
+                await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+                return LogAndReturnStatus(403, "Unable to authenticate the user.", e.Message);
+            }
             
             var subjectId = _claimsService.GetEffectiveSubjectId(claimInformation, user);
 
