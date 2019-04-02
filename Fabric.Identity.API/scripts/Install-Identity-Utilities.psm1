@@ -484,7 +484,7 @@ function Add-RegistrationApiRegistration([string] $identityServerUrl, [string] $
 
 function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerSecret)
 {
-    $accessToken = Get-AccessToken -identityUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope "fabric/identity.manageresources"
+        $accessToken = Get-AccessToken -identityUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope "fabric/identity.manageresources"
 
     Write-DosMessage -Level "Information" -Message "Registering IdentitySearchProvider API with Fabric.Identity..."
     $apiName = "idpsearch-api"
@@ -1033,7 +1033,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
-    Write-Host "Setting IdPSS Web Config Settings."
+	Write-Host "Setting IdPSS Web Config Settings."
     Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
     
@@ -1100,7 +1100,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         $appSettings.Add("UseWindowsAuthentication", "false")
     }
 
-    Write-Host "Web Config Path: $($webConfigPath)"
+	Write-Host "Web Config Path: $($webConfigPath)"
 
     Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
@@ -1240,7 +1240,6 @@ function Get-IdpssWebDeployParameters{
         [Hashtable] $serviceConfig,
         [Parameter(Mandatory=$true)]
         [Hashtable] $commonConfig,
-        [PSCredential] $credential,
         [string] $applicationEndpoint,
         [string] $discoveryServiceUrl,
         [string] $noDiscoveryService,

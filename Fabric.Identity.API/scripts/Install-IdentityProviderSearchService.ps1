@@ -53,7 +53,6 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
                         -applicationEndpoint $idpssServiceUrl `
                         -discoveryServiceUrl $discoveryServiceUrl `
                         -noDiscoveryService $noDiscoveryService `
-                        -credential $idpssIisUser.Credential `
                         -registrationApiSecret $registrationApiSecret `
                         -metadataConnectionString $metadataDatabase.DbConnectionString `
                         -currentDomain $currentUserDomain
@@ -61,6 +60,7 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `
+					  -AppName $idpssConfigStore.appName `
                       -AppPoolCredential $idpssIisUser.Credential `
                       -AuthenticationType "Anonymous" `
                       -WebDeploy
@@ -96,4 +96,4 @@ Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -encryptionCert $certificates.SigningCertificate `
     -encryptionCertificateThumbprint $certificates.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey `
-    -appName "Identity Provider Search Service" 
+    -appName $idpssName 
