@@ -111,19 +111,16 @@ namespace Fabric.Identity.API.Management
                         new Claim(JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[claim.Type], claim.Value));
                 }
                 // copy the claim as-is
-                else
+                else if (claim.Type == FabricIdentityConstants.FabricClaimTypes.Groups)
                 {
-                    if (claim.Type == FabricIdentityConstants.FabricClaimTypes.Groups)
-                    {
-                        if (string.IsNullOrEmpty(claim.Value) || !claim.Value.StartsWith("["))
-                        {
-                            filtered.Add(claim);
-                        }
-                    }
-                    else
+                    if (string.IsNullOrEmpty(claim.Value) || !claim.Value.StartsWith("["))
                     {
                         filtered.Add(claim);
                     }
+                }
+                else
+                {
+                    filtered.Add(claim);
                 }
             }
 
