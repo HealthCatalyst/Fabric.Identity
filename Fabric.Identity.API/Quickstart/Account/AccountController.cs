@@ -150,9 +150,7 @@ namespace IdentityServer4.Quickstart.UI
                     await _userLoginManager.UserLogin("test", user.SubjectId, user.Claims.ToList(), context?.ClientId);
                     await _events.RaiseAsync(new FabricUserLoginSuccessEvent("test", user.Username, user.SubjectId, user.Username, context?.ClientId));
                     await HttpContext.Authentication.SignInAsync(user.SubjectId, user.Username, props);
-
-                    RemoveTestCookie();
-
+                    
                     // make sure the returnUrl is still valid, and if yes - redirect back to authorize endpoint or a local page
                     if (_interaction.IsValidReturnUrl(model.ReturnUrl) || Url.IsLocalUrl(model.ReturnUrl))
                     {
@@ -178,8 +176,6 @@ namespace IdentityServer4.Quickstart.UI
         [HttpGet]
         public async Task<IActionResult> ExternalLogin(string provider, string returnUrl)
         {
-            RemoveTestCookie();
-
             returnUrl = Url.Action("ExternalLoginCallback", new { returnUrl = returnUrl });
 
             //windows authentication is modeled as external in the asp.net core authentication manager, so we need special handling
@@ -289,6 +285,7 @@ namespace IdentityServer4.Quickstart.UI
 
             //delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+            RemoveTestCookie();
 
             //validate return URL and redirect back to authorization endpoint or a local page
             if (_interaction.IsValidReturnUrl(returnUrl) || Url.IsLocalUrl(returnUrl))
