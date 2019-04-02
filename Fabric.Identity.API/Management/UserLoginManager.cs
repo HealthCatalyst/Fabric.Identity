@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Persistence;
 using IdentityModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace Fabric.Identity.API.Management
