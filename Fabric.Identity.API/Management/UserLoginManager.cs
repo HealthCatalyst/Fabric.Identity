@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Persistence;
 using IdentityModel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace Fabric.Identity.API.Management
@@ -27,8 +29,8 @@ namespace Fabric.Identity.API.Management
             var user = await _userStore.FindByExternalProviderAsync(provider, subjectId);
             if (user == null)
             {
-                _logger.Information($"User not found. Attempting to create user with subjectId: {subjectId}, provider: {provider}, clientId: {clientId}, claims: {string.Join(", ", claims)}");
                 user = CreateNewUser(provider, subjectId, claims, clientId);
+                _logger.Information($"User not found. Attempting to create user: {user}");
                 await _userStore.AddUserAsync(user);
                 return user;
             }
@@ -113,7 +115,17 @@ namespace Fabric.Identity.API.Management
                 // copy the claim as-is
                 else
                 {
-                    filtered.Add(claim);
+                    if (claim.Type == FabricIdentityConstants.FabricClaimTypes.Groups)
+                    {
+                        if (string.IsNullOrEmpty(claim.Value) || !claim.Value.StartsWith("["))
+                        {
+                            filtered.Add(claim);
+                        }
+                    }
+                    else
+                    {
+                        filtered.Add(claim);
+                    }
                 }
             }
 

@@ -36,6 +36,12 @@ namespace Fabric.Identity.API.Models
             {
                 LastLoginDatesByClient.Add(new UserLogin {ClientId = clientIdToLog, LoginDate = DateTime.UtcNow});
             }
-        }       
+        }
+
+        public override string ToString()
+        {
+            return
+                $"{SubjectId} | {Username} | {FirstName} | {MiddleName} | {LastName} | {ProviderName} | {string.Join("|", Claims.Select(c => $"{c.Type}={c.Value}"))}";
+        }
     }
 }
