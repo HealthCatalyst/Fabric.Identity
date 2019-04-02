@@ -61,6 +61,7 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `
+					  -AppName $idpssConfigStore.appName `
                       -AppPoolCredential $idpssIisUser.Credential `
                       -AuthenticationType "Anonymous" `
                       -WebDeploy
