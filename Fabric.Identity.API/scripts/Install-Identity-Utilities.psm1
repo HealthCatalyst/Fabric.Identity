@@ -804,6 +804,25 @@ function Get-ClientSettingsFromInstallConfig {
     return $clientSettings
 }
 
+function Get-SettingsFromInstallConfig {
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath,
+        [string] $scope,
+        [string] $setting
+    )
+
+    return Get-TenantSettingsFromInstallConfig($installConfigPath, $scope, $setting)
+}
+
 function Get-TenantSettingsFromInstallConfig {
     param(
         [ValidateScript({
@@ -1410,6 +1429,7 @@ Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
 Export-ModuleMember Get-WebConfigPath
 Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Get-TenantSettingsFromInstallConfig
+Export-ModuleMember Get-SettingsFromInstallConfig
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig
