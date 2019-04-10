@@ -65,7 +65,7 @@ $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssIn
                       -AuthenticationType "Anonymous" `
                       -WebDeploy
 
-$idpssName = "IdentityProviderSearchService"
+$idpssName = $Global:idPSSAppName
 
 $idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
 Write-Host "IdPSS Directory: $($idpssDirectory)"
