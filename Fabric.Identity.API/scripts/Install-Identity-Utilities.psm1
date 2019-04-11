@@ -822,7 +822,7 @@ function Get-SettingsFromInstallConfig {
         [string] $setting
     )
 
-    return Get-TenantSettingsFromInstallConfig($installConfigPath, $scope, $setting)
+    return Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $setting
 }
 
 function Get-TenantSettingsFromInstallConfig {
