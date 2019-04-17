@@ -1395,10 +1395,8 @@ function Get-CurrentUserDomain
         [Parameter(Mandatory=$true)]
         [bool] $quiet
     )
-    $currentUserDomain = (Get-WmiObject Win32_ComputerSystem).Domain.toUpper()
-    if($currentUserDomain.contains('.')) {
-        $currentUserDomain = $currentUserDomain.Split('.')[0]
-    }
+    $DNSForestName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+    $currentUserDomain = (Get-WmiObject Win32_NTDomain -Filter "DnsForestName = '$DNSForestName'").DomainName
     if(!$quiet){
         $userEnteredDomain = Read-Host "Press Enter to accept the default domain '$($currentUserDomain)' that the user/group who will administrate dos is a member or enter a new domain" 
         if (![string]::IsNullOrEmpty($userEnteredDomain)) {
