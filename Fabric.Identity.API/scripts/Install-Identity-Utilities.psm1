@@ -26,6 +26,8 @@ try{
 }
 Import-Module -Name CatalystDosIdentity -MinimumVersion $minVersion -Force
 
+$Global:idPSSAppName = "IdentityProviderSearchService"
+
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
     {
@@ -495,12 +497,12 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
         $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
 
         if (![string]::IsNullOrWhiteSpace($apiSecret)) {
-		  return $apiSecret
+          return $apiSecret
         }
-		else
-		{
-		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
-		}
+        else
+        {
+          Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
+        }
     }
     catch{
         Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
@@ -795,13 +797,32 @@ function Get-ClientSettingsFromInstallConfig {
             # Does not decrypt secret
             clientSecret = $tenant.secret
             tenantId = $tenant.tenantId
-			tenantAlias = $tenant.tenantAlias
+            tenantAlias = $tenant.tenantAlias
         }
         $clientSettings.Add($tenantSetting)
       }
     }
 
     return $clientSettings
+}
+
+function Get-SettingsFromInstallConfig {
+    param(
+        [ValidateScript({
+            if (!(Test-Path $_)) {
+                throw "Path $_ does not exist. Please enter valid path to the install.config."
+            }
+            if (!(Test-Path $_ -PathType Leaf)) {
+                throw "Path $_ is not a file. Please enter a valid path to the install.config."
+            }
+            return $true
+        })] 
+        [string] $installConfigPath,
+        [string] $scope,
+        [string] $setting
+    )
+
+    return Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $setting
 }
 
 function Get-TenantSettingsFromInstallConfig {
@@ -948,11 +969,12 @@ function Set-IdentityEnvironmentAzureVariables {
                 $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
             }
 
+        $index = 0
         foreach($allowedTenant in $allowedTenants)
         {
-          $index = $allowedTenants.IndexOf($allowedTenant)
           $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant.name + "/")
           $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias__$index", $allowedTenant.alias)
+          $index++
         }
     }
 
@@ -1033,7 +1055,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
-	Write-Host "Setting IdPSS Web Config Settings."
+    Write-Host "Setting IdPSS Web Config Settings."
     Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
     
@@ -1061,7 +1083,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
             $index = $clientSettings.IndexOf($setting)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
+            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
 
             # Currently only a single default scope is expected
             $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
@@ -1072,7 +1094,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
                 # Encrypt secret in install.config if not encrypted
                 Add-InstallationTenantSettings -configSection "identity" `
                     -tenantId $setting.tenantId `
-					-tenantAlias $setting.tenantAlias `
+                    -tenantAlias $setting.tenantAlias `
                     -clientSecret $encryptedSecret `
                     -clientId $setting.clientId `
                     -installConfigPath $installConfigPath `
@@ -1100,7 +1122,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         $appSettings.Add("UseWindowsAuthentication", "false")
     }
 
-	Write-Host "Web Config Path: $($webConfigPath)"
+    Write-Host "Web Config Path: $($webConfigPath)"
 
     Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
@@ -1346,7 +1368,7 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
             RepairAclCanonicalOrder($acl)
             $acl.AddAccessRule($writeAccessRule)
         }
-		
+        
         try {
             $acl.AddAccessRule($readAccessRule)
         } catch [System.InvalidOperationException]
@@ -1354,8 +1376,8 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
             RepairAclCanonicalOrder($acl)
             $acl.AddAccessRule($readAccessRule)
         }
-		
-		try {
+        
+        try {
             Set-Acl -Path $logDirectory $acl
         } catch [System.InvalidOperationException]
         {
@@ -1373,7 +1395,8 @@ function Get-CurrentUserDomain
         [Parameter(Mandatory=$true)]
         [bool] $quiet
     )
-    $currentUserDomain = $env:userdomain
+    $DNSForestName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+    $currentUserDomain = (Get-WmiObject Win32_NTDomain -Filter "DnsForestName = '$DNSForestName'").DomainName
     if(!$quiet){
         $userEnteredDomain = Read-Host "Press Enter to accept the default domain '$($currentUserDomain)' that the user/group who will administrate dos is a member or enter a new domain" 
         if (![string]::IsNullOrEmpty($userEnteredDomain)) {
@@ -1410,6 +1433,7 @@ Export-ModuleMember Test-MeetsMinimumRequiredPowerShellVerion
 Export-ModuleMember Get-WebConfigPath
 Export-ModuleMember Set-IdentityEnvironmentAzureVariables
 Export-ModuleMember Get-TenantSettingsFromInstallConfig
+Export-ModuleMember Get-SettingsFromInstallConfig
 Export-ModuleMember Add-InstallationTenantSettings
 Export-ModuleMember Set-IdentityProviderSearchServiceWebConfigSettings
 Export-ModuleMember Get-ClientSettingsFromInstallConfig

@@ -33,7 +33,7 @@ $installSettingsScope = "identity"
 
 $tenants = Get-Tenants -installConfigPath $installConfigPath
 $replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
-$appNameIdPSS = "Identity Provider Search Service"
+$appNameIdPSS = $Global:idPSSAppName
 $appNameIdentity = "Identity Service"
 
 if ($registerIdPSS)
