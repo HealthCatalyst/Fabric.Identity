@@ -34,6 +34,7 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             Assert.NotNull(appConfig);
             Assert.Equal(clientSecret, appConfig.IdentityServerConfidentialClientSettings.ClientSecret);
             Assert.Equal("InMemory", appConfig.HostingOptions.StorageProvider);
+            Assert.Equal("HQCATALYST", appConfig.FilterSettings.GroupFilterSettings.Prefixes[0]);
         }
 
         private RSA GetPrivateKey()
@@ -70,6 +71,13 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
                     Authority = "http://locahost:5001",
                     ClientId = "test-client",
                     ClientSecret = EncryptString(privateKey, clientSecret)
+                },
+                FilterSettings = new FilterSettings
+                {
+                    GroupFilterSettings = new GroupFilterSettings
+                    {
+                        Prefixes = new [] {"HQCATALYST"}
+                    }
                 }
             };
             return JsonConvert.SerializeObject(appConfig, Formatting.Indented, new JsonSerializerSettings{NullValueHandling = NullValueHandling.Ignore});
