@@ -200,6 +200,8 @@ namespace Fabric.Identity.API
                 _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
+            app.UseExceptionHandler("/Home/UnauthorizedError");
+
             app.UseCheckXForwardHeader();
 
             InitializeDatabase(dbBootstrapper);
