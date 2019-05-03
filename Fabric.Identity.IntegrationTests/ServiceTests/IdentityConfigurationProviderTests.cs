@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Configuration;
