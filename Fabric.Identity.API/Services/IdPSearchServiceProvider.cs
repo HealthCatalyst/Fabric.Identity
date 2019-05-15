@@ -117,7 +117,8 @@ namespace Fabric.Identity.API.Services
                     FirstName = result.FirstName,
                     LastName = result.LastName,
                     MiddleName = result.MiddleName,
-                    SubjectId = result.SubjectId
+                    SubjectId = result.SubjectId,
+                    Email = result.Email
                 };
             }
             catch (TaskCanceledException e)
@@ -146,6 +147,7 @@ namespace Fabric.Identity.API.Services
         public string FirstName { get; set; }
         public string MiddleName { get; set; }
         public string LastName { get; set; }
+        public string Email { get; set; }
         public string PrincipalType { get; set; }
     }
 }

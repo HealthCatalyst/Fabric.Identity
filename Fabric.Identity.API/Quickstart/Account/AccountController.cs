@@ -204,6 +204,11 @@ namespace IdentityServer4.Quickstart.UI
                         id.AddClaim(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
                     }
 
+                    if (externalUser?.Email != null)
+                    {
+                        id.AddClaim(new Claim(JwtClaimTypes.Email, externalUser.Email));
+                    }
+
                     //add the groups as claims -- be careful if the number of groups is too large
                     if (AccountOptions.IncludeWindowsGroups)
                     {

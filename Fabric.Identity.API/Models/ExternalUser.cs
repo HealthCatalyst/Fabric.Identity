@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fabric.Identity.API.Models
+﻿namespace Fabric.Identity.API.Models
 {
     public class ExternalUser
     {
@@ -11,5 +6,6 @@ namespace Fabric.Identity.API.Models
         public string LastName { get; set; }
         public string MiddleName { get; set; }
         public string SubjectId { get; set; }
+        public string Email { get; set; }
     }
 }
