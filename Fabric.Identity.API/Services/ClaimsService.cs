@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Principal;
+using System.Threading.Tasks;
 using static Fabric.Identity.API.FabricIdentityConstants;
 
 namespace Fabric.Identity.API.Services
@@ -17,11 +19,14 @@ namespace Fabric.Identity.API.Services
     public class ClaimsService : IClaimsService
     {
         private readonly IAppConfiguration _appConfiguration;
+        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
 
         public ClaimsService(
-            IAppConfiguration appConfiguration)
+            IAppConfiguration appConfiguration,
+            IExternalIdentityProviderService externalIdentityProviderService)
         {
             _appConfiguration = appConfiguration;
+            _externalIdentityProviderService = externalIdentityProviderService;
         }
 
         /// <summary>
@@ -30,7 +35,7 @@ namespace Fabric.Identity.API.Services
         /// <param name="info">Authentication information</param>
         /// <param name="context">Authorization Request</param>
         /// <returns>Returns all the information into an object call ClaimsResult</returns>
-        public ClaimsResult GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
+        public async Task<ClaimsResult> GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
         {
             CheckWhetherArgumentIsNull(info, nameof(info));
             // NOTE: context may be null.  because of this, we are not going to 
@@ -48,7 +53,7 @@ namespace Fabric.Identity.API.Services
             result.Claims.Remove(result.UserIdClaim);
 
             //get the client id from the auth context
-            result.AdditionalClaims = this.GenerateAdditionalClaims(result.Claims);
+            result.AdditionalClaims = await this.GenerateAdditionalClaims(result, info);
             result.AuthenticationProperties = this.GenerateAuthenticationProperties(info);
 
             return result;
@@ -106,8 +111,8 @@ namespace Fabric.Identity.API.Services
             return userId;
         }
 
-        private string AzureADSubjectId(ClaimsResult claimInformation) => 
-            claimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
+        private string AzureADSubjectId(ClaimsResult claimsResult) => 
+            claimsResult.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
                             .Value;
 
         private ClaimsResult GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
@@ -136,8 +141,9 @@ namespace Fabric.Identity.API.Services
             };
         }
 
-        private Claim[] GenerateAdditionalClaims(List<Claim> previousClaims)
+        private async Task<Claim[]> GenerateAdditionalClaims(ClaimsResult claimsResult, AuthenticateInfo authenticateInfo)
         {
+            var previousClaims = claimsResult.Claims;
             var additionalClaims = new List<Claim>();
             //if the external system sent a session id claim, copy it over
             var sid = previousClaims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);
@@ -151,6 +157,41 @@ namespace Fabric.Identity.API.Services
             if (groupClaims.Any())
             {
                 additionalClaims.AddRange(groupClaims);
+            }
+
+            var claimsPrincipal = authenticateInfo?.Principal;
+            if (claimsPrincipal == null)
+            {
+                throw new Exception("External authentication error");
+            }
+
+            string subjectId = null;
+            if (claimsPrincipal is WindowsPrincipal)
+            {
+                subjectId = claimsPrincipal.Identity.Name;
+            }
+            else
+            {
+                subjectId = AzureADSubjectId(claimsResult);
+            }
+
+            var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(subjectId);
+            if (externalUser != null)
+            {
+                if (externalUser?.FirstName != null)
+                {
+                    additionalClaims.Add(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
+                }
+
+                if (externalUser?.LastName != null)
+                {
+                    additionalClaims.Add(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
+                }
+
+                if (externalUser?.Email != null)
+                {
+                    additionalClaims.Add(new Claim(JwtClaimTypes.Email, externalUser.Email));
+                }
             }
 
             return additionalClaims.ToArray();
