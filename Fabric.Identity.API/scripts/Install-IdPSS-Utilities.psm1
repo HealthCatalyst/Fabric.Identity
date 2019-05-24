@@ -21,7 +21,7 @@ else {
 
 function Get-GraphApiDirectoryReadPermissions() {
     try {
-        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
     }
     catch {
         Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
@@ -49,7 +49,7 @@ function Get-GraphApiDirectoryReadPermissions() {
 
 function Get-GraphApiUserReadPermissions() {
     try {
-        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
     }
     catch {
         Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
@@ -160,12 +160,15 @@ function Connect-AzureADTenant {
     param(
         [Parameter(Mandatory=$true)]
         [string] $tenantId,
-        [Parameter(Mandatory=$true)]
         [PSCredential] $credential
     )
 
     try {
-        Connect-AzureAD -Credential $credential -TenantId $tenantId | Out-Null
+        if($credential) {
+            Connect-AzureAD -Credential $credential -TenantId $tenantId | Out-Null
+        } else {
+            Connect-AzureAD -TenantId $tenantId | Out-Null
+        }
     }
     catch {
         Write-DosMessage -Level "Error" -Message  "Could not sign into tenant '$tenantId' with user '$($credential.UserName)'"
