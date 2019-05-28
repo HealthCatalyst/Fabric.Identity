@@ -52,7 +52,7 @@ namespace Fabric.Identity.API.Services
             result.Claims.Remove(result.UserIdClaim);
 
             //get the client id from the auth context
-            result.AdditionalClaims = this.GenerateAdditionalClaims(result, info);
+            result.AdditionalClaims = this.GenerateAdditionalClaims(result);
             result.AuthenticationProperties = this.GenerateAuthenticationProperties(info);
 
             return result;
