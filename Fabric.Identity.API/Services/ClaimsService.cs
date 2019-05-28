@@ -155,7 +155,7 @@ namespace Fabric.Identity.API.Services
             };
         }
 
-        private Claim[] GenerateAdditionalClaims(ClaimsResult claimsResult, AuthenticateInfo authenticateInfo)
+        private Claim[] GenerateAdditionalClaims(ClaimsResult claimsResult)
         {
             var previousClaims = claimsResult.Claims;
             var additionalClaims = new List<Claim>();
