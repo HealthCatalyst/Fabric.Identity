@@ -48,6 +48,7 @@ namespace Fabric.Identity.API.Services
             try
             {
                 user = await _policyProvider.IdPSearchServicePolicy.ExecuteAsync(() => SearchForUser(subjectId));
+                _logger.Information("Successfully retrieved user from external IdP: " + user);
             }
             catch (BrokenCircuitException ex)
             {

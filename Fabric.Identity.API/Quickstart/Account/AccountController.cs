@@ -193,6 +193,25 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(FabricIdentityConstants.PublicClaimTypes.UserPrincipalName, HttpContext.User.Identity.Name));
 
+                    var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
+                    if (externalUser != null)
+                    {
+                        if (externalUser.FirstName != null)
+                        {
+                            id.AddClaim(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
+                        }
+
+                        if (externalUser.LastName != null)
+                        {
+                            id.AddClaim(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
+                        }
+
+                        if (externalUser.Email != null)
+                        {
+                            id.AddClaim(new Claim(JwtClaimTypes.Email, externalUser.Email));
+                        }
+                    }
+
                     //add the groups as claims -- be careful if the number of groups is too large
                     if (AccountOptions.IncludeWindowsGroups)
                     {
@@ -240,6 +259,7 @@ namespace IdentityServer4.Quickstart.UI
             try
             {
                 claimInformation = await _claimsService.GenerateClaimsForIdentity(info, context);
+                _logger.Information("Generated claims for Identity: " + claimInformation);
             }
             catch(InvalidIssuerException exc)
             {
