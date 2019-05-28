@@ -7,5 +7,10 @@
         public string MiddleName { get; set; }
         public string SubjectId { get; set; }
         public string Email { get; set; }
+
+        public override string ToString()
+        {
+            return $"FirstName = {FirstName}, LastName = {LastName}, MiddleName = {MiddleName}, SubjectId = {SubjectId}, Email = {Email}";
+        }
     }
 }
