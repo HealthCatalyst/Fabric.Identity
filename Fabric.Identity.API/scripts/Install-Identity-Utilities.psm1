@@ -26,7 +26,7 @@ try{
 }
 Import-Module -Name CatalystDosIdentity -MinimumVersion $minVersion -Force
 
-$Global:idPSSAppName = "IdentityProviderSearchService"
+$Global:idPSSAppName = "Identity Provider Search Service"
 
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
