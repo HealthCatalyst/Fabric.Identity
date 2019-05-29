@@ -60,19 +60,17 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `
-					  -AppName $idpssConfigStore.appName `
+                      -AppName $idpssConfigStore.appName `
                       -AppPoolCredential $idpssIisUser.Credential `
                       -AuthenticationType "Anonymous" `
                       -WebDeploy
 
-$idpssName = $Global:idPSSAppName
-
-$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssName)
+$idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($selectedSite.physicalPath), $idpssConfigStore.appName)
 Write-Host "IdPSS Directory: $($idpssDirectory)"
 New-LogsDirectoryForApp $idpssDirectory $idpssIisUser.UserName
 
 Register-ServiceWithDiscovery -iisUserName $idpssIisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
--serviceName $idpssName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
+-serviceName $idpssConfigStore.appName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
 
 $idpssConfig = $idpssDirectory + "\web.config"
 Write-Host "IdPSS Web Config: $($idpssConfig)"
@@ -88,6 +86,8 @@ if($null -eq $useWindows) {
     $useWindows = $true
     Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $configStore.Path  | Out-Null
 }
+
+$idpssName = $Global:idPSSAppName
 
 Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -useAzure $useAzure `
