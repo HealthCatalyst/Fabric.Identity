@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
@@ -201,6 +202,18 @@ namespace Fabric.Identity.API
             }
 
             app.UseExceptionHandler("/Home/UnauthorizedError");
+            app.UseStatusCodePages(
+                async context =>
+                    {
+                        if (context.HttpContext.Response.StatusCode == 401)
+                        {
+                            context.HttpContext.Response.ContentType = "text/html";
+                            await context.HttpContext.Response.WriteAsync(
+                                String.Format(
+                                    "<script>window.location='/identity/home/UnauthorizedError'</script>",
+                                    context.HttpContext.Request.QueryString));
+                        }
+                    });
 
             app.UseCheckXForwardHeader();
 
