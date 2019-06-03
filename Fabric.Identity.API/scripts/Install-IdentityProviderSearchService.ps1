@@ -7,6 +7,14 @@
 
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
+# Import Fabric Install Utilities
+$fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
+if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
+    Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
+    Get-WebRequestDownload -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -NoCache -OutFile $fabricInstallUtilities
+}
+Import-Module -Name $fabricInstallUtilities -Force
+
 # Especially calling this script from another script, this message is helpful
 Write-DosMessage -Level "Information" -Message "Starting IdentityProviderSearchService installation..."
 
@@ -18,6 +26,7 @@ $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssS
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
 $identitySettingsScope = "identity"
 $identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
+$idpssInstallSettings = Get-InstallationSettings $idpssSettingsScope -installConfigPath $configStore.Path
 Set-LoggingConfiguration -commonConfig $commonConfigStore
 
 $certificates = Get-Certificates -primarySigningCertificateThumbprint $identityConfigStore.primarySigningCertificateThumbprint `
@@ -38,9 +47,10 @@ if(!$noDiscoveryService){
 $idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
 $currentUserDomain = Get-CurrentUserDomain -quiet $quiet
     
-$idpssStandalonePath = ".\Fabric.IdentityProviderSearchService.zip"
-$idpssInstallerPath = "..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
+$idpssStandalonePath = "$PSScriptRoot\Fabric.IdentityProviderSearchService.zip"
+$idpssInstallerPath = "$PSScriptRoot\..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallPackagePath = Get-WebDeployPackagePath -standalonePath $idpssStandalonePath -installerPath $idpssInstallerPath
+$selectedSite = Get-IISWebSiteForInstall -selectedSiteName $idpssInstallSettings.siteName -quiet $quiet -installConfigPath $configStore.Path -scope $idpssSettingsScope
 
 $secretNoEnc = $commonConfigStore.fabricInstallerSecret -replace "!!enc!!:"
 

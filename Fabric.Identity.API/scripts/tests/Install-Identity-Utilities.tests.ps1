@@ -783,3 +783,94 @@ Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
         }
     }
 }
+
+Describe 'Get-WebDeployPackagePath'{
+    Context 'Standalone'{
+        InModuleScope Install-Discovery-Utilities{
+            It 'Should return the standalone path'{
+                # Arrange
+                $standAlonePath = ".\Catalyst.DiscoveryService.zip"
+                $resolvedPath = "C:\Installer\Catalyst.DiscoveryService.zip"
+                Mock Resolve-Path { return $resolvedPath }
+                Mock Test-Path -ParameterFilter { $Path -eq $standAlonePath } { return $true }
+
+                # Act
+                $path = Get-WebDeployPackagePath
+
+                # Assert
+                $path | Should -Be $resolvedPath
+            }
+        }
+    }
+    Context 'Standalone'{
+        InModuleScope Install-Discovery-Utilities{
+            It 'Should return the installer path'{
+                # Arrange
+                $installerPath = "..\WebDeployPackages\Catalyst.DiscoveryService.zip"
+                $resolvedPath = "C:\Installer\WebDeployPackages\Catalyst.DiscoveryService.zip"
+                Mock Resolve-Path { return $resolvedPath }
+                Mock Test-Path -ParameterFilter { $Path -eq $installerPath } { return $true }
+
+                # Act
+                $path = Get-WebDeployPackagePath
+
+                # Assert
+                $path | Should -Be $resolvedPath
+            }
+        }
+    }
+    Context 'Failure'{
+        InModuleScope Install-Discovery-Utilities{
+            It 'Should throw an exception'{
+                # Arrange
+                Mock Test-Path { return $false }
+
+                # Act/Assert
+                { Get-WebDeployPackagePath } | Should -Throw
+            }
+        }
+    }
+}
+
+Describe 'Test-DiscoveryService Unit Tests'{
+    Context 'Success'{
+        It 'Should succeed and not throw an exception'{
+            # Arrange
+            Mock Invoke-RestMethod {} -ModuleName Install-Discovery-Utilities
+
+            # Act/Assert
+            {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Not -Throw
+            Assert-MockCalled Invoke-RestMethod -ModuleName Install-Discovery-Utilities -Times 1 -ParameterFilter { $Uri -eq "https://host.domain.local/DiscoveryService/v1/Services" }
+        }
+    }
+    Context 'Generic Exception'{
+        It 'Should fail and throw an exception'{
+            # Arrange
+            Mock Invoke-RestMethod { throw "bad stuff happened" } -ModuleName Install-Discovery-Utilities
+
+            # Act/Assert
+            {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Throw
+        }
+    }
+}
+
+Describe 'Confirm-DiscoveryConfig Unit Tests'{
+    InModuleScope Install-Discovery-Utilities{
+        It 'Should validate valid discovery config settings'{
+            # Arrange
+            $discoveryConfig = @{ appName = "DiscoveryService"; appPoolName = "DiscoveryService"; siteName = "Default Web Site"}
+            $commonConfig = @{ sqlServerAddress = "localhost"; metadataDbName = "EDWAdmin"; webServerDomain = "host.domain.local"; clientEnvironment = "dev" }
+
+            # Act/Assert
+            { Confirm-DiscoveryConfig -discoveryConfig $discoveryConfig -commonConfig $commonConfig } | Should -Not -Throw
+        }
+        It 'Should throw if there is an invalid setting'{
+            # Arrange
+            $discoveryConfig = @{}
+            $commonConfig = @{}
+
+            # Act/Assert
+            { Confirm-DiscoveryConfig -discoveryConfig $discoveryConfig -commonConfig $commonConfig } | Should -Throw
+        }
+    }
+}
