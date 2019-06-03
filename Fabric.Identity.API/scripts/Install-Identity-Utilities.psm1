@@ -336,6 +336,36 @@ function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string]
     return @{DbName = $metadataDbName; DbConnectionString = $metadataConnStr}
 }
 
+function Get-MetadataConnectionStringForDiscovery{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+    
+    $metaDataConnectionString =  "Data Source=$($commonConfig.sqlServerAddress);Initial Catalog=$($commonConfig.metadataDbName);Integrated Security=True;Application Name=Discovery Service;"
+    Confirm-DatabaseConnection -connectionString $metaDataConnectionString
+    return $metaDataConnectionString
+}
+
+
+function Confirm-DatabaseConnection{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $connectionString
+    )
+
+    Write-DosMessage -Level "Information" -Message "Confirming connection string '$connectionString'."
+    $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
+    try{
+        $connection.Open()
+    }catch{
+        Write-DosMessage -Level "Fatal" -Message "Could not connect to '$connectionString' please check database connection settings in install config."
+    }finally{
+        $connection.Close();
+    }
+}
+
+
 function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $installConfigPath, [bool]$quiet){
     $defaultDiscoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl $discoveryServiceUrl
     if(!$quiet){
@@ -1406,6 +1436,144 @@ function Get-CurrentUserDomain
     return $currentUserDomain
 }
 
+function Get-WebDeployParameters{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $discoveryConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig,
+        [Parameter(Mandatory=$true)]
+        [string] $userName,
+        [string] $registrationApiSecret
+    )
+
+    Confirm-DiscoveryConfig -discoveryConfig $discoveryConfig -commonConfig $commonConfig
+    $metaDataConnectionString = Get-MetadataConnectionStringForDiscovery -commonConfig $commonConfig
+
+    if([string]::IsNullOrEmpty($commonConfig.webServerDomain))
+    {
+      Write-DosMessage -Level "Error" -Message "The Fabric Identity URL: '$($commonConfig.IdentityService)' is not valid.  Check the install.config, section 'common', name 'IdentityService' for further details." -ErrorAction Stop
+    }
+    
+    $webDeployParameters = @(
+                                @{
+                                    Name = "IIS Web Application Name";
+                                    Value = "$($discoveryConfig.siteName)/$($discoveryConfig.appName)"
+                                },
+                                @{
+                                    Name = "App Pool Account";
+                                    Value = $userName
+                                },
+                                @{
+                                    Name = "Application Endpoint Address";
+                                    Value = "https://$($commonConfig.webServerDomain)/$($discoveryConfig.appName)"
+                                },
+                                @{
+                                    Name = "Client Environment";
+                                    Value = "$($commonConfig.clientEnvironment)"
+                                },
+                                @{
+                                    Name = "DiscoveryServiceDataContext-Deployment-Deployment Connection String";
+                                    Value = $metaDataConnectionString
+                                },
+                                @{
+                                    Name = "DiscoveryServiceDataContext-Web.config Connection String";
+                                    Value = $metaDataConnectionString
+                                }
+                            )
+
+    if([string]::IsNullOrEmpty($registrationApiSecret) -ne $true) {
+        $webDeployParameters += @{ 
+            Name = "Discovery Service Api Secret"; 
+            Value = $registrationApiSecret 
+        }
+
+        $webDeployParameters += @{
+            Name = "Fabric.Identity URL";
+            Value = "$($commonConfig.IdentityService)"
+        }
+    }
+    
+    return $webDeployParameters
+}
+
+function Confirm-DiscoveryConfig{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $discoveryConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+
+    Confirm-SettingIsNotNull -settingName "common.sqlServerAddress" -settingValue $commonConfig.sqlServerAddress
+    Confirm-SettingIsNotNull -settingName "common.metadataDbName" -settingValue $commonConfig.metadataDbName
+    Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfig.webServerDomain
+    Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfig.clientEnvironment
+    Confirm-SettingIsNotNull -settingName "discovery.appName" -settingValue $discoveryConfig.appName
+    Confirm-SettingIsNotNull -settingName "discovery.appPoolName" -settingValue $discoveryConfig.appPoolName
+    Confirm-SettingIsNotNull -settingName "discovery.siteName" -settingValue $discoveryConfig.siteName
+}
+
+function Add-DiscoveryApiResourceRegistration{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $identityServiceUrl, 
+        [Parameter(Mandatory=$true)]
+        [string] $fabricInstallerSecret
+    )
+    $accessToken = Get-AccessToken -identityUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope fabric/identity.manageresources
+
+    Write-DosMessage -Level "Information" -Message "Registering Discovery Service API with Fabric.Identity..."
+    $apiName = "discovery-service-api"
+    try{
+        [string]$apiSecret = [string]::Empty
+        Write-Host "    Registering $($apiName) with Fabric.Identity"
+        $body = New-APIRegistrationBody -apiName $apiName -userClaims @("name", "email", "roles", "group") -scopes @{"name" = "dos/discovery.read"} -isEnabled $true
+        $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+
+        if (![string]::IsNullOrWhiteSpace($apiSecret)) {
+		  return $apiSecret
+        }
+		else
+		{
+		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
+		}    
+    }
+    catch{
+        Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
+        throw $_.Exception
+    }
+}
+
+function Test-DiscoveryService{
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $discoveryBaseUrl
+    )
+
+    try{
+        $requestUri = "$discoveryBaseUrl/v1/Services"
+        Write-DosMessage -Level "Information" -Message "Testing installation of DiscoveryService at $requestUri"
+        Invoke-RestMethod -Method Get -Uri $requestUri -UseDefaultCredentials | Out-Null
+    } 
+    catch [System.Net.WebException] {
+        Write-DosMessage -Level "Error" -Message "Could not contact DiscoveryService at: $requestUri."
+        $response = $_.Exception.Response
+        if($null -ne $response){
+            $errorDetails = Get-ErrorFromResponse -response $response
+            Write-DosMessage -Level "Error" -Message "Status Code: $($errorDetails.StatusCode) - $($errorDetails.StatusDescription)."
+            Write-DosMessage -Level "Error" -Message "Error Message: $($errorDetails.ErrorMessage)"
+        }else{
+            Write-DosMessage -Level "Error" -Message "$($_.Exception.Message)"
+        }
+        Write-DosMessage -Level "Fatal" -Message "Installation was not successful."
+    }catch{
+        Write-DosMessage -Level "Error" -Message "$($_.Exception.Message)"
+        Write-DosMessage -Level "Fatal" -Message "Installation was not successful."
+    }
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1445,3 +1613,7 @@ Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull
 Export-ModuleMember Get-CurrentUserDomain
+
+Export-ModuleMember Get-WebDeployParameters
+Export-ModuleMember Add-DiscoveryApiResourceRegistration
+Export-ModuleMember Test-DiscoveryService

@@ -13,14 +13,14 @@ param(
         }
         return $true
     })] 
-    [string] $installConfigPath = "$PSScriptRoot\install.config", 
-    [switch] $noDiscoveryService, 
+    [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
+    [switch] $noDiscoveryService,
     [switch] $quiet
 )
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
-$fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
+$fabricInstallUtilities = "$PSScriptRoot\Fabric-Install-Utilities.psm1"
 if (!(Test-Path $fabricInstallUtilities -PathType Leaf)) {
     Write-DosMessage -Level "Warning" -Message "Could not find fabric install utilities. Manually downloading and installing"
     Get-WebRequestDownload -Uri https://raw.githubusercontent.com/HealthCatalyst/InstallScripts/master/common/Fabric-Install-Utilities.psm1 -NoCache -OutFile $fabricInstallUtilities
@@ -35,36 +35,34 @@ if(!(Test-IsRunAsAdministrator))
     throw
 }
 
+# Read in Configuration settings from install.config
 $ErrorActionPreference = "Stop"
-$configStore = @{Type = "File"; Format = "XML"; Path = "$installConfigPath"}
-Write-DosMessage -Level "Information" -Message "Using install.config: $installConfigPath"
+Write-DosMessage -Level "Information" -Message "Using install.config: $($configStore.Path)"
 $installSettingsScope = "identity"
-$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $installConfigPath
+$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $configStore.Path
 
 $commonSettingsScope = "common"
-$commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $installConfigPath
+$commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $configStore.Path
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
-$idpssSettingsScope = "identityProviderSearchService"
-$idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 
+# Setup connection strings and dependences
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
 Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
-$selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet -installConfigPath $installConfigPath -scope $installSettingsScope
-$selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
-$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $installConfigPath -scope $installSettingsScope
+$selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet -installConfigPath $configStore.Path -scope $installSettingsScope
+$selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
+$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
 Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate read
-$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
-$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
-$identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
-$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $installConfigPath -quiet $quiet
+$appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
+$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 
 if(!$noDiscoveryService){
-    $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonInstallSettings.discoveryService -installConfigPath $installConfigPath -quiet $quiet
+    $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonInstallSettings.discoveryService -installConfigPath $configStore.Path -quiet $quiet
 }
-$identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $installConfigPath -scope $installSettingsScope -quiet $quiet
-$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
+$identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
 
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
@@ -96,7 +94,7 @@ if(Test-RegistrationComplete $identityServiceUrl) {
 
 $registrationApiSecret = Add-RegistrationApiRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
 $fabricInstallerSecret = Add-InstallerClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken -fabricInstallerSecret $installSettings.fabricInstallerSecret
-Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $selectedCerts.SigningCertificate $installConfigPath
+Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $selectedCerts.SigningCertificate $configStore.Path
 
 if (!$accessToken){
     $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $fabricInstallerSecret
@@ -111,19 +109,19 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
 $useAzure = $installSettings.useAzureAD
 if($null -eq $useAzure) {
     $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $installConfigPath | Out-Null
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path | Out-Null
 }
 
 $useWindows = $installSettings.useWindowsAD
 if($null -eq $useWindows) {
     $useWindows = $true
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $installConfigPath | Out-Null
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useWindowsAD" -configValue "$useWindows" -installConfigPath $configStore.Path | Out-Null
 }
 
 Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
     -useAzure $useAzure `
     -useWindows $useWindows `
-    -installConfigPath $installConfigPath `
+    -installConfigPath $configStore.Path `
     -encryptionCert $selectedCerts.SigningCertificate
 
 Set-IdentityUri -identityUri $identityServiceUrl `
@@ -132,11 +130,3 @@ Set-IdentityUri -identityUri $identityServiceUrl `
 if ($fabricInstallerSecret){
     Write-DosMessage -Level "Information" -Message "Fabric.Installer clientSecret has been created."
 }
-
-# Call the Idpss powershell script
-.\Install-IdentityProviderSearchService.ps1 -credential $iisUser.Credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet
-
-if(!$quiet){
-    Read-Host -Prompt "Installation complete, press Enter to exit"
-}
-
