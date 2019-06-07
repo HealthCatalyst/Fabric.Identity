@@ -103,7 +103,7 @@ function New-FabricAzureADApplication() {
     return $app
 }
 
-function Remove-AzureADClientSecret{
+function Remove-AzureADClientSecret {
     param(
         [string] $objectId,
         [string] $keyIdentifier
@@ -112,26 +112,32 @@ function Remove-AzureADClientSecret{
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
     $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
     $completed = $false
+    $deleteSecrets = $false
     [int]$retryCount = 0
 
-    foreach($key in $filteredKeys) {
-        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
-        do {
-            if($retryCount -gt 3) {
-                Write-DosMessage -Level "Error" -Message "Could not create Azure AD application secret."
-                throw
-            }
+    if ($filterKeys.count -gt 0) {
+        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation
+    }
 
-            try {
-                Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
-                $completed = $true
-            }
-            catch {
-                Write-DosMessage -Level "Warning" -Message "An error occurred trying to remove the Azure application secret named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId). Retrying.."
-                Start-Sleep 3
-                $retryCount++
-            }
-        } while ($completed -eq $false)
+    if($deleteSecrets) {
+        foreach($key in $filteredKeys) {
+            Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
+            do {
+                if($retryCount -gt 3) {
+                    Write-DosMessage -Level "Fatal" -Message "Could not create Azure AD application secret."
+                }
+
+                try {
+                    Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
+                    $completed = $true
+                }
+                catch {
+                    Write-DosMessage -Level "Warning" -Message "An error occurred trying to remove the Azure application secret named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId). Retrying.."
+                    Start-Sleep 3
+                    $retryCount++
+                }
+            } while ($completed -eq $false)
+        }
     }
 }
 
@@ -143,7 +149,6 @@ function Get-FabricAzureADSecret {
     $keyCredentialName = $secretName
 
     # Cleanup existing secret
-    # Do Not Remove? Prompt for remove?
     Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
 
     Write-Host "Creating password credential named $keyCredentialName"
@@ -239,7 +244,7 @@ function Register-Identity {
     )
     $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
     $secretName = $installSettings.azureIdentitySecretName
-    Confirm-SecretName -secretName $secretName
+    Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
@@ -293,7 +298,7 @@ function Register-IdPSS {
     )
     $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
     $secretName = $installSettings.azureIdentitySecretName
-    Confirm-SecretName -secretName $secretName
+    Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     # IdentityProviderSearchService registration
    if($null -ne $tenants) {
@@ -322,7 +327,7 @@ function Register-IdPSS {
  }
 }
 
-function Confirm-SecretName {
+function Confirm-InstallIdpSSUtilsSecretName {
     param(
         [string] $secretName
     )
@@ -341,6 +346,16 @@ function Confirm-Tenants {
         if([string]::IsNullOrEmpty($tenant.name) -or [string]::IsNullOrEmpty($tenant.alias)) {
             Write-DosMessage -Level "Fatal" -Message "Tenant alias and name must be provided for each tenant."
         }
+    }
+}
+
+function Get-InstallIdPSSUtilsUserConfirmation {
+    Write-DosMessage -Level "Information" -Message "Found ${$filterKeys.count} duplicate secrets."
+    $deleteSecrets = Read-Host  "Delete duplicate secret(s)? [Y/N]"
+    switch ($deleteSecrets) {
+        Y {return $true}
+        N {return $false}
+        Default {return $false}
     }
 }
 
