@@ -135,10 +135,17 @@ function Remove-AzureADClientSecret{
     }
 }
 
-function Get-FabricAzureADSecret([string] $objectId) {
+function Get-FabricAzureADSecret {
+    param(
+        [string] $objectId,
+        [string] $secretName
+    )
+    $keyCredentialName = $secretName
+
     # Cleanup existing secret
-    $keyCredentialName = "PowerShell Created Password"
+    # Do Not Remove? Prompt for remove?
     Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
+
     Write-Host "Creating password credential named $keyCredentialName"
     $completed = $false
     [int]$retryCount = 0
@@ -230,6 +237,10 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $installConfigPath
     )
+    $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
+    $secretName = $installSettings.azureIdentitySecretName
+    Confirm-SecretName -secretName $secretName
+
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
     $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
@@ -249,7 +260,7 @@ function Register-Identity {
     $permission = Get-GraphApiUserReadPermissions
     $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
     $clientId = $app.AppId
-    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
     Disconnect-AzureAD
 
@@ -280,6 +291,10 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $installConfigPath
     )
+    $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
+    $secretName = $installSettings.azureIdentitySecretName
+    Confirm-SecretName -secretName $secretName
+
     # IdentityProviderSearchService registration
    if($null -ne $tenants) {
     foreach($tenant in $tenants) { 
@@ -290,7 +305,7 @@ function Register-IdPSS {
       $permission = Get-GraphApiDirectoryReadPermissions
       $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
       $clientId = $app.AppId
-      $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+      $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
       Disconnect-AzureAD
       Add-InstallationTenantSettings -configSection $configSection `
@@ -305,6 +320,16 @@ function Register-IdPSS {
       Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
  }
+}
+
+function Confirm-SecretName {
+    param(
+        [string] $secretName
+    )
+
+    if([string]::IsNullOrEmpty($secretName)) {
+        Write-DosMessage -Level "Fatal" -Message "A Secret Name for registering with Azure must be provided:`n <variable name=`"secretName`" value=`"Name`">"
+    }
 }
 
 function Confirm-Tenants {
