@@ -92,7 +92,12 @@ function New-FabricAzureADApplication() {
         $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
     else {
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+        # Do not overwrite, append to existing urls
+        $existingUrls = $app.ReplyUrls
+        foreach($replyUrl in $replyUrls.name) {
+            $existingUrls.Add($replyUrl)
+        }
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
