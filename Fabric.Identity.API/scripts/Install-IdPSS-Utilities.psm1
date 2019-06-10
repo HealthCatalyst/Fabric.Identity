@@ -115,7 +115,7 @@ function Remove-AzureADClientSecret {
     $deleteSecrets = $false
     [int]$retryCount = 0
 
-    if ($filterKeys.count -gt 0) {
+    if ($filteredKeys.count -gt 0) {
         $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation
     }
 
