@@ -93,10 +93,12 @@ function New-FabricAzureADApplication() {
     }
     else {
         # Do not overwrite, append to existing urls
+        # Updating app fails if trying to add duplicate urls
         $existingUrls = $app.ReplyUrls
         foreach($replyUrl in $replyUrls.name) {
             $existingUrls.Add($replyUrl)
         }
+        $existingUrls = $existingUrls | Select-Object -Unique
         Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
