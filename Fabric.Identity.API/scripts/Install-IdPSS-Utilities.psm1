@@ -245,7 +245,7 @@ function Register-Identity {
         [string] $installConfigPath
     )
     $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
-    $secretName = $installSettings.azureIdentitySecretName
+    $secretName = $installSettings.azureSecretName
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
@@ -299,7 +299,7 @@ function Register-IdPSS {
         [string] $installConfigPath
     )
     $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
-    $secretName = $installSettings.azureIdentitySecretName
+    $secretName = $installSettings.azureSecretName
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     # IdentityProviderSearchService registration
