@@ -4,7 +4,12 @@
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
-
+if (!(Test-Path $configStore.Path)) {
+    throw "Path $($configStore.Path) does not exist. Please enter valid path to the install.config."
+}
+if (!(Test-Path $configStore.Path -PathType Leaf)) {
+    throw "Path $($configStore.Path) is not a file. Please enter a valid path to the install.config."
+}
 Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 
 # Import Fabric Install Utilities
