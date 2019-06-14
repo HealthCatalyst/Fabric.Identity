@@ -44,7 +44,7 @@ if(!$enableOAuth){
 }
 
 # Call the Identity powershell script
-.\Install-Identity.ps1 -credential $credential -installConfigPath $installConfigPath -noDiscoveryService:$noDiscoveryService -quiet:$quiet
+.\Install-Identity.ps1 -credential $credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity has been installed."
 
 # Call the Idpss powershell script
