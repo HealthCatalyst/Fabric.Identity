@@ -88,11 +88,6 @@ if ($appSettingsExists) {
     $newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
 }
 
-# restore filter settings
-$newAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
-$newAppSettingsJson.FilterSettings = $oldFiltersJson
-$newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
-
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
     Register-ServiceWithDiscovery -iisUserName $iisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $installApplication.version -serverUrl $identityServiceUrl `
