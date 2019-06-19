@@ -82,7 +82,6 @@ $installApplication = Publish-Application -site $selectedSite `
 
 if ($appSettingsExists) {
     # restore filter settings
-    # $newAppSettingsFile = Get-Content "$appSettingsPath"
     $newAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
     $newAppSettingsJson.FilterSettings = $oldFiltersJson
     $newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
