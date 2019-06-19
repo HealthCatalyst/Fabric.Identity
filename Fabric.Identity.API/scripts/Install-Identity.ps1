@@ -62,7 +62,7 @@ if(!$noDiscoveryService){
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
 
 # back up filter settings
-$appSettingsPath = "$($selectedSite.physicalPath)\appsettings.json"
+$appSettingsPath = "$($selectedSite.physicalPath)\$($installSettings.appName)\appsettings.json"
 if (!(Test-Path $appSettingsPath)) {
     Write-DosMessage -Level "Information" -Message "Could not find $appSettingsPath to replace existing Fabric.Identity group claim filters."
     $appSettingsExists = $false
@@ -82,6 +82,7 @@ $installApplication = Publish-Application -site $selectedSite `
 
 if ($appSettingsExists) {
     # restore filter settings
+    Write-DosMessage -Level "Information" -Message "Copying existing Identity FilterSettings into $appSettingsPath."
     $newAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
     $newAppSettingsJson.FilterSettings = $oldFiltersJson
     $newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
