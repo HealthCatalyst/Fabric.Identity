@@ -61,12 +61,37 @@ if(!$noDiscoveryService){
 }
 $identityServiceUrl = Get-ApplicationEndpoint -appName $installSettings.appName -applicationEndpoint $installSettings.applicationEndPoint -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
 
+# back up filter settings
+$appSettingsPath = "$($selectedSite.physicalPath)\appsettings.json"
+if (!(Test-Path $appSettingsPath)) {
+    Write-DosMessage -Level "Information" -Message "Could not find $appSettingsPath to replace existing Fabric.Identity group claim filters."
+    $appSettingsExists = $false
+}
+else {
+    $appSettingsExists = $true
+    $oldAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
+    $oldFiltersJson = $oldAppSettingsJson.FilterSettings
+}
+
 Unlock-ConfigurationSections
 $installApplication = Publish-Application -site $selectedSite `
                  -appName $installSettings.appName `
                  -iisUser $iisUser `
                  -zipPackage $zipPackage `
                  -assembly "Fabric.Identity.API.dll"
+
+if ($appSettingsExists) {
+    # restore filter settings
+    # $newAppSettingsFile = Get-Content "$appSettingsPath"
+    $newAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
+    $newAppSettingsJson.FilterSettings = $oldFiltersJson
+    $newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
+}
+
+# restore filter settings
+$newAppSettingsJson = Get-Content -Raw -Path "$appSettingsPath" | ConvertFrom-Json
+$newAppSettingsJson.FilterSettings = $oldFiltersJson
+$newAppSettingsJson | ConvertTo-Json -depth 100 | Out-File "$appSettingsPath"
 
 Add-DatabaseSecurity $iisUser.UserName $installSettings.identityDatabaseRole $identityDatabase.DbConnectionString
 if(!$noDiscoveryService){
