@@ -1487,11 +1487,16 @@ function Get-WebDeployParameters{
             Name = "Discovery Service Api Secret"; 
             Value = $registrationApiSecret 
         }
+    }
 
-        $webDeployParameters += @{
+    $identityServiceUrl = $commonConfig.identityService
+    if([string]::IsNullOrEmpty($identityServiceUrl)) {
+        $identityServiceUrl = "https://$($commonConfig.webServerDomain)/identity"
+    }
+
+    $webDeployParameters += @{
             Name = "Fabric.Identity URL";
-            Value = "$($commonConfig.IdentityService)"
-        }
+            Value = $identityServiceUrl
     }
     
     return $webDeployParameters
@@ -1532,12 +1537,12 @@ function Add-DiscoveryApiResourceRegistration{
         $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
 
         if (![string]::IsNullOrWhiteSpace($apiSecret)) {
-		  return $apiSecret
+          return $apiSecret
         }
-		else
-		{
-		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
-		}    
+        else
+        {
+          Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
+        }    
     }
     catch{
         Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
