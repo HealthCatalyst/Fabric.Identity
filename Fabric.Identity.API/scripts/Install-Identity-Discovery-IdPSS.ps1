@@ -37,12 +37,6 @@ $discoveryScope = "discoveryservice"
 $discoveryConfig = Get-DosConfigValues -ConfigStore $configStore -Scope $discoveryScope
 $enableOAuth = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -and $discoveryConfig.enableOAuth -eq "true"
 
-if(!$enableOAuth){
-    # If AAD is not enabled, install discovery first.
-    .\Install-Discovery.ps1 -credential $discoveryServiceCredential -configStore $configStore -quiet:$quiet
-    Write-DosMessage -Level "Information" -Message "Discovery has been installed."
-}
-
 # Call the Identity powershell script
 .\Install-Identity.ps1 -credential $credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity has been installed."
@@ -51,12 +45,8 @@ Write-DosMessage -Level "Information" -Message "Fabric.Identity has been install
 .\Install-IdentityProviderSearchService.ps1 -credential $credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity Provider Search Service has been installed."
 
-
-if($enableOAuth){
-    # If AAD is enabled, then identity should be installed first
-    .\Install-Discovery.ps1 -credential $discoveryServiceCredential -configStore $configStore -quiet:$quiet
-    Write-DosMessage -Level "Information" -Message "Discovery has been installed."
-}
+.\Install-Discovery.ps1 -credential $discoveryServiceCredential -configStore $configStore -quiet:$quiet
+Write-DosMessage -Level "Information" -Message "Discovery has been installed."
 
 if(!$quiet){
     Read-Host -Prompt "Installation complete, press Enter to exit"
