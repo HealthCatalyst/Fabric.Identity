@@ -1487,11 +1487,17 @@ function Get-WebDeployParameters{
             Name = "Discovery Service Api Secret"; 
             Value = $registrationApiSecret 
         }
+    }
 
-        $webDeployParameters += @{
-            Name = "Fabric.Identity URL";
-            Value = "$($commonConfig.IdentityService)"
-        }
+    $identityServiceUrl = $commonConfig.identityService
+    if([string]::IsNullOrEmpty($identityServiceUrl)) {
+        $identityServiceUrl = "https://$($commonConfig.webServerDomain)/identity"
+        Write-DosMessage -Level "Information" -Message "identityService value is missing from common, setting DiscoveryService FabricIdentityUrl to $identityServiceUrl"
+    }
+
+    $webDeployParameters += @{
+        Name = "Fabric.Identity URL";
+        Value = $identityServiceUrl
     }
     
     return $webDeployParameters
