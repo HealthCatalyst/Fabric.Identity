@@ -1492,6 +1492,7 @@ function Get-WebDeployParameters{
     $identityServiceUrl = $commonConfig.identityService
     if([string]::IsNullOrEmpty($identityServiceUrl)) {
         $identityServiceUrl = "https://$($commonConfig.webServerDomain)/identity"
+        Write-DosMessage -Level "Information" -Message "identityService value is missing from common, setting DiscoveryService FabricIdentityUrl to $identityServiceUrl"
     }
 
     $webDeployParameters += @{
