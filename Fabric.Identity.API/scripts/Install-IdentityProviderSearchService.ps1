@@ -39,7 +39,9 @@ $certificates = Get-Certificates -primarySigningCertificateThumbprint $identityC
             -installConfigPath $configStore.Path `
             -scope $identitySettingsScope `
             -quiet $quiet
+
 $idpssIisUser = Get-IISAppPoolUser -credential $credential -appName $idpssConfigStore.appName -storedIisUser $idpssConfigStore.iisUser -installConfigPath $configStore.Path -scope $idpssSettingsScope
+
 Add-PermissionToPrivateKey $idpssIisUser.UserName $certificates.SigningCertificate read
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $identityConfigStore.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $identitySettingsScope -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonConfigStore.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
@@ -72,6 +74,7 @@ $idpssWebDeployParameters = Get-IdpssWebDeployParameters -serviceConfig $idpssCo
                         -metadataConnectionString $metadataDatabase.DbConnectionString `
                         -currentDomain $currentUserDomain
 
+Write-DosMessage -Level Information -Message "Enter credentials for app pool $($idpssConfigStore.appPoolName)"
 $idpssInstallApplication = Publish-DosWebApplication -WebAppPackagePath $idpssInstallPackagePath `
                       -WebDeployParameters $idpssWebDeployParameters `
                       -AppPoolName $idpssConfigStore.appPoolName `

@@ -63,6 +63,7 @@ $webDeployParameters = Get-WebDeployParameters -discoveryConfig $discoveryConfig
                    -userName $discoveryIisUser.UserName `
                    -registrationApiSecret $registrationApiSecret
 
+Write-DosMessage -Level Information -Message "Enter credentials for app pool $($discoveryConfig.appPoolName)"
 Publish-DosWebApplication -WebAppPackagePath $installPackagePath `
                           -WebDeployParameters $webDeployParameters `
                           -AppPoolName $discoveryConfig.appPoolName `
