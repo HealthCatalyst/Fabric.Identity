@@ -51,9 +51,15 @@ if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonConfigStore.discoveryService -installConfigPath $configStore.Path -quiet $quiet
 }
 
-$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName -applicationEndpoint $idpssConfigStore.applicationEndPoint -installConfigPath $configStore.Path -scope $idpssSettingsScope -quiet $quiet
+$idpssServiceUrl = Get-ApplicationEndpoint -appName $idpssConfigStore.appName `
+    -applicationEndpoint $idpssConfigStore.applicationEndPoint `
+    -installConfigPath $configStore.Path `
+    -scope $idpssSettingsScope `
+    -quiet $quiet `
+    -addInstallSetting $false
+
 $currentUserDomain = Get-CurrentUserDomain -quiet $quiet
-    
+
 $idpssStandalonePath = "$PSScriptRoot\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallerPath = "$PSScriptRoot\..\WebDeployPackages\Fabric.IdentityProviderSearchService.zip"
 $idpssInstallPackagePath = Get-WebDeployPackagePath -standalonePath $idpssStandalonePath -installerPath $idpssInstallerPath
