@@ -378,7 +378,16 @@ function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $install
     return $defaultDiscoUrl
 }
 
-function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [string] $installConfigPath, [string] $scope, [bool] $quiet){
+function Get-ApplicationEndpoint{
+    param(
+        [string] $appName,
+        [string] $applicationEndpoint,
+        [string] $installConfigPath,
+        [string] $scope,
+        [bool] $quiet,
+        [bool] $addInstallSetting = $true
+    )
+
     $defaultAppEndpoint = Get-DefaultApplicationEndpoint -appName $appName -appEndPoint $applicationEndpoint
     if(!$quiet){
         $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$defaultAppEndpoint] or enter a new URL"
@@ -387,8 +396,7 @@ function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoin
         }
     }
 
-    # Do not need to add IdPSS to common config, only used by Identity
-    if($defaultAppEndpoint -notlike "*IdentityProviderSearchService*"){
+    if($addInstallSetting){
         if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
         if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
     }
