@@ -386,8 +386,12 @@ function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoin
             $defaultAppEndpoint = $userEnteredApplicationEndpoint
         }
     }
-    if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
-    if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+
+    # Do not need to add IdPSS to common config, only used by Identity
+    if($defaultAppEndpoint -notlike "*IdentityProviderSearchService*"){
+        if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+        if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+    }
     return $defaultAppEndpoint
 }
 

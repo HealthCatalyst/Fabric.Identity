@@ -87,7 +87,7 @@ $idpssDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVari
 Write-Host "IdPSS Directory: $($idpssDirectory)"
 New-LogsDirectoryForApp $idpssDirectory $idpssIisUser.UserName
 
-Register-ServiceWithDiscovery -iisUserName $idpssIisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl $idpssServiceUrl `
+Register-ServiceWithDiscovery -iisUserName $idpssIisUser.UserName -metadataConnStr $metadataDatabase.DbConnectionString -version $idpssInstallApplication.version -serverUrl "$idpssServiceUrl/v1" `
 -serviceName $idpssConfigStore.appName -friendlyName "Fabric.IdentityProviderSearchService" -description "The Fabric.IdentityProviderSearchService searches Identity Providers for matching users and groups.";
 
 $idpssConfig = $idpssDirectory + "\web.config"
