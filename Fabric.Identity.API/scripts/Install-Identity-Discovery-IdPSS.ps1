@@ -15,6 +15,7 @@ param(
         return $true
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config", 
+    [string] $azureConfigPath = "C:\Program Files\Health Catalyst\azuresettings.config",    # TODO: env variable for program files?
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
@@ -31,6 +32,7 @@ Test-MeetsMinimumRequiredPowerShellVerion -majorVersion 5
 
 # common Settings
 $configStore = @{Type = "File"; Format = "XML"; Path = "$installConfigPath"}
+$azureConfigStore = @{Type = "File"; Format = "XML"; Path = "$azureConfigPath"}
 
 # Identity Settings
 $discoveryScope = "discoveryservice"
@@ -38,11 +40,11 @@ $discoveryConfig = Get-DosConfigValues -ConfigStore $configStore -Scope $discove
 $enableOAuth = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -and $discoveryConfig.enableOAuth -eq "true"
 
 # Call the Identity powershell script
-.\Install-Identity.ps1 -credential $credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
+.\Install-Identity.ps1 -credential $credential -configStore $configStore -azureConfigStore $azureConfigStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity has been installed."
 
 # Call the Idpss powershell script
-.\Install-IdentityProviderSearchService.ps1 -credential $credential -configStore $configStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
+.\Install-IdentityProviderSearchService.ps1 -credential $credential -configStore $configStore -azureConfigStore $azureConfigStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity Provider Search Service has been installed."
 
 .\Install-Discovery.ps1 -credential $discoveryServiceCredential -configStore $configStore -quiet:$quiet

@@ -5,6 +5,7 @@
 param(
     [PSCredential] $credential,
     [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
+    [Hashtable] $azureConfigStore = @{Type = "File"; Format = "XML"; Path = "C:\Program Files\Health Catalyst\azuresettings.config"},   # TODO: env variable for this?
     [switch] $noDiscoveryService,
     [switch] $quiet
 )
@@ -139,7 +140,7 @@ if($null -eq $useWindows) {
 Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.applicationDirectory `
     -useAzure $useAzure `
     -useWindows $useWindows `
-    -installConfigPath $configStore.Path `
+    -installConfigPath $azureConfigStore.Path `
     -encryptionCert $selectedCerts.SigningCertificate
 
 Set-IdentityUri -identityUri $identityServiceUrl `
