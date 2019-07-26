@@ -43,6 +43,22 @@ $commonSettingsScope = "common"
 $commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $configStore.Path
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
+# Check for useAzure setting
+$useAzure = $installSettings.useAzureAD
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path | Out-Null
+}
+
+# Verify azure settings file exists if azure is enabled
+if($useAzure -eq $true) {
+    if (!(Test-Path $azureConfigStore.Path)) {
+        throw "Path $($azureConfigStore.Path) does not exist and is required when useAzure is set to true. Please enter valid path to the azuresettings.config."
+    }
+    if (!(Test-Path $azureConfigStore.Path -PathType Leaf)) {
+        throw "Path $($azureConfigStore.Path) is not a file and is required when useAzure is set to true. Please enter a valid path to the azuresettings.config."
+    }
+}
 
 # Setup connection strings and dependences
 $currentDirectory = $PSScriptRoot
@@ -124,12 +140,6 @@ Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCer
     -identityClientSecret $identityClientSecret `
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
-
-$useAzure = $installSettings.useAzureAD
-if($null -eq $useAzure) {
-    $useAzure = $false
-    Add-InstallationSetting -configSection $installSettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path | Out-Null
-}
 
 $useWindows = $installSettings.useWindowsAD
 if($null -eq $useWindows) {

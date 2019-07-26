@@ -1,6 +1,7 @@
 ﻿param(
     [PSCredential] $credential, 
     [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
+    [Hashtable] $azureConfigStore = @{Type = "File"; Format = "XML"; Path = "C:\Program Files\Health Catalyst\azuresettings.config"},   # TODO: env variable for this?
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
@@ -23,14 +24,31 @@ Import-Module -Name $fabricInstallUtilities -Force
 # Especially calling this script from another script, this message is helpful
 Write-DosMessage -Level "Information" -Message "Starting IdentityProviderSearchService installation..."
 
+$identitySettingsScope = "identity"
+$identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
+# Check for useAzure setting
+$useAzure = $identityConfigStore.useAzureAD
+if($null -eq $useAzure) {
+    $useAzure = $false
+    Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path  | Out-Null
+}
+
+# Verify azure settings file exists if azure is enabled
+if($useAzure -eq $true) {
+    if (!(Test-Path $azureConfigStore.Path)) {
+        throw "Path $($azureConfigStore.Path) does not exist and is required when useAzure is set to true. Please enter valid path to the azuresettings.config."
+    }
+    if (!(Test-Path $azureConfigStore.Path -PathType Leaf)) {
+        throw "Path $($azureConfigStore.Path) is not a file and is required when useAzure is set to true. Please enter a valid path to the azuresettings.config."
+    }
+}
+
 # Get Idpss app pool user 
 # Create log directory with read/write permissions for app pool user
 # using methods in DosInstallUtilites to install idpss, which will make it easier to migrate the identity code later 
 $idpssSettingsScope = "identityProviderSearchService"
 $idpssConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $idpssSettingsScope
 $commonConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope "common"
-$identitySettingsScope = "identity"
-$identityConfigStore = Get-DosConfigValues -ConfigStore $configStore -Scope $identitySettingsScope
 $idpssInstallSettings = Get-InstallationSettings $idpssSettingsScope -installConfigPath $configStore.Path
 Set-LoggingConfiguration -commonConfig $commonConfigStore
 
@@ -99,12 +117,6 @@ Register-ServiceWithDiscovery -iisUserName $idpssIisUser.UserName -metadataConnS
 $idpssConfig = $idpssDirectory + "\web.config"
 Write-Host "IdPSS Web Config: $($idpssConfig)"
 
-$useAzure = $identityConfigStore.useAzureAD
-if($null -eq $useAzure) {
-    $useAzure = $false
-    Add-InstallationSetting -configSection $identitySettingsScope -configSetting "useAzureAD" -configValue "$useAzure" -installConfigPath $configStore.Path  | Out-Null
-}
-
 $useWindows = $identityConfigStore.useWindowsAD
 if($null -eq $useWindows) {
     $useWindows = $true
@@ -117,6 +129,7 @@ Set-IdentityProviderSearchServiceWebConfigSettings -webConfigPath $idpssConfig `
     -useAzure $useAzure `
     -useWindows $useWindows `
     -installConfigPath $configStore.Path `
+    -azureSettingsConfigPath $azureConfigStore.Path `
     -encryptionCert $certificates.SigningCertificate `
     -encryptionCertificateThumbprint $certificates.EncryptionCertificate.Thumbprint `
     -appInsightsInstrumentationKey $appInsightsKey `
