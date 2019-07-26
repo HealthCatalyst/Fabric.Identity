@@ -984,6 +984,8 @@ function Set-IdentityEnvironmentAzureVariables {
             -scope $scope `
             -setting "claimsIssuerTenant"
 
+        # TODO: Validate values are populated: clientSettings, allowedTenants, claimsIssuer
+
         # Set Azure Settings
         $environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
         $environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
@@ -1020,6 +1022,7 @@ function Set-IdentityEnvironmentAzureVariables {
         }
     }
 
+    # Set false if no settings for AAD (will break if there are empty values)
     if($useAzure -eq $true) {
         $environmentVariables.Add("AzureAuthenticationEnabled", "true")
     }
@@ -1092,6 +1095,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [string] $appInsightsInstrumentationKey,
         [string] $webConfigPath,
         [string] $installConfigPath,
+        [string] $azureSettingsConfigPath, 
         [string] $useAzure = $false,
         [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
@@ -1106,11 +1110,13 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         $appSettings.Add("ApplicationInsights:InstrumentationKey", $appInsightsInstrumentationKey)
     }
 
+    # Verify azuresettings.config has values (or do this earlier on?)
+
     if ($useAzure -eq $true)
     {
         # Alter IdPSS web.config for azure
         $clientSettings = @()
-        $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
+        $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $azureSettingsConfigPath -appName $appName
 
         if ($encryptionCertificateThumbprint){
         $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
@@ -1139,7 +1145,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
                     -tenantAlias $setting.tenantAlias `
                     -clientSecret $encryptedSecret `
                     -clientId $setting.clientId `
-                    -installConfigPath $installConfigPath `
+                    -installConfigPath $azureSettingsConfigPath `
                     -appName $appName
 
                 $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
