@@ -15,7 +15,7 @@ param(
         return $true
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config", 
-    [string] $azureConfigPath = "C:\Program Files\Health Catalyst\azuresettings.config",    # TODO: env variable for program files?
+    [string] $azureConfigPath = "$env:ProgramFiles\Health Catalyst\azuresettings.config",
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )

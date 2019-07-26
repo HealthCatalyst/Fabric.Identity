@@ -5,7 +5,7 @@
 param(
     [PSCredential] $credential,
     [Hashtable] $configStore = @{Type = "File"; Format = "XML"; Path = "$PSScriptRoot\install.config"},
-    [Hashtable] $azureConfigStore = @{Type = "File"; Format = "XML"; Path = "C:\Program Files\Health Catalyst\azuresettings.config"},   # TODO: env variable for this?
+    [Hashtable] $azureConfigStore = @{Type = "File"; Format = "XML"; Path = "$env:ProgramFiles\Health Catalyst\azuresettings.config"},
     [switch] $noDiscoveryService,
     [switch] $quiet
 )
