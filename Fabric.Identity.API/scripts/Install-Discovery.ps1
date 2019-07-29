@@ -20,8 +20,8 @@ $identityConfig = Get-DosConfigValues -ConfigStore $configStore -Scope "identity
 Set-LoggingConfiguration -commonConfig $commonConfig
 
 # Pre-check requirements to run this script
-if([string]::IsNullOrEmpty($commonConfig.webServerDomain))
-{
+$webServerDomain = Get-WebServerDomain $commonConfig.webServerDomain $configStore.Path
+if([string]::IsNullOrEmpty($webServerDomain))
   Write-DosMessage -Level "Error" -Message "It is required to have 'webServerDomain' populated in install.config." -ErrorAction Stop
 }
 

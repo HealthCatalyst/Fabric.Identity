@@ -296,6 +296,22 @@ function Get-SqlServerAddress([string] $sqlServerAddress, [string] $installConfi
     return $sqlServerAddress
 }
 
+function Get-WebServerDomain([string] $webServerDomain, [string] $installConfigPath, [bool] $quiet){
+    if([string]::IsNullOrEmpty($webServerDomain))
+	{
+      $webServerDomain = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())"
+	}
+	if(!$quiet){
+        $userEnteredWebServerDomain = Read-Host "Press Enter to accept the default Web Server Domain '$($webServerDomain)' or enter a new Web Server Domain" 
+
+        if(![string]::IsNullOrEmpty($userEnteredWebServerDomain)){
+            $webServerDomain = $userEnteredWebServerDomain
+        }
+    }
+    if($webServerDomain){ Add-InstallationSetting "common" "webServerDomain" "$webServerDomain" $installConfigPath | Out-Null }
+    return $webServerDomain
+}
+
 function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string] $sqlServerAddress, [string] $installConfigPath, [bool] $quiet){
     if(!$quiet){
         $userEnteredIdentityDbName = Read-Host "Press Enter to accept the default Identity DB Name '$($identityDbName)' or enter a new Identity DB Name"
@@ -1646,7 +1662,7 @@ Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull
 Export-ModuleMember Get-CurrentUserDomain
-
+Export-ModuleMember Get-WebServerDomain
 Export-ModuleMember Get-WebDeployParameters
 Export-ModuleMember Add-DiscoveryApiResourceRegistration
 Export-ModuleMember Test-DiscoveryService
