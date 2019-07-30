@@ -309,10 +309,6 @@ function Get-WebServerDomain([string] $webServerDomain, [string] $installConfigP
         }
     }
     if($webServerDomain){ 
-	  if($webServerDomain -match '(http|https|ftp|www)+(:|\/\/|\.)')
-	  {
-	    Write-DosMessage -Level "Error" -Message "The 'webServerDomain' should not be a url." -ErrorAction Stop
-	  }
 	  Add-InstallationSetting "common" "webServerDomain" "$webServerDomain" $installConfigPath | Out-Null 
 	}
     return $webServerDomain
