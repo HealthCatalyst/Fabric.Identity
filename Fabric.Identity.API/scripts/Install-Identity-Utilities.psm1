@@ -134,8 +134,8 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
             $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
             $index = 1
             $attempts = 1
-            $allCerts | 
-                Where-Object { $_.NotAfter -ge $today -and $_.NotBefore -le $today } |
+            $validCerts = $allCerts | Where-Object { $_.NotAfter -ge $today -and $_.NotBefore -le $today }
+            $validCerts |
                 ForEach-Object {New-Object PSCustomObject -Property @{
                 'Index'=$index;
                 'Subject'= $_.Subject; 
@@ -155,14 +155,14 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
                     Write-DosMessage -Level "Information" -Message "You must select a certificate so Fabric.Identity can sign access and identity tokens."
                 }else{
                     $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
-                    if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
-                        Write-DosMessage -Level "Information" -Message  "Please select a certificate with index between 1 and $($allCerts.Count)."
+                    if(($selectionNumberAsInt -gt  $validCerts.Count) -or ($selectionNumberAsInt -le 0)){
+                        Write-DosMessage -Level "Information" -Message  "Please select a certificate with index between 1 and $($validCerts.Count)."
                     }
                 }
                 $attempts++
-            } while ([string]::IsNullOrEmpty($selectionNumber) -or ($selectionNumberAsInt -gt $allCerts.Count) -or ($selectionNumberAsInt -le 0))
+            } while ([string]::IsNullOrEmpty($selectionNumber) -or ($selectionNumberAsInt -gt $validCerts.Count) -or ($selectionNumberAsInt -le 0))
 
-            $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt
+            $certThumbprint = Get-CertThumbprint $validCerts $selectionNumberAsInt
             
             if([string]::IsNullOrWhitespace($primarySigningCertificateThumbprint)){
                 $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
