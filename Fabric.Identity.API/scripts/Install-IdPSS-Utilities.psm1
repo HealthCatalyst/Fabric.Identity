@@ -198,12 +198,12 @@ function Connect-AzureADTenant {
 
 function Get-Tenants {
     param(
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
     $tenants = @()
     $scope = "identity"
     $parentSetting = "tenants"
-    $tenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $tenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $scope `
         -setting $parentSetting
 
@@ -218,12 +218,12 @@ function Get-Tenants {
 
 function Get-ReplyUrls {
     param(
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
     $scope = "identity"
     $parentSetting = "replyUrls"
     $replyUrls = @()
-    $replyUrls += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
+    $replyUrls += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath -scope $scope -setting $parentSetting
 
     if($null -eq $replyUrls -or $replyUrls.Count -eq 0){
         Write-DosMessage -Level "Error" -Message  "No reply urls where found in the install.config."
@@ -242,19 +242,19 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
-    $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
+    $installSettings = Get-InstallationSettings $configSection -installConfigPath $azureConfigPath
     $secretName = $installSettings.azureSecretName
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
-    $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $allowedTenantsText
 
-    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $claimsIssuerText
     Confirm-Tenants -tenants $allowedTenants
@@ -276,12 +276,12 @@ function Register-Identity {
     -tenantAlias $claimsIssuer.alias `
     -clientSecret $clientSecret `
     -clientId $clientId `
-    -installConfigPath $installConfigPath `
+    -installConfigPath $azureConfigPath `
     -appName $appName
   }
   else
   {
-    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
+    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
   }
 }
 
@@ -296,9 +296,9 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
-    $installSettings = Get-InstallationSettings $configSection -installConfigPath $installConfigPath
+    $installSettings = Get-InstallationSettings $configSection -installConfigPath $azureConfigPath
     $secretName = $installSettings.azureSecretName
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
@@ -320,7 +320,7 @@ function Register-IdPSS {
           -tenantAlias $tenant.alias `
           -clientSecret $clientSecret `
           -clientId $clientId `
-          -installConfigPath $installConfigPath `
+          -installConfigPath $azureConfigPath `
           -appName $appName
 
       # Manual process, need to give consent this way for now
