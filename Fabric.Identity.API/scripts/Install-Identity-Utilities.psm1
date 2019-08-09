@@ -1640,7 +1640,7 @@ function Migrate-AADSettings {
     Write-DosMessage -Level "Information" -Message "Get the AAD Setting contents in install.config"
     
     # Quick check to see if any AAD settings are present in install.config (short circuit)
-    $existingAADSettings = Check-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodeToSearch $nodesToSearch[0] -childNodeGetAttribute $childNodeGetAttribute
+    $existingAADSettings = Check-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -nodeToSearch $nodesToSearch[0] -childNodeGetAttribute $childNodeGetAttribute
     if($false -eq $existingAADSettings)
     {
       Write-DosMessage -Level "Information" -Message "No AAD Setting contents in install.config"
@@ -1830,7 +1830,7 @@ function Get-XMLChildNodes {
     return $allExistingChildNodes
 }
 
-function Check-XMLChildNodes {
+function Check-XMLChildNode {
     param (
         [Parameter(Mandatory=$true)]
         [string] $installConfigPath,
@@ -1895,11 +1895,11 @@ function Add-XMLChildNodesFromDoc1 {
       # additional code to not duplicate values in azuresettings.config if run more than once
       if($node -eq "registeredApplications")
       {
-        $alreadyExists = Check-XMLChildNodes -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "appName" -childNodeGetAttribute2 "tenantId"
+        $alreadyExists = Check-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "appName" -childNodeGetAttribute2 "tenantId"
       }
       else
       {
-        $alreadyExists = Check-XMLChildNodes -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "name"
+        $alreadyExists = Check-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "name"
       }
 
       # create node if it doesn't exist
