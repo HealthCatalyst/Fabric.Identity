@@ -39,6 +39,21 @@ $discoveryScope = "discoveryservice"
 $discoveryConfig = Get-DosConfigValues -ConfigStore $configStore -Scope $discoveryScope
 $enableOAuth = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -and $discoveryConfig.enableOAuth -eq "true"
 
+# Check if install.config has AAD settings and azureConfigStore is empty
+# update azureConfigStore with the newly created config file.
+$existingPath = Test-Path $azureConfigPath -PathType Leaf
+if($false -eq $existingPath)
+{
+  # quick check in Migrate-AADSettings to know if there are AAD Settings
+  $updatedAzureConfigPath = "$PSScriptRoot\azuresettings.config"
+  $ranMigration = Migrate-AADSettings -installConfigPath $installConfigPath -azureConfigPath $updatedAzureConfigPath
+  # add azuresettings.config back to Program Files/Health Catalyst
+  if($ranMigration)
+  {
+   Copy-Item $updatedAzureConfigPath -Destination "$env:ProgramFiles\Health Catalyst" 
+  }
+}
+
 # Call the Identity powershell script
 .\Install-Identity.ps1 -credential $credential -configStore $configStore -azureConfigStore $azureConfigStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
 Write-DosMessage -Level "Information" -Message "Fabric.Identity has been installed."

@@ -1625,6 +1625,303 @@ function Test-DiscoveryService{
     }
 }
 
+function Migrate-AADSettings {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath
+    )
+    $configSection = "identity"
+    $nodesToSearch = @("tenants", "replyUrls", "claimsIssuerTenant", "allowedTenants", "registeredApplications")
+    $childNodeGetAttribute = "name"
+    $childNodeSetAttribute = "value"
+
+    Write-DosMessage -Level "Information" -Message "Get the AAD Setting contents in install.config"
+    
+    # Quick check to see if any AAD settings are present in install.config (short circuit)
+    $existingAADSettings = Check-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodeToSearch $nodesToSearch[0] -childNodeGetAttribute $childNodeGetAttribute
+    if($false -eq $existingAADSettings)
+    {
+      Write-DosMessage -Level "Information" -Message "No AAD Setting contents in install.config"
+      return
+    }
+
+    # Gather AAD Settings from install.config
+    $existingChildNodes = Get-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+
+    # Remove blank child nodes from default azuresettings.config
+    Remove-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting ""
+
+    # Add AAD settings from Doc1
+    Add-XMLChildNodesFromDoc1 -azureConfigPath $azureConfigPath -configSection $configSection -doc1ChildNodesInOrder $nodesToSearch -doc1ChildNodesToAdd $existingChildNodes
+
+    # Get and Set AAD azureSecretName 
+    $azureSecretName = Get-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName" 
+    Set-XMLChildNode -azureConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeSetAttribute $childNodeSetAttribute -childNodeAttributeSetting "azureSecretName" -childNodeAttributeValue $azureSecretName.value
+ 
+    # Gather AAD Settings from azuresettings.config
+    $existingAzureChildNodes = Get-XMLChildNodes -installConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    
+    # Check if install.config and azuresettings.config AAD settings match
+    $areSame = Compare-Object -ReferenceObject $existingChildNodes -DifferenceObject $existingAzureChildNodes -Property name, alias, appName, tenantId, tenantAlias, clientid, secret
+    if($null -ne $areSame)
+    {
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted in the upgrade to azuresettings.config"
+    }
+    else
+    {
+      # Remove AAD Settings from install.config
+      Remove-XMLChildNodes -azureConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "" -reverseOperator "not equal"
+      Remove-XMLChildNode -azureConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName"
+    }
+    return $true
+}
+
+function Remove-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeSetting
+    )
+    # Clean out empty variables in default azureSettings.config
+    $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+    $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+    $removeEmptyVariable = $azureIdentityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+    $removeEmptyVariable.ParentNode.RemoveChild($removeEmptyVariable)
+
+    $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+}
+
+function Remove-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [string] $childNodeAttributeSetting,
+        [string] $reverseOperator
+    )
+    # Clean out empty variables in default azureSettings.config
+    $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+    $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+    foreach($nodeToSearch in $nodesToSearch)
+    {
+     $setAzureSettings = $azureIdentityScope.SelectSingleNode($nodeToSearch)
+
+     if($reverseOperator -eq "not equal")
+     {
+       $removeEmptyVariables = $setAzureSettings.ChildNodes | Where-Object {$_.$childNodeGetAttribute -ne $childNodeAttributeSetting}
+     }
+     else
+     {
+       $removeEmptyVariables = $setAzureSettings.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+     }
+
+     if($null -ne $removeEmptyVariables)
+     {
+      foreach($removeEmptyVariable in $setAzureSettings.variable){
+       $removeEmptyVariable.ParentNode.RemoveChild($removeEmptyVariable)
+      }
+     }
+    }
+    $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+}
+
+function Get-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeSetting
+    )
+
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $existingChildNode = @{}
+
+    $existingChildNode = $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+    if ($null -eq $existingChildNode)
+    {
+      Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found in install.config"
+    }
+    return $existingChildNode
+}
+
+function Set-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeSetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeSetting,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeValue
+    )
+
+    $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+    $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $existingChildNode = @{}
+
+    $existingChildNode = $azureIdentityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+    if ($null -ne $existingChildNode)
+    {
+      $existingChildNode.$childNodeSetAttribute = $childNodeAttributeValue
+      $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+      Write-DosMessage -Level "Information" -Message "$childNodeAttributeValue added to $childNodeAttributeSetting in azureSettings.config"
+    }
+    elseif ($null -eq $existingChildNode)
+    {
+      Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found in azureSettings.config"
+    }
+}
+
+function Get-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute
+    )
+
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $allExistingChildNodes = @()
+    $count = 1
+
+    foreach($nodeToSearch in $nodesToSearch)
+    {
+      $childNodeHeader = @{}
+      $existingChildNodes = @{}
+      $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+      $childNodeHeader.Add($nodeToSearch, $count)
+      $existingChildNodes = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+      $allExistingChildNodes += $childNodeHeader
+      $allExistingChildNodes += $existingChildNodes
+      if($null -eq $existingChildNodes)
+      {
+        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node or child attributes not found"
+      }
+    }
+    return $allExistingChildNodes
+}
+
+function Check-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $nodeToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [string] $childNodeGetAttribute2
+    )
+
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+    $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+
+    if(![string]::IsNullOrEmpty($childNodeGetAttribute2))
+    {
+      $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute) -and ![string]::IsNullOrEmpty($_.$childNodeGetAttribute2)}
+    }
+    else
+    {
+      $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+    }
+    if($null -eq $existingSettings)
+    {
+        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node or child attributes not found"
+        return $false
+    }
+    else
+    {
+        return $true
+    }
+}
+
+function Add-XMLChildNodesFromDoc1 {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $doc1ChildNodesInOrder,
+        [Parameter(Mandatory=$true)]
+        [Object[]] $doc1ChildNodesToAdd
+    )
+    $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+    $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+    foreach($doc1ChildNodeToAdd in $doc1ChildNodesToAdd)
+    {
+      # check for the child node header to determine the start and end
+      $matchKey = $doc1ChildNodeToAdd.Keys
+      if($doc1ChildNodesInOrder -contains $matchKey)
+      {
+       $node = $matchKey
+       continue
+      }
+
+      $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+      # additional code to not duplicate values in azuresettings.config if run more than once
+      if($node -eq "registeredApplications")
+      {
+        $alreadyExists = Check-XMLChildNodes -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "appName" -childNodeGetAttribute2 "tenantId"
+      }
+      else
+      {
+        $alreadyExists = Check-XMLChildNodes -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "name"
+      }
+
+      # create node if it doesn't exist
+      if($null -eq $setAzureSettings)
+      {
+        $newElement = $azureInstallationConfig.CreateElement($node)
+        $azureIdentityScope.AppendChild($newElement)
+        $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+        $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($doc1ChildNodeToAdd, $false))
+      }
+      elseif($true -eq $alreadyExists)
+      {
+       Write-DosMessage -Level "Information" -Message "Already contains the child node $node"
+      }
+      else
+      {
+       $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($doc1ChildNodeToAdd, $false))
+      }
+    }
+    $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1668,3 +1965,4 @@ Export-ModuleMember Get-WebServerDomain
 Export-ModuleMember Get-WebDeployParameters
 Export-ModuleMember Add-DiscoveryApiResourceRegistration
 Export-ModuleMember Test-DiscoveryService
+Export-ModuleMember Migrate-AADSettings
