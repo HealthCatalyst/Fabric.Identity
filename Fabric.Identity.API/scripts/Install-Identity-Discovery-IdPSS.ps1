@@ -41,16 +41,21 @@ $enableOAuth = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -
 
 # Check if install.config has AAD settings and azureConfigStore is empty
 # update azureConfigStore with the newly created config file.
-$existingPath = Test-Path $azureConfigPath -PathType Leaf
-if($false -eq $existingPath)
+$existingAzurePath = Test-Path $azureConfigPath -PathType Leaf
+if($false -eq $existingAzurePath)
 {
+  $updatedInstallConfigPath = "$env:ProgramFiles\Health Catalyst\install.config"
+  $existingInstallPath = Test-Path $updatedInstallConfigPath -PathType Leaf
   # quick check in Migrate-AADSettings to know if there are AAD Settings
-  $updatedAzureConfigPath = "$PSScriptRoot\azuresettings.config"
-  $ranMigration = Migrate-AADSettings -installConfigPath $installConfigPath -azureConfigPath $updatedAzureConfigPath
-  # add azuresettings.config back to Program Files/Health Catalyst
-  if($ranMigration)
+  if($true -eq $existingInstallPath)
   {
-   Copy-Item $updatedAzureConfigPath -Destination "$env:ProgramFiles\Health Catalyst" 
+   $updatedAzureConfigPath = "$PSScriptRoot\azuresettings.config"
+   $ranMigration = Migrate-AADSettings -installConfigPath $updatedInstallConfigPath -azureConfigPath $updatedAzureConfigPath
+   # add azuresettings.config back to Program Files/Health Catalyst
+   if($ranMigration)
+   {
+    Copy-Item $updatedAzureConfigPath -Destination "$env:ProgramFiles\Health Catalyst" 
+   }
   }
 }
 
