@@ -1649,30 +1649,41 @@ function Migrate-AADSettings {
 
     # Gather AAD Settings from install.config
     $existingChildNodes = Get-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    $azureSecretNameFromInstallConfig = Get-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName" 
 
     # Remove blank child nodes from default azuresettings.config
     Remove-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting ""
 
-    # Add AAD settings from Doc1
+    # Add AAD settings from install.config
     Add-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -childNodesInOrder $nodesToSearch -childNodesToAdd $existingChildNodes
 
-    # Get and Set AAD azureSecretName 
-    $azureSecretName = Get-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName" 
-    Set-XMLChildNode -azureConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeSetAttribute $childNodeSetAttribute -childNodeAttributeSetting "azureSecretName" -childNodeAttributeValue $azureSecretName.value
+    # Set AAD azureSecretName 
+    Set-XMLChildNode -azureConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeSetAttribute $childNodeSetAttribute -childNodeAttributeSetting "azureSecretName" -childNodeAttributeValue $azureSecretNameFromInstallConfig.value
  
     # Gather AAD Settings from azuresettings.config
     $existingAzureChildNodes = Get-XMLChildNodes -installConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
-    
+    $azureSecretNameFromAzureConfig = Get-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName" 
+
     # Check if install.config and azuresettings.config AAD settings match
-    $areSame = Compare-Object -ReferenceObject $existingChildNodes -DifferenceObject $existingAzureChildNodes -Property name, alias, appName, tenantId, tenantAlias, clientid, secret
-    if($null -ne $areSame)
+    $areSameGroup1 = Compare-Object -ReferenceObject $existingChildNodes -DifferenceObject $existingAzureChildNodes -Property name, alias, appName, tenantId, tenantAlias, clientid, secret
+    $areSameGroup2 = Compare-Object -ReferenceObject $azureSecretNameFromInstallConfig -DifferenceObject $azureSecretNameFromAzureConfig -Property name, value
+    if($null -ne $areSameGroup1)
     {
-      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted in the upgrade to azuresettings.config"
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different for Group1, install.config settings were not deleted in the upgrade to azuresettings.config"
     }
     else
     {
       # Remove AAD Settings from install.config
       Remove-XMLChildNodes -azureConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "" -negateOperator
+    }
+
+    if($null -ne $areSameGroup2)
+    {
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different for Group2, install.config settings were not deleted in the upgrade to azuresettings.config"
+    }
+    else
+    {
+      # Remove AAD Settings from install.config
       Remove-XMLChildNode -azureConfigPath $installConfigPath -configSection $configSection -childNodeGetAttribute $childNodeGetAttribute -childNodeAttributeSetting "azureSecretName"
     }
     return $true
@@ -1788,12 +1799,13 @@ function Set-XMLChildNode {
     {
       $existingChildNode.$childNodeSetAttribute = $childNodeAttributeValue
       $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
-      Write-DosMessage -Level "Information" -Message "$childNodeAttributeValue added to $childNodeAttributeSetting in azureSettings.config"
+      Write-DosMessage -Level "Information" -Message "$childNodeSetAttribute added to $childNodeAttributeSetting in azureSettings.config"
     }
     elseif ($null -eq $existingChildNode)
     {
       Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found in azureSettings.config"
     }
+    $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
 }
 
 function Get-XMLChildNodes {
@@ -1824,7 +1836,7 @@ function Get-XMLChildNodes {
       $allExistingChildNodes += $existingChildNodes
       if($null -eq $existingChildNodes)
       {
-        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node or child attributes check complete"
+        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node search complete"
       }
     }
     return $allExistingChildNodes
@@ -1858,7 +1870,7 @@ function Check-XMLChildNode {
     }
     if($null -eq $existingSettings)
     {
-        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node or child attributes check complete"
+        Write-DosMessage -Level "Information" -Message "$($nodeToSearch) node check complete"
         return $false
     }
     else
@@ -1914,7 +1926,7 @@ function Add-XMLChildNodes {
       }
       elseif($true -eq $alreadyExists)
       {
-       Write-DosMessage -Level "Information" -Message "Contains the child node $node"
+       Write-DosMessage -Level "Information" -Message "Result(s) contained in the child node $node"
       }
       else
       {
