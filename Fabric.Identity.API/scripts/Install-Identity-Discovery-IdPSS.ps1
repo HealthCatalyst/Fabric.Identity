@@ -16,6 +16,8 @@ param(
     })] 
     [string] $installConfigPath = "$PSScriptRoot\install.config", 
     [string] $azureConfigPath = "$env:ProgramFiles\Health Catalyst\azuresettings.config",
+    [string] $migrationInstallConfigPath = "$env:ProgramFiles\Health Catalyst\install.config",
+    [string] $migrationAzureConfigPath = "$PSScriptRoot\azuresettings.config",
     [switch] $noDiscoveryService, 
     [switch] $quiet
 )
@@ -44,18 +46,28 @@ $enableOAuth = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -
 $existingAzurePath = Test-Path $azureConfigPath -PathType Leaf
 if($false -eq $existingAzurePath)
 {
-  $updatedInstallConfigPath = "$env:ProgramFiles\Health Catalyst\install.config"
-  $existingInstallPath = Test-Path $updatedInstallConfigPath -PathType Leaf
+  $existingInstallPath = Test-Path $migrationInstallConfigPath -PathType Leaf
+
+  # Need to allow verbose logging to work for debugging
+  $commonScope = "common"
+  $migrationInstallConfigStore = @{Type = "File"; Format = "XML"; Path = "$migrationInstallConfigPath"}
+  $commonConfig = Get-DosConfigValues -ConfigStore $migrationInstallConfigStore -Scope $commonScope  
+  Set-DosMessageConfiguration -LoggingMode Both -MinimumLoggingLevel $commonConfig.minimumLoggingLevel -LogFilePath $commonConfig.logFilePath
+
   # quick check in Migrate-AADSettings to know if there are AAD Settings
   if($true -eq $existingInstallPath)
   {
-   $updatedAzureConfigPath = "$PSScriptRoot\azuresettings.config"
-   $ranMigration = Migrate-AADSettings -installConfigPath $updatedInstallConfigPath -azureConfigPath $updatedAzureConfigPath
+   Write-DosMessage -Level "Information" -Message "Started the Migration of AAD Settings from install.config to azuresettings.config"
+
+   $ranMigration = Migrate-AADSettings -installConfigPath $migrationInstallConfigPath -azureConfigPath $migrationAzureConfigPath
    # add azuresettings.config back to Program Files/Health Catalyst
    if($ranMigration)
    {
-    Copy-Item $updatedAzureConfigPath -Destination "$env:ProgramFiles\Health Catalyst" 
+    Copy-Item $migrationAzureConfigPath -Destination $azureConfigPath
+    Write-DosMessage -Level "Verbose" -Message "Copied azuresettings.config to $($azureConfigPath)"
    }
+
+   Write-DosMessage -Level "Information" -Message "Completed the Migration of AAD Settings from install.config to azuresettings.config"
   }
 }
 
