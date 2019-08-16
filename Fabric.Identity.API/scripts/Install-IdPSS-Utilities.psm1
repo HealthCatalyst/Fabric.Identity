@@ -244,8 +244,8 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $azureConfigPath
     )
-    $installSettings = Get-InstallationSettings $configSection -installConfigPath $azureConfigPath
-    $secretName = $installSettings.azureSecretName
+    $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
+    $secretName = $installSettings.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
@@ -359,6 +359,30 @@ function Get-InstallIdPSSUtilsUserConfirmation {
         N {return $false}
         Default {return $false}
     }
+}
+
+function Get-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeSetting
+    )
+
+    $installationConfig = [xml](Get-Content $installConfigPath)
+    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+    $existingChildNode = @()
+
+    $existingChildNode += $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+    if ($null -eq $existingChildNode)
+    {
+      Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found"
+    }
+    return $existingChildNode
 }
 
 Export-ModuleMember Get-FabricAzureADSecret
