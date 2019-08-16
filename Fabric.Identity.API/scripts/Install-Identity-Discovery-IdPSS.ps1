@@ -58,8 +58,9 @@ if($false -eq $existingAzurePath)
   if($true -eq $existingInstallPath)
   {
    Write-DosMessage -Level "Information" -Message "Started the Migration of AAD Settings from install.config to azuresettings.config"
-
-   $ranMigration = Migrate-AADSettings -installConfigPath $migrationInstallConfigPath -azureConfigPath $migrationAzureConfigPath
+   
+   $nodesToSearch = @("tenants", "replyUrls", "claimsIssuerTenant", "allowedTenants", "registeredApplications", "secretName")
+   $ranMigration = Migrate-AADSettings -installConfigPath $migrationInstallConfigPath -azureConfigPath $migrationAzureConfigPath -nodesToSearch $nodesToSearch
    # add azuresettings.config back to Program Files/Health Catalyst
    if($ranMigration)
    {
