@@ -298,8 +298,8 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $azureConfigPath
     )
-    $installSettings = Get-InstallationSettings $configSection -installConfigPath $azureConfigPath
-    $secretName = $installSettings.azureSecretName
+    $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
+    $secretName = $installSettings.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     # IdentityProviderSearchService registration

@@ -1652,9 +1652,9 @@ function Migrate-AADSettings {
     Write-DosMessage -Level "Verbose" -Message "Copied the AAD Settings from install.config"
 
     # Remove blank child nodes and azureSecretName from default azuresettings.config manifest
-    Write-DosMessage -Level "Verbose" -Message "Started removing blank child variables and azureSecretName from azuresettings.config in nuget folder"
+    Write-DosMessage -Level "Verbose" -Message "Started removing blank child variables and azureSecretName from azuresettings.config"
     Remove-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute | Out-Null
-    Write-DosMessage -Level "Verbose" -Message "Finished removing blank child variables and azureSecretName from azuresettings.config in nuget folder"
+    Write-DosMessage -Level "Verbose" -Message "Finished removing blank child variables and azureSecretName from azuresettings.config"
 
     # Add AAD settings to azuresettings.config
     Write-DosMessage -Level "Verbose" -Message "Started adding child variables to azuresettings.config that were found in install.config"
@@ -1670,7 +1670,7 @@ function Migrate-AADSettings {
 
     if($null -ne $areSameGroup)
     {
-      Write-DosMessage -Level "Verbose" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted"
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted"
     }
     else
     {
