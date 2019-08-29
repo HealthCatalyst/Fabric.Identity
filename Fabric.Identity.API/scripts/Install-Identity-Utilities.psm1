@@ -1737,35 +1737,6 @@ function Remove-XMLChildNodes {
    }
 }
 
-function Get-XMLChildNode {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string] $installConfigPath,
-        [Parameter(Mandatory=$true)]
-        [string] $configSection,
-        [Parameter(Mandatory=$true)]
-        [string] $childNodeGetAttribute,
-        [Parameter(Mandatory=$true)]
-        [string] $childNodeAttributeSetting
-    )
-    # Validate XML
-    $xmlValidation = Test-XMLFile -xmlFilePath $installConfigPath
-    if($xmlValidation){
-     $installationConfig = [xml](Get-Content $installConfigPath)
-     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
-     $existingChildNode = @()
-     $childNodeHeader = @{}
-
-     $childNodeHeader.Add($childNodeAttributeSetting, "")
-     $existingChildNode += $childNodeHeader
-     $existingChildNode += $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
-     if ($null -eq $existingChildNode)
-     {
-       Write-DosMessage -Level "Verbose" -Message "$childNodeAttributeSetting not found"
-     }
-     return $existingChildNode
-    }
-}
 function Get-XMLChildNodes {
     param (
         [Parameter(Mandatory=$true)]
