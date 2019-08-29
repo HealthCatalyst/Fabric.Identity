@@ -50,24 +50,32 @@ if(!$existingAzurePath)
   $existingInstallPath = Test-Path $migrationInstallConfigPath -PathType Leaf
   if($existingInstallPath)
   {
-         # Need to allow verbose logging to work for debugging
+    # Need to allow verbose logging to work for debugging
     $commonScope = "common"
     $migrationInstallConfigStore = @{Type = "File"; Format = "XML"; Path = "$migrationInstallConfigPath"}
-    $commonConfig = Get-DosConfigValues -ConfigStore $migrationInstallConfigStore -Scope $commonScope  
-    if($null -ne $commonConfig)
+    $permissions = Get-FilePermissions -configPath $migrationInstallConfigPath
+    if($permissions)
     {
-      Set-DosMessageConfiguration -LoggingMode Both -MinimumLoggingLevel $commonConfig.minimumLoggingLevel -LogFilePath $commonConfig.logFilePath
+      $commonConfig = Get-DosConfigValues -ConfigStore $migrationInstallConfigStore -Scope $commonScope  
+      if($null -ne $commonConfig)
+      {
+        Set-DosMessageConfiguration -LoggingMode Both -MinimumLoggingLevel $commonConfig.minimumLoggingLevel -LogFilePath $commonConfig.logFilePath
 
-      Write-DosMessage -Level "Information" -Message "Started the Migration of AAD Settings from install.config to azuresettings.config"
+        Write-DosMessage -Level "Information" -Message "Started the Migration of AAD Settings from install.config to azuresettings.config"
        
-      # quick check in Migrate-AADSettings to know if there are AAD Settings
-      $nodesToSearch = @("tenants", "replyUrls", "claimsIssuerTenant", "allowedTenants", "registeredApplications", "azureSecretName")
-      $ranMigration = Migrate-AADSettings -installConfigPath $migrationInstallConfigPath -azureConfigPath $migrationAzureConfigPath -nodesToSearch $nodesToSearch
-      # add azuresettings.config back to Program Files/Health Catalyst
+        # quick check in Migrate-AADSettings to know if there are AAD Settings
+        $nodesToSearch = @("tenants", "replyUrls", "claimsIssuerTenant", "allowedTenants", "registeredApplications", "azureSecretName")
+        $ranMigration = Migrate-AADSettings -installConfigPath $migrationInstallConfigPath -azureConfigPath $migrationAzureConfigPath -nodesToSearch $nodesToSearch
+        # add azuresettings.config back to Program Files/Health Catalyst
+      }
+      else 
+      {
+        Write-DosMessage -Level "Warning" -Message "There was an error opening or searching an xml config file"
+      }
     }
     else 
     {
-      Write-DosMessage -Level "Warning" -Message "There was an error opening or searching an xml config file"
+      Write-DosMessage -Level "Warning" -Message "No Permissions were found on the install.config file"
     }
     if($ranMigration)
     {
