@@ -372,17 +372,20 @@ function Get-XMLChildNode {
         [Parameter(Mandatory=$true)]
         [string] $childNodeAttributeSetting
     )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -xmlFilePath $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $existingChildNode = @()
 
-    $installationConfig = [xml](Get-Content $installConfigPath)
-    $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
-    $existingChildNode = @()
-
-    $existingChildNode += $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
-    if ($null -eq $existingChildNode)
-    {
-      Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found"
+     $existingChildNode += $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+     if ($null -eq $existingChildNode)
+     {
+       Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found"
+     }
+     return $existingChildNode
     }
-    return $existingChildNode
 }
 
 Export-ModuleMember Get-FabricAzureADSecret
