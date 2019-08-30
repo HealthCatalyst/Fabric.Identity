@@ -1625,6 +1625,333 @@ function Test-DiscoveryService{
     }
 }
 
+function Migrate-AADSettings {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch
+    )
+    $configSection = "identity"
+    $childNodeGetAttribute = "name"
+
+    Write-DosMessage -Level "Verbose" -Message "Get the AAD Setting contents in install.config"
+    
+    # Quick check to see if any AAD settings are present in install.config (short circuit)
+    $existingAADSettings = Search-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -nodeToSearch $nodesToSearch[0] -childNodeGetAttribute $childNodeGetAttribute
+    if($false -eq $existingAADSettings)
+    {
+      Write-DosMessage -Level "Verbose" -Message "No AAD Settings found in install.config"
+      return $false
+    }
+
+    # Gather AAD Settings from install.config
+    $existingChildNodes = Get-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    Write-DosMessage -Level "Verbose" -Message "Copied the AAD Settings from install.config"
+
+    # Remove blank child nodes and azureSecretName from azuresettings.config
+    Write-DosMessage -Level "Verbose" -Message "Started removing blank child variables and azureSecretName from azuresettings.config"
+    Remove-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+    Write-DosMessage -Level "Verbose" -Message "Finished removing blank child variables and azureSecretName from azuresettings.config"
+
+    # Add AAD settings to azuresettings.config
+    Write-DosMessage -Level "Verbose" -Message "Started adding child variables to azuresettings.config that were found in install.config"
+    Add-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -childNodesInOrder $nodesToSearch -childNodesToAdd $existingChildNodes | Out-Null
+
+    # Gather AAD Settings from azuresettings.config
+    $existingAzureChildNodes = Get-XMLChildNodes -installConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    Write-DosMessage -Level "Verbose" -Message "Copied the AAD Settings from azuresettings.config for comparison"
+
+    # Check if install.config and azuresettings.config AAD settings match
+    $areSameGroup = Compare-Object -ReferenceObject $existingChildNodes -DifferenceObject $existingAzureChildNodes -Property name, value, alias, appName, tenantId, tenantAlias, clientid, secret
+    Write-DosMessage -Level "Verbose" -Message "Comparing the AAD Settings in install.config and azuresettings.config, before deleting from install.config"
+
+    if($null -ne $areSameGroup)
+    {
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted"
+    }
+    else
+    {
+      Write-DosMessage -Level "Verbose" -Message "Started removing child variables from install.config, so they are only found in azuresettings.config"
+      Remove-XMLChildNodes -azureConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+      Write-DosMessage -Level "Verbose" -Message "Finished removing child variables from install.config, so they are only found in azuresettings.config"
+    }
+
+    # running this in DosInstaller currently has a merge process that saves root level variables and values
+    # back to the install.config manifest in the unzipped nuget folder. 
+    # Need to remove the root level variables twice until there are changes in the process.
+    Write-DosMessage -Level "Verbose" -Message "Removing child variable from install.config in nuget folder, because of some merging happening in the Invoke"
+    Remove-XMLChildNodes -azureConfigPath "$PSScriptRoot\install.config" -configSection $configSection -nodesToSearch "tenants" -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+
+    return $true
+}
+function Remove-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute
+    )
+    # Validate XML
+    # Clean out variables in default azureSettings.config
+    $xmlValidation = Test-XMLFile -Path $azureConfigPath
+    if($xmlValidation){
+     $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+     $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $childNodeCount = 0
+
+     foreach($nodeToSearch in $nodesToSearch)
+     {
+      $setAzureSettings = $azureIdentityScope.SelectSingleNode($nodeToSearch)
+      if($null -eq $setAzureSettings)
+      {
+        $setAzureSettings = $azureIdentityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $nodeToSearch}
+        $removeVariables = $setAzureSettings
+      }
+      else 
+      {
+        $removeVariables = $setAzureSettings.ChildNodes | Where-Object {[string]::IsNullOrEmpty($_.$childNodeGetAttribute) -or $_.$childNodeGetAttribute}
+      }
+   
+      if($null -ne $removeVariables)
+      {
+       foreach($removeVariable in $removeVariables){
+        $removeVariable.ParentNode.RemoveChild($removeVariable)
+        $childNodeCount++
+        Write-DosMessage -Level "Verbose" -Message "Removing a child node for $nodeToSearch"
+       }
+      }
+     }
+     if($childNodeCount -gt 0)
+     {
+       Write-DosMessage -Level "Verbose" -Message "There were $childNodeCount variables removed"
+     }
+     $azureInstallationConfig.Save("$azureConfigPath")
+     return $childNodeCount
+   }
+}
+
+function Get-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $allExistingChildNodes = @()
+
+     foreach($nodeToSearch in $nodesToSearch)
+     {
+       $childNodeHeader = @{}
+       $existingChildNodes = @{}
+       $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+       if($null -eq $setAzureSettings)
+       {
+         $existingChildNodes = $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $nodeToSearch}
+       }
+       else 
+       {
+         $existingChildNodes = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+       }
+
+       $childNodeHeader.Add($nodeToSearch, "")
+       $allExistingChildNodes += $childNodeHeader
+       $allExistingChildNodes += $existingChildNodes
+       if($null -eq $existingChildNodes)
+       {
+         Write-DosMessage -Level "Verbose" -Message "$($nodeToSearch) node may not exist or contain a child node"
+       }
+     }
+     return $allExistingChildNodes
+    }
+}
+
+function Search-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $nodeToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [string] $childNodeGetAttribute2
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+     $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+
+     if(![string]::IsNullOrEmpty($childNodeGetAttribute2))
+     {
+       $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute) -and ![string]::IsNullOrEmpty($_.$childNodeGetAttribute2)}
+     }
+     else
+     {
+       $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+     }
+     if($null -eq $existingSettings)
+     {
+         Write-DosMessage -Level "Verbose" -Message "$($nodeToSearch) node may not exist or contain a child node"
+         return $false
+     }
+     else
+     {
+         return $true
+     }
+    }
+    return $xmlValidation
+}
+
+function Add-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $childNodesInOrder,
+        [Parameter(Mandatory=$true)]
+        [Object[]] $childNodesToAdd,
+        [switch] $skipDuplicateSearch
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $azureConfigPath
+    if($xmlValidation){
+     $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+     $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $childNodeCount = 0
+
+     foreach($childNodeToAdd in $childNodesToAdd)
+     {
+       # check for the child node header to determine the start and end
+       $matchKey = $childNodeToAdd.Keys
+       if($childNodesInOrder -contains $matchKey)
+       {
+        $node = $matchKey
+        continue
+       } 
+
+       $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+        
+       # additional code to not duplicate values in azuresettings.config if run more than once
+       # this shouldn't happen now that the install.config AAD settings are removed after the first run
+       if(!$skipDuplicateSearch)
+       {
+         if($node -eq "registeredApplications")
+         {
+           $alreadyExists = Search-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "appName" -childNodeGetAttribute2 "tenantId"
+         }
+         else
+         {
+           $alreadyExists = Search-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "name"
+         }
+       }
+   
+       # create node if it doesn't exist
+       if($null -eq $setAzureSettings)
+       {
+         $newElement = $azureInstallationConfig.CreateElement($node)
+         $azureIdentityScope.AppendChild($newElement)
+         $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+         $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($childNodeToAdd, $false))
+         $childNodeCount++
+         Write-DosMessage -Level "Verbose" -Message "Adding node and child node for $node"
+       }
+       elseif($true -eq $alreadyExists)
+       {
+         Write-DosMessage -Level "Verbose" -Message "The script may have already been run since a child node exists in $node"
+       }
+       else
+       {
+        $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($childNodeToAdd, $false))
+        $childNodeCount++
+        Write-DosMessage -Level "Verbose" -Message "Adding a child node for $node"
+       }
+      }
+      if($childNodeCount -gt 0)
+      {
+        Write-DosMessage -Level "Verbose" -Message "There were $childNodeCount variables added"
+      }
+     $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+     return $childNodeCount
+    }
+}
+
+function Test-XMLFile {
+    param (
+    [parameter(mandatory=$true)][ValidateNotNullorEmpty()][string]$Path
+    )
+
+    try {
+        [xml]$xml = Get-Content $Path
+    }
+    catch {
+        Write-DosMessage -Level Warning -Message "Error parsing XML, please review the install.config file"
+        return $false
+    }
+    return $true
+}
+
+function Get-FilePermissions {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $configPath
+    )
+    $fileAccess = $true
+    Try { [io.file]::OpenRead($configPath).close() }
+    Catch { 
+        Write-Warning "Unable to read file $configPath" 
+        $fileAccess = $false
+     }
+    Try { [io.file]::OpenWrite($configPath).close() }
+    Catch { 
+        Write-Warning "Unable to write file $configPath" 
+        $fileAccess = $false
+     }
+     return $fileAccess
+}
+
+function Deny-FilePermissions
+{ 
+  param([Parameter(Mandatory=$true)][string] $filePath
+)
+  $denyPermissionsAcl = Get-Acl $filePath
+  $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Deny")
+  $denyPermissionsAcl.SetAccessRule($accessRule)
+  return $denyPermissionsAcl
+}
+
+function Remove-FilePermissions
+{ 
+  param([Parameter(Mandatory=$true)][string] $filePath
+)
+  $removePermissionsAcl = Get-Acl $filePath
+  $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Deny")
+  $removePermissionsAcl.RemoveAccessRule($accessRule)
+  $removePermissionsAcl | Set-Acl $filePath
+}
+    
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -1668,3 +1995,8 @@ Export-ModuleMember Get-WebServerDomain
 Export-ModuleMember Get-WebDeployParameters
 Export-ModuleMember Add-DiscoveryApiResourceRegistration
 Export-ModuleMember Test-DiscoveryService
+Export-ModuleMember Migrate-AADSettings
+Export-ModuleMember Test-XMLFile
+Export-ModuleMember Get-FilePermissions
+Export-ModuleMember Deny-FilePermissions
+Export-ModuleMember Remove-FilePermissions
