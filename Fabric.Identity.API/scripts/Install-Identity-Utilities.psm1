@@ -81,9 +81,9 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installC
                         'Id'=$_.id;
                         'Name'=$_.name;
                         'Physical Path'=[System.Environment]::ExpandEnvironmentVariables($_.physicalPath);
-                        'Bindings'=$_.bindings;
+                        'Bindings'=$_.bindings.Collection;
                     };} |
-                    Format-Table Id,Name,'Physical Path',Bindings -AutoSize | Out-Host
+                    Format-Table Id,Name,'Physical Path',Bindings -AutoSize -Wrap | Out-Host
                 
                 $attempts = 1
                 do {
