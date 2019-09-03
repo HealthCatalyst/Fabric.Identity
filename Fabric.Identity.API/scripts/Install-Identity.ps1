@@ -37,10 +37,16 @@ if(!(Test-IsRunAsAdministrator))
 $ErrorActionPreference = "Stop"
 Write-DosMessage -Level "Information" -Message "Using install.config: $($configStore.Path)"
 $installSettingsScope = "identity"
-$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $configStore.Path
+
+$installSettings = Get-DosConfigValues -ConfigStore $configStore -Scope $installSettingsScope
 
 $commonSettingsScope = "common"
-$commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $configStore.Path
+
+$commonInstallSettings = Get-DosConfigValues -ConfigStore $configStore -Scope $commonSettingsScope
+
+# Switch to DosInstallUtilities later, testing with Fabric-Install-Utilities locally
+$encryptionCertificate = Get-Certificate -certificateThumbprint $commonInstallSettings.encryptionCertificateThumbprint
+$fabricInstallerSecret = Get-DecryptedString -encryptionCertificate $encryptionCertificate -encryptedString $commonInstallSettings.fabricInstallerSecret
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
 # Check for useAzure setting
@@ -124,11 +130,11 @@ Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDi
 $accessToken = ""
 
 if(Test-RegistrationComplete $identityServiceUrl) {
-    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installSettings.fabricInstallerSecret
+    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $fabricInstallerSecret
 }
 
 $registrationApiSecret = Add-RegistrationApiRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
-$fabricInstallerSecret = Add-InstallerClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken -fabricInstallerSecret $installSettings.fabricInstallerSecret
+$fabricInstallerSecret = Add-InstallerClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken -fabricInstallerSecret $fabricInstallerSecret
 Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $selectedCerts.SigningCertificate $configStore.Path
 
 if (!$accessToken){
