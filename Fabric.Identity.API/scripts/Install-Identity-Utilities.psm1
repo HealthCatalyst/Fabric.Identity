@@ -1951,6 +1951,14 @@ function Remove-FilePermissions
   $removePermissionsAcl | Set-Acl $filePath
 }
     
+function New-IdentityEncryptionCertificate {
+    param(
+        [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
+        [string] $certStoreLocation = "Cert:\LocalMachine\My2"
+    )
+    $cert = New-SelfSignedCertificate -Type Custom -KeySpec None -Subject $subject -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
+    return $cert
+}
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
@@ -2000,3 +2008,4 @@ Export-ModuleMember Test-XMLFile
 Export-ModuleMember Get-FilePermissions
 Export-ModuleMember Deny-FilePermissions
 Export-ModuleMember Remove-FilePermissions
+Export-ModuleMember New-IdentityEncryptionCertificate
