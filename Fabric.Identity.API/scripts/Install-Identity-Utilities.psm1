@@ -1968,6 +1968,14 @@ function Test-IdentityEncryptionCertificateValid {
     return $encryptionCertificate.NotAfter -gt $today
 }
 
+function Remove-IdentityEncryptionCertificate {
+    param(
+        [string] $encryptionCertificateThumbprint
+    )
+    $cert = Get-Certificate $encryptionCertificateThumbprint
+    $cert | Remove-Item
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -2019,3 +2027,4 @@ Export-ModuleMember Remove-FilePermissions
 Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
+Export-ModuleMember Remove-IdentityEncryptionCertificate
