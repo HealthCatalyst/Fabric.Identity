@@ -1,7 +1,7 @@
 param(
     [string] $targetFilePath = "$PSScriptRoot\..\CatalystDosIdentity.psm1",
     [Uri] $identityUrl = "http://localhost:5001",
-    [string] $installerSecret
+    [string] $installerSecret = "v4NwUe2Xp0GXNU3T"
 )
 
 # Force re-import to pick up latest changes
@@ -32,17 +32,13 @@ Describe 'Identity Cli Functional Tests' {
                 # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
                 $response | Should -Not -Be $null
             }
-
-            It 'Should return an access token when request does not have a scope' {
-                $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
-                $response | Should -Not -Be $null
-            }
         }
 
         Context 'Invalid requests' {
             It 'Should return an error when request has an invalid client id' {
                 try {
-                    Get-AccessToken  -clientId "id" -identityUrl $identityUrl -secret "Secret" -scope "scope"
+                    Get-AccessToken  -clientId "id" -identityUrl $identityUrl -secret $installerSecret -scope "fabric/identity.manageresources"
+                    Throw "Should fail with an invalid clientId"
                 }
                 catch {
                     $error = Get-ErrorFromResponse -response $_.Exception.Response
@@ -54,13 +50,27 @@ Describe 'Identity Cli Functional Tests' {
 
             It 'Should return an exception when request does not have a valid secret' {
                 try {
-                    $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret "secret" -scope "fabric/identity.manageresources"
+                    Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret "secret" -scope "fabric/identity.manageresources"
+                    Throw "Should fail with an invalid secret"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
                     $error = Get-ErrorFromResponse -response $_.Exception.Response
 
                     $error | Should -Be '{"error":"invalid_client"}'
+                }
+            }
+
+            It 'Should return an exception when the request does not have a scope' {
+                try {
+                    Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
+                    Throw "Should fail without a scope"
+                }
+                catch {
+                    $_.Exception | Should -BeOfType System.Net.WebException
+                    $error = Get-ErrorFromResponse -response $_.Exception.Response
+
+                    $error | Should -Be '{"error":"invalid_scope"}'
                 }
             }
         }
@@ -80,6 +90,7 @@ Describe 'Identity Cli Functional Tests' {
             It 'Should return an exception when invalid installer secret' {
                 try {
                     Get-FabricInstallerAccessToken  -identityUrl $identityUrl -secret "Secret" 
+                    Throw "Should fail with an invalid installer secret"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException 
@@ -187,7 +198,7 @@ Describe 'Identity Cli Functional Tests' {
                 $newClient = New-HybridClientBody `
                     -clientId $hybridId `
                     -clientName "Name for $hybridId" `
-                    -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
+                    -allowedScopes @("fabric/authorization.read", "fabric.profile")
 
                 # Client Credentials New-ClientRegistration (expect client secret)
                 $jsonClient = $newClient | ConvertTo-Json
@@ -213,7 +224,7 @@ Describe 'Identity Cli Functional Tests' {
                 $newClient = New-HybridPkceClientBody `
                     -clientId $hybridPkceId `
                     -clientName "Name for $hybridPkceId" `
-                    -allowedScopes @("fabric/authorization.read", "dos/metadata", "fabric.profile")
+                    -allowedScopes @("fabric/authorization.read", "fabric.profile")
 
                 # Client Credentials New-ClientRegistration (expect client secret)
                 $jsonClient = $newClient | ConvertTo-Json
@@ -266,7 +277,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Get-ClientRegistration -identityUrl $identityUrl -clientId $clientId -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail with an invalid token"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -283,7 +294,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Get-ClientRegistration -identityUrl $identityUrl -clientId $credentialsId -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail with an invalid clientId"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -311,7 +322,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     New-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail with an invalid token"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -340,7 +351,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     New-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail without allowedScopes"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -367,7 +378,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Edit-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail with an invalid token"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -393,7 +404,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Edit-ClientRegistration -identityUrl $identityUrl -body $jsonClient -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail with an invalid body"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -412,7 +423,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Reset-ClientPassword -identityUrl $identityUrl -clientId $clientId -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail when passing an invalid token"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -430,7 +441,7 @@ Describe 'Identity Cli Functional Tests' {
 
                 try {
                     Reset-ClientPassword -identityUrl $identityUrl -clientId $clientId -accessToken $fabricToken
-                    $true | Should -Be $false
+                    Throw "Should fail when clientId not found"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -454,7 +465,7 @@ Describe 'Identity Cli Functional Tests' {
             # New-ApiRegistrationBody returns an apiresource object
             $newApiResource = New-ApiRegistrationBody `
                 -apiName "test-Api" `
-                -scopes @{"name" = "test-Api"; "displayName" = "Test-API"} `
+                -scopes  @{"name" = "test-Api"; "displayName" = "Test-API"} `
                 -userClaims @("name", "email", "role", "groups") `
                 -isEnabled true
 
@@ -498,9 +509,10 @@ Describe 'Identity Cli Functional Tests' {
 
                 $removeApi | Should -Be ""
 
-                # Getting the api that was soft deleted should return not found
+                # Getting the api that was logically deleted should return not found
                 try {
                     Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                    Throw "Should get not found for an api that was logically deleted"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -537,6 +549,7 @@ Describe 'Identity Cli Functional Tests' {
                 # Editing using a different url api name than in the json body results in an error
                 try {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $newApiResource -apiName "sample-Api" -accessToken $accessToken
+                    Throw "Should be an error using a different api name than in the json body"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -555,6 +568,7 @@ Describe 'Identity Cli Functional Tests' {
                 # Error trying to Get an Api not registered
                 try {
                     Get-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                    Throw "Should be an error trying to get an api not registered"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -566,6 +580,7 @@ Describe 'Identity Cli Functional Tests' {
                 # Error trying to Edit an Api not registered
                 try {
                     Edit-ApiRegistration -identityUrl $identityUrl -body $newApiResource -apiName "test-Api" -accessToken $accessToken
+                    Throw "Should be an error trying to edit an api not registered"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -577,6 +592,7 @@ Describe 'Identity Cli Functional Tests' {
                 # Error trying to Remove an Api not registered
                 try {
                     Remove-ApiRegistration -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                    Throw "Should be an error trying to remove an api not registered"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
@@ -588,12 +604,29 @@ Describe 'Identity Cli Functional Tests' {
                 # Error trying to Reset a password for an api not registered
                 try {
                     Reset-ApiPassword -identityUrl $identityUrl -apiName "test-Api" -accessToken $accessToken
+                    Throw "Should have failed to reset a password for an api not registered"
                 }
                 catch {
                     $_.Exception | Should -BeOfType System.Net.WebException
 
                     $error = Get-ErrorFromResponse -response $_.Exception.InnerException.Response
                     $error | Should Match "not found"
+                }
+            }
+            It 'Should fail using New-ApiRegistration without a scope' {
+
+                # Remove scopes to test registration without a scope
+                $newApiResource.Remove("scopes")
+
+                try{
+                  # Create the Api
+                  New-ApiRegistration -identityUrl $identityUrl -body $newApiResource -accessToken $accessToken
+                  Throw "Should have failed using New-ApiRegistration without a scope"
+                }
+                catch{
+                    $_.Exception | Should -BeOfType System.Net.WebException
+                    $error = $_.Exception.Message.ToString()
+                    $error.Contains("'Scopes' must not be empty.")
                 }
             }
         }

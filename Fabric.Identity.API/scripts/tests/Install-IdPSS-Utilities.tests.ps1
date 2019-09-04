@@ -8,6 +8,7 @@ $directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
 $identityUtilitiesPath = Join-Path -Path $directoryPath -ChildPath "/Install-Identity-Utilities.psm1"
 Import-Module $identityUtilitiesPath -Force
 
+Describe 'IdPSS Unit Tests' {
 Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     Context 'Happy Path' {
         InModuleScope Install-IdPSS-Utilities {
@@ -59,6 +60,7 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     }
 
     Context 'Azure AD Errors Creating Secrets' {
+        InModuleScope Install-IdPSS-Utilities {
         It 'Should retry before failing when creating a secret' {
             $enc = [system.Text.Encoding]::UTF8
             $mockResp = @{
@@ -69,6 +71,8 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith { throw }
             Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
             Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith {}
+            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith {}
+            #Mock -CommandName Remove-AzureADClientSecret -MockWith {}
             Mock -CommandName Start-Sleep {}
             Mock -CommandName Write-DosMessage {}
             Mock -CommandName Write-Host {}
@@ -77,6 +81,7 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" } -Times 1 -Exactly
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Warning" } -Times 4 -Exactly
         }
+      }
     }
     Context 'Azure AD Errors Removing Secrets' {
         InModuleScope Install-IdPSS-Utilities {
@@ -106,6 +111,7 @@ Describe 'Connect-AzureADTenant' -Tag 'Unit' {
         $password = ConvertTo-SecureString "SecretPassword" -AsPlainText -Force
         $credentials = New-Object System.Management.Automation.PSCredential ("username", $password)
     }
+    InModuleScope Install-IdPSS-Utilities {
     Context 'Valid Credentials' {
         It 'should connect correctly' {
             Mock -CommandName Connect-AzureAD {}
@@ -120,6 +126,7 @@ Describe 'Connect-AzureADTenant' -Tag 'Unit' {
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" -and $Message.StartsWith("Could not sign into tenant") } -Times 1 -Exactly
         }
     }
+  }
 }
 
 Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
@@ -147,6 +154,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             }
         )
     }
+    InModuleScope Install-IdPSS-Utilities {
     Context 'New Application' {
         It 'should create a new Azure application' {
             Mock -CommandName Get-AzureADApplication {}
@@ -178,14 +186,16 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             Assert-MockCalled -CommandName Set-AzureADApplication -Times 1 -Exactly
         }
     }
+  }
 }
 
 Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
+    InModuleScope Install-Identity-Utilities {
     Context 'Section Exists' {
         It 'should return a list of settings' {
             $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
             Mock -CommandName Get-Content { return $mockXml }
-            $results = Get-TenantSettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "section"
+            $results = Get-TenantSettingsFromInstallConfig -installConfigPath "install.config" -scope "identity" -setting "section"
             $results.Count | Should -Be 2
         }
     }
@@ -193,17 +203,19 @@ Describe 'Get-SettingsFromInstallConfig' -Tag 'Unit' {
         It 'should return nothing' {
             $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<section><variable name="value1" /><variable name="value2" /></section></scope></settings></installation>'
             Mock -CommandName Get-Content { return $mockXml }
-            $results = Get-TenantSettingsFromInstallConfig -installConfigPath $targetFilePath -scope "identity" -setting "invalid"
+            $results = Get-TenantSettingsFromInstallConfig -installConfigPath "install.config" -scope "identity" -setting "invalid"
             $results | Should -Be $null
         }
     }
+  }
 }
 
 Describe 'Get-Tenants' -Tag 'Unit' {
+    InModuleScope Install-IdPSS-Utilities {
     Context 'Tenants exists in config' {
         It 'Should return a list of tenants' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1";alias="alias1"}, @{name="tenant2";alias="alias2"})}
-            $tenants = Get-Tenants -installConfigPath $targetFilePath
+            $tenants = Get-Tenants -azureConfigPath "install.config"
             $tenants.Count | Should -Be 2
             $tenants[0].name | Should -Be "tenant1"
             $tenants[0].alias | Should -Be "alias1"
@@ -212,20 +224,22 @@ Describe 'Get-Tenants' -Tag 'Unit' {
         }
         It 'Should throw when no tenants in install.config' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig {}
-            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+            { Get-Tenants -azureConfigPath "install.config" } | Should -Throw
         }
         It 'Should throw when no tenants alias in install.config' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1"}, @{name="tenant2"})}
-            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+            { Get-Tenants -azureConfigPath "install.config" } | Should -Throw
         }
     }
+  } 
 }
 
 Describe 'Get-ReplyUrls' -Tag 'Unit' {
+    InModuleScope Install-IdPSS-Utilities {
     Context 'Urls exists in config' {
         It 'Should return a list of urls' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @("url1", "url2")}
-            $urls = Get-ReplyUrls -installConfigPath $targetFilePath
+            $urls = Get-ReplyUrls -azureConfigPath "install.config"
             $urls.Count | Should -Be 2
             $urls[0] | Should -Be "url1"
             $urls[1] | Should -Be "url2"
@@ -235,8 +249,10 @@ Describe 'Get-ReplyUrls' -Tag 'Unit' {
         InModuleScope Install-IdPSS-Utilities {
             It 'Should throw when no replyUrl in install.config' {
                 Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig {}
-                { Get-ReplyUrls -installConfigPath $targetFilePath } | Should -Throw
+                { Get-ReplyUrls -installConfigPath "install.config" } | Should -Throw
             }
         }
     }
+   }
+  }
 }

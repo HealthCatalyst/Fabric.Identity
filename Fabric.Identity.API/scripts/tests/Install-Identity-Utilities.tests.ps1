@@ -6,6 +6,8 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+Describe "Identity Utilities Unit and Integration Tests" {
+
 Describe 'Get-FullyQualifiedInstallationZipFile Unit Tests' -Tag 'Unit' {
     Context 'Zip File Exists'{
         It 'Should return working directory plus zip file when no directory is specified'{
@@ -149,8 +151,10 @@ Describe 'Get-Certificates' -Tag 'Unit'{
         InModuleScope Install-Identity-Utilities{
             It 'Should prompt and return certificates'{
                 # Arrange
-                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=server.domain.local"}
-                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=server.domain.local"}
+                $testBeforeDate = Get-Date
+                $testAfterDate = Get-Date
+                $cert1 = New-Object -TypeName psobject -Property @{Thumbprint = 678901; Subject = "CN=server.domain.local"; NotBefore = $testBeforeDate.AddDays(-10); NotAfter = $testAfterDate.AddDays(10)}
+                $cert2 =  New-Object -TypeName psobject -Property @{Thumbprint = 123456; Subject = "CN=server.domain.local"; NotBefore = $testBeforeDate.AddDays(-10); NotAfter = $testAfterDate.AddDays(10)}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-CertsFromLocation -MockWith { return @($cert1, $cert2)}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-ShouldShowCertMenu -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName Get-Certificate -MockWith { return @{Thumbprint = 123456; Subject = "CN=server.domain.local"}}
@@ -575,7 +579,6 @@ Describe 'Publish-Application'{
                 $iisUser = @{UserName = $userName; Credential = $credential }
 
                 
-                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
@@ -588,7 +591,6 @@ Describe 'Publish-Application'{
                 # Assert
                 $publishedApp.version = "1.4.12345"
                 $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 0 -Exactly
@@ -609,8 +611,6 @@ Describe 'Publish-Application'{
                 $site = @{Name="Default Web Site"; physicalPath = "C:\inetpub\wwwroot"}
                 $iisUser = @{UserName = $userName; Credential = $credential }
 
-                
-                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
                 Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
@@ -623,7 +623,6 @@ Describe 'Publish-Application'{
                 # Assert
                 $publishedApp.version = "1.4.12345"
                 $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 1 -Exactly
@@ -763,12 +762,13 @@ Describe 'Test-ShouldShowCertMenu'{
 }
 
 Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
+    InModuleScope Install-Identity-Utilities{
     Context 'Valid config path' {
-        It 'should return a list of client settings' {
+        It 'Should return a list of client settings' {
             $mockXml = [xml]'<?xml version="1.0" encoding="utf-8"?><installation><settings><scope name="identity"><variable name="fabricInstallerSecret" value="" /><variable name="discoveryService" value="" />	<registeredApplications><variable appName="testApp" tenantId="tenant1" secret="secret1" clientid="clientid1" /><variable appName="testApp" tenantId="tenant2" secret="secret2" clientid="clientid2" /></registeredApplications></scope></settings></installation>'
 
             Mock -CommandName Get-Content { return $mockXml }
-            $result = Get-ClientSettingsFromInstallConfig -installConfigPath $targetFilePath -appName "testApp"
+            $result = Get-ClientSettingsFromInstallConfig -installConfigPath "install.config" -appName "testApp"
             $result.length | Should -Be 2
             $firstApp = $result[0]
             $secondApp = $result[1]
@@ -782,80 +782,35 @@ Describe 'Get-ClientSettingsFromInstallConfig' -Tag 'Unit' {
             $secondApp.clientSecret | Should -Be "secret2"
         }
     }
-}
-
-Describe 'Get-WebDeployPackagePath'{
-    Context 'Standalone'{
-        InModuleScope Install-Discovery-Utilities{
-            It 'Should return the standalone path'{
-                # Arrange
-                $standAlonePath = ".\Catalyst.DiscoveryService.zip"
-                $resolvedPath = "C:\Installer\Catalyst.DiscoveryService.zip"
-                Mock Resolve-Path { return $resolvedPath }
-                Mock Test-Path -ParameterFilter { $Path -eq $standAlonePath } { return $true }
-
-                # Act
-                $path = Get-WebDeployPackagePath
-
-                # Assert
-                $path | Should -Be $resolvedPath
-            }
-        }
-    }
-    Context 'Standalone'{
-        InModuleScope Install-Discovery-Utilities{
-            It 'Should return the installer path'{
-                # Arrange
-                $installerPath = "..\WebDeployPackages\Catalyst.DiscoveryService.zip"
-                $resolvedPath = "C:\Installer\WebDeployPackages\Catalyst.DiscoveryService.zip"
-                Mock Resolve-Path { return $resolvedPath }
-                Mock Test-Path -ParameterFilter { $Path -eq $installerPath } { return $true }
-
-                # Act
-                $path = Get-WebDeployPackagePath
-
-                # Assert
-                $path | Should -Be $resolvedPath
-            }
-        }
-    }
-    Context 'Failure'{
-        InModuleScope Install-Discovery-Utilities{
-            It 'Should throw an exception'{
-                # Arrange
-                Mock Test-Path { return $false }
-
-                # Act/Assert
-                { Get-WebDeployPackagePath } | Should -Throw
-            }
-        }
-    }
+  }
 }
 
 Describe 'Test-DiscoveryService Unit Tests'{
+    InModuleScope Install-Identity-Utilities{
     Context 'Success'{
         It 'Should succeed and not throw an exception'{
             # Arrange
-            Mock Invoke-RestMethod {} -ModuleName Install-Discovery-Utilities
+            Mock Invoke-RestMethod {}
 
             # Act/Assert
             {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Not -Throw
-            Assert-MockCalled Invoke-RestMethod -ModuleName Install-Discovery-Utilities -Times 1 -ParameterFilter { $Uri -eq "https://host.domain.local/DiscoveryService/v1/Services" }
+            Assert-MockCalled Invoke-RestMethod -Times 1 -ParameterFilter { $Uri -eq "https://host.domain.local/DiscoveryService/v1/Services" }
         }
-    }
+      }
     Context 'Generic Exception'{
         It 'Should fail and throw an exception'{
             # Arrange
-            Mock Invoke-RestMethod { throw "bad stuff happened" } -ModuleName Install-Discovery-Utilities
+            Mock Invoke-RestMethod { throw "bad stuff happened" } 
 
             # Act/Assert
             {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Throw
         }
     }
+  }
 }
 
 Describe 'Confirm-DiscoveryConfig Unit Tests'{
-    InModuleScope Install-Discovery-Utilities{
+    InModuleScope Install-Identity-Utilities{
         It 'Should validate valid discovery config settings'{
             # Arrange
             $discoveryConfig = @{ appName = "DiscoveryService"; appPoolName = "DiscoveryService"; siteName = "Default Web Site"}
@@ -877,8 +832,10 @@ Describe 'Confirm-DiscoveryConfig Unit Tests'{
 
 # Need to use global variables in Pester when abstracting BeforeEach and AfterEach Setup Code
 # $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
-$Global:testInstallFile = 'install.config'
-$Global:testAzureFile = 'testAzure.config'
+$Global:testInstallFile = "install.config"
+$Global:testAzureFile = "testAzure.config"
+$Global:testInstallFileLoc = '.\tests\install.config'
+$Global:testAzureFileLoc = '.\tests\testAzure.config'
 $Global:installConfigPath
 $Global:azureConfigPath
 $Global:nodesToSearch = @("tenants","replyUrls","claimsIssuerTenant","allowedTenants","registeredApplications", "azureSecretName")
@@ -892,15 +849,11 @@ Describe 'Migrate-AADSettings' -Tag 'Unit'{
         $doesAzureFileExist = Test-Path $azureConfigPath
         if (!$doesInstallFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testInstallFile" | Out-File $installConfigPath
+        Get-Content $testInstallFileLoc | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testAzureFile" | Out-File $azureConfigPath
+        Get-Content $testAzureFileLoc | Out-File $azureConfigPath
         }
     }
     AfterEach{
@@ -987,22 +940,20 @@ Describe 'Migrate-AADSettings' -Tag 'Integration'{
     BeforeEach{
         # Arrange 
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
+        
         $Global:testInstallFile = "testInstall.config"
+        $Global:testInstallFileLoc = '.\tests\testInstall.config'
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
         if (!$doesInstallFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testInstallFile" | Out-File $installConfigPath
+        Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testAzureFile" | Out-File $azureConfigPath
+        Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
         }
     }
     AfterEach{
@@ -1057,9 +1008,12 @@ Describe 'Migrate-AADSettings' -Tag 'Integration'{
             }
         }
     }
+    Remove-Variable testInstallFile -Scope Global
+    Remove-Variable testAzureFile -Scope Global
+    Remove-Variable testInstallFileLoc -Scope Global
+    Remove-Variable testAzureFileLoc -Scope Global
+    Remove-Variable installConfigPath -Scope Global
+    Remove-Variable azureConfigPath -Scope Global
+    Remove-Variable nodesToSearch -Scope Global
+  }
 }
-Remove-Variable testInstallFile -Scope Global
-Remove-Variable testAzureFile -Scope Global
-Remove-Variable installConfigPath -Scope Global
-Remove-Variable azureConfigPath -Scope Global
-Remove-Variable nodesToSearch -Scope Global
