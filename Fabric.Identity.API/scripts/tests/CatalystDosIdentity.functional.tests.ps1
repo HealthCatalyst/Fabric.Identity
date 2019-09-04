@@ -1,7 +1,7 @@
 param(
     [string] $targetFilePath = "$PSScriptRoot\..\CatalystDosIdentity.psm1",
     [Uri] $identityUrl = "http://localhost:5001",
-    [string] $installerSecret = "v4NwUe2Xp0GXNU3T"
+    [string] $installerSecret
 )
 
 # Force re-import to pick up latest changes
