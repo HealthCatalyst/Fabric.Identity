@@ -72,7 +72,6 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
             Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith {}
             Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith {}
-            #Mock -CommandName Remove-AzureADClientSecret -MockWith {}
             Mock -CommandName Start-Sleep {}
             Mock -CommandName Write-DosMessage {}
             Mock -CommandName Write-Host {}
