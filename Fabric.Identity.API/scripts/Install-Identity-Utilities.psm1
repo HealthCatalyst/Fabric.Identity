@@ -2025,6 +2025,5 @@ Export-ModuleMember Get-FilePermissions
 Export-ModuleMember Deny-FilePermissions
 Export-ModuleMember Remove-FilePermissions
 Export-ModuleMember New-IdentityEncryptionCertificate
-Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
 Export-ModuleMember Remove-IdentityEncryptionCertificate

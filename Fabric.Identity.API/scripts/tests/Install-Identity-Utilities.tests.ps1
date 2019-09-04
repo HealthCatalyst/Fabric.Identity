@@ -1063,6 +1063,7 @@ Remove-Variable testAzureFile -Scope Global
 Remove-Variable installConfigPath -Scope Global
 Remove-Variable azureConfigPath -Scope Global
 Remove-Variable nodesToSearch -Scope Global
+
 Describe 'New-IdentityEncryptionCertificate ' {
     InModuleScope Install-Identity-Utilities {
         It 'Should return a CNG certificate' {
