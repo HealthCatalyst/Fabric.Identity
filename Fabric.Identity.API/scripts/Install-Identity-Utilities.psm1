@@ -1954,10 +1954,18 @@ function Remove-FilePermissions
 function New-IdentityEncryptionCertificate {
     param(
         [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
-        [string] $certStoreLocation = "Cert:\LocalMachine\My2"
+        [string] $certStoreLocation = "Cert:\LocalMachine\My"
     )
     $cert = New-SelfSignedCertificate -Type Custom -KeySpec None -Subject $subject -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
     return $cert
+}
+
+function Test-IdentityEncryptionCertificateValid {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCertificate
+    )
+    $today = Get-Date
+    return $encryptionCertificate.NotAfter -gt $today
 }
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
@@ -2009,3 +2017,5 @@ Export-ModuleMember Get-FilePermissions
 Export-ModuleMember Deny-FilePermissions
 Export-ModuleMember Remove-FilePermissions
 Export-ModuleMember New-IdentityEncryptionCertificate
+Export-ModuleMember New-IdentityEncryptionCertificate
+Export-ModuleMember Test-IdentityEncryptionCertificateValid
