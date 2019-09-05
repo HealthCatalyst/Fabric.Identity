@@ -250,21 +250,28 @@ function Confirm-Credentials([PSCredential] $credential){
 function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
-        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
+        $cspKeyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
+        $cngKeyFolder = "C:\programdata\microsoft\crypto\Keys"
 
         $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
-        $keyPath = [io.path]::combine($keyFolder, $keyname)
+        $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
+        $cngKeyPath = [io.path]::combine($cngKeyFolder, $keyname)
 
-        if ([io.file]::exists($keyPath))
-        {        
-            $acl = Get-Acl $keyPath
-            $acl.AddAccessRule($allowRule)
-            Set-Acl $keyPath $acl -ErrorAction Stop
-            Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
-        }else{
-            Write-DosMessage -Level "Error" -Message "No key file was found at '$($keyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
+        if ([io.file]::exists($cspKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CSP store location: $cspKeyPath"
+            $keyPath = $cspKeyPath
+        } elseif ([io.file]::exists($cngKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CNG store location: $cngKeyPath"
+            $keyPath = $cngKeyPath
+        } else{
+            Write-DosMessage -Level "Error" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
             throw
         }
+
+        $acl = Get-Acl $cspKeyPath
+        $acl.AddAccessRule($keyPath)
+        Set-Acl $keyPath $acl -ErrorAction Stop
+        Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
     }catch{
         Write-DosMessage -Level "Error" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
         throw
