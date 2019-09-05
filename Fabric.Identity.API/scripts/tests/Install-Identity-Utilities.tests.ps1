@@ -1,3 +1,10 @@
+param(
+    [string] $targetFilePath = "$PSScriptRoot\..\Install-Identity-Utilities.psm1"
+)
+
+Write-Host $targetFilePath
+# Force re-import to pick up latest changes
+Import-Module $targetFilePath -Force
 
 Describe "Identity Utilities Unit and Integration Tests" {
 
