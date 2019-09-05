@@ -1951,6 +1951,30 @@ function Remove-FilePermissions
   $removePermissionsAcl | Set-Acl $filePath
 }
     
+function New-IdentityEncryptionCertificate {
+    param(
+        [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
+        [string] $certStoreLocation = "Cert:\LocalMachine\My"
+    )
+    $cert = New-SelfSignedCertificate -Type Custom -KeySpec None -Subject $subject -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
+    return $cert
+}
+
+function Test-IdentityEncryptionCertificateValid {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCertificate
+    )
+    $today = Get-Date
+    return $encryptionCertificate.NotAfter -gt $today
+}
+
+function Remove-IdentityEncryptionCertificate {
+    param(
+        [string] $encryptionCertificateThumbprint
+    )
+    $cert = Get-Certificate $encryptionCertificateThumbprint
+    $cert | Remove-Item
+}
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
@@ -2000,3 +2024,6 @@ Export-ModuleMember Test-XMLFile
 Export-ModuleMember Get-FilePermissions
 Export-ModuleMember Deny-FilePermissions
 Export-ModuleMember Remove-FilePermissions
+Export-ModuleMember New-IdentityEncryptionCertificate
+Export-ModuleMember Test-IdentityEncryptionCertificateValid
+Export-ModuleMember Remove-IdentityEncryptionCertificate
