@@ -1,10 +1,3 @@
-param(
-    [string] $targetFilePath = "$PSScriptRoot\..\Install-Identity-Utilities.psm1"
-)
-
-Write-Host $targetFilePath
-# Force re-import to pick up latest changes
-Import-Module $targetFilePath -Force
 
 Describe "Identity Utilities Unit and Integration Tests" {
 
@@ -834,8 +827,8 @@ Describe 'Confirm-DiscoveryConfig Unit Tests'{
 # $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
 $Global:testInstallFile = "install.config"
 $Global:testAzureFile = "testAzure.config"
-$Global:testInstallFileLoc = '.\tests\install.config'
-$Global:testAzureFileLoc = '.\tests\testAzure.config'
+$Global:testInstallFileLoc = "$PSScriptRoot\install.config"
+$Global:testAzureFileLoc = "$PSScriptRoot\testAzure.config"
 $Global:installConfigPath
 $Global:azureConfigPath
 $Global:nodesToSearch = @("tenants","replyUrls","claimsIssuerTenant","allowedTenants","registeredApplications", "azureSecretName")
@@ -942,7 +935,7 @@ Describe 'Migrate-AADSettings' -Tag 'Integration'{
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
         
         $Global:testInstallFile = "testInstall.config"
-        $Global:testInstallFileLoc = '.\tests\testInstall.config'
+        $Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
         $doesInstallFileExist = Test-Path $installConfigPath
