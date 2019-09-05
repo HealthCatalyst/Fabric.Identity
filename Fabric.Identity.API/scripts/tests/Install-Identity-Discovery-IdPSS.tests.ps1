@@ -54,7 +54,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        Clear-Content "$PSScriptRoot\DosInstall.log"
+        Clear-Content ".\DosInstall.log"
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
@@ -63,7 +63,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
            
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
-            $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+            $file = Get-Content -Path ".\DosInstall.log"
             $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
             if($hasCompletingWords)
             {
@@ -94,7 +94,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path ".\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -126,7 +126,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path ".\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -152,7 +152,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
                    
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path ".\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
