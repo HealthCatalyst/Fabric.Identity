@@ -4,7 +4,6 @@ param(
 
 Write-Host $targetFilePath
 # Force re-import to pick up latest changes
-# another change
 Import-Module $targetFilePath -Force
 
 $Global:testInstallFile = "install.config"
