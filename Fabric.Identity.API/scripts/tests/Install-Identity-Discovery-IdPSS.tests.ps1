@@ -27,7 +27,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
-        $Global:dosInstallPath = "$($TestDrive)\$($dosInstallFile)"
+        $Global:dosInstallPath = "$PSScriptRoot\$dosInstallFile"
         $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
@@ -65,7 +65,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         $doesDosInstallExist = Test-Path $dosInstallPath
         if ($doesDosInstallExist)
         {
-            #Clear-Content $dosInstallPath
+            Clear-Content $dosInstallPath
         }
     } 
     Context 'Migrating AAD Settings using Integration Tests'{

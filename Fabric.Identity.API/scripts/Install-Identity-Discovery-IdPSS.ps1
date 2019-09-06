@@ -59,6 +59,16 @@ if(!$existingAzurePath)
       $commonConfig = Get-DosConfigValues -ConfigStore $migrationInstallConfigStore -Scope $commonScope  
       if($null -ne $commonConfig)
       {
+        $existingLogPath = Test-Path $commonConfig.logFilePath -PathType Leaf
+        if (!$existingLogPath)
+        {
+          Write-DosMessage -Level "Warning" -Message "The DosInstall log path in the install.config file is invalid"
+        }
+        if($test)
+        {
+          $testLog = "$PSScriptRoot\tests\DosInstall.log"
+          $commonConfig.logFilePath = $testLog
+        }
         Set-DosMessageConfiguration -LoggingMode Both -MinimumLoggingLevel $commonConfig.minimumLoggingLevel -LogFilePath $commonConfig.logFilePath
 
         Write-DosMessage -Level "Information" -Message "Started the Migration of AAD Settings from install.config to azuresettings.config"
