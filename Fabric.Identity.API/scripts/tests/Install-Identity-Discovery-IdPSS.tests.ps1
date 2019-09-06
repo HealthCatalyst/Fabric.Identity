@@ -60,7 +60,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
             # Act
-            Invoke-Pester(..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams)
+            "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
            
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
