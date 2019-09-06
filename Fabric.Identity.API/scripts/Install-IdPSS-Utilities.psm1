@@ -1,5 +1,5 @@
-$fabricInstallUtilities = ".\Install-Identity-Utilities.psm1"
-Import-Module -Name $fabricInstallUtilities -Force
+#$fabricInstallUtilities = ".\Install-Identity-Utilities.psm1"
+#Import-Module -Name $fabricInstallUtilities -Force
 
 # Import AzureAD
 $minVersion = [System.Version]::new(2, 0, 2 , 4)
