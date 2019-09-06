@@ -572,7 +572,7 @@ Describe 'Publish-Application'{
         InModuleScope Install-Identity-Utilities{
             It 'Should install app and return version and directory'{
                 # Arrange
-                $userName = "hqcatalyst\dev.test"
+                $userName = "Everyone"
                 $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
                 $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password
                 $expectedVersion = "1.4.12345"
