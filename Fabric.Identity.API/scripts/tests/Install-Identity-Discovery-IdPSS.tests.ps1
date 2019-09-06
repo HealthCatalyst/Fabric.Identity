@@ -19,7 +19,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
       Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
       Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
- 
+       
       BeforeEach{
         # Arrange 
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
@@ -35,6 +35,10 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         if (!$doesAzureFileExist)
         {
           Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
+        }
+        if (!$doesDosInstallFileExist)
+        {
+          New-Item -Path "$PSScriptRoot\DosInstall.log" -ItemType "file"
         }
     }
     AfterEach{
