@@ -3,7 +3,7 @@
 # DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log, need to fix to ensure these tests work.
 $Global:testInstallFile = "testInstall.config"
 $Global:testAzureFile = "testAzure.config"
-$Global:testInstallFileLoc = "$PSScriptRoot\install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
 $Global:testAzureFileLoc = "$PSScriptRoot\testAzure.config"
 $Global:installConfigPath
 $Global:azureConfigPath
@@ -19,7 +19,6 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
       Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
       Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
-      New-Item -Path "$PSScriptRoot" -Name "DosInstall.log" -ItemType "file"
  
       BeforeEach{
         # Arrange 
@@ -60,7 +59,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
             # Act
-            "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
+            Invoke-Pester(..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams)
            
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
