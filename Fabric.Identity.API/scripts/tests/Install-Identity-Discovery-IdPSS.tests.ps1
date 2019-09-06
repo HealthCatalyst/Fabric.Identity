@@ -62,7 +62,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         $doesDosInstallExist = Test-Path "$PSScriptRoot\DosInstall.log"
         if ($doesDosInstallExist)
         {
-            Clear-Content "$PSScriptRoot\DosInstall.log"
+            #Clear-Content "$PSScriptRoot\DosInstall.log"
         }
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
