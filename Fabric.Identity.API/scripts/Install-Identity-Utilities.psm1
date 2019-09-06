@@ -253,7 +253,8 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
         $cspKeyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
         $cngKeyFolder = "C:\programdata\microsoft\crypto\Keys"
 
-        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
+        $privateKey = Get-IdentityRSAPrivateKey -certificate $certificate
+        $keyname = $privateKey.Key.UniqueName
 
         $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
         $cngKeyPath = [io.path]::combine($cngKeyFolder, $keyname)
