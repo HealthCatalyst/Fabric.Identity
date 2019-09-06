@@ -4,7 +4,6 @@ param(
 
 Write-Host $targetFilePath
 # Force re-import to pick up latest changes
-# one more change
 Import-Module $targetFilePath -Force
 
 Describe "Identity Utilities Unit and Integration Tests" {
