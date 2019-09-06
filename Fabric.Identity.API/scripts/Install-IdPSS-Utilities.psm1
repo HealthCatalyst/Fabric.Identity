@@ -1,6 +1,6 @@
 #$fabricInstallUtilities = ".\Install-Identity-Utilities.psm1"
 #Import-Module -Name $fabricInstallUtilities -Force
-
+Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
 # Import AzureAD
 $minVersion = [System.Version]::new(2, 0, 2 , 4)
 $azureAD = Get-Childitem -Path ./**/AzureAD.psm1 -Recurse
