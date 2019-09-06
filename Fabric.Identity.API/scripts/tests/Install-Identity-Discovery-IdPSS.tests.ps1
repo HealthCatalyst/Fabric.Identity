@@ -3,10 +3,12 @@
 # DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log, need to fix to ensure these tests work.
 $Global:testInstallFile = "testInstall.config"
 $Global:testAzureFile = "testAzure.config"
+$Global:dosInstallFile = "DosInstall.log"
 $Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
 $Global:testAzureFileLoc = "$PSScriptRoot\testAzure.config"
 $Global:installConfigPath
 $Global:azureConfigPath
+$Global:dosInstallPath
 $Global:localInstallConfigPath = "$PSScriptRoot\install.config"
 $Global:localAzureConfigPath = "$PSScriptRoot\azuresettings.config"
 $Global:scriptParams
@@ -25,10 +27,11 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
+        $Global:dosInstallPath = "$($TestDrive)\$($dosInstallFile)"
         $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
-        $doesDosInstallFileExist = Test-Path "$installConfigPath\DosInstall.log"
+        $doesDosInstallFileExist = Test-Path $dosInstallPath
         if (!$doesInstallFileExist)
         {
           Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
@@ -39,7 +42,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         }
         if (!$doesDosInstallFileExist)
         {
-          New-Item -Path "$installConfigPath\DosInstall.log" -ItemType "file"
+          New-Item -Path $dosInstallPath -ItemType "file"
         }
     }
     AfterEach{
@@ -59,10 +62,10 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        $doesDosInstallExist = Test-Path "$installConfigPath\DosInstall.log"
+        $doesDosInstallExist = Test-Path $dosInstallPath
         if ($doesDosInstallExist)
         {
-            #Clear-Content "$PSScriptRoot\DosInstall.log"
+            #Clear-Content $dosInstallPath
         }
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
@@ -73,7 +76,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
 
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
-            $file = Get-Content -Path "$installConfigPath\DosInstall.log"
+            $file = Get-Content -Path $dosInstallPath
             $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
             if($hasCompletingWords)
             {
@@ -105,7 +108,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -138,7 +141,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -165,7 +168,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
                    
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
