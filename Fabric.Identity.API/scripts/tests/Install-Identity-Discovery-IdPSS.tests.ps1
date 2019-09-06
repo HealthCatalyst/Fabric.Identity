@@ -1,6 +1,7 @@
 # Need to use global variables in Pester when abstracting BeforeEach and AfterEach Setup Code
 # $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
 # DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log, need to fix to ensure these tests work.
+# trigger build
 $Global:testInstallFile = "testInstall.config"
 $Global:testAzureFile = "testAzure.config"
 $Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
@@ -76,7 +77,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
             }
             else 
             {
-               Write-DosMessage -Level "Error" -Message "The migration should have been successful" 
+               Throw "The migration should have been successful" 
             }
 
             $doesAzureFileExist = Test-Path "$PSScriptRoot\azuresettings.config"
@@ -86,7 +87,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
             }
             else 
             {
-               Write-DosMessage -Level "Error" -Message "The azuresettings.config file should have been created"
+               Throw "The azuresettings.config file should have been created"
             }
         }
         It 'Should not run without install.config file'{
@@ -108,8 +109,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "$wrongInstallConfig should not exist, check the name of the current config file"
+             Throw "migration should have failed"
           }
         }
         It 'Should not run without install.config permissions'{
@@ -141,8 +142,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "Permissions should have been denied on $currentInstallFile"
+             Throw -Level "Error" -Message "migration should have failed"
           }
 
           # Remove the Everyone permission added to the file
@@ -168,8 +169,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "There should be Invalid XML in the $testInstallFile"
+             Throw -Level "Error" -Message "migration should have failed"
           }
         }
     }
