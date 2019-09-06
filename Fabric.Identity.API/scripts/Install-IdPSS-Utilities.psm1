@@ -8,11 +8,11 @@ if ($azureAD.length -eq 0) {
     # Do not show error when AzureAD is not installed, will install instead
     $installed = Get-InstalledModule -Name AzureAD -ErrorAction "silentlycontinue"
 
-    if (($null -eq $installed) -or ($installed.Version.CompareTo($minVersion) -lt 0)) {
-        Write-Host "Installing AzureAD from Powershell Gallery"
-        Install-Module AzureAD -Scope CurrentUser -MinimumVersion $minVersion -Force
-        Import-Module AzureAD -Force
-    }
+   # if (($null -eq $installed) -or ($installed.Version.CompareTo($minVersion) -lt 0)) {
+    #    Write-Host "Installing AzureAD from Powershell Gallery"
+    #    Install-Module AzureAD -Scope CurrentUser -MinimumVersion $minVersion -Force
+   #     Import-Module AzureAD -Force
+  #  }
 }
 else {
     Write-Host "Installing AzureAD at $($azureAD.FullName)"
