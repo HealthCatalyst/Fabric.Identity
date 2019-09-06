@@ -28,7 +28,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
-        $doesDosInstallFileExist = Test-Path "$PSScriptRoot\DosInstall.log"
+        $doesDosInstallFileExist = Test-Path "$installConfigPath\DosInstall.log"
         if (!$doesInstallFileExist)
         {
           Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
@@ -39,7 +39,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         }
         if (!$doesDosInstallFileExist)
         {
-          New-Item -Path "$PSScriptRoot\DosInstall.log" -ItemType "file"
+          New-Item -Path "$installConfigPath\DosInstall.log" -ItemType "file"
         }
     }
     AfterEach{
@@ -59,7 +59,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        $doesDosInstallExist = Test-Path "$PSScriptRoot\DosInstall.log"
+        $doesDosInstallExist = Test-Path "$installConfigPath\DosInstall.log"
         if ($doesDosInstallExist)
         {
             #Clear-Content "$PSScriptRoot\DosInstall.log"
@@ -73,7 +73,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
 
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
-            $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+            $file = Get-Content -Path "$installConfigPath\DosInstall.log"
             $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
             if($hasCompletingWords)
             {
@@ -105,7 +105,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -138,7 +138,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -165,7 +165,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
                    
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
+          $file = Get-Content -Path "$installConfigPath\DosInstall.log"
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
