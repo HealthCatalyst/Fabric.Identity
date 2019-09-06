@@ -1,7 +1,6 @@
 # Need to use global variables in Pester when abstracting BeforeEach and AfterEach Setup Code
 # $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
 # DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log, need to fix to ensure these tests work.
-# trigger build
 $Global:testInstallFile = "testInstall.config"
 $Global:testAzureFile = "testAzure.config"
 $Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
