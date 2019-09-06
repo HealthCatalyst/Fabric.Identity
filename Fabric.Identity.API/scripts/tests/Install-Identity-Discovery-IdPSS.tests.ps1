@@ -19,7 +19,6 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
       Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
       Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
-      New-Item -Path "$PSScriptRoot" -Name "DosInstall.log" -ItemType "file"
  
       BeforeEach{
         # Arrange 
@@ -31,11 +30,11 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         $doesAzureFileExist = Test-Path $azureConfigPath
         if (!$doesInstallFileExist)
         {
-        Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
+          Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
+          Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
         }
     }
     AfterEach{
@@ -55,13 +54,18 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        Clear-Content "$PSScriptRoot\DosInstall.log"
+        $doesDosInstallExist = Test-Path "$PSScriptRoot\DosInstall.log"
+        if ($doesDosInstallExist)
+        {
+            Clear-Content "$PSScriptRoot\DosInstall.log"
+        }
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
             # Act
-            "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
-           
+            Set-Location -Path $PSScriptRoot
+            ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
             $file = Get-Content -Path "$PSScriptRoot\DosInstall.log"
@@ -91,7 +95,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = "$($TestDrive)\$($wrongInstallConfig)"; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
           
           # Act
-          "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
+          Set-Location -Path $PSScriptRoot
+          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
@@ -123,7 +128,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
 
           # Act
-          "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
+          Set-Location -Path $PSScriptRoot
+          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
@@ -149,7 +155,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           Get-Content "$PSScriptRoot\$malformedXMLFile" | Out-File $installConfigPath
           $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
           
-          "$PSScriptRoot\Install-Identity-Discovery-IdPSS.ps1 $($scriptParams)"
+          Set-Location -Path $PSScriptRoot
+          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
                    
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
