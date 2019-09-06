@@ -7,7 +7,7 @@ Write-Host $targetFilePath
 Import-Module $targetFilePath -Force
 $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
 Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
-#Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1" -Force
+Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1" -Force
 
 $Global:testInstallFile = "install.config"
 $Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
