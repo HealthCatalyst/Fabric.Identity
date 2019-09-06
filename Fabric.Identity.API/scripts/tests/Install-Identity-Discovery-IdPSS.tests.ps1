@@ -28,6 +28,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
+        $doesDosInstallFileExist = Test-Path "$PSScriptRoot\DosInstall.log"
         if (!$doesInstallFileExist)
         {
           Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
