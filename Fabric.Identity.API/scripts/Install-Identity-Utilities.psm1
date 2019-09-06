@@ -254,6 +254,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
         $cngKeyFolder = "C:\programdata\microsoft\crypto\Keys"
 
         $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
+
         $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
         $cngKeyPath = [io.path]::combine($cngKeyFolder, $keyname)
 
@@ -264,8 +265,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
             Write-DosMessage -Level "Information" -Message "Key was found in the CNG store location: $cngKeyPath"
             $keyPath = $cngKeyPath
         } else{
-            Write-DosMessage -Level "Error" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
-            throw
+            Write-DosMessage -Level "Fatal" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
         }
 
         $acl = Get-Acl $cspKeyPath
@@ -273,9 +273,33 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
         Set-Acl $keyPath $acl -ErrorAction Stop
         Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
     }catch{
-        Write-DosMessage -Level "Error" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
-        throw
+        Write-DosMessage -Level "Fatal" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
     }
+}
+
+function Get-IdentityRSAPrivateKey {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    try {
+        $privateKey = Get-IdentityRSAPrivateKeyNetWrapper -certificate $certificate
+    }
+    catch {
+        $exception = $_.Exception
+        Write-DosMessage -Level "Error" -Message "Could not get the RSA private key for the provided certificate. Certificate thumbprint: $($certificate.Thumbprint)"
+        throw $exception
+    }
+
+    return $privateKey
+}
+
+function Get-IdentityRSAPrivateKeyNetWrapper {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    return [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($certificate)
 }
 
 function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [string] $scope, [bool] $quiet){
