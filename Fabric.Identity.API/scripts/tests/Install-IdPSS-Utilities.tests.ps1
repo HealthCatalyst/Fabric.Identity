@@ -4,7 +4,9 @@ param(
 
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
-$directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
+$scriptsPath = Split-Path -Path $PSScriptRoot -Parent
+$identityUtilitiesPath = "$scriptsPath\Install-Identity-Utilities.psm1"
+Import-Module $identityUtilitiesPath -Force
 
 $Global:testInstallFile = "install.config"
 $Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
