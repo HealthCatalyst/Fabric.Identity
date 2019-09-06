@@ -19,6 +19,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
       Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
       Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
+      New-Item -Path "$PSScriptRoot" -Name "DosInstall.log" -ItemType "file"
  
       BeforeEach{
         # Arrange 
@@ -54,7 +55,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        #Clear-Content "$PSScriptRoot\DosInstall.log"
+        Clear-Content "$PSScriptRoot\DosInstall.log"
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
@@ -167,7 +168,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
     }
   #Remove-Item  "$PSScriptRoot\Fabric-Install-Utilities.psm1" 
   #Remove-Module -Name "Install-Identity-Utilities" -Force
-  Remove-Item  "$PSScriptRoot\Install-Identity-Utilities.psm1" 
+  #Remove-Item  "$PSScriptRoot\Install-Identity-Utilities.psm1" 
   Remove-Variable testInstallFile -Scope Global
   Remove-Variable testAzureFile -Scope Global
   Remove-Variable installConfigPath -Scope Global
