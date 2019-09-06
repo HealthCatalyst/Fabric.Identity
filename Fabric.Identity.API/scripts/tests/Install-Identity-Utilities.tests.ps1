@@ -386,7 +386,7 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath "install.config" -quiet $true
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath $testInstallFileLoc -quiet $true
 
                 # Assert
                 $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
