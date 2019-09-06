@@ -19,6 +19,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
       Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
       Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
+      New-Item -Path "$PSScriptRoot" -Name "DosInstall.log" -ItemType "file"
  
       BeforeEach{
         # Arrange 
