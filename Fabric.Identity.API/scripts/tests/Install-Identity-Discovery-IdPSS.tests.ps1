@@ -180,7 +180,6 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
     }
   Remove-Item  "$PSScriptRoot\Fabric-Install-Utilities.psm1" 
   Remove-Module -Name "Install-Identity-Utilities" -Force
-  #Remove-Item  "$PSScriptRoot\Install-Identity-Utilities.psm1" 
   Remove-Variable testInstallFile -Scope Global
   Remove-Variable testAzureFile -Scope Global
   Remove-Variable installConfigPath -Scope Global
