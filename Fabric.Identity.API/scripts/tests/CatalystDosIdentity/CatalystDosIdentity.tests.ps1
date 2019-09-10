@@ -1,5 +1,5 @@
 param(
-    [string] $targetFilePath = "$PSScriptRoot\..\CatalystDosIdentity.psm1"
+    [string] $targetFilePath = "$PSScriptRoot\..\..\CatalystDosIdentity.psm1"
 )
 
 # Force re-import to pick up latest changes
