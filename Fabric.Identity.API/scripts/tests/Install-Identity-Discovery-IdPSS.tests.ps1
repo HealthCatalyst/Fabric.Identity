@@ -18,9 +18,6 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       # For the Invoke-Pester Install-Identity-Discovery-IdPSS to work, the referenced modules
       # need to be located in the same folder where the test script is called.
       # Copy once before and remove after the tests have all run
-      $scriptsPath = Split-Path -Path $PSScriptRoot -Parent
-      Copy-Item -Path "$scriptsPath\Install-Identity-Utilities.psm1" -Destination "$PSScriptRoot"
-      Import-Module "$PSScriptRoot\Install-Identity-Utilities.psm1"
        
       BeforeEach{
         # Arrange 
@@ -181,8 +178,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
         }
     }
-  #Remove-Item  "$PSScriptRoot\Fabric-Install-Utilities.psm1" 
-  #Remove-Module -Name "Install-Identity-Utilities" -Force
+  Remove-Item  "$PSScriptRoot\Fabric-Install-Utilities.psm1" 
+  Remove-Module -Name "Install-Identity-Utilities" -Force
   #Remove-Item  "$PSScriptRoot\Install-Identity-Utilities.psm1" 
   Remove-Variable testInstallFile -Scope Global
   Remove-Variable testAzureFile -Scope Global

@@ -22,7 +22,8 @@ param(
     [switch] $quiet,
     [switch] $test
 )
-Import-Module -Name .\Install-Identity-Utilities.psm1 -Force
+$targetFilePath = "$PSScriptRoot\Install-Identity-Utilities.psm1"
+Import-Module -Name $targetFilePath -Force
 
 # Import Fabric Install Utilities
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
