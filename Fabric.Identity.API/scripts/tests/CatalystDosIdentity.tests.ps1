@@ -5,6 +5,7 @@ param(
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+Describe 'Identity Cli Unit Tests' {    
 Describe 'Get-AccessToken Unit Tests' -tag 'Unit' {
     Context 'Valid Request' {
         BeforeAll {
@@ -62,6 +63,7 @@ Describe 'Get-FabricInstallerAccessToken Unit Tests' -tag 'Unit' {
 
             try {
                 Get-FabricInstallerAccessToken  -identityUrl $mockUrl -secret "Secret"
+                Throw "Should have an error in the response"
             }
             catch {
                 $_.Exception | Should -BeOfType System.Net.WebException
@@ -722,6 +724,7 @@ Describe 'Test-IsApiRegistered Unit Tests' -tag "Unit" {
             $response | Should -Be $false
         }
     }
+  }
 }
 
 

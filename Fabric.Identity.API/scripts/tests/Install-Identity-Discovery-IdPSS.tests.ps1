@@ -1,11 +1,15 @@
 # Need to use global variables in Pester when abstracting BeforeEach and AfterEach Setup Code
-# $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
-# DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log
-$Global:testInstallFile = 'testInstall.config'
-$Global:testAzureFile = 'testAzure.config'
+# $TestDrive is not accessible in a Global variable, only in the Describe and Context blocks
+# DosInstall.log still broken and doesnt entirely log to the logFilePath in install.log, need to fix to ensure these tests work.
+$Global:testInstallFile = "testInstall.config"
+$Global:testAzureFile = "testAzure.config"
+$Global:dosInstallFile = "DosInstall.log"
+$Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
+$Global:testAzureFileLoc = "$PSScriptRoot\testAzure.config"
 $Global:installConfigPath
 $Global:azureConfigPath
-$Global:localInstallConfigPath = "$PSSCriptRoot\install.config"
+$Global:dosInstallPath
+$Global:localInstallConfigPath = "$PSScriptRoot\install.config"
 $Global:localAzureConfigPath = "$PSScriptRoot\azuresettings.config"
 $Global:scriptParams
 
@@ -14,27 +18,28 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
       # For the Invoke-Pester Install-Identity-Discovery-IdPSS to work, the referenced modules
       # need to be located in the same folder where the test script is called.
       # Copy once before and remove after the tests have all run
-      Copy-Item "..\Install-Identity-Utilities.psm1" 
-
+       
       BeforeEach{
         # Arrange 
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
+        $Global:dosInstallPath = "$PSScriptRoot\$dosInstallFile"
         $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
+        $doesDosInstallFileExist = Test-Path $dosInstallPath
         if (!$doesInstallFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testInstallFile" | Out-File $installConfigPath
+          Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testAzureFile" | Out-File $azureConfigPath
+          Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
+        }
+        if (!$doesDosInstallFileExist)
+        {
+          New-Item -Path $dosInstallPath -ItemType "file"
         }
     }
     AfterEach{
@@ -49,21 +54,26 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         {
             Remove-Item $azureConfigPath
         }
-        $doesNewAzureFileExist = Test-Path ".\azuresettings.config"
+        $doesNewAzureFileExist = Test-Path "$PSScriptRoot\azuresettings.config"
         if ($doesNewAzureFileExist)
         {
-            Remove-Item ".\azuresettings.config"
+            Remove-Item "$PSScriptRoot\azuresettings.config"
         }
-        Clear-Content ".\DosInstall.log"
+        $doesDosInstallExist = Test-Path $dosInstallPath
+        if ($doesDosInstallExist)
+        {
+            Clear-Content $dosInstallPath
+        }
     } 
     Context 'Migrating AAD Settings using Integration Tests'{
         It 'Should Successfully run the migration'{
             # Act
+            Set-Location -Path $PSScriptRoot
             ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
-           
+
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
-            $file = Get-Content -Path ".\DosInstall.log"
+            $file = Get-Content -Path $dosInstallPath
             $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
             if($hasCompletingWords)
             {
@@ -71,7 +81,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
             }
             else 
             {
-               Write-DosMessage -Level "Error" -Message "The migration should have been successful" 
+               Throw "The migration should have been successful" 
             }
 
             $doesAzureFileExist = Test-Path "$PSScriptRoot\azuresettings.config"
@@ -81,7 +91,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
             }
             else 
             {
-               Write-DosMessage -Level "Error" -Message "The azuresettings.config file should have been created"
+               Throw "The azuresettings.config file should have been created"
             }
         }
         It 'Should not run without install.config file'{
@@ -90,11 +100,12 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = "$($TestDrive)\$($wrongInstallConfig)"; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
           
           # Act
+          Set-Location -Path $PSScriptRoot
           ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path ".\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -102,8 +113,8 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "$wrongInstallConfig should not exist, check the name of the current config file"
+             Throw "migration should have failed"
           }
         }
         It 'Should not run without install.config permissions'{
@@ -116,17 +127,18 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           {
             # Have to set the acl on a file with no permissions and then set it back
             # You cannot check in a file with no permissions visual studio will show an error
-            $returnNoPermissionsAcl = Deny-FilePermissions -filePath ".\$noPermissionFile"
+            $returnNoPermissionsAcl = Deny-FilePermissions -filePath "$PSScriptRoot\$noPermissionFile"
             #Apply Changes    
             Set-Acl "$($TestDrive)\$($currentInstallFile)" $returnNoPermissionsAcl
           }
 
           # Act
-           ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+          Set-Location -Path $PSScriptRoot
+          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path ".\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -134,25 +146,26 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "Permissions should have been denied on $currentInstallFile"
+             Throw -Level "Error" -Message "migration should have failed"
           }
 
           # Remove the Everyone permission added to the file
-          Remove-FilePermissions -filePath ".\$noPermissionFile"
+          Remove-FilePermissions -filePath "$PSScriptRoot\$noPermissionFile"
         }
         It 'Should not run with malformed xml in install.config'{
           # Arrange
           $malformedXMLFile = "testInstallMalformed.config"
           $Global:installConfigPath = "$($TestDrive)\$($malformedXMLFile)"
-          Get-Content "$dir\$malformedXMLFile" | Out-File $installConfigPath
+          Get-Content "$PSScriptRoot\$malformedXMLFile" | Out-File $installConfigPath
           $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
           
+          Set-Location -Path $PSScriptRoot
           ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
-         
+                   
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
-          $file = Get-Content -Path ".\DosInstall.log"
+          $file = Get-Content -Path $dosInstallPath
           $hasCompletingWords = $file | Where-Object{$_ -match $completingWordsToFind}
           if($null -eq $hasCompletingWords)
           {
@@ -160,14 +173,13 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           }
           else 
           {
-             Write-DosMessage -Level "Error" -Message "migration should have failed"
              Write-DosMessage -Level "Error" -Message "There should be Invalid XML in the $testInstallFile"
+             Throw -Level "Error" -Message "migration should have failed"
           }
         }
     }
-
-  Remove-Item ".\Fabric-Install-Utilities.psm1" 
-  Remove-Item ".\Install-Identity-Utilities.psm1" 
+  Remove-Item  "$PSScriptRoot\Fabric-Install-Utilities.psm1" 
+  Remove-Module -Name "Install-Identity-Utilities" -Force
   Remove-Variable testInstallFile -Scope Global
   Remove-Variable testAzureFile -Scope Global
   Remove-Variable installConfigPath -Scope Global
@@ -175,6 +187,4 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
   Remove-Variable localInstallConfigPath -Scope Global
   Remove-Variable localAzureConfigPath -Scope Global
   Remove-Variable scriptParams -Scope Global
-  Remove-Module -Name Fabric-Install-Utilities
-  Remove-Module -Name Install-Identity-Utilities
 }
