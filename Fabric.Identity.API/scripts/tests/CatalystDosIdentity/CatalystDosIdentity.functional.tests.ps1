@@ -1,5 +1,5 @@
 param(
-    [string] $targetFilePath = "$PSScriptRoot\..\CatalystDosIdentity.psm1",
+    [string] $targetFilePath = "$PSScriptRoot\..\..\CatalystDosIdentity.psm1",
     [Uri] $identityUrl = "http://localhost:5001",
     [string] $installerSecret
 )
@@ -32,6 +32,11 @@ Describe 'Identity Cli Functional Tests' {
                 # Get-FabricInstallerAccessToken returns an access token if request succeeds, expect a value when successful
                 $response | Should -Not -Be $null
             }
+
+            It 'Should return an access token when request does not have a scope' {
+                $response = Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
+                $response | Should -Not -Be $null
+            }
         }
 
         Context 'Invalid requests' {
@@ -58,19 +63,6 @@ Describe 'Identity Cli Functional Tests' {
                     $error = Get-ErrorFromResponse -response $_.Exception.Response
 
                     $error | Should -Be '{"error":"invalid_client"}'
-                }
-            }
-
-            It 'Should return an exception when the request does not have a scope' {
-                try {
-                    Get-AccessToken -identityUrl $identityUrl -clientId "fabric-installer" -secret $installerSecret
-                    Throw "Should fail without a scope"
-                }
-                catch {
-                    $_.Exception | Should -BeOfType System.Net.WebException
-                    $error = Get-ErrorFromResponse -response $_.Exception.Response
-
-                    $error | Should -Be '{"error":"invalid_scope"}'
                 }
             }
         }
