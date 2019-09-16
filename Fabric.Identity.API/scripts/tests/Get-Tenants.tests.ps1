@@ -9,10 +9,11 @@ $identityUtilitiesPath = Join-Path -Path $directoryPath -ChildPath "/Install-Ide
 Import-Module $identityUtilitiesPath -Force
 
 Describe 'Get-Tenants' -Tag 'Unit' {
+    InModuleScope Install-IdPSS-Utilities {
     Context 'Tenants exists in config' {
         It 'Should return a list of tenants' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1";alias="alias1"}, @{name="tenant2";alias="alias2"})}
-            $tenants = Get-Tenants -installConfigPath $targetFilePath
+            $tenants = Get-Tenants -azureConfigPath $testInstallFileLoc
             $tenants.Count | Should -Be 2
             $tenants[0].name | Should -Be "tenant1"
             $tenants[0].alias | Should -Be "alias1"
@@ -21,11 +22,12 @@ Describe 'Get-Tenants' -Tag 'Unit' {
         }
         It 'Should throw when no tenants in install.config' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig {}
-            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+            { Get-Tenants -azureConfigPath $testInstallFileLoc } | Should -Throw
         }
         It 'Should throw when no tenants alias in install.config' {
             Mock -ModuleName Install-IdPSS-Utilities -CommandName Get-TenantSettingsFromInstallConfig { return @(@{name="tenant1"}, @{name="tenant2"})}
-            { Get-Tenants -installConfigPath $targetFilePath } | Should -Throw
+            { Get-Tenants -azureConfigPath $testInstallFileLoc } | Should -Throw
         }
     }
+  } 
 }

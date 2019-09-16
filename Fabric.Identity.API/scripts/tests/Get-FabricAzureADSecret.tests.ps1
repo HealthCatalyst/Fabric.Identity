@@ -8,9 +8,6 @@ $directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
 $identityUtilitiesPath = Join-Path -Path $directoryPath -ChildPath "/Install-Identity-Utilities.psm1"
 Import-Module $identityUtilitiesPath -Force
 
-Write-Host $directoryPath
-Write-Host $identityUtilitiesPath
-
 Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     Context 'Happy Path' {
         InModuleScope Install-IdPSS-Utilities {
@@ -62,6 +59,7 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
     }
 
     Context 'Azure AD Errors Creating Secrets' {
+        InModuleScope Install-IdPSS-Utilities {
         It 'Should retry before failing when creating a secret' {
             $enc = [system.Text.Encoding]::UTF8
             $mockResp = @{
@@ -72,6 +70,7 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             Mock -CommandName New-AzureADApplicationPasswordCredential -MockWith { throw }
             Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith { return $mockResp }
             Mock -CommandName Remove-AzureADApplicationPasswordCredential -MockWith {}
+            Mock -CommandName Get-AzureADApplicationPasswordCredential -MockWith {}
             Mock -CommandName Start-Sleep {}
             Mock -CommandName Write-DosMessage {}
             Mock -CommandName Write-Host {}
@@ -80,6 +79,7 @@ Describe 'Get-FabricAzureADSecret' -Tag 'Unit' {
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" } -Times 1 -Exactly
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Warning" } -Times 4 -Exactly
         }
+      }
     }
     Context 'Azure AD Errors Removing Secrets' {
         InModuleScope Install-IdPSS-Utilities {

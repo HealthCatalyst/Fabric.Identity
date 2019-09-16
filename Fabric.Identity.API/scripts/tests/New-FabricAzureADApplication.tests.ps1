@@ -33,6 +33,7 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             }
         )
     }
+    InModuleScope Install-IdPSS-Utilities {
     Context 'New Application' {
         It 'should create a new Azure application' {
             Mock -CommandName Get-AzureADApplication {}
@@ -64,4 +65,5 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             Assert-MockCalled -CommandName Set-AzureADApplication -Times 1 -Exactly
         }
     }
+  }
 }

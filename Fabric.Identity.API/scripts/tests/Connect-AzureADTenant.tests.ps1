@@ -14,6 +14,7 @@ Describe 'Connect-AzureADTenant' -Tag 'Unit' {
         $password = ConvertTo-SecureString "SecretPassword" -AsPlainText -Force
         $credentials = New-Object System.Management.Automation.PSCredential ("username", $password)
     }
+    InModuleScope Install-IdPSS-Utilities {
     Context 'Valid Credentials' {
         It 'should connect correctly' {
             Mock -CommandName Connect-AzureAD {}
@@ -28,4 +29,5 @@ Describe 'Connect-AzureADTenant' -Tag 'Unit' {
             Assert-MockCalled -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Error" -and $Message.StartsWith("Could not sign into tenant") } -Times 1 -Exactly
         }
     }
+  }
 }
