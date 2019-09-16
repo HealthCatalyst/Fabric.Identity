@@ -250,10 +250,10 @@ function Confirm-Credentials([PSCredential] $credential){
 function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
-        $cspKeyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
-        $cngKeyFolder = "C:\programdata\microsoft\crypto\Keys"
+        $cspKeyFolder = "$env:ProgramData\microsoft\crypto\rsa\machinekeys"
+        $cngKeyFolder = "$env:ProgramData\microsoft\crypto\Keys"
 
-        $privateKey = Get-IdentityRSAPrivateKey -certificate $certificate
+        $privateKey = Get-IdentityRSAPrivateKey -certificate $signingCert
         $keyname = $privateKey.Key.UniqueName
 
         $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
@@ -270,7 +270,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
         }
 
         $acl = Get-Acl $cspKeyPath
-        $acl.AddAccessRule($keyPath)
+        $acl.AddAccessRule($allowRule)
         Set-Acl $keyPath $acl -ErrorAction Stop
         Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
     }catch{
