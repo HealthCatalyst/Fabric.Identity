@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-AppInsightsKey'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -15,7 +18,7 @@ Describe 'Get-AppInsightsKey'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath "install.config" -scope "identity" -quiet $true
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath $testInstallFileLoc -scope "identity" -quiet $true
 
                 # Assert
                 $appInsightsKey | Should -Be "123456"
@@ -33,7 +36,7 @@ Describe 'Get-AppInsightsKey'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
 
                 # Act
-                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath "install.config" -scope "identity" -quiet $false
+                $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey "123456" -installConfigPath $testInstallFileLoc -scope "identity" -quiet $false
 
                 # Assert
                 $appInsightsKey | Should -Be "567890"

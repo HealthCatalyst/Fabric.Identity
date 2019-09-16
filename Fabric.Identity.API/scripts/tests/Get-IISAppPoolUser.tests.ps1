@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -17,7 +20,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath "install.config" -scope "identity"
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath $testInstallFileLoc -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be "fabric\test.user"
@@ -39,7 +42,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
                 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $credential -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath "install.config" -scope "identity"
+                $iisUser = Get-IISAppPoolUser -credential $credential -appName "identity" -storedIisUser "fabric\test.user" -installConfigPath $testInstallFileLoc -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be $userName
@@ -66,7 +69,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith { }
 
                 # Act
-                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser $userName -installConfigPath "install.config" -scope "identity"
+                $iisUser = Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser $userName -installConfigPath $testInstallFileLoc -scope "identity"
 
                 # Assert
                 $iisUser.UserName | Should -Be $userName
@@ -81,7 +84,7 @@ Describe 'Get-IISAppPoolUser' -Tag 'Unit'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { $null }
 
                 # Act
-                { Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric/test.user" -installConfigPath "install.config" -scope "identity"} | Should -Throw
+                { Get-IISAppPoolUser -credential $null -appName "identity" -storedIisUser "fabric/test.user" -installConfigPath $testInstallFileLoc -scope "identity"} | Should -Throw
             }
         }
     }

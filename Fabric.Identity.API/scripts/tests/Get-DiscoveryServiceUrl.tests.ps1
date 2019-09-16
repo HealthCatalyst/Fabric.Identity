@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-DiscoveryServiceUrl'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -16,7 +19,7 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath "install.config" -quiet $true
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath $testInstallFileLoc -quiet $true
 
                 # Assert
                 $discoUrl | Should -Be "https://host.fabric.local/DiscoveryService/v1"
@@ -36,7 +39,7 @@ Describe 'Get-DiscoveryServiceUrl'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath "install.config" -quiet $false
+                $discoUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl "https://host.fabric.local/DiscoveryService/v1" -installConfigPath $testInstallFileLoc -quiet $false
 
                 # Assert
                 $discoUrl | Should -Be "https://otherhost.fabric.local/DiscoveryService/v1"

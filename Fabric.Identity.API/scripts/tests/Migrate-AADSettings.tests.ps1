@@ -6,10 +6,13 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 # Need to use global variables in Pester when abstracting BeforeEach and AfterEach Setup Code
 # $TestDrive is not accessible in a Global variable, only in the Describe BeforeEach and AfterEach
-$Global:testInstallFile = 'install.config'
-$Global:testAzureFile = 'testAzure.config'
+$Global:testAzureFile = "testAzure.config"
+$Global:testAzureFileLoc = "$PSScriptRoot\$testAzureFile"
 $Global:installConfigPath
 $Global:azureConfigPath
 $Global:nodesToSearch = @("tenants","replyUrls","claimsIssuerTenant","allowedTenants","registeredApplications", "azureSecretName")
@@ -23,15 +26,11 @@ Describe 'Migrate-AADSettings' -Tag 'Unit'{
         $doesAzureFileExist = Test-Path $azureConfigPath
         if (!$doesInstallFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testInstallFile" | Out-File $installConfigPath
+        Get-Content $testInstallFileLoc | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testAzureFile" | Out-File $azureConfigPath
+        Get-Content $testAzureFileLoc | Out-File $azureConfigPath
         }
     }
     AfterEach{
@@ -114,26 +113,25 @@ Describe 'Migrate-AADSettings' -Tag 'Unit'{
         }
     }
 }
+
 Describe 'Migrate-AADSettings' -Tag 'Integration'{
     BeforeEach{
         # Arrange 
         # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
+        
         $Global:testInstallFile = "testInstall.config"
+        $Global:testInstallFileLoc = "$PSScriptRoot\testInstall.config"
         $Global:installConfigPath = "$($TestDrive)\$($testInstallFile)"
         $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
         $doesInstallFileExist = Test-Path $installConfigPath
         $doesAzureFileExist = Test-Path $azureConfigPath
         if (!$doesInstallFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testInstallFile" | Out-File $installConfigPath
+        Get-Content "$testInstallFileLoc" | Out-File $installConfigPath
         }
         if (!$doesAzureFileExist)
         {
-        $dir = ".\"
-        Set-Location $dir
-        Get-Content "$dir\$testAzureFile" | Out-File $azureConfigPath
+        Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
         }
     }
     AfterEach{
@@ -188,10 +186,11 @@ Describe 'Migrate-AADSettings' -Tag 'Integration'{
             }
         }
     }
+    Remove-Variable testInstallFile -Scope Global
+    Remove-Variable testAzureFile -Scope Global
+    Remove-Variable testInstallFileLoc -Scope Global
+    Remove-Variable testAzureFileLoc -Scope Global
+    Remove-Variable installConfigPath -Scope Global
+    Remove-Variable azureConfigPath -Scope Global
+    Remove-Variable nodesToSearch -Scope Global
 }
-Remove-Variable testInstallFile -Scope Global
-Remove-Variable testAzureFile -Scope Global
-Remove-Variable installConfigPath -Scope Global
-Remove-Variable azureConfigPath -Scope Global
-Remove-Variable nodesToSearch -Scope Global
-

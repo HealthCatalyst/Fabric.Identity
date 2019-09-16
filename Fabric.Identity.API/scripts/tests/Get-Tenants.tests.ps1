@@ -8,6 +8,9 @@ $directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
 $identityUtilitiesPath = Join-Path -Path $directoryPath -ChildPath "/Install-Identity-Utilities.psm1"
 Import-Module $identityUtilitiesPath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-Tenants' -Tag 'Unit' {
     InModuleScope Install-IdPSS-Utilities {
     Context 'Tenants exists in config' {

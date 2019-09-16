@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-MetadataDatabaseConnectionString'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -16,7 +19,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act
-                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $true
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "EDWAdmin"
@@ -33,7 +36,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act/Assert
-                {Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true } | Should -Throw
+                {Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $true } | Should -Throw
             }
         }
     }
@@ -47,7 +50,7 @@ Describe 'Get-MetadataDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "EDWAdmin2" }
 
                 # Act
-                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $false
+                $dbconnectionString = Get-MetadataDatabaseConnectionString -metadataDbName "EDWAdmin" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $false
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "EDWAdmin2"

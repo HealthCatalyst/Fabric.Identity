@@ -8,7 +8,7 @@ Import-Module $targetFilePath -Force
 
 Describe 'Get-WebDeployPackagePath'{
     Context 'Standalone'{
-        InModuleScope Install-Discovery-Utilities{
+        InModuleScope Install-Identity-Utilities{
             It 'Should return the standalone path'{
                 # Arrange
                 $standAlonePath = ".\Catalyst.DiscoveryService.zip"
@@ -17,7 +17,7 @@ Describe 'Get-WebDeployPackagePath'{
                 Mock Test-Path -ParameterFilter { $Path -eq $standAlonePath } { return $true }
 
                 # Act
-                $path = Get-WebDeployPackagePath
+                $path = Get-WebDeployPackagePath -standalonePath $standAlonePath -installerPath $resolvedPath
 
                 # Assert
                 $path | Should -Be $resolvedPath
@@ -25,7 +25,7 @@ Describe 'Get-WebDeployPackagePath'{
         }
     }
     Context 'Standalone'{
-        InModuleScope Install-Discovery-Utilities{
+        InModuleScope Install-Identity-Utilities{
             It 'Should return the installer path'{
                 # Arrange
                 $installerPath = "..\WebDeployPackages\Catalyst.DiscoveryService.zip"
@@ -34,7 +34,7 @@ Describe 'Get-WebDeployPackagePath'{
                 Mock Test-Path -ParameterFilter { $Path -eq $installerPath } { return $true }
 
                 # Act
-                $path = Get-WebDeployPackagePath
+                $path = Get-WebDeployPackagePath -standalonePath $resolvedPath -installerPath $installerPath
 
                 # Assert
                 $path | Should -Be $resolvedPath
@@ -42,13 +42,15 @@ Describe 'Get-WebDeployPackagePath'{
         }
     }
     Context 'Failure'{
-        InModuleScope Install-Discovery-Utilities{
+        InModuleScope Install-Identity-Utilities{
             It 'Should throw an exception'{
                 # Arrange
+                $installerPath = "..\WebDeployPackages\Catalyst.DiscoveryService.zip"
+                $resolvedPath = "C:\Installer\WebDeployPackages\Catalyst.DiscoveryService.zip"
                 Mock Test-Path { return $false }
 
                 # Act/Assert
-                { Get-WebDeployPackagePath } | Should -Throw
+                { Get-WebDeployPackagePath -standalonePath $resolvedPath -installerPath $installerPath } | Should -Throw
             }
         }
     }

@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-IdentityDatabaseConnectionString'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -16,7 +19,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act
-                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $true
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "identity"
@@ -33,7 +36,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith {}
 
                 # Act/Assert
-                {Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $true } | Should -Throw
+                {Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $true } | Should -Throw
             }
         }
     }
@@ -47,7 +50,7 @@ Describe 'Get-IdentityDatabaseConnectionString'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Read-Host -MockWith { "identity2" }
 
                 # Act
-                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath "install.config" -quiet $false
+                $dbconnectionString = Get-IdentityDatabaseConnectionString -identityDbName "identity" -sqlServerAddress "host.fabric.local" -installConfigPath $testInstallFileLoc -quiet $false
 
                 # Assert
                 $dbConnectionString.DbName | Should -Be "identity2"

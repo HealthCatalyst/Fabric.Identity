@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-ApplicationEndpoint'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -16,7 +19,7 @@ Describe 'Get-ApplicationEndpoint'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath "install.config" -scope "identity" -quiet $true
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath $testInstallFileLoc -scope "identity" -quiet $true
 
                 # Assert
                 $appEndpoint | Should -Be "https://host.fabric.local/identity"
@@ -36,7 +39,7 @@ Describe 'Get-ApplicationEndpoint'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath "install.config" -scope "identity" -quiet $false
+                $appEndpoint = Get-ApplicationEndpoint -appName "identity" -applicationEndpoint "https://host.fabric.local/identity" -installConfigPath $testInstallFileLoc -scope "identity" -quiet $false
 
                 # Assert
                 $appEndpoint | Should -Be "https://otherhost.fabric.local/identity"

@@ -6,6 +6,9 @@ Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 
+$Global:testInstallFile = "install.config"
+$Global:testInstallFileLoc = "$PSScriptRoot\$testInstallFile"
+
 Describe 'Get-SqlServerAddress'{
     Context 'Quiet Mode'{
         InModuleScope Install-Identity-Utilities{
@@ -15,7 +18,7 @@ Describe 'Get-SqlServerAddress'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
                 
                 # Act
-                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath "install.config" -quiet $true
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath $testInstallFileLoc -quiet $true
 
                 # Assert
                 $sqlServerAddress | Should -Be "somemachine.fabric.local"
@@ -33,7 +36,7 @@ Describe 'Get-SqlServerAddress'{
                 Mock -ModuleName Install-Identity-Utilities -CommandName Add-InstallationSetting -MockWith {}
 
                 # Act
-                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath "install.config" -quiet $false
+                $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress "somemachine.fabric.local" -installConfigPath $testInstallFileLoc -quiet $false
 
                 # Assert
                 $sqlServerAddress | Should -Be "othermachine.fabric.local"

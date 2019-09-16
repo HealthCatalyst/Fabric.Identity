@@ -7,7 +7,7 @@ Write-Host $targetFilePath
 Import-Module $targetFilePath -Force
 
 Describe 'Confirm-DiscoveryConfig Unit Tests'{
-    InModuleScope Install-Discovery-Utilities{
+    InModuleScope Install-Identity-Utilities{
         It 'Should validate valid discovery config settings'{
             # Arrange
             $discoveryConfig = @{ appName = "DiscoveryService"; appPoolName = "DiscoveryService"; siteName = "Default Web Site"}

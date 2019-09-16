@@ -7,23 +7,25 @@ Write-Host $targetFilePath
 Import-Module $targetFilePath -Force
 
 Describe 'Test-DiscoveryService Unit Tests'{
+    InModuleScope Install-Identity-Utilities{
     Context 'Success'{
         It 'Should succeed and not throw an exception'{
             # Arrange
-            Mock Invoke-RestMethod {} -ModuleName Install-Discovery-Utilities
+            Mock Invoke-RestMethod {}
 
             # Act/Assert
             {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Not -Throw
-            Assert-MockCalled Invoke-RestMethod -ModuleName Install-Discovery-Utilities -Times 1 -ParameterFilter { $Uri -eq "https://host.domain.local/DiscoveryService/v1/Services" }
+            Assert-MockCalled Invoke-RestMethod -Times 1 -ParameterFilter { $Uri -eq "https://host.domain.local/DiscoveryService/v1/Services" }
         }
-    }
+      }
     Context 'Generic Exception'{
         It 'Should fail and throw an exception'{
             # Arrange
-            Mock Invoke-RestMethod { throw "bad stuff happened" } -ModuleName Install-Discovery-Utilities
+            Mock Invoke-RestMethod { throw "bad stuff happened" } 
 
             # Act/Assert
             {Test-DiscoveryService -discoveryBaseUrl "https://host.domain.local/DiscoveryService" } | Should -Throw
         }
     }
+  }
 }

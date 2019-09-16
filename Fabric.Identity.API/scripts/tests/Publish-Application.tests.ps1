@@ -11,7 +11,7 @@ Describe 'Publish-Application'{
         InModuleScope Install-Identity-Utilities{
             It 'Should install app and return version and directory'{
                 # Arrange
-                $userName = "fabric\test.user"
+                $userName = "Everyone"
                 $password = ConvertTo-SecureString "supersecretpassword" -AsPlainText -Force
                 $credential = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $userName, $password
                 $expectedVersion = "1.4.12345"
@@ -20,7 +20,6 @@ Describe 'Publish-Application'{
                 $iisUser = @{UserName = $userName; Credential = $credential }
 
                 
-                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $true }
                 Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
@@ -33,7 +32,6 @@ Describe 'Publish-Application'{
                 # Assert
                 $publishedApp.version = "1.4.12345"
                 $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 0 -Exactly
@@ -54,8 +52,6 @@ Describe 'Publish-Application'{
                 $site = @{Name="Default Web Site"; physicalPath = "C:\inetpub\wwwroot"}
                 $iisUser = @{UserName = $userName; Credential = $credential }
 
-                
-                Mock -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Test-AppPoolExistsAndRunsAsUser -MockWith { $false }
                 Mock -ModuleName Install-Identity-Utilities -CommandName New-App -MockWith {}
                 Mock -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -MockWith {}
@@ -68,7 +64,6 @@ Describe 'Publish-Application'{
                 # Assert
                 $publishedApp.version = "1.4.12345"
                 $publishedApp.applicationDirectory = "C:\inetpub\wwwroot\identity"
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppRoot -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-App -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Publish-WebSite -Times 1 -Exactly
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName New-AppPool -Times 1 -Exactly
