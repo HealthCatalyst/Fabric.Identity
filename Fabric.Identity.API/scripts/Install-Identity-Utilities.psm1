@@ -2000,6 +2000,14 @@ function Test-IdentityEncryptionCertificateValid {
     return $encryptionCertificate.NotAfter -gt $today
 }
 
+function Remove-IdentityEncryptionCertificate {
+    param(
+        [string] $encryptionCertificateThumbprint
+    )
+    $cert = Get-Certificate $encryptionCertificateThumbprint
+    $cert | Remove-Item
+}
+
 function Invoke-ResetFabricInstallerSecret {
     param (
         [Parameter(Mandatory=$true)] 
