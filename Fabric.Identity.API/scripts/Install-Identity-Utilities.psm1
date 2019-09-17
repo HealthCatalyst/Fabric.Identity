@@ -2000,12 +2000,28 @@ function Test-IdentityEncryptionCertificateValid {
     return $encryptionCertificate.NotAfter -gt $today
 }
 
-function Remove-IdentityEncryptionCertificate {
-    param(
-        [string] $encryptionCertificateThumbprint
+function Invoke-ResetFabricInstallerSecret {
+    param (
+        [Parameter(Mandatory=$true)] 
+        [string] $identityDbConnectionString,
+        [string] $fabricInstallerSecret
     )
-    $cert = Get-Certificate $encryptionCertificateThumbprint
-    $cert | Remove-Item
+
+    if ([string]::IsNullOrEmpty($fabricInstallerSecret)) {
+        $fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
+    }
+    Write-Host "New Installer secret: $fabricInstallerSecret"
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
+    $query = "DECLARE @ClientID int;
+              
+              SELECT @ClientID = Id FROM Clients WHERE ClientId = 'fabric-installer';
+
+              UPDATE ClientSecrets
+              SET Value = @value
+              WHERE ClientId = @ClientID"
+    Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+    return $fabricInstallerSecret
 }
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
@@ -2059,3 +2075,4 @@ Export-ModuleMember Remove-FilePermissions
 Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
 Export-ModuleMember Remove-IdentityEncryptionCertificate
+Export-ModuleMember Invoke-ResetFabricInstallerSecret
