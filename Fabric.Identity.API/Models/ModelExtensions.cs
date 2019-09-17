@@ -153,12 +153,6 @@ namespace Fabric.Identity.API.Models
 
         public static IS4.ApiResource ToIs4ApiResource(this ApiResource apiResource)
         {
-            List<IS4.Scope> scopes = null;
-            var scope = apiResource.Scopes;
-            if (scope != null)
-            {
-                scopes = apiResource.Scopes.Select(s => s.ToIs4Scope()).ToList();
-            }
             var newResource = new IS4.ApiResource
             {
                 Enabled = apiResource.Enabled,
@@ -166,7 +160,7 @@ namespace Fabric.Identity.API.Models
                 DisplayName = apiResource.DisplayName,
                 Description = apiResource.Description,
                 UserClaims = new List<string>(apiResource.UserClaims),
-                Scopes = scopes
+                Scopes = apiResource.Scopes.Select(s => s.ToIs4Scope()).ToList()
             };
 
             return newResource;
