@@ -2007,10 +2007,10 @@ function Invoke-ResetFabricInstallerSecret {
         [string] $fabricInstallerSecret
     )
 
+    Write-DosMessage -Level "Information" -Message "Resetting Fabric-Installer secret"
     if ([string]::IsNullOrEmpty($fabricInstallerSecret)) {
         $fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
     }
-    Write-Host "New Installer secret: $fabricInstallerSecret"
     $sha = [System.Security.Cryptography.SHA256]::Create()
     $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
     $query = "DECLARE @ClientID int;
