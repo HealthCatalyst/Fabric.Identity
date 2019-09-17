@@ -2,6 +2,7 @@ param(
     [string] $targetFilePath = "$PSScriptRoot\..\Install-IdPSS-Utilities.psm1"
 )
 
+Write-Host $targetFilePath
 # Force re-import to pick up latest changes
 Import-Module $targetFilePath -Force
 $directoryPath = [System.IO.Path]::GetDirectoryName($targetFilePath)
