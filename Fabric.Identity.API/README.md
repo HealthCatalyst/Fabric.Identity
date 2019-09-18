@@ -26,7 +26,7 @@ If you want to debug Fabric Identity API
   to be `http://localhost/IdentityDev`
 - In VS 2017 ensure the startup project is `Fabric.Identity.API` and the debug profile is set to `IIS`.
 - In VS 2017 begin debugging by pressing `F5`
-- In IIS, a new web application will be created `IdentityDev`.  You will need to change the app pool; I suggest changing it the the same one as Identity.
+- In IIS, a new web application will be created `IdentityDev`.  You will need to change the app pool; I suggest changing it to the same one as Identity.
 - In the new web application `IdentityDev` add the following `environmentVariable` to the web.config 
 `<environmentVariable name="IdentityServerConfidentialClientSettings__ClientSecret" value="secret" />`
 - From time to time, the debugger set to `IIS` will remove the https binding.  If you notice things not working, check that out.
