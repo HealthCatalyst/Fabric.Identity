@@ -269,7 +269,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
             Write-DosMessage -Level "Fatal" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
         }
 
-        $acl = Get-Acl $cspKeyPath
+        $acl = Get-Acl $keyPath
         $acl.AddAccessRule($allowRule)
         Set-Acl $keyPath $acl -ErrorAction Stop
         Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
@@ -1982,13 +1982,23 @@ function Remove-FilePermissions
   $removePermissionsAcl.RemoveAccessRule($accessRule)
   $removePermissionsAcl | Set-Acl $filePath
 }
-    
+
 function New-IdentityEncryptionCertificate {
     param(
         [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
-        [string] $certStoreLocation = "Cert:\LocalMachine\My"
+        [string] $certStoreLocation = "Cert:\LocalMachine\My",
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
     )
-    $cert = New-SelfSignedCertificate -Type Custom -KeySpec None -Subject $subject -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
+    $cert = New-SelfSignedCertificate `
+        -Type Custom `
+        -KeySpec None `
+        -Subject $subject `
+        -KeyUsage DataEncipherment `
+        -KeyAlgorithm RSA `
+        -KeyLength 2048 `
+        -CertStoreLocation $certStoreLocation `
+        -FriendlyName $friendlyName
+
     return $cert
 }
 
@@ -1996,16 +2006,29 @@ function Test-IdentityEncryptionCertificateValid {
     param(
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCertificate
     )
+    # Update a month before
     $today = Get-Date
     return $encryptionCertificate.NotAfter -gt $today
 }
 
 function Remove-IdentityEncryptionCertificate {
     param(
-        [string] $encryptionCertificateThumbprint
+        [string] $encryptionCertificateThumbprint,
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
     )
-    $cert = Get-Certificate $encryptionCertificateThumbprint
-    $cert | Remove-Item
+
+    try {
+        $cert = Get-Certificate $encryptionCertificateThumbprint
+    }
+    catch [System.Management.Automation.ItemNotFoundException] {
+        Write-DosMessage -Level "Information" -Message "Certificate with thumbprint '$encryptionCertificateThumbprint' was not found."
+        return
+    }
+
+    if($null -ne $cert -and $null -ne $cert.FriendlyName -and $cert.FriendlyName.Contains("$friendlyName")) {
+        Write-DosMessage -Level "Information" -Message "Removing Identity encryption certificate"
+        $cert | Remove-Item
+    }
 }
 
 function Invoke-ResetFabricInstallerSecret {
