@@ -9,8 +9,7 @@ The Fabric Identity API depends on having the latest version of DOS installed pr
 - Update `ConnectionStrings.IdentityDatabase` to be `Server=localhost` instead of Server=(localdb)\\mssqllocaldb
 - Update `IdentityServerConfidentialClientSettings.Authority` to be `http://localhost/IdentityDev`
 - Update `IdentityProviderSearchSettings.BaseUrl` setting to point at your installed version of Fabric.IdentityProviderSearchService, e.g. `https://host.domain.local/identity`. If you are debugging Fabric.IdentityProviderSearchService, then the debug version, `http://localhost/IdPSSDev`. Make sure to walk through the `Readme.md` for Fabric.IdentityProviderSearchService for the correct setup, then start debugging Fabric.IdentityProviderSearchService in Local IIS mode.
-- In the `Metadata` database (EDWAdmin) `CatalystAdmin.DiscoveryServiceBASE` table, change the `ServiceUrl` for ServiceNM `IdentityService`
-  to be `http://localhost/IdentityDev`
+- In the `Metadata` database (EDWAdmin) `CatalystAdmin.DiscoveryServiceBASE` table, change the `ServiceUrl` for ServiceNM `IdentityService` to be `http://localhost/IdentityDev`
 - In VS 2017 ensure the startup project is `Fabric.Identity.API` and the debug profile is set to `IIS`.
 - In VS 2017 begin debugging by pressing `F5`
 - In IIS, a new web application will be created `IdentityDev`.  You will need to change the app pool; I suggest changing it to the same one as Identity.
