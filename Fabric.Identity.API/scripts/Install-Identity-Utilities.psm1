@@ -2091,8 +2091,8 @@ function Get-IdentityEncryptionCertificate {
 
 function Get-IdentityFabricInstallerSecret {
     param (
-        [string] encryptionCertificateThumbprint,
-        [string] identityDbConnectionString
+        [string] $encryptionCertificateThumbprint,
+        [string] $identityDbConnectionString
     )
 
     $secretNoEnc = $commonInstallSettings.fabricInstallerSecret -replace "!!enc!!:"
