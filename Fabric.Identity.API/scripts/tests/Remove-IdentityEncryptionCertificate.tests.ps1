@@ -47,7 +47,7 @@ Describe 'Test-IdentityEncryptionCertificate' {
 
                 # Assert
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -Times 1 -Exactly -Scope It
-                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Certificate with thumbprint") } -Times 1 -Exactly -Scope It
+                Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Write-DosMessage -ParameterFilter { $Level -and $Level -eq "Information" -and $Message.StartsWith("Certificate with thumbprint '$thumbPrint' was not found") } -Times 1 -Exactly -Scope It
                 Assert-MockCalled -ModuleName Install-Identity-Utilities -CommandName Remove-Item -Times 0 -Exactly -Scope It
             }
         }
