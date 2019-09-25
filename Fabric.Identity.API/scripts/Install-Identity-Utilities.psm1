@@ -2091,15 +2091,18 @@ function Get-IdentityEncryptionCertificate {
 
 function Get-IdentityFabricInstallerSecret {
     param (
+        [string] $fabricInstallerSecret,
         [string] $encryptionCertificateThumbprint,
         [string] $identityDbConnectionString
     )
 
-    $secretNoEnc = $commonInstallSettings.fabricInstallerSecret -replace "!!enc!!:"
-    $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
-    if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
-        # create new secret if no secret or unable to decrypt
-        $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+    if ($fabricInstallerSecret.StartsWith("!!enc!!:")) {
+        $secretNoEnc = $fabricInstallerSecret -replace "!!enc!!:"
+        $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+        if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
+            # create new secret if no secret or unable to decrypt
+            $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+        }
     }
 
     return $fabricInstallerSecret
