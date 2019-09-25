@@ -2054,6 +2054,58 @@ function Invoke-ResetFabricInstallerSecret {
     return $fabricInstallerSecret
 }
 
+function Get-CertWrapperTempName {
+    param (
+        [HashTable] $installSettings,
+        [string] $configStorePath,
+        [switch] $validate
+    )
+
+    try {
+        $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+    }
+    catch {
+        # Probably make this better.., add better messages? repeating code here..
+        Write-DosMessage -Level "Information" -Message "Error locating the provided certificate '$($encryptionCertificate.Thumbprint)'. Removing the certificate and generating a new certificate."
+        Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+        $encryptionCertificate = New-IdentityEncryptionCertificate
+    }
+
+    # Create new cert if current is expired/expiring soon, to be best, this would need to be changed pulled out or called later..
+    if ($validate) {
+        $certIsValid = Test-IdentityEncryptionCertificateValid -encryptionCertificate $encryptionCertificate
+        if ($certIsValid -eq $false) {
+            Write-DosMessage -Level "Information" -Message "The provided certificate '$($encryptionCertificate.Thumbprint)' is expired. Removing the certificate and generating a new certificate."
+            Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+    }
+
+    # update install.config
+    # Assumes both encryption and signing cert are the same certificate
+    Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+
+    return $encryptionCertificate
+}
+
+function Get-SecretWrapperTempName {
+    param (
+        [string] encryptionCertificateThumbprint,
+        [string] identityDbConnectionString
+    )
+
+    $secretNoEnc = $commonInstallSettings.fabricInstallerSecret -replace "!!enc!!:"
+    $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+    if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
+        # create new secret if no secret or unable to decrypt
+        $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+    }
+
+    return $fabricInstallerSecret
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -2106,3 +2158,5 @@ Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
 Export-ModuleMember Remove-IdentityEncryptionCertificate
 Export-ModuleMember Invoke-ResetFabricInstallerSecret
+Export-ModuleMember Get-SecretWrapperTempName
+Export-ModuleMember Get-CertWrapperTempName
