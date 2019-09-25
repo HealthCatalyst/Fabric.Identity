@@ -74,16 +74,16 @@ $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $instal
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 
 # Secret/certificate logic
-$encryptionCertificate = Get-CertWrapperTempName `
+$encryptionCertificate = Get-IdentityEncryptionCertificate `
     -installSettings $commonInstallSettings `
     -configStorePath $configStore.Path
 
-$fabricInstallerSecret = Get-SecretWrapperTempName `
+$fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
     -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
     -identityDbConnectionString $identityDatabase.identityDbConnectionString
 
 # Call second time to clean up if cert is invalid
-$encryptionCertificate = Get-CertWrapperTempName `
+$encryptionCertificate = Get-IdentityEncryptionCertificate `
     -installSettings $commonInstallSettings `
     -configStorePath $configStore.Path `
     -validate
