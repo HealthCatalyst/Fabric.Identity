@@ -73,34 +73,24 @@ $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonInstallSetting
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 
-# Switch to DosInstallUtilities later, testing with Fabric-Install-Utilities locally
-try {
-    $encryptionCertificate = Get-Certificate -certificateThumbprint $commonInstallSettings.encryptionCertificateThumbprint
-    $fabricInstallerSecret = Get-DecryptedString -encryptionCertificate $encryptionCertificate -encryptedString $commonInstallSettings.fabricInstallerSecret
-}
-catch {
-    # create new cert/secret if anything bad happens
-    Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $commonInstallSettings.encryptionCertificateThumbprint
-    $encryptionCertificate = New-IdentityEncryptionCertificate
-    $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDatabase.DbConnectionString
-}
+# Secret/certificate logic
+$encryptionCertificate = Get-CertWrapperTempName `
+    -installSettings $commonInstallSettings `
+    -configStorePath $configStore.Path
 
-# Create new cert if current is expired/expiring soon
-$certIsValid = Test-IdentityEncryptionCertificateValid -encryptionCertificate $encryptionCertificate
-if ($certIsValid -eq $false) {
-    Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $commonInstallSettings.encryptionCertificateThumbprint
-    $encryptionCertificate = New-IdentityEncryptionCertificate
-}
+$fabricInstallerSecret = Get-SecretWrapperTempName `
+    -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
+    -identityDbConnectionString $identityDatabase.identityDbConnectionString
+
+# Call second time to clean up if cert is invalid
+$encryptionCertificate = Get-CertWrapperTempName `
+    -installSettings $commonInstallSettings `
+    -configStorePath $configStore.Path `
+    -validate
 
 # Wait until potentially creating new certificate to add permissions to private key
-$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
+$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStorePath -scope $installSettingsScope
 Add-PermissionToPrivateKey $iisUser.UserName $encryptionCertificate read
-
-# update install.config
-# Assumes both encryption and signing cert are the same certificate
-Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStore.Path | Out-Null
-Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStore.Path | Out-Null
-Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $encryptionCertificate.Thumbprint $configStore.Path | Out-Null
 
 if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonInstallSettings.discoveryService -installConfigPath $configStore.Path -quiet $quiet
