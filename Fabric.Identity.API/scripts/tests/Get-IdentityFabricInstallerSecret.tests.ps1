@@ -44,6 +44,22 @@ Import-Module $targetFilePath -Force
                 $decryptedSecret | Should -eq $fabricInstallerSecret
                 Assert-MockCalled Unprotect-DosInstallerSecret -Times 0 -Scope 'It'
             }
+
+            It 'Should create a new secret when no secret exists' {
+                # Arrange
+                $fabricInstallerSecret
+                $newSecret = "new secret"
+                Mock -CommandName  Invoke-ResetFabricInstallerSecret { return $newSecret }
+
+                # Act
+                $decryptedSecret = Get-IdentityFabricInstallerSecret `
+                    -fabricInstallerSecret $fabricInstallerSecret `
+                    -encryptionCertificateThumbprint $encryptionCertificateThumbprint `
+                    -identityDbConnectionString $identityDbConnectionString
+
+                # Assert
+                $decryptedSecret | Should -Be $newSecret
+            }
         }
         Context 'Unhappy Paths' {
             BeforeAll {
