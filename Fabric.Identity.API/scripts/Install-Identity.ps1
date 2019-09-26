@@ -79,7 +79,7 @@ $encryptionCertificate = Get-IdentityEncryptionCertificate `
     -configStorePath $configStore.Path
 
 $fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
-    -fabricInstallerSecret $commonInstallSettings.fabricInstallerSecret
+    -fabricInstallerSecret $commonInstallSettings.fabricInstallerSecret `
     -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
     -identityDbConnectionString $identityDatabase.identityDbConnectionString
 
