@@ -373,7 +373,7 @@ function Get-XMLChildNode {
         [string] $childNodeAttributeSetting
     )
     # Validate XML
-    $xmlValidation = Test-XMLFile -xmlFilePath $installConfigPath
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
     if($xmlValidation){
      $installationConfig = [xml](Get-Content $installConfigPath)
      $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
