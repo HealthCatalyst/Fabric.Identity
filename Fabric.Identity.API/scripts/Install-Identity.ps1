@@ -84,13 +84,14 @@ $fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
     -identityDbConnectionString $identityDatabase.identityDbConnectionString
 
 # Call second time to clean up if cert is invalid
+# This allows for decrypting with old certificate if it is expired
 $encryptionCertificate = Get-IdentityEncryptionCertificate `
     -installSettings $commonInstallSettings `
     -configStorePath $configStore.Path `
     -validate
 
 # Wait until potentially creating new certificate to add permissions to private key
-$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStorePath -scope $installSettingsScope
+$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
 Add-PermissionToPrivateKey $iisUser.UserName $encryptionCertificate read
 
 if(!$noDiscoveryService){
