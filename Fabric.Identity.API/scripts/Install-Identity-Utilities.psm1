@@ -2008,6 +2008,30 @@ function Remove-IdentityEncryptionCertificate {
     $cert | Remove-Item
 }
 
+function Invoke-ResetFabricInstallerSecret {
+    param (
+        [Parameter(Mandatory=$true)] 
+        [string] $identityDbConnectionString,
+        [string] $fabricInstallerSecret
+    )
+
+    Write-DosMessage -Level "Information" -Message "Resetting Fabric-Installer secret"
+    if ([string]::IsNullOrEmpty($fabricInstallerSecret)) {
+        $fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
+    }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
+    $query = "DECLARE @ClientID int;
+              
+              SELECT @ClientID = Id FROM Clients WHERE ClientId = 'fabric-installer';
+
+              UPDATE ClientSecrets
+              SET Value = @value
+              WHERE ClientId = @ClientID"
+    Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+    return $fabricInstallerSecret
+}
+
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
 Export-ModuleMember Get-IISWebSiteForInstall
@@ -2059,3 +2083,4 @@ Export-ModuleMember Remove-FilePermissions
 Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
 Export-ModuleMember Remove-IdentityEncryptionCertificate
+Export-ModuleMember Invoke-ResetFabricInstallerSecret
