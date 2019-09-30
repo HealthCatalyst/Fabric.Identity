@@ -22,7 +22,7 @@ Import-Module $targetFilePath -Force
             It 'Should return an encryption certificate' {
                 # Arrange
                 Mock -CommandName Get-Certificate { return $testCert }
-                $installSettings = @{}
+                $installSettings = @{encryptionCertificateThumbprint = "some value"}
                 $configStorePath = "path"
 
                 # Act
@@ -46,11 +46,11 @@ Import-Module $targetFilePath -Force
                 Mock -CommandName Get-Certificate { return $testCert }
                 Mock -CommandName Test-IdentityEncryptionCertificateValid { return $false }
                 Mock -CommandName New-IdentityEncryptionCertificate { return $testCert }
-                $installSettings = @{}
+                $installSettings = @{encryptionCertificateThumbprint = "some value"}
                 $configStorePath = "path"
                 
                 # Act
-                $encCert =Get-IdentityEncryptionCertificate -installSettings $installSettings -configStorePath $configStorePath -validate
+                $encCert = Get-IdentityEncryptionCertificate -installSettings $installSettings -configStorePath $configStorePath -validate
 
                 # Assert
                 $encCert | Should -eq $testCert
@@ -64,6 +64,20 @@ Import-Module $targetFilePath -Force
                     -and $Message.StartsWith("The provided certificate")
                 }
                 Assert-MockCalled Add-InstallationSetting -Times 3 -Scope 'It'
+            }
+
+            It 'Should create a new certificate when no thumbprint is in the install.config' {
+                # Arrange
+                Mock -CommandName New-IdentityEncryptionCertificate { return $testCert }
+                $installSettings = @{encryptionCertificateThumbprint = ""}
+
+                # Act
+                $newCert = Get-IdentityEncryptionCertificate Get-IdentityEncryptionCertificate -installSettings $installSettings -configStorePath $configStorePath
+
+                # Assert
+                Assert-MockCalled New-IdentityEncryptionCertificate -Times 1 -Scope 'It'
+                Assert-MockCalled Add-InstallationSetting -Times 3 -Scope 'It'
+                $newCert | Should -Be $testCert
             }
         }
 
@@ -82,6 +96,7 @@ Import-Module $targetFilePath -Force
                 Mock -CommandName Get-Certificate { throw }
                 Mock -CommandName Remove-IdentityEncryptionCertificate { }
                 Mock -CommandName New-IdentityEncryptionCertificate { return $testCert }
+                $installSettings = @{encryptionCertificateThumbprint = "some value"}
     
                 # Act
                 $encCert = Get-IdentityEncryptionCertificate -installSettings $installSettings -configStorePath $configStorePath
