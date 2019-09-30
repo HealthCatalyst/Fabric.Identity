@@ -2062,7 +2062,12 @@ function Get-IdentityEncryptionCertificate {
     )
 
     try {
-        $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+        if([string]::IsNullOrWhitespace($installSettings.encryptionCertificateThumbprint)) {
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+        else {
+            $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+        }
     }
     catch {
         Write-DosMessage -Level "Information" -Message "Error locating the provided certificate '$($encryptionCertificate.Thumbprint)'. Removing the certificate and generating a new certificate."
