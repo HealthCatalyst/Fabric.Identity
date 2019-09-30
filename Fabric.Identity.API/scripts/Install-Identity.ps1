@@ -81,7 +81,7 @@ $encryptionCertificate = Get-IdentityEncryptionCertificate `
 $fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
     -fabricInstallerSecret $commonInstallSettings.fabricInstallerSecret `
     -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
-    -identityDbConnectionString $identityDatabase.identityDbConnectionString
+    -identityDbConnectionString $identityDatabase.DbConnectionString
 
 # Call second time to clean up if cert is invalid
 # This allows for decrypting with old certificate if it is expired
