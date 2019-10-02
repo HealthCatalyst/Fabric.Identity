@@ -18,8 +18,10 @@ using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
+using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -28,6 +30,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.IdentityModel.Logging;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -82,6 +85,8 @@ namespace Fabric.Identity.API
             var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings);
             var serilogEventSink = new SerilogEventSink(eventLogger);
 
+            IdentityModelEventSource.ShowPII = true;
+
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
             services.AddTransient<IHttpRequestMessageFactory>(serviceProvider => new HttpRequestMessageFactory(
@@ -123,6 +128,18 @@ namespace Fabric.Identity.API
                 RequireHttpsMetadata = false,
                 ApiName = identityServerApiSettings.ClientId
             });
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(o =>
+            {
+                o.Authority = identityServerApiSettings.Authority;
+                o.Audience = identityServerApiSettings.ClientId;
+                o.RequireHttpsMetadata = false;
+            }).AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
+
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
@@ -223,16 +240,12 @@ namespace Fabric.Identity.API
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseIdentityServer();
-            app.UseAzureIdentityProviderIfApplicable(_appConfig);
-
-            app.UseExternalIdentityProviders(_appConfig);
             app.UseStaticFiles();
             app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
-            var options = app.ApplicationServices.GetService<IdentityServerAuthenticationOptions>();
-            app.UseIdentityServerAuthentication(options);
+            app.UseAuthentication();
             app.UseMvcWithDefaultRoute();
 
             var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();

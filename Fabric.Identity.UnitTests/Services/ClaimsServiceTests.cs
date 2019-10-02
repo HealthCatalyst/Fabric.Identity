@@ -10,7 +10,7 @@ using Fabric.Identity.UnitTests.Helpers;
 using Fabric.Identity.UnitTests.Mocks;
 using IdentityModel;
 using IdentityServer4.Models;
-using Microsoft.AspNetCore.Http.Authentication;
+//using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Xunit;
 using Fabric.Identity.API.Exceptions;
@@ -357,7 +357,7 @@ namespace Fabric.Identity.UnitTests.Services
 
         public class GenerateClaimsForIdentityTests : ClaimsServiceTests
         {
-            private AuthenticateInfo authenticateInfo;
+            private AuthenticateResult authenticateInfo;
             private AuthorizationRequest authorizationRequest;
 
             public GenerateClaimsForIdentityTests() :
@@ -517,7 +517,7 @@ namespace Fabric.Identity.UnitTests.Services
                     expectedException.Message);
             }
 
-            private void AssertClaimsResult(AuthenticateInfo info, AuthorizationRequest context, ClaimsResult result)
+            private void AssertClaimsResult(AuthenticateResult info, AuthorizationRequest context, ClaimsResult result)
             {
                 Assert.Equal<string>(context.ClientId, result.ClientId);
                 Assert.Equal<string>(info.Properties.Items["scheme"], result.Provider);
@@ -534,7 +534,7 @@ namespace Fabric.Identity.UnitTests.Services
                 AssertAuthenticationProperties(info, result);
             }
 
-            private void AssertAuthenticationProperties(AuthenticateInfo info, ClaimsResult result)
+            private void AssertAuthenticationProperties(AuthenticateResult info, ClaimsResult result)
             {
                 Assert.Equal<string>(info.Properties.GetTokenValue("id_token"), result.AuthenticationProperties.GetTokenValue("id_token"));
             }
@@ -547,18 +547,18 @@ namespace Fabric.Identity.UnitTests.Services
                 Assert.Equal<int>(claims.Where(x => x.Type == "groups").Count(), result.Claims.Where(x => x.Type == "groups").Count());
             }
 
-            public AuthenticateInfo GenerateAuthenticateInfo(string issuer = null, bool hasIssuer = true, bool hasSubjectUserIdClaim = true, bool hasNameIdentifierClaim = true)
+            public AuthenticateResult GenerateAuthenticateInfo(string issuer = null, bool hasIssuer = true, bool hasSubjectUserIdClaim = true, bool hasNameIdentifierClaim = true)
             {
                 var dict = new Dictionary<string, string>();
-                dict.Add("scheme", $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}");
                 var props = new AuthenticationProperties(dict);
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = TestHelper.GenerateRandomString() } });
 
-                return new AuthenticateInfo()
-                {
-                    Principal = new TestPrincipal(GenerateClaims(issuer, hasIssuer, hasSubjectUserIdClaim, hasNameIdentifierClaim).ToArray()),
-                    Properties = props
-                };
+                var principal =
+                    new TestPrincipal(GenerateClaims(issuer, hasIssuer, hasSubjectUserIdClaim, hasNameIdentifierClaim)
+                        .ToArray());
+                var authenticationScheme = $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}";
+
+                return AuthenticateResult.Success(new AuthenticationTicket(principal, props, authenticationScheme));
             }
 
             public IEnumerable<Claim> GenerateClaims(string issuer, bool hasIssuer, bool hasSubjectUserIdClaim, bool hasNameIdentifierClaim)

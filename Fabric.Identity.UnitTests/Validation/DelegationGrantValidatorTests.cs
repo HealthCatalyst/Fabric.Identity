@@ -16,7 +16,7 @@ namespace Fabric.Identity.UnitTests.Validation
         [Fact]
         public async void ValidateAsync_NullUserToken_InvalidGrant()
         {
-            _delegationGrantValidator = new DelegationGrantValidator(new TokenValidator(null, null, null, null, null, null, null));
+            _delegationGrantValidator = new DelegationGrantValidator(new StubTokenValidator());
             var context = new ExtensionGrantValidationContext
             {
                 Request = new ValidatedTokenRequest

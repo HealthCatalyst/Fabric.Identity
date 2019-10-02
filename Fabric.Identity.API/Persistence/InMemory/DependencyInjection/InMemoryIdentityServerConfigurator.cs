@@ -34,7 +34,7 @@ namespace Fabric.Identity.API.Persistence.InMemory.DependencyInjection
         protected override void ConfigureIdentityServer()
         {
             IdentityServerBuilder
-                .AddTemporarySigningCredential()
+                .AddDeveloperSigningCredential()
                 .AddTestUsersIfConfigured(HostingOptions)
                 .AddCorsPolicyService<CorsPolicyService>()
                 .AddResourceStore<InMemoryResourceStore>()

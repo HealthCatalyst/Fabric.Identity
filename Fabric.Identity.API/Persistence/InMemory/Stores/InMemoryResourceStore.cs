@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
             return DocumentDbService.GetDocument<ApiResource>(name);
         }
 
-        public Task<Resources> GetAllResources()
+        public Task<Resources> GetAllResourcesAsync()
         {
             var apiResources = DocumentDbService
                 .GetDocuments<ApiResource>(FabricIdentityConstants.DocumentTypes.ApiResourceDocumentType).Result;
