@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Persistence;
@@ -17,6 +18,7 @@ using Fabric.Identity.API.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
+using IdentityServer4.AccessTokenValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -66,11 +68,14 @@ namespace Fabric.Identity.IntegrationTests
             AddTestEntitiesToSql(Client, api);
         }
 
+
+
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
             IdentityTestServer = CreateIdentityTestServer(storageProvider);
             _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
-            HttpClient = GetHttpClient();
+            _httpClientTaskCompletionSource = new TaskCompletionSource<HttpClient>();
+            _ = SetupHttpClient();
         }
 
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
@@ -175,7 +180,9 @@ namespace Fabric.Identity.IntegrationTests
             }
         }
 
-        public HttpClient HttpClient { get; }
+        private readonly TaskCompletionSource<HttpClient> _httpClientTaskCompletionSource;
+
+        public Task<HttpClient> HttpClient => _httpClientTaskCompletionSource.Task;
 
         private TestServer CreateIdentityTestServer(string storageProvider)
         {
@@ -238,25 +245,27 @@ namespace Fabric.Identity.IntegrationTests
             return new TestServer(apiBuilder);
         }
 
-        protected HttpClient GetHttpClient()
+        protected async Task SetupHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret,
+            httpClient.SetBearerToken(await GetAccessToken(Client.ClientId, ClientSecret,
                 $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
-            return httpClient;
+            _httpClientTaskCompletionSource.SetResult(httpClient);
         }
 
-        protected string GetAccessToken(string clientId, string clientSecret, string scope = null)
+        protected async Task<string> GetAccessToken(string clientId, string clientSecret, string scope = null)
         {
-            var tokenClient =
-                new TokenClient(TokenEndpoint, clientId,
-                    IdentityTestServer.CreateHandler())
+            var tokenRequest = new ClientCredentialsTokenRequest
                 {
-                    ClientSecret = clientSecret
+                    Address = TokenEndpoint,
+                    ClientId = clientId,
+                    ClientSecret = clientSecret,
+                    Scope = scope
                 };
-            var tokenResponse = tokenClient
-                .RequestClientCredentialsAsync(scope).Result;
+
+            var httpClient = new HttpClient(IdentityTestServer.CreateHandler());
+            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(tokenRequest);
             if (tokenResponse.IsError)
             {
                 throw new InvalidOperationException(tokenResponse.Error);
