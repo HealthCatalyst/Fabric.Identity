@@ -175,14 +175,14 @@ namespace Fabric.Identity.API.Services
             return additionalClaims.ToArray();
         }
 
-        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateResult info)
+        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateInfo info)
         {
             //if the external provider issued an id_token, we'll keep it for signout
             AuthenticationProperties props = null;
             var id_token = info.Properties.GetTokenValue("id_token");
             if (id_token != null)
             {
-                props = new AuthenticationProperties();
+                props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties();
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
             }
 
