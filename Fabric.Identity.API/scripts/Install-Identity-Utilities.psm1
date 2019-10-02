@@ -1,5 +1,5 @@
 # Import Dos Install Utilities
-$minVersion = [System.Version]::new(1, 0, 248 , 0)
+$minVersion = [System.Version]::new(1, 0, 270 , 0)
 try {
     Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minVersion -ErrorAction Stop
 } catch {
@@ -269,7 +269,7 @@ function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptogr
             Write-DosMessage -Level "Fatal" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
         }
 
-        $acl = Get-Acl $cspKeyPath
+        $acl = Get-Acl $keyPath
         $acl.AddAccessRule($allowRule)
         Set-Acl $keyPath $acl -ErrorAction Stop
         Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
@@ -1982,13 +1982,23 @@ function Remove-FilePermissions
   $removePermissionsAcl.RemoveAccessRule($accessRule)
   $removePermissionsAcl | Set-Acl $filePath
 }
-    
+
 function New-IdentityEncryptionCertificate {
     param(
         [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
-        [string] $certStoreLocation = "Cert:\LocalMachine\My"
+        [string] $certStoreLocation = "Cert:\LocalMachine\My",
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
     )
-    $cert = New-SelfSignedCertificate -Type Custom -KeySpec None -Subject $subject -KeyUsage DataEncipherment -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation $certStoreLocation
+    $cert = New-SelfSignedCertificate `
+        -Type Custom `
+        -KeySpec None `
+        -Subject $subject `
+        -KeyUsage DataEncipherment `
+        -KeyAlgorithm RSA `
+        -KeyLength 2048 `
+        -CertStoreLocation $certStoreLocation `
+        -FriendlyName $friendlyName
+
     return $cert
 }
 
@@ -2002,10 +2012,22 @@ function Test-IdentityEncryptionCertificateValid {
 
 function Remove-IdentityEncryptionCertificate {
     param(
-        [string] $encryptionCertificateThumbprint
+        [string] $encryptionCertificateThumbprint,
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
     )
-    $cert = Get-Certificate $encryptionCertificateThumbprint
-    $cert | Remove-Item
+
+    try {
+        $cert = Get-Certificate $encryptionCertificateThumbprint
+    }
+    catch [System.Management.Automation.ItemNotFoundException] {
+        Write-DosMessage -Level "Information" -Message "Certificate with thumbprint '$encryptionCertificateThumbprint' was not found."
+        return
+    }
+
+    if($null -ne $cert -and $null -ne $cert.FriendlyName -and $cert.FriendlyName.Contains("$friendlyName")) {
+        Write-DosMessage -Level "Information" -Message "Removing Identity encryption certificate"
+        $cert | Remove-Item
+    }
 }
 
 function Invoke-ResetFabricInstallerSecret {
@@ -2029,6 +2051,67 @@ function Invoke-ResetFabricInstallerSecret {
               SET Value = @value
               WHERE ClientId = @ClientID"
     Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+    return $fabricInstallerSecret
+}
+
+function Get-IdentityEncryptionCertificate {
+    param (
+        [HashTable] $installSettings,
+        [string] $configStorePath,
+        [switch] $validate
+    )
+
+    try {
+        if([string]::IsNullOrWhitespace($installSettings.encryptionCertificateThumbprint)) {
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+        else {
+            $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+        }
+    }
+    catch {
+        Write-DosMessage -Level "Information" -Message "Error locating the provided certificate '$($encryptionCertificate.Thumbprint)'. Removing the certificate and generating a new certificate."
+        Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+        $encryptionCertificate = New-IdentityEncryptionCertificate
+    }
+
+    # Create new cert if current is expired/expiring soon
+    if ($validate) {
+        $certIsValid = Test-IdentityEncryptionCertificateValid -encryptionCertificate $encryptionCertificate
+        if ($certIsValid -eq $false) {
+            Write-DosMessage -Level "Information" -Message "The provided certificate '$($encryptionCertificate.Thumbprint)' is expired. Removing the certificate and generating a new certificate."
+            Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+    }
+
+    # update install.config
+    # Assumes both encryption and signing cert are the same certificate
+    Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+
+    return $encryptionCertificate
+}
+
+function Get-IdentityFabricInstallerSecret {
+    param (
+        [string] $fabricInstallerSecret,
+        [string] $encryptionCertificateThumbprint,
+        [string] $identityDbConnectionString
+    )
+
+    if ($fabricInstallerSecret.StartsWith("!!enc!!:")) {
+        $secretNoEnc = $fabricInstallerSecret -replace "!!enc!!:"
+        $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+    }
+
+    # Create new secret if one does not exist, or was unable to decrypt
+    if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
+        # create new secret if no secret or unable to decrypt
+        $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+    }
+
     return $fabricInstallerSecret
 }
 
@@ -2084,3 +2167,5 @@ Export-ModuleMember New-IdentityEncryptionCertificate
 Export-ModuleMember Test-IdentityEncryptionCertificateValid
 Export-ModuleMember Remove-IdentityEncryptionCertificate
 Export-ModuleMember Invoke-ResetFabricInstallerSecret
+Export-ModuleMember Get-IdentityEncryptionCertificate
+Export-ModuleMember Get-IdentityFabricInstallerSecret
