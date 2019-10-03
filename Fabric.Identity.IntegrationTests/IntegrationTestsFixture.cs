@@ -19,7 +19,7 @@ using Fabric.Identity.IntegrationTests.ServiceTests;
 using IdentityModel;
 using IdentityModel.Client;
 using IdentityServer4.AccessTokenValidation;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
@@ -211,6 +211,7 @@ namespace Fabric.Identity.IntegrationTests
 
         private TestServer CreateRegistrationApiTestServer(string storageProvider)
         {
+            // I don't think we use this anymore
             var options = new IdentityServerAuthenticationOptions
             {
                 Authority = IdentityServerUrl,
@@ -236,6 +237,14 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
             );
+
+            apiBuilder.ConfigureServices((builder, services) =>
+            {
+                services.Configure<JwtBearerOptions>("Bearer", jwtOpts =>
+                {
+                    jwtOpts.BackchannelHttpHandler = IdentityTestServer.CreateHandler();
+                });
+            });
 
             apiBuilder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
