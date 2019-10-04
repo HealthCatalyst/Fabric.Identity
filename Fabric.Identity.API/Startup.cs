@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -48,12 +49,14 @@ namespace Fabric.Identity.API
         private readonly ILogger _logger;
         private readonly LoggingLevelSwitch _loggingLevelSwitch;
 
-        public Startup(IHostingEnvironment env)
+        public IConfiguration Configuration { get; set; }  
+
+        public Startup(IConfiguration configuration)
         {
             _certificateService = MakeCertificateService();
             var decryptionService = new DecryptionService(_certificateService);
             _appConfig =
-                new IdentityConfigurationProvider().GetAppConfiguration(env.ContentRootPath, decryptionService, env.EnvironmentName);
+                new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
             _loggingLevelSwitch = new LoggingLevelSwitch();
             _logger = LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
         }

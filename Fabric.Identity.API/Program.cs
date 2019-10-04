@@ -1,7 +1,10 @@
 ﻿using System.IO;
+using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Extensions;
+using Fabric.Platform.Shared.Configuration.Docker;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace Fabric.Identity.API
 {
@@ -9,18 +12,18 @@ namespace Fabric.Identity.API
     {
         public static void Main(string[] args)
         {
-            var appConfig = new Configuration.IdentityConfigurationProvider().GetAppConfiguration(Directory.GetCurrentDirectory());
+            BuildWebHost(args).Run();
+        }
 
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .UseApplicationInsights()
-                .UseIisIntegrationIfConfigured(appConfig)
+                .ConfigureAppConfiguration((hostContext, config) =>
+                    {
+                        config.AddDockerSecrets(typeof(IAppConfiguration));
+                        config.SetBasePath(hostContext.HostingEnvironment.ContentRootPath);
+                    })
                 .UseUrls("http://*:5001")
                 .Build();
-
-            host.Run();
-        }
     }
 }

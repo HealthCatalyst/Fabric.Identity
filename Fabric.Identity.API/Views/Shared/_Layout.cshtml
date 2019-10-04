@@ -1,5 +1,4 @@
-﻿@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
-@using IdentityServer4.Extensions
+﻿@using IdentityServer4.Extensions
 @{
     string name = null;
     if (!true.Equals(ViewData["signed-out"]))
@@ -17,7 +16,6 @@
     <title>Fabric.Identity</title>
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" />
-    @Html.Raw(JavaScriptSnippet.FullScript)
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">

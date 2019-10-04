@@ -10,7 +10,6 @@ using Fabric.Identity.UnitTests.Helpers;
 using Fabric.Identity.UnitTests.Mocks;
 using IdentityModel;
 using IdentityServer4.Models;
-//using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Xunit;
 using Fabric.Identity.API.Exceptions;

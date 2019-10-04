@@ -8,7 +8,6 @@ using IdentityServer4.Stores;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
-//using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;

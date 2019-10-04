@@ -7,6 +7,8 @@ using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using System.IO;
+using Fabric.Platform.Shared.Configuration.Docker;
+using Microsoft.Extensions.Configuration;
 
 namespace Fabric.Identity.IntegrationTests.ServiceTests
 {
@@ -23,10 +25,14 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             File.WriteAllText(Path.Combine(directory.FullName, "appsettings.json"), appSettingsJson);
             var mockCertificateService = GetMockCertificateService(privateKey);
             var decryptionService = new DecryptionService(mockCertificateService);
-            var identityConfigurationProvider = new IdentityConfigurationProvider();
+            var config = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(directory.FullName, "appsettings.json"))
+                .Build();
+            var identityConfigurationProvider = new IdentityConfigurationProvider(config);
+            
 
             // Act
-            var appConfig = identityConfigurationProvider.GetAppConfiguration(directory.FullName, decryptionService);
+            var appConfig = identityConfigurationProvider.GetAppConfiguration(decryptionService);
 
             // Assert
             Assert.NotNull(appConfig);
