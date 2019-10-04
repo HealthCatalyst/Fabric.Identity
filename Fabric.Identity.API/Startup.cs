@@ -16,7 +16,6 @@ using Fabric.Identity.API.Infrastructure.QueryStringBinding;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
-//using Fabric.Platform.Http;
 using Fabric.Platform.Logging;
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
@@ -84,8 +83,6 @@ namespace Fabric.Identity.API
 
             var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings);
             var serilogEventSink = new SerilogEventSink(eventLogger);
-
-            IdentityModelEventSource.ShowPII = true;
 
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             var tokenUriAddress = $"{settings.Authority.EnsureTrailingSlash()}connect/token";
