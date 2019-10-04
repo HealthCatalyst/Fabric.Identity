@@ -7,31 +7,30 @@ namespace Fabric.Identity.API.Configuration
 
     public class IdentityConfigurationProvider
     {
-        public IAppConfiguration GetAppConfiguration(string baseBath, DecryptionService decryptionService, string environmentName = "")
+        private IConfiguration _configuration;
+
+        public IdentityConfigurationProvider(IConfiguration configuration)
         {
-            var appConfig = BuildAppConfiguration(baseBath, environmentName);
+            _configuration = configuration;
+        }
+
+        public IAppConfiguration GetAppConfiguration(DecryptionService decryptionService)
+        {
+            var appConfig = BuildAppConfiguration();
             DecryptEncryptedValues(appConfig, decryptionService);
             return appConfig;
         }
 
-        public IAppConfiguration GetAppConfiguration(string basePath)
+        public IAppConfiguration GetAppConfiguration()
         {
-            return BuildAppConfiguration(basePath, string.Empty);
+            return BuildAppConfiguration();
         }
 
-        private IAppConfiguration BuildAppConfiguration(string baseBath, string environmentName)
+        private IAppConfiguration BuildAppConfiguration()
         {
-                var config = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json")
-                    .AddJsonFile($"appsettings.{environmentName}.json", true)
-                    .AddEnvironmentVariables()
-                    .AddDockerSecrets(typeof(IAppConfiguration))
-                    .SetBasePath(baseBath)
-                    .Build();
-
-                var appConfig = new AppConfiguration();
-                ConfigurationBinder.Bind(config, appConfig);
-                return appConfig;
+            var appConfig = new AppConfiguration();
+            _configuration.Bind(appConfig);
+            return appConfig;
         }
 
         private void DecryptEncryptedValues(IAppConfiguration appConfiguration, DecryptionService decryptionService)
