@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
@@ -38,9 +39,9 @@ namespace Fabric.Identity.API.Management
         [HttpGet]
         [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<ExternalProviderApiModel>), "Success")]
         [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
-        public IActionResult Get()
+        public async Task<IActionResult> Get()
         {
-            var providers = _identityProviderConfigurationService.GetConfiguredIdentityProviders();
+            var providers = await _identityProviderConfigurationService.GetConfiguredIdentityProviders();
             return Ok(providers.Select(p => new ExternalProviderApiModel
             {
                 AuthenticationScheme = p.AuthenticationScheme,

@@ -9,7 +9,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Extensions;
-using Fabric.Platform.Http;
+//using Fabric.Platform.Http;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityModel.Client;
 using Newtonsoft.Json;
