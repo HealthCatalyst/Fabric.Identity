@@ -37,9 +37,9 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [SwaggerResponse((int)HttpStatusCode.OK, "Success", typeof(List<ExternalProviderApiModel>))]
-        [SwaggerResponse((int)HttpStatusCode.BadRequest, BadRequestErrorMsg, typeof(Error))]
-        public async Task<IActionResult> Get()
+        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<ExternalProviderApiModel>), "Success")]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        public IActionResult Get()
         {
             var providers = await _identityProviderConfigurationService.GetConfiguredIdentityProviders();
             return Ok(providers.Select(p => new ExternalProviderApiModel
