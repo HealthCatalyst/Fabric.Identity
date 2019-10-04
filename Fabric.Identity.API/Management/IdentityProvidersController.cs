@@ -16,7 +16,7 @@ namespace Fabric.Identity.API.Management
     /// <summary>
     /// Manage third party identity providers configured for authentication
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.ReadScopeClaim, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.ReadScopeClaim, AuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/identityproviders")]
     [Route("api/v{version:apiVersion}/identityproviders")]
