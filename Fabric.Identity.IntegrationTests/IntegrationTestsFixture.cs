@@ -16,6 +16,7 @@ using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.IntegrationTests.ServiceTests;
+using Fabric.Platform.Shared.Configuration.Docker;
 using IdentityModel;
 using IdentityModel.Client;
 using IdentityServer4.AccessTokenValidation;
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Serilog;
@@ -204,6 +206,13 @@ namespace Fabric.Identity.IntegrationTests
             builder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
+                .ConfigureAppConfiguration((hostContext, config) =>
+                {
+                    config.AddJsonFile("appsettings.json");
+                    config.AddEnvironmentVariables();
+                    config.AddDockerSecrets(typeof(IAppConfiguration));
+                    config.SetBasePath(Directory.GetCurrentDirectory());
+                })
                 .UseUrls(IdentityServerUrl);
 
             return new TestServer(builder);
@@ -249,6 +258,13 @@ namespace Fabric.Identity.IntegrationTests
             apiBuilder.UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
+                .ConfigureAppConfiguration((hostContext, config) =>
+                {
+                    config.AddJsonFile("appsettings.json");
+                    config.AddEnvironmentVariables();
+                    config.AddDockerSecrets(typeof(IAppConfiguration));
+                    config.SetBasePath(Directory.GetCurrentDirectory());
+                })
                 .UseUrls(RegistrationApiServerUrl);
 
             return new TestServer(apiBuilder);
