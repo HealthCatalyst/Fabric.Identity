@@ -550,13 +550,15 @@ namespace Fabric.Identity.UnitTests.Services
             public AuthenticateResult GenerateAuthenticateInfo(string issuer = null, bool hasIssuer = true, bool hasSubjectUserIdClaim = true, bool hasNameIdentifierClaim = true)
             {
                 var dict = new Dictionary<string, string>();
+                var authenticationScheme = $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}";
+                dict.Add("scheme", authenticationScheme);
+
                 var props = new AuthenticationProperties(dict);
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = TestHelper.GenerateRandomString() } });
 
                 var principal =
                     new TestPrincipal(GenerateClaims(issuer, hasIssuer, hasSubjectUserIdClaim, hasNameIdentifierClaim)
                         .ToArray());
-                var authenticationScheme = $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}";
 
                 return AuthenticateResult.Success(new AuthenticationTicket(principal, props, authenticationScheme));
             }

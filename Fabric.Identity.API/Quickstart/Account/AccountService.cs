@@ -52,7 +52,7 @@ namespace IdentityServer4.Quickstart.UI
                 };
             }
 
-            var providers = _identityProviderConfigurationService.GetConfiguredIdentityProviders();
+            var providers = await _identityProviderConfigurationService.GetConfiguredIdentityProviders();
 
             var allowLocal = true;
             if (context?.ClientId != null)

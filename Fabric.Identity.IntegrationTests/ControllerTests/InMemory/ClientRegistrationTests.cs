@@ -30,7 +30,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             AllowedGrantTypes = new List<string>() { IS4.GrantType.Implicit },
             ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(Rand.Next().ToString()) },
             RedirectUris = new List<string>() { Rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { Rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { $"http://{Rand.Next().ToString()}" },
             PostLogoutRedirectUris = new List<string>() { Rand.Next().ToString() },
             
         };
@@ -45,7 +45,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             AllowedGrantTypes = new List<string>() { IS4.GrantType.ClientCredentials },
             ClientSecrets = new List<IS4.Secret>() { new IS4.Secret(Rand.Next().ToString()) },
             RedirectUris = new List<string>() { Rand.Next().ToString() },
-            AllowedCorsOrigins = new List<string>() { Rand.Next().ToString() },
+            AllowedCorsOrigins = new List<string>() { $"http://{Rand.Next().ToString()}" },
             PostLogoutRedirectUris = new List<string>() { Rand.Next().ToString() },
         };
 
