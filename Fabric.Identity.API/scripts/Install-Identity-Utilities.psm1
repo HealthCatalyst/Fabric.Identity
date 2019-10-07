@@ -1010,6 +1010,54 @@ function Add-InstallationTenantSettings {
     $installationConfig.Save("$installConfigPath") | Out-Null
 }
 
+function Get-IdentityServiceIdPSSAzureSettings {
+    param(
+        [HashTable[]] $clientSettings,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
+        [string] $azureSettingsConfigPath,
+        [string] $appName
+    )
+    $appSettings = @{}
+    if($null -eq $clientSettings -or $clientSettings.Count -eq 0) {
+        Write-DosMessage -Level "Warning" -Message "Could not validate Azure settings, continuing without setting Azure AD. Verify Azure settings are correct in the registered applications config section: $azureSettingsConfigPath"
+        return $appSettings
+    }
+
+    # Set Azure Settings
+    $defaultScope = "https://graph.microsoft.com/.default"
+    $appSettings.Add("AzureActiveDirectoryClientSettings__Authority", "https://login.microsoftonline.com/") # Taken care of already?
+    $appSettings.Add("AzureActiveDirectoryClientSettings__TokenEndpoint", "/oauth2/v2.0/token")
+
+    foreach($setting in $clientSettings) {
+        $index = $clientSettings.IndexOf($setting)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientId", $setting.clientId)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__TenantId", $setting.tenantId)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__TenantAlias", $setting.tenantAlias)
+
+        # Currently only a single default scope is expected
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__Scopes__0", $defaultScope)
+
+        $secret = $setting.clientSecret
+        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+            $encryptedSecret = Get-EncryptedString $encryptionCert $secret
+            # Encrypt secret in install.config if not encrypted
+            Add-InstallationTenantSettings -configSection "identity" `
+                -tenantId $setting.tenantId `
+                -tenantAlias $setting.tenantAlias `
+                -clientSecret $encryptedSecret `
+                -clientId $setting.clientId `
+                -installConfigPath $azureSettingsConfigPath `
+                -appName $appName
+
+            $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientSecret", $encryptedSecret)
+        }
+        else{
+            $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientSecret", $secret)
+        }
+    }
+
+    return $appSettings
+}
 
 function Set-IdentityEnvironmentAzureVariables {
     param (
@@ -1026,6 +1074,8 @@ function Set-IdentityEnvironmentAzureVariables {
         $scope = "identity"
         # Alter Identity web.config for azure
         $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+        $idPSSClientSettings = @() # Force into array
+        $idPSSClientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Provider Search Service" # Temporary until azure settings merged
         $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "allowedTenants"
@@ -1033,6 +1083,15 @@ function Set-IdentityEnvironmentAzureVariables {
         $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "claimsIssuerTenant"
+
+        $idpssAzureSettings = Get-IdentityServiceIdPSSAzureSettings `
+            -clientSettings $idPSSClientSettings `
+            -encryptionCert $encryptionCert `
+            -azureSettingsConfigPath $installConfigPath `
+            -appName "Identity Provider Search Service" # Temporary until azure settings merged
+
+        # Add all idpss settings into environment variable variable
+        $environmentVariables += $idpssAzureSettings
 
         # Validate values are populated: clientSettings, allowedTenants, claimsIssuer
         if($null -eq $clientSettings -or $null -eq $allowedTenants -or $null -eq $claimsIssuer) {
