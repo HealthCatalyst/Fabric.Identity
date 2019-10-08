@@ -73,8 +73,16 @@ namespace Fabric.Identity.API.Services
             var tokenUriAddress = $"{authority}connect/token";
             _logger.Information($"Getting access token for ClientId: {FabricIdentityConstants.FabricIdentityClient} at {tokenUriAddress}");
 
-            var tokenClient = new TokenClient(tokenUriAddress, FabricIdentityConstants.FabricIdentityClient, settings.ClientSecret);
-            var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
+            var client = new HttpClient();
+            var tokenRequest = new ClientCredentialsTokenRequest
+            {
+                Address = tokenUriAddress,
+                ClientId = FabricIdentityConstants.FabricIdentityClient,
+                ClientSecret = settings.ClientSecret,
+                Scope = "fabric/idprovider.searchusers"
+            };
+
+            var accessTokenResponse = await client.RequestClientCredentialsTokenAsync(tokenRequest);
             if (accessTokenResponse.IsError)
             {
                 _logger.Error(

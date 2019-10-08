@@ -15,7 +15,7 @@ namespace Fabric.Identity.API.Management
     /// <summary>
     /// </summary>
     [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.RegistrationThreshold,
-        ActiveAuthenticationSchemes = "Bearer")]
+        AuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/identityresource")]
     [Route("api/v{version:apiVersion}/identityresource")]

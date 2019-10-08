@@ -6,7 +6,7 @@ docker run -d --name identity.integration.openldap -d -p 389:389 -e LDAP_ADMIN_P
 
 sleep 3
 "/C/Program Files (x86)/Microsoft Visual Studio/2017/Professional/MSBuild/15.0/Bin/MSBuild.exe"  ../../Fabric.Identity.SqlServer/Fabric.Identity.SqlServer.sqlproj
-cp ../../Fabric.Identity.SqlServer/bin/Debug/Fabric.Identity.SqlServer_Create.sql ../../Fabric.Identity.IntegrationTests/bin/Debug/netcoreapp2.0/Fabric.Identity.SqlServer_Create.sql
+cp ../../Fabric.Identity.SqlServer/bin/Debug/Fabric.Identity.SqlServer_Create.sql ../../Fabric.Identity.IntegrationTests/bin/Debug/netcoreapp2.1/Fabric.Identity.SqlServer_Create.sql
 
 dotnet test ../../Fabric.Identity.IntegrationTests/Fabric.Identity.IntegrationTests.csproj
 

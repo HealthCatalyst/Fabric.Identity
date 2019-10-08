@@ -19,7 +19,7 @@ namespace Fabric.Identity.API.Management
     /// <summary>
     /// Find Users registered in Identity.
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim, AuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/users")]
     [Route("api/v{version:apiVersion}/users")]
