@@ -5,7 +5,6 @@ using Fabric.Identity.API.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Authentication;
 using Moq;
 using Xunit;
 
@@ -21,8 +20,6 @@ namespace Fabric.Identity.UnitTests
                 new AuthenticationScheme("OpenID Connect", "Azure Active Directory", typeof(JwtBearerHandler)),
                 new AuthenticationScheme("Windows", "Windows", typeof(JwtBearerHandler))
             };
-
-            var authenticationManagerMock = new Mock<AuthenticationManager>();
 
             var httpContextMock = new Mock<HttpContext>();
 
