@@ -75,21 +75,20 @@ function Get-GraphApiUserReadPermissions() {
     return $readAccess
 }
 
-
 function New-FabricAzureADApplication() {
     param(
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
         [Hashtable[]] $replyUrls,
-        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission,
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess[]] $permissions,
         [bool] $isMultiTenant = $false
     )
     $groupMembershipClaims = 'SecurityGroup'
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permissions -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
     else {
         # Do not overwrite, append to existing urls
@@ -99,7 +98,7 @@ function New-FabricAzureADApplication() {
             $existingUrls.Add($replyUrl)
         }
         $existingUrls = $existingUrls | Select-Object -Unique
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permissions -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
@@ -249,40 +248,44 @@ function Register-Identity {
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
-    $claimsIssuerText = "claimsIssuerTenant"
+
+    $claimsIssuer = Get-IdentityClaimsIssuer -azureConfigPath $azureConfigPath -configSection $configSection
     $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $allowedTenantsText
 
-    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
-        -scope $configSection `
-        -setting $claimsIssuerText
     Confirm-Tenants -tenants $allowedTenants
     Confirm-Tenants -tenants $claimsIssuer
 
-   if($null -ne $claimsIssuer.name) {
-    Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
-    Connect-AzureADTenant -tenantId $claimsIssuer.name
+    # Register authentication portion as claims issuer
+    if($null -ne $claimsIssuer.name) {
+        Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
+        Connect-AzureADTenant -tenantId $claimsIssuer.name
 
-    $permission = Get-GraphApiUserReadPermissions
-    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
-    $clientId = $app.AppId
-    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
+        $permissions = @()
+        $permissions += Get-GraphApiUserReadPermissions
+        $permissions += Get-GraphApiDirectoryReadPermissions
+        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permissions -isMultiTenant $true
+        $clientId = $app.AppId
+        $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
-    Disconnect-AzureAD
+        Disconnect-AzureAD
 
-    Add-InstallationTenantSettings -configSection $configSection `
-    -tenantId $claimsIssuer.name `
-    -tenantAlias $claimsIssuer.alias `
-    -clientSecret $clientSecret `
-    -clientId $clientId `
-    -installConfigPath $azureConfigPath `
-    -appName $appName
-  }
-  else
-  {
-    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
-  }
+        Add-InstallationTenantSettings -configSection $configSection `
+        -tenantId $claimsIssuer.name `
+        -tenantAlias $claimsIssuer.alias `
+        -clientSecret $clientSecret `
+        -clientId $clientId `
+        -installConfigPath $azureConfigPath `
+        -appName $appName
+
+        # Manual process, need to give consent this way for now
+        Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+    }
+    else
+    {
+        Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
+    }
 }
 
 function Register-IdPSS {
@@ -309,8 +312,9 @@ function Register-IdPSS {
       Connect-AzureADTenant -tenantId $tenant.name
 
       # Get read permissions
-      $permission = Get-GraphApiDirectoryReadPermissions
-      $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
+      $permissions = @()
+      $permissions += Get-GraphApiDirectoryReadPermissions
+      $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permissions $permissions
       $clientId = $app.AppId
       $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
@@ -388,6 +392,49 @@ function Get-XMLChildNode {
     }
 }
 
+function Get-IdentityClaimsIssuer {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection
+    )
+
+    $claimsIssuerSetting = "claimsIssuerTenant"
+    $claimsIssuer = @()
+    $claimsIssuer += Get-TenantSettingsFromInstallConfig `
+        -installConfigPath $azureConfigPath `
+        -scope $configSection `
+        -setting $claimsIssuerSetting
+
+    if($null -eq $claimsIssuer -or $claimsIssuer.Count() -eq 0) {
+        Write-DosMessage -Level "Fatal" -Message "No claims issuer tenant was found in the azuresettings.config."
+    } 
+    else {
+        if($claimsIssuer.Count() -gt 1) {
+            Write-DosMessage -Level "Fatal" -Message "Multiple claims issuer tenants were found in the azuresettings.config. Please provide only one claims issuer."
+        }
+        return $claimsIssuer[0]
+    }
+}
+
+function Remove-IdentityClaimsIssuerFromTenantsList {
+    param (
+        [Parameter(Mandatory=$true)]
+        [HashTable[]] $tenants,
+        [Parameter(Mandatory=$true)]
+        [string] $claimsIssuerName
+    )
+    [System.Collections.ArrayList]$tenantsList = $tenants
+    foreach($tenant in $tenantsList) {
+        if($tenant.Name -eq $claimsIssuerName) {
+            $tenantsList.Remove($tenant)
+            return $tenantsList.ToArray()
+        }
+    }
+    return $tenantsList.ToArray()
+}
+
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
@@ -395,3 +442,5 @@ Export-ModuleMember Get-Tenants
 Export-ModuleMember Get-ReplyUrls
 Export-ModuleMember Register-Identity
 Export-ModuleMember Register-IdPSS
+Export-ModuleMember Get-IdentityClaimsIssuer
+Export-ModuleMember Remove-IdentityClaimsIssuerFromTenantsList

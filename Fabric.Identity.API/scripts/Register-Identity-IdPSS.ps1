@@ -15,11 +15,11 @@ param(
 
 if(!($registerIdentity) -and !($registerIdPSS))
 {
-	throw " You must register either Identity and/or IdPSS by adding their respective switch.
-	Examples:
-		.\Register-Identity-IdPSS.ps1 -registerIdentity
-		.\Register-Identity-IdPSS.ps1 -registerIdPSS
-		.\Register-Identity-IdPSS.ps1 -registerIdentity -registerIdPSS"
+    throw " You must register either Identity and/or IdPSS by adding their respective switch.
+    Examples:
+        .\Register-Identity-IdPSS.ps1 -registerIdentity
+        .\Register-Identity-IdPSS.ps1 -registerIdPSS
+        .\Register-Identity-IdPSS.ps1 -registerIdentity -registerIdPSS"
 }
 
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
@@ -31,6 +31,7 @@ Import-Module -Name  ".\Install-IdPSS-Utilities.psm1", ".\Install-Identity-Utili
 
 $installSettingsScope = "identity"
 
+$claimsIssuer = Get-IdentityClaimsIssuer -azureConfigPath $azureConfigPath -configSection $installSettingsScope
 $tenants = Get-Tenants -azureConfigPath $azureConfigPath
 $replyUrls = Get-ReplyUrls -azureConfigPath $azureConfigPath
 $appNameIdPSS = $Global:idPSSAppName
@@ -38,12 +39,16 @@ $appNameIdentity = "Identity Service"
 
 if ($registerIdPSS)
 {
-   Register-IdPSS -appName $appNameIdPSS -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath
+    Register-IdPSS -appName $appNameIdPSS -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath
 }
 
 if ($registerIdentity)
 {
-  # Identity registration
-  Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -azureConfigPath $azureConfigPath
+    # Identity registration (authentication)
+    Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -azureConfigPath $azureConfigPath
+    # Filter out claimsIssuerTenant from tenants list so avoid double registration
+    $tenants = Remove-IdentityClaimsIssuerFromTenantsList -tenants $tenants -claimsIssuerName $claimsIssuer
+    # Identity registration (searching)
+    Register-IdPSS -appName $appNameIdentity -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath
 }
 
