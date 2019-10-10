@@ -28,9 +28,9 @@ namespace Fabric.Identity.UnitTests
             foreach (var secret in clearTextSecrets)
             {
                 //Make sure that the secrets haven't been changed in the original reference
-                Assert.True(apiResource.ApiSecrets.Any(s => s.Value == secret));
+                Assert.Contains(apiResource.ApiSecrets, s => s.Value == secret);
                 //Make sure that the secrets in the object that gets serialized have been obfuscated
-                Assert.True(createdAuditEvent.Entity.ApiSecrets.Any(s => s.Value == $"****{secret.Substring(secret.Length-4)}"));
+                Assert.Contains(createdAuditEvent.Entity.ApiSecrets, s => s.Value == $"****{secret.Substring(secret.Length - 4)}");
             }
         }
 
