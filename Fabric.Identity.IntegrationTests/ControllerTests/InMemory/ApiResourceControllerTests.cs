@@ -169,7 +169,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var getApiResource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             // Must not return password
-            Assert.Equal(null, getApiResource.ApiSecret);
+            Assert.Null(getApiResource.ApiSecret);
             // Confirm payload
             Assert.Equal(updatedApiResource.Name, getApiResource.Name);
             Assert.Equal(updatedApiResource.DisplayName, getApiResource.DisplayName);

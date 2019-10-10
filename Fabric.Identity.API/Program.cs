@@ -12,10 +12,10 @@ namespace Fabric.Identity.API
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
+            CreateWebHostBuilder(args).Build().Run();
         }
 
-        public static IWebHost BuildWebHost(string[] args) =>
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .ConfigureAppConfiguration((hostContext, config) =>
@@ -23,7 +23,6 @@ namespace Fabric.Identity.API
                         config.AddDockerSecrets(typeof(IAppConfiguration));
                         config.SetBasePath(hostContext.HostingEnvironment.ContentRootPath);
                     })
-                .UseUrls("http://*:5001")
-                .Build();
+                .UseUrls("http://*:5001");
     }
 }

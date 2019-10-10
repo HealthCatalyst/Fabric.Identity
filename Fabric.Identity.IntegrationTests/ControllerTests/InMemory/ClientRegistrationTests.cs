@@ -54,7 +54,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         /// <summary>
         /// A collection of valid clients.
         /// </summary>
-        private static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 4).Select(_ => new object[] { GetTestClient() });
+        public static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 4).Select(_ => new object[] { GetTestClient() });
 
         private async Task<HttpResponseMessage> CreateNewClient(IS4.Client testClient)
         {
@@ -192,7 +192,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var getClient = (Client)JsonConvert.DeserializeObject(content, typeof(Client));
 
             // Must not return password
-            Assert.Equal(null, getClient.ClientSecret);
+            Assert.Null(getClient.ClientSecret);
             // Must ignore ClientId in payload
             Assert.Equal(testClient.ClientId, getClient.ClientId);
 
