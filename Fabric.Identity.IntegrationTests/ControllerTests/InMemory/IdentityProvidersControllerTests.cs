@@ -24,7 +24,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
                 $"{_identityProvidersBaseUrl}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var externalProviders = JsonConvert.DeserializeObject<List<ExternalProviderApiModel>>(await response.Content.ReadAsStringAsync());
-            Assert.Equal(1, externalProviders.Count);
+            Assert.Single(externalProviders);
 
         }
     }

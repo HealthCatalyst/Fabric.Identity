@@ -143,6 +143,7 @@ namespace Fabric.Identity.API
             services.AddTransient<AccountService>();
 
             services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
                 .AddJsonOptions(x =>
                 {
                     x.SerializerSettings.ReferenceLoopHandling =

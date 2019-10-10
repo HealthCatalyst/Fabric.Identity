@@ -20,7 +20,7 @@ namespace Fabric.Identity.UnitTests.Services
 
             var filteredClaims = new GroupFilterService(null).FilterClaims(claims).ToList();
 
-            Assert.Equal(1, filteredClaims.Count);
+            Assert.Single(filteredClaims);
             Assert.Equal("Admin", filteredClaims[0].Value);
         }
 
@@ -36,7 +36,7 @@ namespace Fabric.Identity.UnitTests.Services
 
             var filteredClaims = new GroupFilterService(groupMatchSettings).FilterClaims(claims).ToList();
 
-            Assert.Equal(1, filteredClaims.Count);
+            Assert.Single(filteredClaims);
             Assert.Equal("Admin", filteredClaims[0].Value);
         }
 
@@ -56,7 +56,7 @@ namespace Fabric.Identity.UnitTests.Services
 
             var filteredClaims = new GroupFilterService(groupMatchSettings).FilterClaims(claims).ToList();
 
-            Assert.Equal(1, filteredClaims.Count);
+            Assert.Single(filteredClaims);
             Assert.Equal("Admin", filteredClaims[0].Value);
         }
 
@@ -82,7 +82,7 @@ namespace Fabric.Identity.UnitTests.Services
 
             var filteredClaims = new GroupFilterService(groupMatchSettings).FilterClaims(claims).ToList();
 
-            Assert.Equal(0, filteredClaims.Count);
+            Assert.Empty(filteredClaims);
         }
 
         [Fact]
@@ -116,10 +116,10 @@ namespace Fabric.Identity.UnitTests.Services
 
             var claimComparer = new ClaimComparer();
             Assert.Equal(4, filteredClaims.Count);
-            Assert.True(filteredClaims.Contains(claims[0], claimComparer));
-            Assert.True(filteredClaims.Contains(claims[1], claimComparer));
-            Assert.True(filteredClaims.Contains(claims[3], claimComparer));
-            Assert.True(filteredClaims.Contains(claims[4], claimComparer));
+            Assert.Contains(claims[0], filteredClaims, claimComparer);
+            Assert.Contains(claims[1], filteredClaims, claimComparer);
+            Assert.Contains(claims[3], filteredClaims, claimComparer);
+            Assert.Contains(claims[4], filteredClaims, claimComparer);
         }
     }
 }
