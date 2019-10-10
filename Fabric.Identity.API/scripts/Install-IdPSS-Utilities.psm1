@@ -19,6 +19,45 @@ else {
     Import-Module -Name $azureAD.FullName
 }
 
+function Get-GraphApiPermissionFromList() {
+    param(
+        [string] $permissionName
+    )
+
+    $permissionName = "User.Read"
+    $permission = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $permissionName}
+    if($null -eq $permission) {
+        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $permissionName."
+        throw
+    }
+
+    return $permission
+}
+
+function Get-GraphiApiUserDirectoryReadPermissions() {
+    try {
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
+    }
+    catch {
+        Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
+        throw
+    }
+
+    # Get Permissions
+    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read"
+    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All"
+
+    # Construct expected RequiredResourceAccess object
+    $userDirectoryReadRequiredResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
+    $userReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $userReadPermission.Id,"Scope"
+    $directoryReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $directoryReadPermission.Id,"Role"
+
+    $userDirectoryReadRequiredResourceAccess.ResourceAppId = $aad.Id
+    $userDirectoryReadRequiredResourceAccess.ResourceAccess = $userReadResourceAccess,$directoryReadResourceAccess
+
+    return $userDirectoryReadRequiredResourceAccess
+}
+
 function Get-GraphApiDirectoryReadPermissions() {
     try {
         $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
@@ -29,11 +68,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     }
 
     $directoryReadName = "Directory.Read.All"
-    $directoryRead = $aad.AppRoles | Where-Object {$_.Value -eq $directoryReadName}
-    if($null -eq $directoryRead) {
-        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
-        throw
-    }
+    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
@@ -47,6 +82,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     return $readAccess
 }
 
+
 function Get-GraphApiUserReadPermissions() {
     try {
         $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
@@ -56,18 +92,14 @@ function Get-GraphApiUserReadPermissions() {
         throw
     }
 
-    $directoryReadName = "User.Read"
-    $directoryRead = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $directoryReadName}
-    if($null -eq $directoryRead) {
-        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
-        throw
-    }
+    $userReadName = "User.Read"
+    $userRead = Get-GraphApiPermissionFromList -permissionName $userReadName
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
         ResourceAppId = $aad.AppId;
         ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{
-            Id = $directoryRead.Id;
+            Id = $userRead.Id;
             Type = "Scope"
         }
     }
@@ -81,7 +113,7 @@ function New-FabricAzureADApplication() {
         [string] $appName,
         [Parameter(Mandatory=$true)]
         [Hashtable[]] $replyUrls,
-        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess[]] $permissions,
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permissions,
         [bool] $isMultiTenant = $false
     )
     $groupMembershipClaims = 'SecurityGroup'
@@ -98,10 +130,30 @@ function New-FabricAzureADApplication() {
             $existingUrls.Add($replyUrl)
         }
         $existingUrls = $existingUrls | Select-Object -Unique
+
+        # Do not overwrite, append existing permissions
+        # Existing permissions might be an array of required resourceaccess
+        $combinedResources = Get-CombinedAzureADPermissions -existingPermissions $app.RequiredResourceAccess.ResourceAccess -newPermissions $permissions.ResourceAccess
+        $permissions.ResourceAccess = $combinedResources
+
         Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permissions -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
+}
+
+function Get-CombinedAzureADPermissions {
+    param (
+        [Parameter(Mandatory=$true)]
+        [Microsoft.Open.AzureAD.Model.ResourceAccess[]] $existingPermissions,
+        [Parameter(Mandatory=$true)]
+        [Microsoft.Open.AzureAD.Model.ResourceAccess[]] $newPermissions
+    )
+    $combinedPermissions = @()
+    $combinedPermissions += $existingPermissions
+    $combinedPermissions += $newPermissions
+    $combinedPermissions = $combinedPermissions | Select-Object -Unique
+    return $combinedPermissions
 }
 
 function Remove-AzureADClientSecret {
@@ -262,10 +314,8 @@ function Register-Identity {
         Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
         Connect-AzureADTenant -tenantId $claimsIssuer.name
 
-        $permissions = @()
-        $permissions += Get-GraphApiUserReadPermissions
-        $permissions += Get-GraphApiDirectoryReadPermissions
-        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permissions -isMultiTenant $true
+        $userDirectoryReadPermissions = Get-GraphiApiUserDirectoryReadPermissions
+        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $userDirectoryReadPermissions -isMultiTenant $true
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
@@ -302,7 +352,7 @@ function Register-IdPSS {
         [string] $azureConfigPath
     )
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
-    $secretName = $installSettings.value
+    $secretName = $installSettings.variable.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     # IdentityProviderSearchService registration
@@ -444,3 +494,5 @@ Export-ModuleMember Register-Identity
 Export-ModuleMember Register-IdPSS
 Export-ModuleMember Get-IdentityClaimsIssuer
 Export-ModuleMember Remove-IdentityClaimsIssuerFromTenantsList
+Export-ModuleMember Get-GraphApiUserReadPermissions
+Export-ModuleMember Get-GraphApiDirectoryReadPermissions
