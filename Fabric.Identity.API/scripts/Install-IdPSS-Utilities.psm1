@@ -21,15 +21,23 @@ else {
 
 function Get-GraphApiPermissionFromList() {
     param(
-        [string] $permissionName
+        [string] $permissionName,
+        [string] $type
     )
-
-    $permissionName = "User.Read"
-    $permission = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $permissionName}
-    if($null -eq $permission) {
-        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $permissionName."
-        throw
+    if($type -eq "scope") {
+        $permission = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $permissionName}
+        if($null -eq $permission) {
+            Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
+        }
+    } elseif($type -eq "role") {        
+        $permission = $aad.AppRoles | Where-Object {$_.Value -eq $permissionName}
+        if($null -eq $permission) {
+            Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
+        }
+    } else {
+        Write-DosMessage -Level "Fatal" -Message "Invalid type was passed: $type. Expected type of 'scope' or 'role'."
     }
+    
 
     return $permission
 }
@@ -44,15 +52,15 @@ function Get-GraphiApiUserDirectoryReadPermissions() {
     }
 
     # Get Permissions
-    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read"
-    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All"
+    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read" -type "Scope"
+    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All" -type "Role"
 
     # Construct expected RequiredResourceAccess object
     $userDirectoryReadRequiredResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
     $userReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $userReadPermission.Id,"Scope"
     $directoryReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $directoryReadPermission.Id,"Role"
 
-    $userDirectoryReadRequiredResourceAccess.ResourceAppId = $aad.Id
+    $userDirectoryReadRequiredResourceAccess.ResourceAppId = $aad.AppId
     $userDirectoryReadRequiredResourceAccess.ResourceAccess = $userReadResourceAccess,$directoryReadResourceAccess
 
     return $userDirectoryReadRequiredResourceAccess
@@ -133,10 +141,11 @@ function New-FabricAzureADApplication() {
 
         # Do not overwrite, append existing permissions
         # Existing permissions might be an array of required resourceaccess
-        $combinedResources = Get-CombinedAzureADPermissions -existingPermissions $app.RequiredResourceAccess.ResourceAccess -newPermissions $permissions.ResourceAccess
-        $permissions.ResourceAccess = $combinedResources
+        $combinedResources = Get-CombinedAzureADPermissions `
+            -existingRequiredResourceAccess $app.RequiredResourceAccess `
+            -newRequiredResourceAccess $permissions
 
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permissions -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $combinedResources -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
@@ -145,15 +154,22 @@ function New-FabricAzureADApplication() {
 function Get-CombinedAzureADPermissions {
     param (
         [Parameter(Mandatory=$true)]
-        [Microsoft.Open.AzureAD.Model.ResourceAccess[]] $existingPermissions,
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess[]] $existingRequiredResourceAccess,
         [Parameter(Mandatory=$true)]
-        [Microsoft.Open.AzureAD.Model.ResourceAccess[]] $newPermissions
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $newRequiredResourceAccess
     )
-    $combinedPermissions = @()
-    $combinedPermissions += $existingPermissions
-    $combinedPermissions += $newPermissions
-    $combinedPermissions = $combinedPermissions | Select-Object -Unique
-    return $combinedPermissions
+    # Need to ignore values if already exists!
+    foreach($rra in $existingRequiredResourceAccess) {
+        # IF Match, then append to the list and exit
+        if($rra.ResourceAppId -eq $newRequiredResourceAccess.ResourceAppId) {
+            $rra.ResourceAccess += $newRequiredResourceAccess.ResourceAccess
+            $rra.ResourceAccess = $rra.ResourceAccess | Select-Object -Unique
+            return $existingRequiredResourceAccess
+        }
+    }
+
+    Write-DosMessage -Level "Information" -Message "Did not find any existing permissions to merge."
+    return $newRequiredResourceAccess
 }
 
 function Remove-AzureADClientSecret {
@@ -169,7 +185,7 @@ function Remove-AzureADClientSecret {
     [int]$retryCount = 0
 
     if ($filteredKeys.count -gt 0) {
-        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation
+        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation -keyName $keyIdentifier
     }
 
     if($deleteSecrets) {
@@ -296,7 +312,7 @@ function Register-Identity {
         [string] $azureConfigPath
     )
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
-    $secretName = $installSettings.value
+    $secretName = $installSettings.variable.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
@@ -406,8 +422,11 @@ function Confirm-Tenants {
 }
 
 function Get-InstallIdPSSUtilsUserConfirmation {
-    Write-DosMessage -Level "Information" -Message "Found ${$filterKeys.count} duplicate secrets."
-    $deleteSecrets = Read-Host  "Delete duplicate secret(s)? [Y/N]"
+    param (
+        [string] $keyName
+    )
+    Write-DosMessage -Level "Information" -Message "Found duplicate secrets."
+    $deleteSecrets = Read-Host  "Delete duplicate secret(s) named: '$keyName'? [Y/N]"
     switch ($deleteSecrets) {
         Y {return $true}
         N {return $false}
@@ -457,11 +476,11 @@ function Get-IdentityClaimsIssuer {
         -scope $configSection `
         -setting $claimsIssuerSetting
 
-    if($null -eq $claimsIssuer -or $claimsIssuer.Count() -eq 0) {
+    if($null -eq $claimsIssuer -or $claimsIssuer.Count -eq 0) {
         Write-DosMessage -Level "Fatal" -Message "No claims issuer tenant was found in the azuresettings.config."
     } 
     else {
-        if($claimsIssuer.Count() -gt 1) {
+        if($claimsIssuer.Count -gt 1) {
             Write-DosMessage -Level "Fatal" -Message "Multiple claims issuer tenants were found in the azuresettings.config. Please provide only one claims issuer."
         }
         return $claimsIssuer[0]
