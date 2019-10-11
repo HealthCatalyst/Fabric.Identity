@@ -76,7 +76,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     }
 
     $directoryReadName = "Directory.Read.All"
-    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName
+    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName -type "Role"
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
@@ -309,8 +309,10 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $azureConfigPath
+        [string] $azureConfigPath,
+        [string] $configAppName = "Identity Service"
     )
+
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
     $secretName = $installSettings.variable.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
@@ -331,7 +333,7 @@ function Register-Identity {
         Connect-AzureADTenant -tenantId $claimsIssuer.name
 
         $userDirectoryReadPermissions = Get-GraphiApiUserDirectoryReadPermissions
-        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $userDirectoryReadPermissions -isMultiTenant $true
+        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permissions $userDirectoryReadPermissions -isMultiTenant $true
         $clientId = $app.AppId
         $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
@@ -343,7 +345,7 @@ function Register-Identity {
         -clientSecret $clientSecret `
         -clientId $clientId `
         -installConfigPath $azureConfigPath `
-        -appName $appName
+        -appName $configAppName
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
@@ -365,7 +367,8 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $azureConfigPath
+        [string] $azureConfigPath,
+        [string] $configAppName = "Identity Service Search"
     )
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
     $secretName = $installSettings.variable.value
@@ -378,8 +381,7 @@ function Register-IdPSS {
       Connect-AzureADTenant -tenantId $tenant.name
 
       # Get read permissions
-      $permissions = @()
-      $permissions += Get-GraphApiDirectoryReadPermissions
+      $permissions = Get-GraphApiDirectoryReadPermissions
       $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permissions $permissions
       $clientId = $app.AppId
       $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
@@ -391,7 +393,7 @@ function Register-IdPSS {
           -clientSecret $clientSecret `
           -clientId $clientId `
           -installConfigPath $azureConfigPath `
-          -appName $appName
+          -appName $configAppName
 
       # Manual process, need to give consent this way for now
       Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
