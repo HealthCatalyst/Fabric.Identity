@@ -67,6 +67,6 @@ Describe 'Remove-IdentityClaimsIssuerFromTenantsList' {
     }
 
     AfterAll {
-        Remove-Module Install-Identity-Utilities -Force
+        Remove-Module Install-IdPSS-Utilities -Force
     }
 }
