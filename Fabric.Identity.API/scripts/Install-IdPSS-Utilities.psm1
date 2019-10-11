@@ -23,15 +23,15 @@ function Get-GraphApiPermissionFromList() {
     param(
         [string] $permissionName,
         [string] $type,
-        [Microsoft.Open.AzureAD.Model.OAuth2Permission[]] $permissionsList
+        [Microsoft.Open.AzureAD.Model.ServicePrincipal] $servicePrincipal
     )
     if($type -eq "scope") {
-        $permission = $permissionsList | Where-Object {$_.Value -eq $permissionName}
+        $permission = $servicePrincipal.Oauth2Permissions | Where-Object {$_.Value -eq $permissionName}
         if($null -eq $permission) {
             Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
         }
     } elseif($type -eq "role") {        
-        $permission = $permissionsList | Where-Object {$_.Value -eq $permissionName}
+        $permission = $servicePrincipal.AppRoles | Where-Object {$_.Value -eq $permissionName}
         if($null -eq $permission) {
             Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
         }
@@ -53,8 +53,8 @@ function Get-GraphiApiUserDirectoryReadPermissions() {
     }
 
     # Get Permissions
-    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read" -type "Scope" -permissionsList $aad.Oauth2Permissions
-    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All" -type "Role" -permissionsList $aad.Oauth2Permissions
+    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read" -type "Scope" -servicePrincipal $aad
+    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All" -type "Role" -servicePrincipal $aad
 
     # Construct expected RequiredResourceAccess object
     $userDirectoryReadRequiredResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
@@ -77,7 +77,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     }
 
     $directoryReadName = "Directory.Read.All"
-    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName -type "Role" -permissionsList $aad.Oauth2Permissions
+    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName -type "Role" -servicePrincipal $aad
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
@@ -102,7 +102,7 @@ function Get-GraphApiUserReadPermissions() {
     }
 
     $userReadName = "User.Read"
-    $userRead = Get-GraphApiPermissionFromList -permissionName $userReadName -permissionsList $aad.Oauth2Permissions
+    $userRead = Get-GraphApiPermissionFromList -permissionName $userReadName -servicePrincipal $aad
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
