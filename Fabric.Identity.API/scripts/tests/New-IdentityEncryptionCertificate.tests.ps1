@@ -50,4 +50,8 @@ Describe 'New-IdentityEncryptionCertificate ' {
             $certificate | Should -Be $testCert
         }
     }
+
+    AfterAll {
+        Remove-Module Install-Identity-Utilities -Force
+    }
 }

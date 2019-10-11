@@ -111,4 +111,8 @@ Import-Module $targetFilePath -Force
             }
         }
     }
+    
+    AfterAll {
+        Remove-Module Install-IdPSS-Utilities -Force
+    }
 }

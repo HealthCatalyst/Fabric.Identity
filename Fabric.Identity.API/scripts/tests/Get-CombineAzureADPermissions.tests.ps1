@@ -109,4 +109,8 @@ Import-Module $targetFilePath -Force
             }
         }
     }
+
+    AfterAll {
+        Remove-Module Install-Identity-Utilities -Force
+    }
 }

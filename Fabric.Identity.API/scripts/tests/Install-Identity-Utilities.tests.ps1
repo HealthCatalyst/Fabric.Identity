@@ -1086,6 +1086,7 @@ Describe 'Migrate-AADSettings' -Tag 'Integration'{
     Remove-Variable installConfigPath -Scope Global
     Remove-Variable azureConfigPath -Scope Global
     Remove-Variable nodesToSearch -Scope Global
+    Remove-Module Install-Identity-Utilities -Force
   }
 }
 

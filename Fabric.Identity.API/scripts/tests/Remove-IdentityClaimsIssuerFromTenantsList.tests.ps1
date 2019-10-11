@@ -65,4 +65,8 @@ Describe 'Remove-IdentityClaimsIssuerFromTenantsList' {
             $resultTenants[2].name | Should -eq "name3"
         }
     }
+
+    AfterAll {
+        Remove-Module Install-Identity-Utilities -Force
+    }
 }
