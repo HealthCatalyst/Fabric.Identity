@@ -59,4 +59,8 @@ Describe 'New-FabricAzureADApplication' -Tag 'Unit' {
             }
         }
     }
+    
+    AfterAll {
+        Remove-Module Install-IdPSS-Utilities -Force
+    }
 }

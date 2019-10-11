@@ -44,4 +44,8 @@ Describe 'Test-IdentityEncryptionCertificate' {
         # Assert
         $value | Should -Be $true
     }
+    AfterAll {
+        Remove-Module Install-Identity-Utilities -Force
+    }
 }
+
