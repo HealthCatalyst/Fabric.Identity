@@ -22,8 +22,8 @@ cd Fabric.Identity.wiki
 
 echo "-----Present directory = $(pwd)-----"
 
-git config user.name "VSTS System User"
-git config user.email "dev.test@healthcatalyst.com"
+git config user.name "HealthCatalystDevTest"
+git config user.email "testIdPHC@gmail.com"
 git add *.md
 git commit -m 'update API documentation'
 git push origin master
