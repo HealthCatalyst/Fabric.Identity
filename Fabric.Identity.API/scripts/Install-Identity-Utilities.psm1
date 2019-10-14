@@ -1071,11 +1071,18 @@ function Set-IdentityEnvironmentAzureVariables {
 
     if($useAzure -eq $true)
     {
+        $identitySearchAppName = "Identity Service Search"
         $scope = "identity"
         # Alter Identity web.config for azure
         $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
         $idPSSClientSettings = @() # Force into array
-        $idPSSClientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Provider Search Service" # Temporary until azure settings merged
+        $idpssClientSettingsResult = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service Search"
+        if($null -eq $idpssClientSettingsResult) {
+            Write-DosMessage -Level "Warning" -Message "Could not find Identity Service Search azure settings in the azuresettings.config file.  Falling back to Identity Provider Search Service settings."
+            $idpssClientSettingsResult = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Provider Search Service"
+            $identitySearchAppName = "Identity Provider Search Service" # Fall back to update correct azure settings
+        }
+        $idPSSClientSettings += $idpssClientSettingsResult
         $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "allowedTenants"
@@ -1088,7 +1095,7 @@ function Set-IdentityEnvironmentAzureVariables {
             -clientSettings $idPSSClientSettings `
             -encryptionCert $encryptionCert `
             -azureSettingsConfigPath $installConfigPath `
-            -appName "Identity Provider Search Service" # Temporary until azure settings merged
+            -appName $appName
 
         # Add all idpss settings into environment variable variable
         $environmentVariables += $idpssAzureSettings
