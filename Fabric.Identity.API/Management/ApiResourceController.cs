@@ -6,7 +6,7 @@ using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.Annotations;
 using IS4 = IdentityServer4.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -47,9 +47,9 @@ namespace Fabric.Identity.API.Management
         ///     <see cref="IS4.ApiResource" />
         /// </returns>
         [HttpGet("{id}")]
-        [SwaggerResponse(200, typeof(ApiResource), "Success")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(200, "Success", typeof(ApiResource))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
         public IActionResult Get(string id)
         {
             var is4ApiResource = _apiResourceStore.GetResource(id);
@@ -69,9 +69,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
         [HttpPost("{id}/resetPassword")]
-        [SwaggerResponse(200, typeof(ApiResource), "The password was reset.")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(200, "The password was reset.", typeof(ApiResource))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
         public IActionResult ResetPassword(string id)
         {
             var is4ApiResource = _apiResourceStore.GetResource(id);
@@ -98,9 +98,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="apiResource">The <see cref="ApiResource" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
-        [SwaggerResponse(201, typeof(ApiResource), "The API resource was created.")]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
+        [SwaggerResponse(201, "The API resource was created.", typeof(ApiResource))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse(409, DuplicateErrorMsg, typeof(Error))]
         public IActionResult Post([FromBody] ApiResource apiResource)
         {
             var is4ApiResource = apiResource.ToIs4ApiResource();
@@ -122,7 +122,7 @@ namespace Fabric.Identity.API.Management
 
                 var viewResource = is4ApiResource.ToApiResourceViewModel();
                 viewResource.ApiSecret = resourceSecret;
-                return CreatedAtAction("Get", new { apiResource.Name }, viewResource);
+                return CreatedAtAction("Get", new { id = apiResource.Name }, viewResource);
             }, $"{FabricIdentityConstants.ValidationRuleSets.ApiResourcePost},{FabricIdentityConstants.ValidationRuleSets.Default}");
         }
 
@@ -133,10 +133,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="apiResource">The <see cref="ApiResource" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
-        [SwaggerResponse(204, null, "No Content")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
+        [SwaggerResponse(204, "No Content")]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse(409, DuplicateErrorMsg, typeof(Error))]
         public IActionResult Put(string id, [FromBody] ApiResource apiResource)
         {
             var is4ApiResource = apiResource.ToIs4ApiResource();
@@ -172,8 +172,8 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the API resource.</param>
         /// <returns></returns>
         [HttpDelete("{id}")]
-        [SwaggerResponse(204, null, "The specified API resource was deleted.")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(204, "The specified API resource was deleted.")]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
         public IActionResult Delete(string id)
         {
             var is4ApiResource = _apiResourceStore.GetResource(id);

@@ -45,19 +45,15 @@ namespace Fabric.Identity.API
         private static readonly string ChallengeDirectory = @".well-known";
         private readonly IAppConfiguration _appConfig;
         private readonly ICertificateService _certificateService;
-        private readonly ILogger _logger;
-        private readonly LoggingLevelSwitch _loggingLevelSwitch;
 
         public IConfiguration Configuration { get; set; }  
 
         public Startup(IConfiguration configuration)
         {
-            _certificateService = MakeCertificateService();
+            _certificateService = IdentityConfigurationProvider.MakeCertificateService();
             var decryptionService = new DecryptionService(_certificateService);
             _appConfig =
                 new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
-            _loggingLevelSwitch = new LoggingLevelSwitch();
-            _logger = LogFactory.CreateTraceLogger(_loggingLevelSwitch, _appConfig.ApplicationInsights);
         }
 
         private static string XmlCommentsFilePath
@@ -74,6 +70,11 @@ namespace Fabric.Identity.API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            if (_appConfig.ApplicationInsights?.Enabled ?? false)
+            {
+                services.AddApplicationInsightsTelemetry();
+            }
+
             var identityServerApiSettings = _appConfig.IdentityServerConfidentialClientSettings;
 
             services.TryAddSingleton(_appConfig.HostingOptions);
@@ -83,7 +84,7 @@ namespace Fabric.Identity.API
             var hostingOptions = services.BuildServiceProvider().GetRequiredService<HostingOptions>();
             var connectionStrings = services.BuildServiceProvider().GetRequiredService<IConnectionStrings>();
 
-            var eventLogger = LogFactory.CreateEventLogger(_loggingLevelSwitch, hostingOptions, connectionStrings);
+            var eventLogger = LogFactory.CreateEventLogger(hostingOptions, connectionStrings);
             var serilogEventSink = new SerilogEventSink(eventLogger);
 
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
@@ -99,8 +100,8 @@ namespace Fabric.Identity.API
                 .AddSingleton<HttpClient>()
                 .AddSingleton<IEventSink>(serilogEventSink)
                 .AddSingleton(_appConfig)
-                .AddSingleton(_logger)
-                .AddIdentityServer(_appConfig, _certificateService, _logger, hostingOptions, connectionStrings)
+                .AddSingleton(Log.Logger)
+                .AddIdentityServer(_appConfig, _certificateService, Log.Logger, hostingOptions, connectionStrings)
                 .AddAuthorizationServices()
                 .AddScoped<IUserResolverService, UserResolverService>()
                 .AddSingleton<ISerializationSettings, SerializationSettings>()
@@ -143,7 +144,7 @@ namespace Fabric.Identity.API
             services.AddTransient<AccountService>();
 
             services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddJsonOptions(x =>
                 {
                     x.SerializerSettings.ReferenceLoopHandling =
@@ -172,7 +173,10 @@ namespace Fabric.Identity.API
 
                 c.DocInclusionPredicate((docName, apiDesc) =>
                 {
-                    var versions = apiDesc.ControllerAttributes()
+                    if (!apiDesc.TryGetMethodInfo(out var methodInfo)) return false;
+
+                    var versions = methodInfo.DeclaringType
+                        .GetCustomAttributes(true)
                         .OfType<ApiVersionAttribute>()
                         .SelectMany(attr => attr.Versions);
 
@@ -209,13 +213,12 @@ namespace Fabric.Identity.API
         public void Configure(
             IApplicationBuilder app,
             IHostingEnvironment env,
-            ILoggerFactory loggerFactory,
             IDbBootstrapper dbBootstrapper)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                _loggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
+                LogFactory.LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
             }
 
             app.UseExceptionHandler("/Home/UnauthorizedError");
@@ -236,21 +239,24 @@ namespace Fabric.Identity.API
 
             InitializeDatabase(dbBootstrapper);
 
-            loggerFactory.AddSerilog(_logger);
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
-            app.UseIdentityServer();
             app.UseStaticFiles();
-            app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, _logger);
+            app.UseStaticFilesForAcmeChallenge(ChallengeDirectory, Log.Logger);
+
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
+            app.UseSerilogRequestLogging();
+
             app.UseAuthentication();
+            app.UseIdentityServer();
+
             app.UseMvcWithDefaultRoute();
 
             var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
-                .UseFabricMonitoring(healthCheckService.CheckHealth, _loggingLevelSwitch);
+                .UseFabricMonitoring(healthCheckService.CheckHealth, LogFactory.LoggingLevelSwitch);
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger(c => { c.RouteTemplate = "swagger/ui/index/{documentName}/swagger.json"; });
@@ -272,13 +278,6 @@ namespace Fabric.Identity.API
             }
         }
 
-        private static ICertificateService MakeCertificateService()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return new LinuxCertificateService();
-            }
-            return new WindowsCertificateService();
-        }
+        
     }
 }

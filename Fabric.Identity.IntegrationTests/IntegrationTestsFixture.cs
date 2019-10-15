@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Logging;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
@@ -20,6 +21,7 @@ using Fabric.Platform.Shared.Configuration.Docker;
 using IdentityModel;
 using IdentityModel.Client;
 using IdentityServer4.AccessTokenValidation;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -188,6 +190,24 @@ namespace Fabric.Identity.IntegrationTests
 
         private TestServer CreateIdentityTestServer(string storageProvider)
         {
+            var loggerConfiguration = new LoggerConfiguration();
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
+                .AddDockerSecrets(typeof(IAppConfiguration))
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .Build();
+
+            var certificateService = IdentityConfigurationProvider.MakeCertificateService();
+            var decryptionService = new DecryptionService(certificateService);
+            var appConfig = new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
+
+            LogFactory.ConfigureTraceLogger(loggerConfiguration, appConfig.ApplicationInsights);
+
+            Log.Logger = loggerConfiguration.CreateLogger();
+
             var hostingOptions = new HostingOptions
             {
                 UseIis = false,
@@ -195,31 +215,51 @@ namespace Fabric.Identity.IntegrationTests
                 StorageProvider = storageProvider
             };
 
-            var builder = new WebHostBuilder();
+            var builder = WebHost.CreateDefaultBuilder();
 
             builder.ConfigureServices(c =>
                 c.AddSingleton(LdapSettings)
+                    .AddSingleton(Log.Logger)
                     .AddSingleton(CouchDbSettings)
                     .AddSingleton(hostingOptions)
                     .AddSingleton(ConnectionStrings));
 
-            builder.UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .ConfigureAppConfiguration((hostContext, config) =>
+            builder.ConfigureAppConfiguration((hostContext, config) =>
                 {
-                    config.AddJsonFile("appsettings.json");
-                    config.AddEnvironmentVariables();
                     config.AddDockerSecrets(typeof(IAppConfiguration));
                     config.SetBasePath(Directory.GetCurrentDirectory());
                 })
-                .UseUrls(IdentityServerUrl);
+                .UseUrls(IdentityServerUrl)
+                .ConfigureKestrel((context, options) =>
+                {
+
+                })
+                .UseSerilog()
+                .UseStartup<Startup>();
 
             return new TestServer(builder);
         }
 
         private TestServer CreateRegistrationApiTestServer(string storageProvider)
         {
+            var loggerConfiguration = new LoggerConfiguration();
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
+                .AddDockerSecrets(typeof(IAppConfiguration))
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .Build();
+
+            var certificateService = IdentityConfigurationProvider.MakeCertificateService();
+            var decryptionService = new DecryptionService(certificateService);
+            var appConfig = new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
+
+            LogFactory.ConfigureTraceLogger(loggerConfiguration, appConfig.ApplicationInsights);
+
+            Log.Logger = loggerConfiguration.CreateLogger();
+
             // I don't think we use this anymore
             var options = new IdentityServerAuthenticationOptions
             {
@@ -238,10 +278,11 @@ namespace Fabric.Identity.IntegrationTests
                 StorageProvider = storageProvider
             };
 
-            var apiBuilder = new WebHostBuilder();
+            var apiBuilder = WebHost.CreateDefaultBuilder();
 
             apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
                 .AddSingleton(options)
+                .AddSingleton(Log.Logger)
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
@@ -255,17 +296,19 @@ namespace Fabric.Identity.IntegrationTests
                 });
             });
 
-            apiBuilder.UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
+            apiBuilder
                 .ConfigureAppConfiguration((hostContext, config) =>
                 {
-                    config.AddJsonFile("appsettings.json");
-                    config.AddEnvironmentVariables();
                     config.AddDockerSecrets(typeof(IAppConfiguration));
                     config.SetBasePath(Directory.GetCurrentDirectory());
                 })
-                .UseUrls(RegistrationApiServerUrl);
+                .UseUrls(RegistrationApiServerUrl)
+                .ConfigureKestrel((context, kestrelOptions) =>
+                {
+
+                })
+                .UseSerilog()
+                .UseStartup<Startup>();
 
             return new TestServer(apiBuilder);
         }
