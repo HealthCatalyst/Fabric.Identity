@@ -1,4 +1,5 @@
-﻿using Fabric.Identity.API.Services;
+﻿using System.Runtime.InteropServices;
+using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Configuration.Docker;
 using Microsoft.Extensions.Configuration;
 
@@ -24,6 +25,15 @@ namespace Fabric.Identity.API.Configuration
         public IAppConfiguration GetAppConfiguration()
         {
             return BuildAppConfiguration();
+        }
+
+        public static ICertificateService MakeCertificateService()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return new LinuxCertificateService();
+            }
+            return new WindowsCertificateService();
         }
 
         private IAppConfiguration BuildAppConfiguration()

@@ -9,7 +9,7 @@ using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Fabric.Identity.API.Management
 {
@@ -37,8 +37,8 @@ namespace Fabric.Identity.API.Management
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<ExternalProviderApiModel>), "Success")]
-        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse((int)HttpStatusCode.OK, "Success", typeof(List<ExternalProviderApiModel>))]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, BadRequestErrorMsg, typeof(Error))]
         public async Task<IActionResult> Get()
         {
             var providers = await _identityProviderConfigurationService.GetConfiguredIdentityProviders();
