@@ -7,7 +7,7 @@ using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.Annotations;
 using IS4 = IdentityServer4.Models;
 
 namespace Fabric.Identity.API.Management
@@ -43,9 +43,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique identifier of the client.</param>
         /// <returns></returns>
         [HttpGet("{id}")]
-        [SwaggerResponse(200, typeof(Client), "Success")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(200, "Success", typeof(Client))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
         public IActionResult Get(string id)
         {
             var client = _clientManagementStore.FindClientByIdAsync(id).Result;
@@ -65,9 +65,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique id of the client to reset.</param>
         /// <returns></returns>
         [HttpPost("{id}/resetPassword")]
-        [SwaggerResponse(200, typeof(Client), "The secret for the client has been reset.")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse(200, "The secret for the client has been reset.", typeof(Client))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
         public IActionResult ResetPassword(string id)
         {
             var client = _clientManagementStore.FindClientByIdAsync(id).Result;
@@ -96,9 +96,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="client">The <see cref="IS4.Client" /> object to add.</param>
         /// <returns></returns>
         [HttpPost]
-        [SwaggerResponse(201, typeof(Client), "The client was created.")]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
+        [SwaggerResponse(201, "The client was created.", typeof(Client))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse(409, DuplicateErrorMsg, typeof(Error))]
         public IActionResult Post([FromBody] Client client)
         {
             try
@@ -133,10 +133,10 @@ namespace Fabric.Identity.API.Management
         /// <param name="client">The <see cref="IS4.Client" /> object to update.</param>
         /// <returns></returns>
         [HttpPut("{id}")]
-        [SwaggerResponse(204, typeof(void), "The specified client was updated.")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
-        [SwaggerResponse(400, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse(409, typeof(Error), DuplicateErrorMsg)]
+        [SwaggerResponse(204, "The specified client was updated.", typeof(void))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
+        [SwaggerResponse(400, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse(409, DuplicateErrorMsg, typeof(Error))]
         public IActionResult Put(string id, [FromBody] Client client)
         {
             var is4Client = client.ToIs4ClientModel();
@@ -173,8 +173,8 @@ namespace Fabric.Identity.API.Management
         /// <param name="id">The unique id of the client to delete.</param>
         /// <returns></returns>
         [HttpDelete("{id}")]
-        [SwaggerResponse(204, typeof(void), "The specified client was deleted.")]
-        [SwaggerResponse(404, typeof(Error), NotFoundErrorMsg)]
+        [SwaggerResponse(204, "The specified client was deleted.", typeof(void))]
+        [SwaggerResponse(404, NotFoundErrorMsg, typeof(Error))]
         public IActionResult Delete(string id)
         {
             var client = _clientManagementStore.FindClientByIdAsync(id).Result;
