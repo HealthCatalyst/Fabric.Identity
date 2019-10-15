@@ -62,5 +62,10 @@ namespace IdentityServer4.Quickstart.UI
 
             return View("Error", vm);
         }
+
+        public IActionResult UnauthorizedError()
+        {
+            return View("UnauthorizedError");
+        }
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Shared.Configuration;
@@ -35,6 +33,7 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             Assert.Equal(clientSecret, appConfig.IdentityServerConfidentialClientSettings.ClientSecret);
             Assert.Equal(clientSecret, appConfig.AzureActiveDirectorySettings.ClientSecret);
             Assert.Equal("InMemory", appConfig.HostingOptions.StorageProvider);
+            Assert.Equal("HQCATALYST", appConfig.FilterSettings.GroupFilterSettings.Prefixes[0]);
         }
 
         private RSA GetPrivateKey()
@@ -75,6 +74,13 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
                 AzureActiveDirectorySettings = new AzureActiveDirectorySettings
                 {
                     ClientSecret = EncryptString(privateKey, clientSecret)
+                },
+                FilterSettings = new FilterSettings
+                {
+                    GroupFilterSettings = new GroupFilterSettings
+                    {
+                        Prefixes = new [] {"HQCATALYST"}
+                    }
                 }
             };
             return JsonConvert.SerializeObject(appConfig, Formatting.Indented, new JsonSerializerSettings{NullValueHandling = NullValueHandling.Ignore});

@@ -15,20 +15,23 @@ using Microsoft.AspNetCore.Authentication;
 using Xunit;
 using Fabric.Identity.API.Exceptions;
 using System.Globalization;
+using Moq;
 
 namespace Fabric.Identity.UnitTests.Services
 {
     public class ClaimsServiceTests
     {
-        protected ClaimsService subject;
-        protected AppConfiguration appConfiguration;
+        protected ClaimsService ClaimsService;
+        protected AppConfiguration AppConfiguration;
 
         public ClaimsServiceTests()
         {
-            appConfiguration = new AppConfiguration();
-            appConfiguration.AzureActiveDirectorySettings = new AzureActiveDirectorySettings();
-            subject = new ClaimsService(appConfiguration);
-            this.appConfiguration.AzureAuthenticationEnabled = true;
+            var mockExternalIdentityProviderService = new Mock<IExternalIdentityProviderService>();
+            mockExternalIdentityProviderService.SetupFindUserBySubjectId("");
+            AppConfiguration = new AppConfiguration();
+            AppConfiguration.AzureActiveDirectorySettings = new AzureActiveDirectorySettings();
+            ClaimsService = new ClaimsService(AppConfiguration, mockExternalIdentityProviderService.Object);
+            this.AppConfiguration.AzureAuthenticationEnabled = true;
         }
 
         public class GetEffectiveSubjectIdTests : ClaimsServiceTests
@@ -58,7 +61,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GetEffectiveSubjectId(claimResult, null);
+                    var result = ClaimsService.GetEffectiveSubjectId(claimResult, null);
                     Assert.True(false, "Should not get past this function call.");
                 }
                 catch (Exception exc)
@@ -78,7 +81,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GetEffectiveSubjectId(null, new User());
+                    var result = ClaimsService.GetEffectiveSubjectId(null, new User());
                     Assert.True(false, "Should not get past this function call.");
                 }
                 catch (Exception exc)
@@ -95,11 +98,11 @@ namespace Fabric.Identity.UnitTests.Services
             public void GetEffectiveSubjectId_NonAzureADToken_ReturnsUserSubjectId()
             {
                 var expectedSubjectId = TestHelper.GenerateRandomString();
-                this.appConfiguration.AzureAuthenticationEnabled = false;
+                this.AppConfiguration.AzureAuthenticationEnabled = false;
                 claimResult.SchemeItem = "NotAzure";
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(expectedSubjectId, result);                
             }
@@ -107,14 +110,14 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveSubjectId_AzureSetToFails_ReturnsUserSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = false;
+                this.AppConfiguration.AzureAuthenticationEnabled = false;
 
                 var expectedSubjectId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
                 claimResult.Claims = new List<Claim>() { new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId) };
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(expectedSubjectId, result);
 
@@ -125,7 +128,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveSubjectId_SchemeItemNotAzure_ReturnsUserSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedSubjectId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -133,7 +136,7 @@ namespace Fabric.Identity.UnitTests.Services
                 claimResult.Claims = new List<Claim>() { new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId) };
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(expectedSubjectId, result);
 
@@ -144,14 +147,14 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveSubjectId_NoAzureClaims_ReturnsUserSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedSubjectId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
                 claimResult.Claims = new List<Claim>() {  };
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(expectedSubjectId, result);
 
@@ -162,14 +165,14 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveSubjectId_OIDAzureClaim_ReturnsAzureSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedSubjectId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
                 claimResult.Claims = new List<Claim>() { new Claim(AzureActiveDirectoryJwtClaimTypes.OID, claimSubjectId) };
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(claimSubjectId, result);
 
@@ -180,14 +183,14 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveSubjectId_OIDAlternativeAzureClaim_ReturnsAzureSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedSubjectId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
                 claimResult.Claims = new List<Claim>() { new Claim(AzureActiveDirectoryJwtClaimTypes.OID_Alternative, claimSubjectId) };
                 user.SubjectId = expectedSubjectId;
 
-                var result = subject.GetEffectiveSubjectId(claimResult, user);
+                var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
                 Assert.Equal<string>(claimSubjectId, result);
 
@@ -216,7 +219,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GetEffectiveUserId(null);
+                    var result = ClaimsService.GetEffectiveUserId(null);
                     Assert.True(false, "Should not get past this function call.");
                 }
                 catch (Exception exc)
@@ -233,11 +236,11 @@ namespace Fabric.Identity.UnitTests.Services
             public void GetEffectiveUserId_NonAzureADToken_ReturnsUserIdClaim()
             {
                 var expectedUserId = TestHelper.GenerateRandomString();
-                this.appConfiguration.AzureAuthenticationEnabled = false;
+                this.AppConfiguration.AzureAuthenticationEnabled = false;
                 claimResult.SchemeItem = "NotAzure";
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(expectedUserId, result);
             }
@@ -245,7 +248,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveUserId_AzureSetToFalse_ReturnsUserIdClaim()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = false;
+                this.AppConfiguration.AzureAuthenticationEnabled = false;
 
                 var expectedUserId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -256,7 +259,7 @@ namespace Fabric.Identity.UnitTests.Services
                 };
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(expectedUserId, result);
 
@@ -267,7 +270,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveUserId_SchemeItemNotAzure_ReturnsUserIdClaim()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedUserId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -278,7 +281,7 @@ namespace Fabric.Identity.UnitTests.Services
                 };
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(expectedUserId, result);
 
@@ -289,7 +292,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveUserId_NoAzureClaims_ReturnsUserIdClaim()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedUserId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -300,7 +303,7 @@ namespace Fabric.Identity.UnitTests.Services
                 };
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(expectedUserId, result);
 
@@ -311,7 +314,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveUserId_OIDAzureClaim_ReturnsAzureSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedUserId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -322,7 +325,7 @@ namespace Fabric.Identity.UnitTests.Services
                 };
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(claimSubjectId, result);
 
@@ -333,7 +336,7 @@ namespace Fabric.Identity.UnitTests.Services
             [Fact]
             public void GetEffectiveUserId_OIDAlternativeAzureClaim_ReturnsAzureSubjectId()
             {
-                this.appConfiguration.AzureAuthenticationEnabled = true;
+                this.AppConfiguration.AzureAuthenticationEnabled = true;
 
                 var expectedUserId = TestHelper.GenerateRandomString();
                 var claimSubjectId = TestHelper.GenerateRandomString();
@@ -344,7 +347,7 @@ namespace Fabric.Identity.UnitTests.Services
                 };
                 claimResult.UserId = expectedUserId;
 
-                var result = subject.GetEffectiveUserId(claimResult);
+                var result = ClaimsService.GetEffectiveUserId(claimResult);
 
                 Assert.Equal<string>(claimSubjectId, result);
                 Assert.Equal<string>(claimSubjectId, result);
@@ -365,13 +368,13 @@ namespace Fabric.Identity.UnitTests.Services
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_NullInfo_ReturnsException()
+            public async void GenerateClaimsForIdentity_NullInfo_ReturnsException()
             {
                 Exception excResult = null;
 
                 try
                 {
-                    var result = subject.GenerateClaimsForIdentity(null, new AuthorizationRequest());
+                    var result = await ClaimsService.GenerateClaimsForIdentity(null, new AuthorizationRequest());
                     Assert.True(false, "Should not get past this function call.");
                 }
                 catch (Exception exc)
@@ -385,37 +388,37 @@ namespace Fabric.Identity.UnitTests.Services
             }
             
             [Fact]
-            public void GenerateClaimsForIdentity_HappyPathNonAzure_ReturnsClaimsResult()
+            public async void GenerateClaimsForIdentity_HappyPathNonAzure_ReturnsClaimsResult()
             {
-                var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
 
                 AssertClaimsResult(authenticateInfo, authorizationRequest, result);                
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_HappyPathAzure_ReturnsClaimsResult()
+            public async void GenerateClaimsForIdentity_HappyPathAzure_ReturnsClaimsResult()
             {
                 var issuer = TestHelper.GenerateRandomString();
                 authenticateInfo = GenerateAuthenticateInfo(issuer);
                 authenticateInfo.Properties.Items["scheme"] = FabricIdentityConstants.AuthenticationSchemes.Azure;
-                appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[] 
+                AppConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[] 
                 {
                     issuer = "LOCAL AUTHORITY"
                 };
 
-                var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
 
                 AssertClaimsResult(authenticateInfo, authorizationRequest, result);
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_InvalidIssuer_ThrowException()
+            public async void GenerateClaimsForIdentity_InvalidIssuer_ThrowException()
             {
                 var expectedInvalidIssuer = TestHelper.GenerateRandomString();
                 var issuer = TestHelper.GenerateRandomString();
                 authenticateInfo = GenerateAuthenticateInfo(issuer);
                 authenticateInfo.Properties.Items["scheme"] = FabricIdentityConstants.AuthenticationSchemes.Azure;
-                appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
+                AppConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
                 {
                     issuer = expectedInvalidIssuer
                 };
@@ -423,7 +426,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                    var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
                     Assert.True(false, "The code should not call this line.  It should have thrown an exception.");
                 }
                 catch(Exception exc)
@@ -441,13 +444,13 @@ namespace Fabric.Identity.UnitTests.Services
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_NoIssuer_ThrowException()
+            public async void GenerateClaimsForIdentity_NoIssuer_ThrowException()
             {
                 var expectedInvalidIssuer = TestHelper.GenerateRandomString();
                 var issuer = TestHelper.GenerateRandomString();
                 authenticateInfo = GenerateAuthenticateInfo(issuer, false);
                 authenticateInfo.Properties.Items["scheme"] = FabricIdentityConstants.AuthenticationSchemes.Azure;
-                appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
+                AppConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
                 {
                     issuer = expectedInvalidIssuer
                 };
@@ -455,7 +458,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                    var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
                     Assert.True(false, "The code should not call this line.  It should have thrown an exception.");
                 }
                 catch (Exception exc)
@@ -471,27 +474,27 @@ namespace Fabric.Identity.UnitTests.Services
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_HappyPathNonAzure_RemovesSubjectUserIdClaim()
+            public async void GenerateClaimsForIdentity_HappyPathNonAzure_RemovesSubjectUserIdClaim()
             {
                 authenticateInfo = GenerateAuthenticateInfo(null, true, false);
 
-                var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
 
                 Assert.False(result.Claims.Any(x => x.Type == JwtClaimTypes.Subject));
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_HappyPathNonAzure_RemovesNameIdentitiferUserIdClaim()
+            public async void GenerateClaimsForIdentity_HappyPathNonAzure_RemovesNameIdentitiferUserIdClaim()
             {
                 authenticateInfo = GenerateAuthenticateInfo(null, true, false);
 
-                var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
                 
                 Assert.False(result.Claims.Any(x => x.Type == ClaimTypes.NameIdentifier));
             }
 
             [Fact]
-            public void GenerateClaimsForIdentity_NoUserIdClaim_ThrowException()
+            public async void GenerateClaimsForIdentity_NoUserIdClaim_ThrowException()
             {
                 authenticateInfo = GenerateAuthenticateInfo(null, true, false, false);
 
@@ -499,7 +502,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 try
                 {
-                    var result = subject.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
+                    var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
                     Assert.True(false, "The code should not call this line.  It should have thrown an exception.");
                 }
                 catch (Exception exc)

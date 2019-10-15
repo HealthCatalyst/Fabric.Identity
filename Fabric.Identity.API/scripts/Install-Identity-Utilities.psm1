@@ -1,5 +1,5 @@
 # Import Dos Install Utilities
-$minVersion = [System.Version]::new(1, 0, 248 , 0)
+$minVersion = [System.Version]::new(1, 0, 270 , 0)
 try {
     Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minVersion -ErrorAction Stop
 } catch {
@@ -19,14 +19,14 @@ Import-Module -Name $fabricInstallUtilities -Force
 # Import CatalystDosIdentity
 $minDosIdentityVersion = [System.Version]::new(1, 4, 18200 , 12)
 try{
-    Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minDosIdentityVersion -ErrorAction Stop
+    Get-InstalledModule -Name CatalystDosIdentity -MinimumVersion $minDosIdentityVersion -ErrorAction Stop
 } catch{
     Write-Host "Installing CatalystDosIdentity from Powershell Gallery"
     Install-Module CatalystDosIdentity -Scope CurrentUser -MinimumVersion $minDosIdentityVersion -Force
 }
 Import-Module -Name CatalystDosIdentity -MinimumVersion $minVersion -Force
 
-$Global:idPSSAppName = "IdentityProviderSearchService"
+$Global:idPSSAppName = "Identity Provider Search Service"
 
 function Get-FullyQualifiedInstallationZipFile([string] $zipPackage, [string] $workingDirectory){
     if((Test-Path $zipPackage))
@@ -81,9 +81,9 @@ function Get-IISWebSiteForInstall([string] $selectedSiteName, [string] $installC
                         'Id'=$_.id;
                         'Name'=$_.name;
                         'Physical Path'=[System.Environment]::ExpandEnvironmentVariables($_.physicalPath);
-                        'Bindings'=$_.bindings;
+                        'Bindings'=$_.bindings.Collection;
                     };} |
-                    Format-Table Id,Name,'Physical Path',Bindings -AutoSize | Out-Host
+                    Format-Table Id,Name,'Physical Path',Bindings -AutoSize -Wrap | Out-Host
                 
                 $attempts = 1
                 do {
@@ -134,8 +134,8 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
             $allCerts = Get-CertsFromLocation Cert:\LocalMachine\My
             $index = 1
             $attempts = 1
-            $allCerts | 
-                Where-Object { $_.NotAfter -ge $today -and $_.NotBefore -le $today } |
+            $validCerts = $allCerts | Where-Object { $_.NotAfter -ge $today -and $_.NotBefore -le $today }
+            $validCerts |
                 ForEach-Object {New-Object PSCustomObject -Property @{
                 'Index'=$index;
                 'Subject'= $_.Subject; 
@@ -155,14 +155,14 @@ function Get-Certificates([string] $primarySigningCertificateThumbprint, [string
                     Write-DosMessage -Level "Information" -Message "You must select a certificate so Fabric.Identity can sign access and identity tokens."
                 }else{
                     $selectionNumberAsInt = [convert]::ToInt32($selectionNumber, 10)
-                    if(($selectionNumberAsInt -gt  $allCerts.Count) -or ($selectionNumberAsInt -le 0)){
-                        Write-DosMessage -Level "Information" -Message  "Please select a certificate with index between 1 and $($allCerts.Count)."
+                    if(($selectionNumberAsInt -gt  $validCerts.Count) -or ($selectionNumberAsInt -le 0)){
+                        Write-DosMessage -Level "Information" -Message  "Please select a certificate with index between 1 and $($validCerts.Count)."
                     }
                 }
                 $attempts++
-            } while ([string]::IsNullOrEmpty($selectionNumber) -or ($selectionNumberAsInt -gt $allCerts.Count) -or ($selectionNumberAsInt -le 0))
+            } while ([string]::IsNullOrEmpty($selectionNumber) -or ($selectionNumberAsInt -gt $validCerts.Count) -or ($selectionNumberAsInt -le 0))
 
-            $certThumbprint = Get-CertThumbprint $allCerts $selectionNumberAsInt
+            $certThumbprint = Get-CertThumbprint $validCerts $selectionNumberAsInt
             
             if([string]::IsNullOrWhitespace($primarySigningCertificateThumbprint)){
                 $primarySigningCertificateThumbprint = $certThumbprint -replace '[^a-zA-Z0-9]', ''
@@ -206,7 +206,7 @@ function Get-IISAppPoolUser([PSCredential] $credential, [string] $appName, [stri
     }
     else{
         if(![string]::IsNullOrEmpty($storedIisUser)){
-            $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($storedIisUser)' or enter a new App Pool User"
+            $userEnteredIisUser = Read-Host "Press Enter to accept the default IIS App Pool User '$($storedIisUser)' or enter a new App Pool User for $appName"
             if([string]::IsNullOrEmpty($userEnteredIisUser)){
                 $userEnteredIisUser = $storedIisUser
             }
@@ -250,25 +250,57 @@ function Confirm-Credentials([PSCredential] $credential){
 function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
-        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
+        $cspKeyFolder = "$env:ProgramData\microsoft\crypto\rsa\machinekeys"
+        $cngKeyFolder = "$env:ProgramData\microsoft\crypto\Keys"
 
-        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
-        $keyPath = [io.path]::combine($keyFolder, $keyname)
+        $privateKey = Get-IdentityRSAPrivateKey -certificate $signingCert
+        $keyname = $privateKey.Key.UniqueName
 
-        if ([io.file]::exists($keyPath))
-        {        
-            $acl = Get-Acl $keyPath
-            $acl.AddAccessRule($allowRule)
-            Set-Acl $keyPath $acl -ErrorAction Stop
-            Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
-        }else{
-            Write-DosMessage -Level "Error" -Message "No key file was found at '$($keyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
-            throw
+        $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
+        $cngKeyPath = [io.path]::combine($cngKeyFolder, $keyname)
+
+        if ([io.file]::exists($cspKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CSP store location: $cspKeyPath"
+            $keyPath = $cspKeyPath
+        } elseif ([io.file]::exists($cngKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CNG store location: $cngKeyPath"
+            $keyPath = $cngKeyPath
+        } else{
+            Write-DosMessage -Level "Fatal" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
         }
+
+        $acl = Get-Acl $keyPath
+        $acl.AddAccessRule($allowRule)
+        Set-Acl $keyPath $acl -ErrorAction Stop
+        Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
     }catch{
-        Write-DosMessage -Level "Error" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
-        throw
+        Write-DosMessage -Level "Fatal" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
     }
+}
+
+function Get-IdentityRSAPrivateKey {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    try {
+        $privateKey = Get-IdentityRSAPrivateKeyNetWrapper -certificate $certificate
+    }
+    catch {
+        $exception = $_.Exception
+        Write-DosMessage -Level "Error" -Message "Could not get the RSA private key for the provided certificate. Certificate thumbprint: $($certificate.Thumbprint)"
+        throw $exception
+    }
+
+    return $privateKey
+}
+
+function Get-IdentityRSAPrivateKeyNetWrapper {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    return [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($certificate)
 }
 
 function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [string] $scope, [bool] $quiet){
@@ -294,6 +326,24 @@ function Get-SqlServerAddress([string] $sqlServerAddress, [string] $installConfi
     }
     if($sqlServerAddress){ Add-InstallationSetting "common" "sqlServerAddress" "$sqlServerAddress" $installConfigPath | Out-Null }
     return $sqlServerAddress
+}
+
+function Get-WebServerDomain([string] $webServerDomain, [string] $installConfigPath, [bool] $quiet){
+    if([string]::IsNullOrEmpty($webServerDomain))
+	{
+      $webServerDomain = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())"
+	}
+	if(!$quiet){
+        $userEnteredWebServerDomain = Read-Host "Press Enter to accept the default Web Server Domain '$($webServerDomain)' or enter a new Web Server Domain" 
+
+        if(![string]::IsNullOrEmpty($userEnteredWebServerDomain)){
+            $webServerDomain = $userEnteredWebServerDomain
+        }
+    }
+    if($webServerDomain){ 
+	  Add-InstallationSetting "common" "webServerDomain" "$webServerDomain" $installConfigPath | Out-Null 
+	}
+    return $webServerDomain
 }
 
 function Get-IdentityDatabaseConnectionString([string] $identityDbName, [string] $sqlServerAddress, [string] $installConfigPath, [bool] $quiet){
@@ -336,6 +386,36 @@ function Get-MetadataDatabaseConnectionString([string] $metadataDbName, [string]
     return @{DbName = $metadataDbName; DbConnectionString = $metadataConnStr}
 }
 
+function Get-MetadataConnectionStringForDiscovery{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+    
+    $metaDataConnectionString =  "Data Source=$($commonConfig.sqlServerAddress);Initial Catalog=$($commonConfig.metadataDbName);Integrated Security=True;Application Name=Discovery Service;"
+    Confirm-DatabaseConnection -connectionString $metaDataConnectionString
+    return $metaDataConnectionString
+}
+
+
+function Confirm-DatabaseConnection{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $connectionString
+    )
+
+    Write-DosMessage -Level "Information" -Message "Confirming connection string '$connectionString'."
+    $connection = New-Object System.Data.SqlClient.SQLConnection($connectionString)
+    try{
+        $connection.Open()
+    }catch{
+        Write-DosMessage -Level "Fatal" -Message "Could not connect to '$connectionString' please check database connection settings in install config."
+    }finally{
+        $connection.Close();
+    }
+}
+
+
 function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $installConfigPath, [bool]$quiet){
     $defaultDiscoUrl = Get-DefaultDiscoveryServiceUrl -discoUrl $discoveryServiceUrl
     if(!$quiet){
@@ -348,7 +428,16 @@ function Get-DiscoveryServiceUrl([string]$discoveryServiceUrl, [string] $install
     return $defaultDiscoUrl
 }
 
-function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoint, [string] $installConfigPath, [string] $scope, [bool] $quiet){
+function Get-ApplicationEndpoint{
+    param(
+        [string] $appName,
+        [string] $applicationEndpoint,
+        [string] $installConfigPath,
+        [string] $scope,
+        [bool] $quiet,
+        [bool] $addInstallSetting = $true
+    )
+
     $defaultAppEndpoint = Get-DefaultApplicationEndpoint -appName $appName -appEndPoint $applicationEndpoint
     if(!$quiet){
         $userEnteredApplicationEndpoint = Read-Host "Press Enter to accept the default Application Endpoint URL [$defaultAppEndpoint] or enter a new URL"
@@ -356,8 +445,11 @@ function Get-ApplicationEndpoint([string] $appName, [string] $applicationEndpoin
             $defaultAppEndpoint = $userEnteredApplicationEndpoint
         }
     }
-    if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
-    if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+
+    if($addInstallSetting){
+        if($defaultAppEndpoint){ Add-InstallationSetting $scope "applicationEndPoint" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+        if($defaultAppEndpoint){ Add-InstallationSetting "common" "$($scope)Service" "$defaultAppEndpoint" $installConfigPath | Out-Null }
+    }
     return $defaultAppEndpoint
 }
 
@@ -497,12 +589,12 @@ function Add-IdpssApiResourceRegistration($identityServiceUrl, $fabricInstallerS
         $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
 
         if (![string]::IsNullOrWhiteSpace($apiSecret)) {
-		  return $apiSecret
+          return $apiSecret
         }
-		else
-		{
-		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
-		}
+        else
+        {
+          Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
+        }
     }
     catch{
         Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
@@ -797,7 +889,7 @@ function Get-ClientSettingsFromInstallConfig {
             # Does not decrypt secret
             clientSecret = $tenant.secret
             tenantId = $tenant.tenantId
-			tenantAlias = $tenant.tenantAlias
+            tenantAlias = $tenant.tenantAlias
         }
         $clientSettings.Add($tenantSetting)
       }
@@ -942,38 +1034,46 @@ function Set-IdentityEnvironmentAzureVariables {
             -scope $scope `
             -setting "claimsIssuerTenant"
 
-        # Set Azure Settings
-        $environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
-        $environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
-        $environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer.name)
-        $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias", $claimsIssuer.alias)
-        $environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
-        $environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
-        $environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
+        # Validate values are populated: clientSettings, allowedTenants, claimsIssuer
+        if($null -eq $clientSettings -or $null -eq $allowedTenants -or $null -eq $claimsIssuer) {
+            Write-DosMessage -Level "Warning" -Message "Could not validate all Azure settings, continuing without setting Azure AD. Verify Azure settings are correct in the allowedTenants, claimsIssuerTenant, and registeredApplication config sections: $installConfigPath"
+            $useAzure = $false
+        }
+        else {
+            # Set Azure Settings
+            $environmentVariables.Add("AzureActiveDirectorySettings__Authority", "https://login.microsoftonline.com/common")
+            $environmentVariables.Add("AzureActiveDirectorySettings__DisplayName", "Azure AD")
+            $environmentVariables.Add("AzureActiveDirectorySettings__ClaimsIssuer", "https://login.microsoftonline.com/" + $claimsIssuer.name)
+            $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias", $claimsIssuer.alias)
+            $environmentVariables.Add("AzureActiveDirectorySettings__Scope__0", "openid")
+            $environmentVariables.Add("AzureActiveDirectorySettings__Scope__1", "profile")
+            $environmentVariables.Add("AzureActiveDirectorySettings__ClientId", $clientSettings.clientId)
 
-        $secret = $clientSettings.clientSecret
-            if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-                # Encrypt secret in install.config if not encrypted
-                Add-InstallationTenantSettings -configSection "identity" `
-                    -tenantId $clientSettings.tenantId `
-                    -tenantAlias $clientSettings.tenantAlias `
-                    -clientSecret $encryptedSecret `
-                    -clientId $clientSettings.clientId `
-                    -installConfigPath $installConfigPath `
-                    -appName "Identity Service"
+            $secret = $clientSettings.clientSecret
+                if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+                    $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+                    # Encrypt secret in install.config if not encrypted
+                    Add-InstallationTenantSettings -configSection "identity" `
+                        -tenantId $clientSettings.tenantId `
+                        -tenantAlias $clientSettings.tenantAlias `
+                        -clientSecret $encryptedSecret `
+                        -clientId $clientSettings.clientId `
+                        -installConfigPath $installConfigPath `
+                        -appName "Identity Service"
 
-                $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
+                    $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $encryptedSecret)
+                }
+                else{
+                    $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
+                }
+
+            $index = 0
+            foreach($allowedTenant in $allowedTenants)
+            {
+            $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant.name + "/")
+            $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias__$index", $allowedTenant.alias)
+            $index++
             }
-            else{
-                $environmentVariables.Add("AzureActiveDirectorySettings__ClientSecret", $secret)
-            }
-
-        foreach($allowedTenant in $allowedTenants)
-        {
-          $index = $allowedTenants.IndexOf($allowedTenant)
-          $environmentVariables.Add("AzureActiveDirectorySettings__IssuerWhiteList__$index", "https://sts.windows.net/" + $allowedTenant.name + "/")
-          $environmentVariables.Add("AzureActiveDirectorySettings__TenantAlias__$index", $allowedTenant.alias)
         }
     }
 
@@ -1049,12 +1149,13 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         [string] $appInsightsInstrumentationKey,
         [string] $webConfigPath,
         [string] $installConfigPath,
+        [string] $azureSettingsConfigPath, 
         [string] $useAzure = $false,
         [string] $useWindows = $true,
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
         [string] $appName
     )
-	Write-Host "Setting IdPSS Web Config Settings."
+    Write-Host "Setting IdPSS Web Config Settings."
     Clear-IdentityProviderSearchServiceWebConfigAzureSettings -webConfigPath $webConfigPath
     $appSettings = @{}
     
@@ -1067,42 +1168,49 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
     {
         # Alter IdPSS web.config for azure
         $clientSettings = @()
-        $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName $appName
+        $clientSettings += Get-ClientSettingsFromInstallConfig -installConfigPath $azureSettingsConfigPath -appName $appName
 
         if ($encryptionCertificateThumbprint){
-        $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
+            $appSettings.Add("EncryptionCertificateSettings:EncryptionCertificateThumbprint", $encryptionCertificateThumbprint)
         }
 
-        # Set Azure Settings
-        $defaultScope = "https://graph.microsoft.com/.default"
-        $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
-        $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
+        # Validate values are populated: clientSettings
+        if($null -eq $clientSettings -or $clientSettings.Count -eq 0) {
+            Write-DosMessage -Level "Warning" -Message "Could not validate Azure settings, continuing without setting Azure AD. Verify Azure settings are correct in the registeredapplications config section: $installConfigPath"
+            $useAzure = $false
+        }
+        else {
+            # Set Azure Settings
+            $defaultScope = "https://graph.microsoft.com/.default"
+            $appSettings.Add("AzureActiveDirectoryClientSettings:Authority", "https://login.microsoftonline.com/")
+            $appSettings.Add("AzureActiveDirectoryClientSettings:TokenEndpoint", "/oauth2/v2.0/token")
 
-        foreach($setting in $clientSettings) {
-            $index = $clientSettings.IndexOf($setting)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
-			$appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
+            foreach($setting in $clientSettings) {
+                $index = $clientSettings.IndexOf($setting)
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientId", $setting.clientId)
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantId", $setting.tenantId)
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:TenantAlias", $setting.tenantAlias)
 
-            # Currently only a single default scope is expected
-            $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
+                # Currently only a single default scope is expected
+                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:Scopes:0", $defaultScope)
 
-            $secret = $setting.clientSecret
-            if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
-                $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
-                # Encrypt secret in install.config if not encrypted
-                Add-InstallationTenantSettings -configSection "identity" `
-                    -tenantId $setting.tenantId `
-					-tenantAlias $setting.tenantAlias `
-                    -clientSecret $encryptedSecret `
-                    -clientId $setting.clientId `
-                    -installConfigPath $installConfigPath `
-                    -appName $appName
+                $secret = $setting.clientSecret
+                if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+                    $encryptedSecret = Get-EncryptedString  $encryptionCert $secret
+                    # Encrypt secret in install.config if not encrypted
+                    Add-InstallationTenantSettings -configSection "identity" `
+                        -tenantId $setting.tenantId `
+                        -tenantAlias $setting.tenantAlias `
+                        -clientSecret $encryptedSecret `
+                        -clientId $setting.clientId `
+                        -installConfigPath $azureSettingsConfigPath `
+                        -appName $appName
 
-                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
-            }
-            else{
-                $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+                    $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $encryptedSecret)
+                }
+                else{
+                    $appSettings.Add("AzureActiveDirectoryClientSettings:ClientAppSettings:$index`:ClientSecret", $secret)
+                }
             }
         }
     }
@@ -1121,7 +1229,7 @@ function Set-IdentityProviderSearchServiceWebConfigSettings {
         $appSettings.Add("UseWindowsAuthentication", "false")
     }
 
-	Write-Host "Web Config Path: $($webConfigPath)"
+    Write-Host "Web Config Path: $($webConfigPath)"
 
     Set-WebConfigAppSettings $webConfigPath $appSettings | Out-Null
 }
@@ -1367,7 +1475,7 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
             RepairAclCanonicalOrder($acl)
             $acl.AddAccessRule($writeAccessRule)
         }
-		
+        
         try {
             $acl.AddAccessRule($readAccessRule)
         } catch [System.InvalidOperationException]
@@ -1375,8 +1483,8 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
             RepairAclCanonicalOrder($acl)
             $acl.AddAccessRule($readAccessRule)
         }
-		
-		try {
+        
+        try {
             Set-Acl -Path $logDirectory $acl
         } catch [System.InvalidOperationException]
         {
@@ -1394,7 +1502,8 @@ function Get-CurrentUserDomain
         [Parameter(Mandatory=$true)]
         [bool] $quiet
     )
-    $currentUserDomain = $env:userdomain
+    $DNSForestName = (Get-WmiObject -Class Win32_ComputerSystem).Domain
+    $currentUserDomain = (Get-WmiObject Win32_NTDomain -Filter "DnsForestName = '$DNSForestName'").DomainName
     if(!$quiet){
         $userEnteredDomain = Read-Host "Press Enter to accept the default domain '$($currentUserDomain)' that the user/group who will administrate dos is a member or enter a new domain" 
         if (![string]::IsNullOrEmpty($userEnteredDomain)) {
@@ -1402,6 +1511,608 @@ function Get-CurrentUserDomain
         }
     }
     return $currentUserDomain
+}
+
+function Get-WebDeployParameters{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $discoveryConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig,
+        [Parameter(Mandatory=$true)]
+        [string] $userName,
+        [string] $registrationApiSecret
+    )
+
+    Confirm-DiscoveryConfig -discoveryConfig $discoveryConfig -commonConfig $commonConfig
+    $metaDataConnectionString = Get-MetadataConnectionStringForDiscovery -commonConfig $commonConfig
+
+    if([string]::IsNullOrEmpty($commonConfig.webServerDomain))
+    {
+      Write-DosMessage -Level "Error" -Message "The Fabric Identity URL: '$($commonConfig.IdentityService)' is not valid.  Check the install.config, section 'common', name 'IdentityService' for further details." -ErrorAction Stop
+    }
+    
+    $webDeployParameters = @(
+                                @{
+                                    Name = "IIS Web Application Name";
+                                    Value = "$($discoveryConfig.siteName)/$($discoveryConfig.appName)"
+                                },
+                                @{
+                                    Name = "App Pool Account";
+                                    Value = $userName
+                                },
+                                @{
+                                    Name = "Application Endpoint Address";
+                                    Value = "https://$($commonConfig.webServerDomain)/$($discoveryConfig.appName)"
+                                },
+                                @{
+                                    Name = "Client Environment";
+                                    Value = "$($commonConfig.clientEnvironment)"
+                                },
+                                @{
+                                    Name = "DiscoveryServiceDataContext-Deployment-Deployment Connection String";
+                                    Value = $metaDataConnectionString
+                                },
+                                @{
+                                    Name = "DiscoveryServiceDataContext-Web.config Connection String";
+                                    Value = $metaDataConnectionString
+                                }
+                            )
+
+    if([string]::IsNullOrEmpty($registrationApiSecret) -ne $true) {
+        $webDeployParameters += @{ 
+            Name = "Discovery Service Api Secret"; 
+            Value = $registrationApiSecret 
+        }
+    }
+
+    $identityServiceUrl = $commonConfig.identityService
+    if([string]::IsNullOrEmpty($identityServiceUrl)) {
+        $identityServiceUrl = "https://$($commonConfig.webServerDomain)/identity"
+        Write-DosMessage -Level "Information" -Message "identityService value is missing from common, setting DiscoveryService FabricIdentityUrl to $identityServiceUrl"
+    }
+
+    $webDeployParameters += @{
+        Name = "Fabric.Identity URL";
+        Value = $identityServiceUrl
+    }
+    
+    return $webDeployParameters
+}
+
+function Confirm-DiscoveryConfig{
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $discoveryConfig,
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $commonConfig
+    )
+
+    Confirm-SettingIsNotNull -settingName "common.sqlServerAddress" -settingValue $commonConfig.sqlServerAddress
+    Confirm-SettingIsNotNull -settingName "common.metadataDbName" -settingValue $commonConfig.metadataDbName
+    Confirm-SettingIsNotNull -settingName "common.webServerDomain" -settingValue $commonConfig.webServerDomain
+    Confirm-SettingIsNotNull -settingName "common.clientEnvironment" -settingValue $commonConfig.clientEnvironment
+    Confirm-SettingIsNotNull -settingName "discovery.appName" -settingValue $discoveryConfig.appName
+    Confirm-SettingIsNotNull -settingName "discovery.appPoolName" -settingValue $discoveryConfig.appPoolName
+    Confirm-SettingIsNotNull -settingName "discovery.siteName" -settingValue $discoveryConfig.siteName
+}
+
+function Add-DiscoveryApiResourceRegistration{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $identityServiceUrl, 
+        [Parameter(Mandatory=$true)]
+        [string] $fabricInstallerSecret
+    )
+    $accessToken = Get-AccessToken -identityUrl $identityServiceUrl -clientId "fabric-installer" -secret $fabricInstallerSecret -scope fabric/identity.manageresources
+
+    Write-DosMessage -Level "Information" -Message "Registering Discovery Service API with Fabric.Identity..."
+    $apiName = "discovery-service-api"
+    try{
+        [string]$apiSecret = [string]::Empty
+        Write-Host "    Registering $($apiName) with Fabric.Identity"
+        $body = New-APIRegistrationBody -apiName $apiName -userClaims @("name", "email", "roles", "group") -scopes @{"name" = "dos/discovery.read"} -isEnabled $true
+        $apiSecret = New-ApiRegistration -identityUrl $identityServiceUrl -body (ConvertTo-Json $body) -accessToken $accessToken
+
+        if (![string]::IsNullOrWhiteSpace($apiSecret)) {
+		  return $apiSecret
+        }
+		else
+		{
+		  Write-DosMessage -Level "Error" -Message "Could not register api $($apiName), apiSecret is empty"
+		}    
+    }
+    catch{
+        Write-DosMessage -Level "Error" -Message "Could not register api $($apiName)"
+        throw $_.Exception
+    }
+}
+
+function Test-DiscoveryService{
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $discoveryBaseUrl
+    )
+
+    try{
+        $requestUri = "$discoveryBaseUrl/v1/Services"
+        Write-DosMessage -Level "Information" -Message "Testing installation of DiscoveryService at $requestUri"
+        Invoke-RestMethod -Method Get -Uri $requestUri -UseDefaultCredentials | Out-Null
+    } 
+    catch [System.Net.WebException] {
+        Write-DosMessage -Level "Error" -Message "Could not contact DiscoveryService at: $requestUri."
+        $response = $_.Exception.Response
+        if($null -ne $response){
+            $errorDetails = Get-ErrorFromResponse -response $response
+            Write-DosMessage -Level "Error" -Message "Status Code: $($errorDetails.StatusCode) - $($errorDetails.StatusDescription)."
+            Write-DosMessage -Level "Error" -Message "Error Message: $($errorDetails.ErrorMessage)"
+        }else{
+            Write-DosMessage -Level "Error" -Message "$($_.Exception.Message)"
+        }
+        Write-DosMessage -Level "Fatal" -Message "Installation was not successful."
+    }catch{
+        Write-DosMessage -Level "Error" -Message "$($_.Exception.Message)"
+        Write-DosMessage -Level "Fatal" -Message "Installation was not successful."
+    }
+}
+
+function Migrate-AADSettings {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch
+    )
+    $configSection = "identity"
+    $childNodeGetAttribute = "name"
+
+    Write-DosMessage -Level "Verbose" -Message "Get the AAD Setting contents in install.config"
+    
+    # Quick check to see if any AAD settings are present in install.config (short circuit)
+    $existingAADSettings = Search-XMLChildNode -installConfigPath $installConfigPath -configSection $configSection -nodeToSearch $nodesToSearch[0] -childNodeGetAttribute $childNodeGetAttribute
+    if($false -eq $existingAADSettings)
+    {
+      Write-DosMessage -Level "Verbose" -Message "No AAD Settings found in install.config"
+      return $false
+    }
+
+    # Gather AAD Settings from install.config
+    $existingChildNodes = Get-XMLChildNodes -installConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    Write-DosMessage -Level "Verbose" -Message "Copied the AAD Settings from install.config"
+
+    # Remove blank child nodes and azureSecretName from azuresettings.config
+    Write-DosMessage -Level "Verbose" -Message "Started removing blank child variables and azureSecretName from azuresettings.config"
+    Remove-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+    Write-DosMessage -Level "Verbose" -Message "Finished removing blank child variables and azureSecretName from azuresettings.config"
+
+    # Add AAD settings to azuresettings.config
+    Write-DosMessage -Level "Verbose" -Message "Started adding child variables to azuresettings.config that were found in install.config"
+    Add-XMLChildNodes -azureConfigPath $azureConfigPath -configSection $configSection -childNodesInOrder $nodesToSearch -childNodesToAdd $existingChildNodes | Out-Null
+
+    # Gather AAD Settings from azuresettings.config
+    $existingAzureChildNodes = Get-XMLChildNodes -installConfigPath $azureConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute
+    Write-DosMessage -Level "Verbose" -Message "Copied the AAD Settings from azuresettings.config for comparison"
+
+    # Check if install.config and azuresettings.config AAD settings match
+    $areSameGroup = Compare-Object -ReferenceObject $existingChildNodes -DifferenceObject $existingAzureChildNodes -Property name, value, alias, appName, tenantId, tenantAlias, clientid, secret
+    Write-DosMessage -Level "Verbose" -Message "Comparing the AAD Settings in install.config and azuresettings.config, before deleting from install.config"
+
+    if($null -ne $areSameGroup)
+    {
+      Write-DosMessage -Level "Information" -Message "Since install.config and azuresettings.config AAD Settings are different, install.config settings were not deleted"
+    }
+    else
+    {
+      Write-DosMessage -Level "Verbose" -Message "Started removing child variables from install.config, so they are only found in azuresettings.config"
+      Remove-XMLChildNodes -azureConfigPath $installConfigPath -configSection $configSection -nodesToSearch $nodesToSearch -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+      Write-DosMessage -Level "Verbose" -Message "Finished removing child variables from install.config, so they are only found in azuresettings.config"
+    }
+
+    # running this in DosInstaller currently has a merge process that saves root level variables and values
+    # back to the install.config manifest in the unzipped nuget folder. 
+    # Need to remove the root level variables twice until there are changes in the process.
+    Write-DosMessage -Level "Verbose" -Message "Removing child variable from install.config in nuget folder, because of some merging happening in the Invoke"
+    Remove-XMLChildNodes -azureConfigPath "$PSScriptRoot\install.config" -configSection $configSection -nodesToSearch "tenants" -childNodeGetAttribute $childNodeGetAttribute | Out-Null
+
+    return $true
+}
+function Remove-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute
+    )
+    # Validate XML
+    # Clean out variables in default azureSettings.config
+    $xmlValidation = Test-XMLFile -Path $azureConfigPath
+    if($xmlValidation){
+     $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+     $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $childNodeCount = 0
+
+     foreach($nodeToSearch in $nodesToSearch)
+     {
+      $setAzureSettings = $azureIdentityScope.SelectSingleNode($nodeToSearch)
+      if($null -eq $setAzureSettings)
+      {
+        $setAzureSettings = $azureIdentityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $nodeToSearch}
+        $removeVariables = $setAzureSettings
+      }
+      else 
+      {
+        $removeVariables = $setAzureSettings.ChildNodes | Where-Object {[string]::IsNullOrEmpty($_.$childNodeGetAttribute) -or $_.$childNodeGetAttribute}
+      }
+   
+      if($null -ne $removeVariables)
+      {
+       foreach($removeVariable in $removeVariables){
+        $removeVariable.ParentNode.RemoveChild($removeVariable)
+        $childNodeCount++
+        Write-DosMessage -Level "Verbose" -Message "Removing a child node for $nodeToSearch"
+       }
+      }
+     }
+     if($childNodeCount -gt 0)
+     {
+       Write-DosMessage -Level "Verbose" -Message "There were $childNodeCount variables removed"
+     }
+     $azureInstallationConfig.Save("$azureConfigPath")
+     return $childNodeCount
+   }
+}
+
+function Get-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $nodesToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $allExistingChildNodes = @()
+
+     foreach($nodeToSearch in $nodesToSearch)
+     {
+       $childNodeHeader = @{}
+       $existingChildNodes = @{}
+       $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+       if($null -eq $setAzureSettings)
+       {
+         $existingChildNodes = $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $nodeToSearch}
+       }
+       else 
+       {
+         $existingChildNodes = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+       }
+
+       $childNodeHeader.Add($nodeToSearch, "")
+       $allExistingChildNodes += $childNodeHeader
+       $allExistingChildNodes += $existingChildNodes
+       if($null -eq $existingChildNodes)
+       {
+         Write-DosMessage -Level "Verbose" -Message "$($nodeToSearch) node may not exist or contain a child node"
+       }
+     }
+     return $allExistingChildNodes
+    }
+}
+
+function Search-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $nodeToSearch,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [string] $childNodeGetAttribute2
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+
+     $setAzureSettings = $identityScope.SelectSingleNode($nodeToSearch)
+
+     if(![string]::IsNullOrEmpty($childNodeGetAttribute2))
+     {
+       $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute) -and ![string]::IsNullOrEmpty($_.$childNodeGetAttribute2)}
+     }
+     else
+     {
+       $existingSettings = $setAzureSettings.ChildNodes | Where-Object {![string]::IsNullOrEmpty($_.$childNodeGetAttribute)}
+     }
+     if($null -eq $existingSettings)
+     {
+         Write-DosMessage -Level "Verbose" -Message "$($nodeToSearch) node may not exist or contain a child node"
+         return $false
+     }
+     else
+     {
+         return $true
+     }
+    }
+    return $xmlValidation
+}
+
+function Add-XMLChildNodes {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string[]] $childNodesInOrder,
+        [Parameter(Mandatory=$true)]
+        [Object[]] $childNodesToAdd,
+        [switch] $skipDuplicateSearch
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $azureConfigPath
+    if($xmlValidation){
+     $azureInstallationConfig = [xml](Get-Content $azureConfigPath)
+     $azureIdentityScope = $azureInstallationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $childNodeCount = 0
+
+     foreach($childNodeToAdd in $childNodesToAdd)
+     {
+       # check for the child node header to determine the start and end
+       $matchKey = $childNodeToAdd.Keys
+       if($childNodesInOrder -contains $matchKey)
+       {
+        $node = $matchKey
+        continue
+       } 
+
+       $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+        
+       # additional code to not duplicate values in azuresettings.config if run more than once
+       # this shouldn't happen now that the install.config AAD settings are removed after the first run
+       if(!$skipDuplicateSearch)
+       {
+         if($node -eq "registeredApplications")
+         {
+           $alreadyExists = Search-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "appName" -childNodeGetAttribute2 "tenantId"
+         }
+         else
+         {
+           $alreadyExists = Search-XMLChildNode -installConfig $azureConfigPath -configSection $configSection -nodeToSearch $node -childNodeGetAttribute "name"
+         }
+       }
+   
+       # create node if it doesn't exist
+       if($null -eq $setAzureSettings)
+       {
+         $newElement = $azureInstallationConfig.CreateElement($node)
+         $azureIdentityScope.AppendChild($newElement)
+         $setAzureSettings = $azureIdentityScope.SelectSingleNode($node)
+         $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($childNodeToAdd, $false))
+         $childNodeCount++
+         Write-DosMessage -Level "Verbose" -Message "Adding node and child node for $node"
+       }
+       elseif($true -eq $alreadyExists)
+       {
+         Write-DosMessage -Level "Verbose" -Message "The script may have already been run since a child node exists in $node"
+       }
+       else
+       {
+        $setAzureSettings.AppendChild($setAzureSettings.OwnerDocument.ImportNode($childNodeToAdd, $false))
+        $childNodeCount++
+        Write-DosMessage -Level "Verbose" -Message "Adding a child node for $node"
+       }
+      }
+      if($childNodeCount -gt 0)
+      {
+        Write-DosMessage -Level "Verbose" -Message "There were $childNodeCount variables added"
+      }
+     $azureInstallationConfig.Save("$azureConfigPath") | Out-Null
+     return $childNodeCount
+    }
+}
+
+function Test-XMLFile {
+    param (
+    [parameter(mandatory=$true)][ValidateNotNullorEmpty()][string]$Path
+    )
+
+    try {
+        [xml]$xml = Get-Content $Path
+    }
+    catch {
+        Write-DosMessage -Level Warning -Message "Error parsing XML, please review the install.config file"
+        return $false
+    }
+    return $true
+}
+
+function Get-FilePermissions {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $configPath
+    )
+    $fileAccess = $true
+    Try { [io.file]::OpenRead($configPath).close() }
+    Catch { 
+        Write-Warning "Unable to read file $configPath" 
+        $fileAccess = $false
+     }
+    Try { [io.file]::OpenWrite($configPath).close() }
+    Catch { 
+        Write-Warning "Unable to write file $configPath" 
+        $fileAccess = $false
+     }
+     return $fileAccess
+}
+
+function Deny-FilePermissions
+{ 
+  param([Parameter(Mandatory=$true)][string] $filePath
+)
+  $denyPermissionsAcl = Get-Acl $filePath
+  $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Deny")
+  $denyPermissionsAcl.SetAccessRule($accessRule)
+  return $denyPermissionsAcl
+}
+
+function Remove-FilePermissions
+{ 
+  param([Parameter(Mandatory=$true)][string] $filePath
+)
+  $removePermissionsAcl = Get-Acl $filePath
+  $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Deny")
+  $removePermissionsAcl.RemoveAccessRule($accessRule)
+  $removePermissionsAcl | Set-Acl $filePath
+}
+
+function New-IdentityEncryptionCertificate {
+    param(
+        [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
+        [string] $certStoreLocation = "Cert:\LocalMachine\My",
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
+    )
+    $cert = New-SelfSignedCertificate `
+        -Type Custom `
+        -KeySpec None `
+        -Subject $subject `
+        -KeyUsage DataEncipherment `
+        -KeyAlgorithm RSA `
+        -KeyLength 2048 `
+        -CertStoreLocation $certStoreLocation `
+        -FriendlyName $friendlyName
+
+    return $cert
+}
+
+function Test-IdentityEncryptionCertificateValid {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCertificate
+    )
+    $today = Get-Date
+    return $encryptionCertificate.NotAfter -gt $today
+}
+
+function Remove-IdentityEncryptionCertificate {
+    param(
+        [string] $encryptionCertificateThumbprint,
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
+    )
+
+    try {
+        $cert = Get-Certificate $encryptionCertificateThumbprint
+    }
+    catch [System.Management.Automation.ItemNotFoundException] {
+        Write-DosMessage -Level "Information" -Message "Certificate with thumbprint '$encryptionCertificateThumbprint' was not found."
+        return
+    }
+
+    if($null -ne $cert -and $null -ne $cert.FriendlyName -and $cert.FriendlyName.Contains("$friendlyName")) {
+        Write-DosMessage -Level "Information" -Message "Removing Identity encryption certificate"
+        $cert | Remove-Item
+    }
+}
+
+function Invoke-ResetFabricInstallerSecret {
+    param (
+        [Parameter(Mandatory=$true)] 
+        [string] $identityDbConnectionString,
+        [string] $fabricInstallerSecret
+    )
+
+    Write-DosMessage -Level "Information" -Message "Resetting Fabric-Installer secret"
+    if ([string]::IsNullOrEmpty($fabricInstallerSecret)) {
+        $fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
+    }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
+    $query = "DECLARE @ClientID int;
+              
+              SELECT @ClientID = Id FROM Clients WHERE ClientId = 'fabric-installer';
+
+              UPDATE ClientSecrets
+              SET Value = @value
+              WHERE ClientId = @ClientID"
+    Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+    return $fabricInstallerSecret
+}
+
+function Get-IdentityEncryptionCertificate {
+    param (
+        [HashTable] $installSettings,
+        [string] $configStorePath,
+        [switch] $validate
+    )
+
+    try {
+        if([string]::IsNullOrWhitespace($installSettings.encryptionCertificateThumbprint)) {
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+        else {
+            $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+        }
+    }
+    catch {
+        Write-DosMessage -Level "Information" -Message "Error locating the provided certificate '$($encryptionCertificate.Thumbprint)'. Removing the certificate and generating a new certificate."
+        Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+        $encryptionCertificate = New-IdentityEncryptionCertificate
+    }
+
+    # Create new cert if current is expired/expiring soon
+    if ($validate) {
+        $certIsValid = Test-IdentityEncryptionCertificateValid -encryptionCertificate $encryptionCertificate
+        if ($certIsValid -eq $false) {
+            Write-DosMessage -Level "Information" -Message "The provided certificate '$($encryptionCertificate.Thumbprint)' is expired. Removing the certificate and generating a new certificate."
+            Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+    }
+
+    # update install.config
+    # Assumes both encryption and signing cert are the same certificate
+    Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+
+    return $encryptionCertificate
+}
+
+function Get-IdentityFabricInstallerSecret {
+    param (
+        [string] $fabricInstallerSecret,
+        [string] $encryptionCertificateThumbprint,
+        [string] $identityDbConnectionString
+    )
+
+    if ($fabricInstallerSecret.StartsWith("!!enc!!:")) {
+        $secretNoEnc = $fabricInstallerSecret -replace "!!enc!!:"
+        $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+    }
+
+    # Create new secret if one does not exist, or was unable to decrypt
+    if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
+        # create new secret if no secret or unable to decrypt
+        $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+    }
+
+    return $fabricInstallerSecret
 }
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
@@ -1443,3 +2154,18 @@ Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull
 Export-ModuleMember Get-CurrentUserDomain
+Export-ModuleMember Get-WebServerDomain
+Export-ModuleMember Get-WebDeployParameters
+Export-ModuleMember Add-DiscoveryApiResourceRegistration
+Export-ModuleMember Test-DiscoveryService
+Export-ModuleMember Migrate-AADSettings
+Export-ModuleMember Test-XMLFile
+Export-ModuleMember Get-FilePermissions
+Export-ModuleMember Deny-FilePermissions
+Export-ModuleMember Remove-FilePermissions
+Export-ModuleMember New-IdentityEncryptionCertificate
+Export-ModuleMember Test-IdentityEncryptionCertificateValid
+Export-ModuleMember Remove-IdentityEncryptionCertificate
+Export-ModuleMember Invoke-ResetFabricInstallerSecret
+Export-ModuleMember Get-IdentityEncryptionCertificate
+Export-ModuleMember Get-IdentityFabricInstallerSecret

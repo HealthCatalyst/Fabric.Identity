@@ -1,5 +1,5 @@
-$fabricInstallUtilities = ".\Install-Identity-Utilities.psm1"
-Import-Module -Name $fabricInstallUtilities -Force
+$targetFilePath = "$PSScriptRoot\Install-Identity-Utilities.psm1"
+Import-Module -Name $targetFilePath -Force
 
 # Import AzureAD
 $minVersion = [System.Version]::new(2, 0, 2 , 4)
@@ -21,7 +21,7 @@ else {
 
 function Get-GraphApiDirectoryReadPermissions() {
     try {
-        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
     }
     catch {
         Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
@@ -49,7 +49,7 @@ function Get-GraphApiDirectoryReadPermissions() {
 
 function Get-GraphApiUserReadPermissions() {
     try {
-        $aad = @((Get-AzureADServicePrincipal | Where-Object {$_.ServicePrincipalNames.Contains("https://graph.microsoft.com")}))[0]
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
     }
     catch {
         Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
@@ -85,19 +85,27 @@ function New-FabricAzureADApplication() {
         [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission,
         [bool] $isMultiTenant = $false
     )
+    $groupMembershipClaims = 'SecurityGroup'
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
     else {
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant
+        # Do not overwrite, append to existing urls
+        # Updating app fails if trying to add duplicate urls
+        $existingUrls = $app.ReplyUrls
+        foreach($replyUrl in $replyUrls.name) {
+            $existingUrls.Add($replyUrl)
+        }
+        $existingUrls = $existingUrls | Select-Object -Unique
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
 }
 
-function Remove-AzureADClientSecret{
+function Remove-AzureADClientSecret {
     param(
         [string] $objectId,
         [string] $keyIdentifier
@@ -106,33 +114,45 @@ function Remove-AzureADClientSecret{
     $keys = Get-AzureADApplicationPasswordCredential -ObjectId $objectId
     $filteredKeys = $keys | Where-Object {$null -ne $_.CustomKeyIdentifier -and $encoding.GetString($_.CustomKeyIdentifier) -eq $keyIdentifier}
     $completed = $false
+    $deleteSecrets = $false
     [int]$retryCount = 0
 
-    foreach($key in $filteredKeys) {
-        Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
-        do {
-            if($retryCount -gt 3) {
-                Write-DosMessage -Level "Error" -Message "Could not create Azure AD application secret."
-                throw
-            }
+    if ($filteredKeys.count -gt 0) {
+        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation
+    }
 
-            try {
-                Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
-                $completed = $true
-            }
-            catch {
-                Write-DosMessage -Level "Warning" -Message "An error occurred trying to remove the Azure application secret named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId). Retrying.."
-                Start-Sleep 3
-                $retryCount++
-            }
-        } while ($completed -eq $false)
+    if($deleteSecrets) {
+        foreach($key in $filteredKeys) {
+            Write-Host "Removing existing password credential named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId)"
+            do {
+                if($retryCount -gt 3) {
+                    Write-DosMessage -Level "Fatal" -Message "Could not create Azure AD application secret."
+                }
+
+                try {
+                    Remove-AzureADApplicationPasswordCredential -ObjectId $objectId -KeyId $key.KeyId -ErrorAction 'stop'
+                    $completed = $true
+                }
+                catch {
+                    Write-DosMessage -Level "Warning" -Message "An error occurred trying to remove the Azure application secret named `"$($encoding.GetString($key.CustomKeyIdentifier))`" with id $($key.KeyId). Retrying.."
+                    Start-Sleep 3
+                    $retryCount++
+                }
+            } while ($completed -eq $false)
+        }
     }
 }
 
-function Get-FabricAzureADSecret([string] $objectId) {
+function Get-FabricAzureADSecret {
+    param(
+        [string] $objectId,
+        [string] $secretName
+    )
+    $keyCredentialName = $secretName
+
     # Cleanup existing secret
-    $keyCredentialName = "PowerShell Created Password"
     Remove-AzureADClientSecret -objectId $objectId -keyIdentifier $keyCredentialName
+
     Write-Host "Creating password credential named $keyCredentialName"
     $completed = $false
     [int]$retryCount = 0
@@ -160,12 +180,15 @@ function Connect-AzureADTenant {
     param(
         [Parameter(Mandatory=$true)]
         [string] $tenantId,
-        [Parameter(Mandatory=$true)]
         [PSCredential] $credential
     )
 
     try {
-        Connect-AzureAD -Credential $credential -TenantId $tenantId | Out-Null
+        if($credential) {
+            Connect-AzureAD -Credential $credential -TenantId $tenantId | Out-Null
+        } else {
+            Connect-AzureAD -TenantId $tenantId | Out-Null
+        }
     }
     catch {
         Write-DosMessage -Level "Error" -Message  "Could not sign into tenant '$tenantId' with user '$($credential.UserName)'"
@@ -175,12 +198,12 @@ function Connect-AzureADTenant {
 
 function Get-Tenants {
     param(
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
     $tenants = @()
     $scope = "identity"
     $parentSetting = "tenants"
-    $tenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $tenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $scope `
         -setting $parentSetting
 
@@ -195,12 +218,12 @@ function Get-Tenants {
 
 function Get-ReplyUrls {
     param(
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
     $scope = "identity"
     $parentSetting = "replyUrls"
     $replyUrls = @()
-    $replyUrls += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath -scope $scope -setting $parentSetting
+    $replyUrls += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath -scope $scope -setting $parentSetting
 
     if($null -eq $replyUrls -or $replyUrls.Count -eq 0){
         Write-DosMessage -Level "Error" -Message  "No reply urls where found in the install.config."
@@ -219,15 +242,19 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
+    $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
+    $secretName = $installSettings.value
+    Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
+
     $allowedTenantsText = "allowedTenants"
     $claimsIssuerText = "claimsIssuerTenant"
-    $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $allowedTenantsText
 
-    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
+    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $claimsIssuerText
     Confirm-Tenants -tenants $allowedTenants
@@ -240,7 +267,7 @@ function Register-Identity {
     $permission = Get-GraphApiUserReadPermissions
     $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
     $clientId = $app.AppId
-    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
     Disconnect-AzureAD
 
@@ -249,12 +276,12 @@ function Register-Identity {
     -tenantAlias $claimsIssuer.alias `
     -clientSecret $clientSecret `
     -clientId $clientId `
-    -installConfigPath $installConfigPath `
+    -installConfigPath $azureConfigPath `
     -appName $appName
   }
   else
   {
-    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the install.config."
+    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
   }
 }
 
@@ -269,8 +296,12 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $installConfigPath
+        [string] $azureConfigPath
     )
+    $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
+    $secretName = $installSettings.value
+    Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
+
     # IdentityProviderSearchService registration
    if($null -ne $tenants) {
     foreach($tenant in $tenants) { 
@@ -281,7 +312,7 @@ function Register-IdPSS {
       $permission = Get-GraphApiDirectoryReadPermissions
       $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
       $clientId = $app.AppId
-      $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId
+      $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
       Disconnect-AzureAD
       Add-InstallationTenantSettings -configSection $configSection `
@@ -289,13 +320,23 @@ function Register-IdPSS {
           -tenantAlias $tenant.alias `
           -clientSecret $clientSecret `
           -clientId $clientId `
-          -installConfigPath $installConfigPath `
+          -installConfigPath $azureConfigPath `
           -appName $appName
 
       # Manual process, need to give consent this way for now
       Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
  }
+}
+
+function Confirm-InstallIdpSSUtilsSecretName {
+    param(
+        [string] $secretName
+    )
+
+    if([string]::IsNullOrEmpty($secretName)) {
+        Write-DosMessage -Level "Fatal" -Message "A Secret Name for registering with Azure must be provided:`n <variable name=`"secretName`" value=`"Name`">"
+    }
 }
 
 function Confirm-Tenants {
@@ -307,6 +348,43 @@ function Confirm-Tenants {
         if([string]::IsNullOrEmpty($tenant.name) -or [string]::IsNullOrEmpty($tenant.alias)) {
             Write-DosMessage -Level "Fatal" -Message "Tenant alias and name must be provided for each tenant."
         }
+    }
+}
+
+function Get-InstallIdPSSUtilsUserConfirmation {
+    Write-DosMessage -Level "Information" -Message "Found ${$filterKeys.count} duplicate secrets."
+    $deleteSecrets = Read-Host  "Delete duplicate secret(s)? [Y/N]"
+    switch ($deleteSecrets) {
+        Y {return $true}
+        N {return $false}
+        Default {return $false}
+    }
+}
+
+function Get-XMLChildNode {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $installConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeGetAttribute,
+        [Parameter(Mandatory=$true)]
+        [string] $childNodeAttributeSetting
+    )
+    # Validate XML
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
+    if($xmlValidation){
+     $installationConfig = [xml](Get-Content $installConfigPath)
+     $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
+     $existingChildNode = @()
+
+     $existingChildNode += $identityScope.ChildNodes | Where-Object {$_.$childNodeGetAttribute -eq $childNodeAttributeSetting}
+     if ($null -eq $existingChildNode)
+     {
+       Write-DosMessage -Level "Information" -Message "$childNodeAttributeSetting not found"
+     }
+     return $existingChildNode
     }
 }
 

@@ -89,7 +89,8 @@ namespace Fabric.Identity.API.Management
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     MiddleName = u.MiddleName,
-                    SubjectId = u.SubjectId
+                    SubjectId = u.SubjectId,
+                    Email = u.Email
                 });
                 return Ok(apiUsers);
             }
