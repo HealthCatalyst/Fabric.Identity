@@ -18,22 +18,5 @@ namespace Fabric.Identity.API.Models
         public string SchemeItem { get; set; }
         public List<Claim> Claims { get; set; }
         public Claim UserIdClaim { get; set; }
-
-        public override string ToString()
-        {
-            var sb = new System.Text.StringBuilder();
-
-            foreach (var c in Claims)
-            {
-                sb.Append($"Type={c.Type}, Value={c.Value}, ");
-            }
-
-            foreach (var c in AdditionalClaims)
-            {
-                sb.Append($"Type={c.Type}, Value={c.Value}, ");
-            }
-
-            return $"Provider={Provider}, UserId={UserId}, ClientId={ClientId}, SchemeItem={SchemeItem}, {sb} ";
-        }
     }
 }

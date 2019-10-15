@@ -96,7 +96,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         {
             var apiResourceToDelete =
                 await IdentityDbContext.ApiResources
-                    .Where(r => r.Name == id && !r.IsDeleted)
+                    .Where(r => r.Name == id)
                     .Include(r => r.ApiScopes)
                     .FirstOrDefaultAsync();
 

@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using static Fabric.Identity.API.FabricIdentityConstants;
 
 namespace Fabric.Identity.API.Services
@@ -18,14 +17,11 @@ namespace Fabric.Identity.API.Services
     public class ClaimsService : IClaimsService
     {
         private readonly IAppConfiguration _appConfiguration;
-        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
 
         public ClaimsService(
-            IAppConfiguration appConfiguration,
-            IExternalIdentityProviderService externalIdentityProviderService)
+            IAppConfiguration appConfiguration)
         {
             _appConfiguration = appConfiguration;
-            _externalIdentityProviderService = externalIdentityProviderService;
         }
 
         /// <summary>
@@ -34,13 +30,13 @@ namespace Fabric.Identity.API.Services
         /// <param name="info">Authentication information</param>
         /// <param name="context">Authorization Request</param>
         /// <returns>Returns all the information into an object call ClaimsResult</returns>
-        public async Task<ClaimsResult> GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
+        public ClaimsResult GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
         {
             CheckWhetherArgumentIsNull(info, nameof(info));
             // NOTE: context may be null.  because of this, we are not going to 
             // validate context
             
-            var result = await GenerateNewClaimsResult(info, context);
+            ClaimsResult result = GenerateNewClaimsResult(info, context);
 
             if (this.IsExternalTokenAzureAD(result.SchemeItem))
             {
@@ -52,7 +48,7 @@ namespace Fabric.Identity.API.Services
             result.Claims.Remove(result.UserIdClaim);
 
             //get the client id from the auth context
-            result.AdditionalClaims = this.GenerateAdditionalClaims(result);
+            result.AdditionalClaims = this.GenerateAdditionalClaims(result.Claims);
             result.AuthenticationProperties = this.GenerateAuthenticationProperties(info);
 
             return result;
@@ -74,10 +70,15 @@ namespace Fabric.Identity.API.Services
             string subjectId = null;
             if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
             {
-                subjectId = AzureADSubjectId(claimInformation.Claims);
+                subjectId = AzureADSubjectId(claimInformation);
             }
 
-            return subjectId ?? user?.SubjectId;
+            if(subjectId == null)
+            {
+                subjectId = user?.SubjectId;
+            }
+
+            return subjectId;
         }
 
         /// <summary>
@@ -94,57 +95,37 @@ namespace Fabric.Identity.API.Services
             string userId = null;
             if (this.IsExternalTokenAzureAD(claimInformation.SchemeItem))
             {
-                userId = AzureADSubjectId(claimInformation.Claims);
+                userId = AzureADSubjectId(claimInformation);
             }
 
-            return userId ?? claimInformation.UserId;
+            if(userId == null)
+            {
+                userId = claimInformation.UserId;
+            }
+
+            return userId;
         }
 
-        private static string AzureADSubjectId(IEnumerable<Claim> claims) => 
-            claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
+        private string AzureADSubjectId(ClaimsResult claimInformation) => 
+            claimInformation.Claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
                             .Value;
 
-        private async Task<ClaimsResult> GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
+        private ClaimsResult GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
         {
             // provider and scheme look the same, but if you see the values
             //  FabricIdentityConstants.AuthenticationSchemes.Azure = "AzureActiveDirectory"
             // you will notice there are 2 different values, one for the provider and the other for the scheme
             var provider = info.Properties.Items["scheme"];
             var schemeItem = info.Properties.Items.FirstOrDefault(i => i.Key == "scheme").Value;
-            var claimsPrincipal = info?.Principal;
-            if (claimsPrincipal == null)
+            var externalUser = info?.Principal;
+            if (externalUser == null)
             {
                 throw new Exception("External authentication error");
             }
 
-            var claims = claimsPrincipal.Claims.ToList();
+            var claims = externalUser.Claims.ToList();
             var userIdClaim = this.GetUserIdClaim(claims);
-
-            var subjectId = AzureADSubjectId(claims);
-
-            if (!string.IsNullOrEmpty(subjectId))
-            {
-                var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(subjectId);
-                if (externalUser != null)
-                {
-                    if (externalUser.FirstName != null)
-                    {
-                        claims.Add(new Claim(JwtClaimTypes.GivenName, externalUser.FirstName));
-                    }
-
-                    if (externalUser.LastName != null)
-                    {
-                        claims.Add(new Claim(JwtClaimTypes.FamilyName, externalUser.LastName));
-                    }
-
-                    if (externalUser.Email != null)
-                    {
-                        claims.Add(new Claim(JwtClaimTypes.Email, externalUser.Email));
-                    }
-                }
-            }
-
-            return new ClaimsResult
+            return new ClaimsResult()
             {
                 ClientId = context?.ClientId,
                 UserId = userIdClaim.Value,
@@ -155,9 +136,8 @@ namespace Fabric.Identity.API.Services
             };
         }
 
-        private Claim[] GenerateAdditionalClaims(ClaimsResult claimsResult)
+        private Claim[] GenerateAdditionalClaims(List<Claim> previousClaims)
         {
-            var previousClaims = claimsResult.Claims;
             var additionalClaims = new List<Claim>();
             //if the external system sent a session id claim, copy it over
             var sid = previousClaims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);

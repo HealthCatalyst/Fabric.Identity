@@ -1,4 +1,9 @@
-﻿namespace Fabric.Identity.API.Models
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Fabric.Identity.API.Models
 {
     public class ExternalUser
     {
@@ -6,11 +11,5 @@
         public string LastName { get; set; }
         public string MiddleName { get; set; }
         public string SubjectId { get; set; }
-        public string Email { get; set; }
-
-        public override string ToString()
-        {
-            return $"FirstName = {FirstName}, LastName = {LastName}, MiddleName = {MiddleName}, SubjectId = {SubjectId}, Email = {Email}";
-        }
     }
 }

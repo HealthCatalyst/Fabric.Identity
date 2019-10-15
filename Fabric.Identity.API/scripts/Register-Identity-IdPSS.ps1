@@ -8,7 +8,7 @@ param(
         }
         return $true
     })] 
-    [string] $azureConfigPath = "$PSScriptRoot\azuresettings.config",
+    [string] $installConfigPath = "$PSScriptRoot\install.config",
     [switch] $registerIdentity,
     [switch] $registerIdPSS
 )
@@ -31,19 +31,19 @@ Import-Module -Name  ".\Install-IdPSS-Utilities.psm1", ".\Install-Identity-Utili
 
 $installSettingsScope = "identity"
 
-$tenants = Get-Tenants -azureConfigPath $azureConfigPath
-$replyUrls = Get-ReplyUrls -azureConfigPath $azureConfigPath
+$tenants = Get-Tenants -installConfigPath $installConfigPath
+$replyUrls = Get-ReplyUrls -installConfigPath $installConfigPath
 $appNameIdPSS = $Global:idPSSAppName
 $appNameIdentity = "Identity Service"
 
 if ($registerIdPSS)
 {
-   Register-IdPSS -appName $appNameIdPSS -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath
+   Register-IdPSS -appName $appNameIdPSS -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -installConfigPath $installConfigPath
 }
 
 if ($registerIdentity)
 {
   # Identity registration
-  Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -azureConfigPath $azureConfigPath
+  Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -installConfigPath $installConfigPath
 }
 

@@ -23,33 +23,23 @@ namespace Fabric.Identity.API.Services
                 return claims;
             }
 
-            var prefixFilters = _groupFilterSettings.Prefixes?.ToList();
-            var suffixFilters = _groupFilterSettings.Suffixes?.ToList();
-
-            var hasPrefixFilters = prefixFilters != null && prefixFilters.Count > 0;
-            var hasSuffixFilters = suffixFilters != null && suffixFilters.Count > 0;
-            var hasFilters = hasPrefixFilters || hasSuffixFilters;
-
-            if (!hasFilters)
-            {
-                return claims;
-            }
-
+            var prefixes = _groupFilterSettings.Prefixes?.ToList();
+            var suffixes = _groupFilterSettings.Suffixes?.ToList();
             var claimList = claims.ToList();
-            var prefixFilteredClaims = new List<Claim>();
-            var suffixFilteredClaims = new List<Claim>();
+            var prefixFilteredClaims = claimList;
+            var suffixFilteredClaims = claimList;
 
-            if (prefixFilters?.Count > 0)
+            if (prefixes?.Count > 0)
             {
-                prefixFilteredClaims = claimList
-                    .Where(r => prefixFilters.Any(prefix => r.Value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                prefixFilteredClaims = prefixFilteredClaims
+                    .Where(r => prefixes.Any(prefix => r.Value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
 
-            if (suffixFilters?.Count > 0)
+            if (suffixes?.Count > 0)
             {
-                suffixFilteredClaims = claimList
-                    .Where(r => suffixFilters.Any(suffix => r.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)))
+                suffixFilteredClaims = suffixFilteredClaims
+                    .Where(r => suffixes.Any(suffix => r.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
 

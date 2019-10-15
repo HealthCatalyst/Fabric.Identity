@@ -45,8 +45,8 @@ namespace Fabric.Identity.UnitTests.Services
         {
             var groupMatchSettings = new GroupFilterSettings
             {
-                Prefixes = new List<string>().ToArray(),
-                Suffixes = new List<string>().ToArray()
+                Prefixes = new List<string>(),
+                Suffixes = new List<string>()
             };
 
             var claims = new List<Claim>
@@ -68,11 +68,11 @@ namespace Fabric.Identity.UnitTests.Services
                 Prefixes = new List<string>
                 {
                     "foo"
-                }.ToArray(),
+                },
                 Suffixes = new List<string>
                 {
                     "bar"
-                }.ToArray()
+                }
             };
 
             var claims = new List<Claim>
@@ -95,12 +95,12 @@ namespace Fabric.Identity.UnitTests.Services
                     "Admin",
                     "User",
                     "HC"
-                }.ToArray(),
+                },
                 Suffixes = new List<string>
                 {
                     "user",
                     "Safety"
-                }.ToArray()
+                }
             };
 
             var claims = new List<Claim>

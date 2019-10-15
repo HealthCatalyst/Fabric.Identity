@@ -38,8 +38,6 @@ namespace Fabric.Identity.API.Extensions
                 ClaimsIssuer = appConfiguration.AzureActiveDirectorySettings.ClaimsIssuer,
                 ClientId = appConfiguration.AzureActiveDirectorySettings.ClientId,
                 ClientSecret = appConfiguration.AzureActiveDirectorySettings.ClientSecret,
-                CallbackPath = "/signin-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure,
-                SignedOutCallbackPath = "/signout-callback-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure,
                 GetClaimsFromUserInfoEndpoint = true,                
                 TokenValidationParameters = new TokenValidationParameters
                 {
@@ -67,17 +65,14 @@ namespace Fabric.Identity.API.Extensions
                 {
                     var options = new OpenIdConnectOptions
                     {
-                        AuthenticationScheme = externalIdProvider.ProviderName,
                         SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme,
                         SignOutScheme = IdentityServerConstants.SignoutScheme,
-                        SaveTokens = true, // Required by Okta for getting a valid id_token for logout
+
                         DisplayName = externalIdProvider.DisplayName,
                         Authority = externalIdProvider.Authority,
                         ClientId = externalIdProvider.ClientId,
                         ClientSecret = externalIdProvider.ClientSecret,
                         ResponseType = externalIdProvider.ResponseType,
-                        CallbackPath = "/signin-oidc-" + externalIdProvider.ProviderName,
-                        SignedOutCallbackPath = "/signout-callback-oidc-" + externalIdProvider.ProviderName,
                         GetClaimsFromUserInfoEndpoint = true,
                         TokenValidationParameters = new TokenValidationParameters
                         {

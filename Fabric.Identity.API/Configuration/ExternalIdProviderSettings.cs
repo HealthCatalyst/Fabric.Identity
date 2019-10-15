@@ -11,7 +11,6 @@ namespace Fabric.Identity.API.Configuration
     {
         public string Type { get; set; }
         public string DisplayName { get; set; }
-        public string ProviderName { get; set; }
         public string Authority { get; set; }
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }

@@ -2,10 +2,6 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
-    "iis": {
-      "applicationUrl": "http://localhost/IdentityDev",
-      "sslPort": 0
-    },
     "iisExpress": {
       "applicationUrl": "http://localhost:61405/",
       "sslPort": 0
@@ -20,16 +16,12 @@
       }
     },
     "Fabric.Identity.API": {
-      "commandName": "Project"
-    },
-    "IIS": {
-      "commandName": "IIS",
+      "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "http://localhost/IdentityDev",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "http://localhost:61406"
     }
   }
 }
-

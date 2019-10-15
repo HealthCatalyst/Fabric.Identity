@@ -48,7 +48,6 @@ namespace Fabric.Identity.API.Services
             try
             {
                 user = await _policyProvider.IdPSearchServicePolicy.ExecuteAsync(() => SearchForUser(subjectId));
-                _logger.Information("Successfully retrieved user from external IdP: " + user);
             }
             catch (BrokenCircuitException ex)
             {
@@ -118,8 +117,7 @@ namespace Fabric.Identity.API.Services
                     FirstName = result.FirstName,
                     LastName = result.LastName,
                     MiddleName = result.MiddleName,
-                    SubjectId = result.SubjectId,
-                    Email = result.Email
+                    SubjectId = result.SubjectId
                 };
             }
             catch (TaskCanceledException e)
@@ -148,7 +146,6 @@ namespace Fabric.Identity.API.Services
         public string FirstName { get; set; }
         public string MiddleName { get; set; }
         public string LastName { get; set; }
-        public string Email { get; set; }
         public string PrincipalType { get; set; }
     }
 }
