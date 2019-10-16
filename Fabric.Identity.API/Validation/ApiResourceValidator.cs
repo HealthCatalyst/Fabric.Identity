@@ -22,8 +22,13 @@ namespace Fabric.Identity.API.Validation
 
             RuleFor(apiResource => apiResource.Scopes)
                 .NotNull()
-                .SetCollectionValidator(new ScopeValidator())
                 .WithMessage("Please specify at least one Scope for this Api Resource");
+
+            RuleForEach(apiResource => apiResource.Scopes)
+                .SetValidator(new ScopeValidator())
+                .WithMessage("Please specify at least one Scope for this Api Resource");
+
+            //.SetCollectionValidator(new ScopeValidator())
 
             RuleFor(apiResource => apiResource.UserClaims)
                 .NotNull()

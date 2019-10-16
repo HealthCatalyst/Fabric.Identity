@@ -51,7 +51,7 @@ namespace Fabric.Identity.UnitTests
         /// <summary>
         /// A collection of valid clients.
         /// </summary>
-        private static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 6).Select(_ => new object[] { GetTestClient() });
+        public static IEnumerable<object[]> GetValidClients() => Enumerable.Range(1, 6).Select(_ => new object[] { GetTestClient() });
 
         /// <summary>
         /// A collection of invalid clients, i.e., clients that won't pass validation.
@@ -127,7 +127,7 @@ namespace Fabric.Identity.UnitTests
             }
             else
             {
-                Assert.True(error.Message.Contains(errorMessage));
+                Assert.Contains(errorMessage, error.Message);
             }
         }
 

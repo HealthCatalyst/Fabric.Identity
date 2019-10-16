@@ -26,7 +26,7 @@ namespace Fabric.Identity.API.Extensions
             if (certificateSettings.UseTemporarySigningCredential)
             {
                 logger.Information("Using temporary signing credential - this is not recommended for production");
-                identityServerBuilder.AddTemporarySigningCredential();
+                identityServerBuilder.AddDeveloperSigningCredential();
                 return identityServerBuilder;
             }
 

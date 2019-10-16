@@ -72,8 +72,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
                 }
 
                 await CreateNewUser(user);
-                var seperator = i == numberToCreate ? string.Empty : ",";
-                queryBuilder.Append($"{user.SubjectId}:{user.ProviderName}{seperator}");
+                var separator = i == numberToCreate ? string.Empty : ",";
+                queryBuilder.Append($"{user.SubjectId}:{user.ProviderName}{separator}");
             }
 
             return queryBuilder.ToString();
@@ -84,8 +84,9 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var numberOfUsers = 10;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName);
+            var httpClient = await HttpClient;
             var response =
-                await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             var content = await response.Content.ReadAsStringAsync();
@@ -103,8 +104,9 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var numberOfUsers = 1;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, "foo");
+            var httpClient = await HttpClient;
             var response =
-                await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -115,8 +117,9 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var numberOfUsers = 10;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName, true);
+            var httpClient = await HttpClient;
             var response =
-                await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             var content = await response.Content.ReadAsStringAsync();
@@ -131,8 +134,9 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var numberOfUsers = 0;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, TestClientName);
+            var httpClient = await HttpClient;
             var response =
-                await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+                await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                     $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -143,7 +147,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var numberOfUsers = 1;
             var usersQuery = await CreateUsersAndQuery(numberOfUsers, string.Empty);
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"{_usersSearchApiBaseUrl}{usersQuery}"));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -151,7 +156,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         [Fact]
         public async Task UsersController_Search_InvalidIdentityProvider_ReturnsBadRequest()
         {
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                 $"{_identityProviderSearchBaseUrl}?searchText=john&identityProvider=Test"));
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -173,7 +179,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var ldapConnectionProvider = new LdapConnectionProvider(settings, logger);
             var ldapEntries = LdapTestHelper.CreateTestUsers(testUsers, settings.BaseDn, ldapConnectionProvider);
 
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                 $"{_identityProviderSearchBaseUrl}?searchText=john&identityProvider=Windows"));
 
             LdapTestHelper.RemoveEntries(ldapEntries, ldapConnectionProvider);

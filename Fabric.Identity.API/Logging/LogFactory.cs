@@ -5,25 +5,30 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 
 namespace Fabric.Identity.API.Logging
 {
     public class LogFactory
     {
-        public static ILogger CreateTraceLogger(LoggingLevelSwitch levelSwitch, ApplicationInsights appInsightsConfig)
+        public static LoggingLevelSwitch LoggingLevelSwitch { get; } = new LoggingLevelSwitch();
+
+        public static LoggerConfiguration ConfigureTraceLogger(LoggerConfiguration loggerConfig, ApplicationInsights appInsightsConfig,
+            LoggingLevelSwitch levelSwitch = null)
         {
-            var loggerConfiguration = CreateLoggerConfiguration(levelSwitch);
+            ConfigureLoggerConfiguration(loggerConfig, levelSwitch ?? LoggingLevelSwitch);
 
             if (appInsightsConfig != null && appInsightsConfig.Enabled &&
                 !string.IsNullOrEmpty(appInsightsConfig.InstrumentationKey))
             {
-                loggerConfiguration.WriteTo.ApplicationInsightsTraces(appInsightsConfig.InstrumentationKey);
+                loggerConfig.WriteTo.ApplicationInsights(TelemetryConverter.Traces);
             }
 
-            return loggerConfiguration.CreateLogger();
+            return loggerConfig;
         }
 
-        public static ILogger CreateEventLogger(LoggingLevelSwitch levelSwitch, HostingOptions hostingOptions, IConnectionStrings connectionStrings)
+        public static ILogger CreateEventLogger(HostingOptions hostingOptions, IConnectionStrings connectionStrings, LoggingLevelSwitch levelSwitch = null)
         {
 
             if (hostingOptions.StorageProvider.Equals(FabricIdentityConstants.StorageProviders.SqlServer, StringComparison.OrdinalIgnoreCase))
@@ -39,13 +44,13 @@ namespace Fabric.Identity.API.Logging
                     .CreateLogger();
             }
             
-            var loggerConfiguration = CreateLoggerConfiguration(levelSwitch);
+            var loggerConfiguration = ConfigureLoggerConfiguration(new LoggerConfiguration(), levelSwitch ?? LoggingLevelSwitch);
             return loggerConfiguration.CreateLogger();
         }
 
-        private static LoggerConfiguration CreateLoggerConfiguration(LoggingLevelSwitch levelSwitch)
+        private static LoggerConfiguration ConfigureLoggerConfiguration(LoggerConfiguration loggerConfig, LoggingLevelSwitch levelSwitch)
         {
-            return new LoggerConfiguration()
+            return loggerConfig
                 .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.FromLogContext()        
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)

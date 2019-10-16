@@ -9,7 +9,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Extensions;
-using Fabric.Platform.Http;
+//using Fabric.Platform.Http;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityModel.Client;
 using Newtonsoft.Json;
@@ -73,8 +73,16 @@ namespace Fabric.Identity.API.Services
             var tokenUriAddress = $"{authority}connect/token";
             _logger.Information($"Getting access token for ClientId: {FabricIdentityConstants.FabricIdentityClient} at {tokenUriAddress}");
 
-            var tokenClient = new TokenClient(tokenUriAddress, FabricIdentityConstants.FabricIdentityClient, settings.ClientSecret);
-            var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
+            var client = new HttpClient();
+            var tokenRequest = new ClientCredentialsTokenRequest
+            {
+                Address = tokenUriAddress,
+                ClientId = FabricIdentityConstants.FabricIdentityClient,
+                ClientSecret = settings.ClientSecret,
+                Scope = "fabric/idprovider.searchusers"
+            };
+
+            var accessTokenResponse = await client.RequestClientCredentialsTokenAsync(tokenRequest);
             if (accessTokenResponse.IsError)
             {
                 _logger.Error(
