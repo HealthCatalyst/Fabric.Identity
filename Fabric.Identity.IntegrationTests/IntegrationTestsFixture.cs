@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using Serilog;
 using IS4 = IdentityServer4.Models;
@@ -286,15 +287,11 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
-            );
-
-            apiBuilder.ConfigureServices((builder, services) =>
-            {
-                services.Configure<JwtBearerOptions>("Bearer", jwtOpts =>
+                .AddSingleton<IPostConfigureOptions<JwtBearerOptions>>(new PostConfigureOptions<JwtBearerOptions>("Bearer", jwtOpts =>
                 {
-                    jwtOpts.BackchannelHttpHandler = IdentityTestServer.CreateHandler();
-                });
-            });
+                    jwtOpts.BackchannelHttpHandler = new SuppressExecutionContextHandler(IdentityTestServer.CreateHandler());
+                }))
+            );
 
             apiBuilder
                 .ConfigureAppConfiguration((hostContext, config) =>

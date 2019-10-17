@@ -22,6 +22,7 @@ using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -111,7 +112,8 @@ namespace Fabric.Identity.API
                 .AddSingleton<Services.IClaimsService, ClaimsService>()
                 .AddSingleton<LdapProviderService>()
                 .AddSingleton<PolicyProvider>()
-                .AddSingleton<IHealthCheckerService, HealthCheckerService>()
+                .AddTransient<IHealthCheckerService, HealthCheckerService>()
+                .AddTransient<ICorsPolicyProvider, DefaultCorsPolicyProvider>()
                 .AddFluentValidations();
 
             // filter settings
@@ -130,15 +132,15 @@ namespace Fabric.Identity.API
             });
 
             services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(o =>
-            {
-                o.Authority = identityServerApiSettings.Authority;
-                o.Audience = identityServerApiSettings.ClientId;
-                o.RequireHttpsMetadata = false;
-            }).AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                }).AddJwtBearer(o =>
+                {
+                    o.Authority = identityServerApiSettings.Authority;
+                    o.Audience = identityServerApiSettings.ClientId;
+                    o.RequireHttpsMetadata = false;
+                }).AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
 
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
@@ -254,7 +256,7 @@ namespace Fabric.Identity.API
 
             app.UseMvcWithDefaultRoute();
 
-            var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
+            var healthCheckService = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
                 .UseFabricMonitoring(healthCheckService.CheckHealth, LogFactory.LoggingLevelSwitch);
 
