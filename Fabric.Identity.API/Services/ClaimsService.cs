@@ -140,6 +140,14 @@ namespace Fabric.Identity.API.Services
                     {
                         claims.Add(new Claim(JwtClaimTypes.Email, externalUser.Email));
                     }
+
+                    var issuerClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Issuer);
+                    if(issuerClaim == null)
+                    {
+                        var sub = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Subject);
+                        var issuer = sub.Issuer;
+                        claims.Add(new Claim(JwtClaimTypes.Issuer, issuer));
+                    }
                 }
             }
 

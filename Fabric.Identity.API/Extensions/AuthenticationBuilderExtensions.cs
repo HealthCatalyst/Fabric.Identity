@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using Serilog;
 
 namespace Fabric.Identity.API.Extensions
@@ -35,13 +36,22 @@ namespace Fabric.Identity.API.Extensions
                 {
                     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
                     options.SignOutScheme = IdentityServerConstants.SignoutScheme;
-
                     options.Authority = appConfiguration.AzureActiveDirectorySettings.Authority;
                     options.ResponseType = OpenIdConnectResponseType.CodeIdToken;
                     options.ClaimsIssuer = appConfiguration.AzureActiveDirectorySettings.ClaimsIssuer;
                     options.ClientId = appConfiguration.AzureActiveDirectorySettings.ClientId;
                     options.ClientSecret = appConfiguration.AzureActiveDirectorySettings.ClientSecret;
+                    options.CallbackPath = "/signin-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
+                    options.SignedOutCallbackPath = "/signout-callback-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
+                    options.SaveTokens = true;
                     options.GetClaimsFromUserInfoEndpoint = true;
+
+                    //options. =
+                    //appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
+                    //{
+                    //  issuer = "LOCAL AUTHORITY"
+                    //};
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false
@@ -62,7 +72,7 @@ namespace Fabric.Identity.API.Extensions
                 // Add OpenIdConnect options to each provider.
                 foreach (var externalIdProvider in appConfiguration.ExternalIdProviderSettings.ExternalIdProviders)
                 {
-                    builder.AddOpenIdConnect("OpenIdConnect", externalIdProvider.DisplayName, options =>
+                    builder.AddOpenIdConnect(externalIdProvider.ProviderName, externalIdProvider.DisplayName, options =>
                     {
                         options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
                         options.SignOutScheme = IdentityServerConstants.SignoutScheme;
@@ -71,6 +81,9 @@ namespace Fabric.Identity.API.Extensions
                         options.ClientId = externalIdProvider.ClientId;
                         options.ClientSecret = externalIdProvider.ClientSecret;
                         options.ResponseType = externalIdProvider.ResponseType;
+                        options.CallbackPath = "/signin-oidc-" + externalIdProvider.ProviderName;
+                        options.SignedOutCallbackPath = "/signout-callback-oidc-" + externalIdProvider.ProviderName;
+                        options.SaveTokens = true;
                         options.GetClaimsFromUserInfoEndpoint = true;
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
