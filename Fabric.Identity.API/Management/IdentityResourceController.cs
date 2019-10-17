@@ -81,7 +81,7 @@ namespace Fabric.Identity.API.Management
                 }
 
                 _identityResourceStore.AddResource(is4IdentityResource);
-                return CreatedAtAction("Get", new {identityResource.Name},
+                return CreatedAtAction("Get", new { id = identityResource.Name},
                     is4IdentityResource.ToIdentityResourceViewModel());
             });
         }
