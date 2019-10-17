@@ -21,6 +21,7 @@ using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
@@ -36,6 +37,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using ILogger = Serilog.ILogger;
 using LogFactory = Fabric.Identity.API.Logging.LogFactory;
 
@@ -237,6 +239,7 @@ namespace Fabric.Identity.API
 
             InitializeDatabase(dbBootstrapper);
 
+            app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<ICorsPolicyProvider>();
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseStaticFiles();
