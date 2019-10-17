@@ -21,6 +21,7 @@ using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -35,6 +36,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using ILogger = Serilog.ILogger;
 using LogFactory = Fabric.Identity.API.Logging.LogFactory;
 
@@ -111,7 +113,8 @@ namespace Fabric.Identity.API
                 .AddSingleton<Services.IClaimsService, ClaimsService>()
                 .AddSingleton<LdapProviderService>()
                 .AddSingleton<PolicyProvider>()
-                .AddSingleton<IHealthCheckerService, HealthCheckerService>()
+                .AddTransient<IHealthCheckerService, HealthCheckerService>()
+                .AddTransient<ICorsPolicyProvider, DefaultCorsPolicyProvider>()
                 .AddFluentValidations();
 
             // filter settings
@@ -129,16 +132,7 @@ namespace Fabric.Identity.API
                 ApiName = identityServerApiSettings.ClientId
             });
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(o =>
-            {
-                o.Authority = identityServerApiSettings.Authority;
-                o.Audience = identityServerApiSettings.ClientId;
-                o.RequireHttpsMetadata = false;
-            }).AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
+            services.AddAuthentication().AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
 
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
@@ -239,6 +233,7 @@ namespace Fabric.Identity.API
 
             InitializeDatabase(dbBootstrapper);
 
+            app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<ICorsPolicyProvider>();
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseStaticFiles();
@@ -254,7 +249,7 @@ namespace Fabric.Identity.API
 
             app.UseMvcWithDefaultRoute();
 
-            var healthCheckService = app.ApplicationServices.GetRequiredService<IHealthCheckerService>();
+            var healthCheckService = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<IHealthCheckerService>();
             app.UseOwin()
                 .UseFabricMonitoring(healthCheckService.CheckHealth, LogFactory.LoggingLevelSwitch);
 
