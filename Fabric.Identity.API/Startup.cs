@@ -238,6 +238,7 @@ namespace Fabric.Identity.API
 
             InitializeDatabase(dbBootstrapper);
 
+            app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<ICorsPolicyProvider>();
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseStaticFiles();
