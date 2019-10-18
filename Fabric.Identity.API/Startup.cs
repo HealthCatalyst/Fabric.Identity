@@ -132,6 +132,7 @@ namespace Fabric.Identity.API
                 ApiName = identityServerApiSettings.ClientId
             });
             
+            // The sigin and signout scheme for Authentication, is part of AddAzureIdentityProvider and AddExternalIdentityProvider
             services.AddAuthentication().AddJwtBearer(o =>
             {
                 o.Authority = identityServerApiSettings.Authority;

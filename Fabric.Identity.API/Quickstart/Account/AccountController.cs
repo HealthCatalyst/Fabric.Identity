@@ -347,12 +347,14 @@ namespace IdentityServer4.Quickstart.UI
                 }
             }
 
-            // delete local authentication cookie
-            await HttpContext.SignOutAsync();
-
             var user = HttpContext.User;
-            if (user != null)
+            // we need to check if the user is authenticated for proper logout,
+            // not if user object is null
+            if (user?.Identity.IsAuthenticated == true)
             {
+                // delete local authentication cookie
+                await HttpContext.SignOutAsync();
+
                 await _events.RaiseAsync(new UserLogoutSuccessEvent(user.GetSubjectId(), user.GetDisplayName()));
             }
 
