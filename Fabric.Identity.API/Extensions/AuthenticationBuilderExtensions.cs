@@ -19,8 +19,6 @@ namespace Fabric.Identity.API.Extensions
 
     public static class AuthenticationBuilderExtensions
     {
-
-
         public static AuthenticationBuilder AddAzureIdentityProviderIfApplicable(this AuthenticationBuilder builder,
                                                                        IAppConfiguration appConfiguration)
         {
@@ -43,15 +41,12 @@ namespace Fabric.Identity.API.Extensions
                     options.ClientSecret = appConfiguration.AzureActiveDirectorySettings.ClientSecret;
                     options.CallbackPath = "/signin-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
                     options.SignedOutCallbackPath = "/signout-callback-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
-                    options.SaveTokens = true;
+                    options.RemoteSignOutPath = "/signout-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
+                    //options.SaveTokens = true;
                     options.GetClaimsFromUserInfoEndpoint = true;
-
-                    //options. =
-                    //appConfiguration.AzureActiveDirectorySettings.IssuerWhiteList = new string[]
-                    //{
-                    //  issuer = "LOCAL AUTHORITY"
-                    //};
-
+ 
+                    options.ClaimActions.Remove("iss");
+                    //options.ClaimActions.MapUniqueJsonKey("sub", "sub");
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false
@@ -61,6 +56,7 @@ namespace Fabric.Identity.API.Extensions
                     {
                         options.Scope.Add(s);
                     }
+
                 });
         }
 
