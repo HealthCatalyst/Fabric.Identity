@@ -39,12 +39,13 @@ namespace Fabric.Identity.API.Services
             if (_appConfiguration.WindowsAuthenticationEnabled)
             {
                 // this is needed to handle windows auth schemes
+                // Windows is showing, but not Ntlm and Negotiate in the list of schemes from AuthenticationSchemeProvider
                 var windowsSchemes = schemes.Where(s => AccountOptions.WindowsAuthenticationSchemes.Contains(s.Name));
                 if (windowsSchemes.Any())
                 {
                     providers.Add(new ExternalProvider
                     {
-                        AuthenticationScheme = AccountOptions.WindowsAuthenticationSchemes.First(),
+                        AuthenticationScheme = AccountOptions.WindowsAuthenticationSchemes,
                         DisplayName = AccountOptions.WindowsAuthenticationDisplayName
                     });
                 }
