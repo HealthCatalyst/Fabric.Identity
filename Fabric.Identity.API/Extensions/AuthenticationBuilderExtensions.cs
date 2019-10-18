@@ -41,12 +41,10 @@ namespace Fabric.Identity.API.Extensions
                     options.ClientSecret = appConfiguration.AzureActiveDirectorySettings.ClientSecret;
                     options.CallbackPath = "/signin-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
                     options.SignedOutCallbackPath = "/signout-callback-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
-                    options.RemoteSignOutPath = "/signout-oidc-" + FabricIdentityConstants.AuthenticationSchemes.Azure;
-                    //options.SaveTokens = true;
                     options.GetClaimsFromUserInfoEndpoint = true;
- 
+                    // aspnetcore 2.2 removes most claims by default but we need the claims issuer.
+                    // In order to add them back you have to do the following
                     options.ClaimActions.Remove("iss");
-                    //options.ClaimActions.MapUniqueJsonKey("sub", "sub");
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false
@@ -79,7 +77,7 @@ namespace Fabric.Identity.API.Extensions
                         options.ResponseType = externalIdProvider.ResponseType;
                         options.CallbackPath = "/signin-oidc-" + externalIdProvider.ProviderName;
                         options.SignedOutCallbackPath = "/signout-callback-oidc-" + externalIdProvider.ProviderName;
-                        options.SaveTokens = true;
+                        options.SaveTokens = true; // Okta needs the id_token for successful logout
                         options.GetClaimsFromUserInfoEndpoint = true;
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
