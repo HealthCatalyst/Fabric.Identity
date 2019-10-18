@@ -104,11 +104,23 @@
             public const string Default = "default";
             public const string ClientPost = "ClientPost";
             public const string ApiResourcePost = "ApiResourcePost";
+            public const string PrincipalSearch = "PrincipalSearch";
+            public const string PrincipalIdentityProviderSearch = "PrincipalIdentityProviderSearch";
+            public const string PrincipalGroupSearch = "PrincipalGroupSearch";
+            public const string PrincipalSubjectSearch = "PrincipalSubjectSearch";
         }
 
         public static class AuthenticationSchemes
         {
             public const string Azure = "AzureActiveDirectory";
+        }
+
+        public static class SearchIdenityProviders
+        {
+            public const string ActiveDirectory = "Windows";
+            public const string AzureActiveDirectory = "AzureActiveDirectory";
+
+            public static readonly string[] ValidIdentityProviders = { ActiveDirectory, AzureActiveDirectory };
         }
 
         public static class AuthenticationExceptionMessages
