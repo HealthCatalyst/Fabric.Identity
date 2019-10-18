@@ -29,10 +29,10 @@ namespace Fabric.Identity.API.Services
             var schemes = await _authenticationSchemeProvider.GetAllSchemesAsync();
 
             var providers = schemes
-                .Where(x => x.DisplayName != null && !AccountOptions.WindowsAuthenticationSchemes.Contains(x.Name))
+                .Where(x => (x.DisplayName != null || (x.DisplayName == null && x.Name == "Windows")) && !AccountOptions.WindowsAuthenticationSchemes.Contains(x.Name))
                 .Select(x => new ExternalProvider
                 {
-                    DisplayName = x.DisplayName,
+                    DisplayName = x.DisplayName?? x.Name,
                     AuthenticationScheme = x.Name
                 }).ToList();
 
