@@ -131,11 +131,7 @@ namespace Fabric.Identity.API
                 ApiName = identityServerApiSettings.ClientId
             });
 
-            services.AddAuthentication(options =>
-                {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                }).AddJwtBearer(o =>
+            services.AddAuthentication().AddJwtBearer(o =>
                 {
                     o.Authority = identityServerApiSettings.Authority;
                     o.Audience = identityServerApiSettings.ClientId;
