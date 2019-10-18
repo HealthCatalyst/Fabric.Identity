@@ -21,7 +21,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             new IdentityServer4.Models.IdentityResource
             {
                 Name = Rand.Next().ToString(),
-                DisplayName = "Test Identity Resource",
+                DisplayName = Rand.Next().ToString(),
                 UserClaims = new List<string>() { Rand.Next().ToString() },
             };
 

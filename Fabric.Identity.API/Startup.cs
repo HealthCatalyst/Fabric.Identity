@@ -131,8 +131,13 @@ namespace Fabric.Identity.API
                 RequireHttpsMetadata = false,
                 ApiName = identityServerApiSettings.ClientId
             });
-
-            services.AddAuthentication().AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
+            
+            services.AddAuthentication().AddJwtBearer(o =>
+            {
+                o.Authority = identityServerApiSettings.Authority;
+                o.Audience = identityServerApiSettings.ClientId;
+                o.RequireHttpsMetadata = false;
+            }).AddAzureIdentityProviderIfApplicable(_appConfig).AddExternalIdentityProviders(_appConfig);
 
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
@@ -233,7 +238,6 @@ namespace Fabric.Identity.API
 
             InitializeDatabase(dbBootstrapper);
 
-            app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<ICorsPolicyProvider>();
             app.UseCors(FabricIdentityConstants.FabricCorsPolicyName);
 
             app.UseStaticFiles();
