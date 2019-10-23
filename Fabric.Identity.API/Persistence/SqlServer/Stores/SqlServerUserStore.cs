@@ -76,6 +76,30 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             UpdateUserAsync(user).Wait();
         }
 
+        public async Task<IEnumerable<User>> SearchUsersAsync(string searchText, string searchType)
+        {
+            IQueryable<EntityModels.User> users;
+
+            if (searchType == FabricIdentityConstants.SearchTypes.Wildcard)
+            {
+                users = IdentityDbContext.Users
+                    .Where(u => (u.FirstName + " " + u.MiddleName + " " + u.LastName).StartsWith(searchText)
+                        || u.Username.StartsWith(searchText)
+                        || u.ComputedUserId.StartsWith(searchText));
+            }
+            else
+            {
+                users = IdentityDbContext.Users
+                    .Where(u => (u.FirstName + " " + u.MiddleName + " " + u.LastName) == searchText
+                                || u.Username == searchText
+                                || u.ComputedUserId == searchText);
+            }
+
+            var results = (await users.ToListAsync()).Select(u => u.ToModel());
+
+            return results;
+        }
+
         public async Task UpdateUserAsync(User user)
         {
             var existingUser = await IdentityDbContext.Users

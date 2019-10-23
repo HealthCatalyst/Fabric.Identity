@@ -7,5 +7,12 @@
             Duplicate,
             MissingRequiredField            
         }
+
+        public enum PrincipalType
+        {
+            User,
+            Group,
+            UserAndGroup
+        }
     }
 }

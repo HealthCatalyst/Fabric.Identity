@@ -123,7 +123,7 @@ namespace Fabric.Identity.API.Services
 
             if (!string.IsNullOrEmpty(subjectId))
             {
-                var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(subjectId);
+                var externalUser = await _externalIdentityProviderService.FindUserBySubjectIdAsync(subjectId);
                 if (externalUser != null)
                 {
                     if (externalUser.FirstName != null)

@@ -17,6 +17,7 @@ namespace Fabric.Identity.API.Configuration
         public bool AzureAuthenticationEnabled { get; set; }
         public bool UseDiscoveryService { get; set; }
         public string DiscoveryServiceEndpoint { get; set; }
+        public string DomainName { get; set; }
         public IdentityProviderSearchSettings IdentityProviderSearchSettings { get; set; }
         public SigningCertificateSettings SigningCertificateSettings { get; set; }
         public ElasticSearchSettings ElasticSearchSettings { get; set; }
@@ -25,6 +26,7 @@ namespace Fabric.Identity.API.Configuration
         public ExternalIdProviderSettings ExternalIdProviderSettings { get; set; }
         public AzureActiveDirectorySettings AzureActiveDirectorySettings { get; set; }
         public IdentityServerConfidentialClientSettings IdentityServerConfidentialClientSettings { get; set; }
+        public AzureActiveDirectoryClientSettings AzureActiveDirectoryClientSettings { get; set; }
         public ApplicationInsights ApplicationInsights { get; set; }
         public LdapSettings LdapSettings { get; set; }
         public FilterSettings FilterSettings { get; set; }

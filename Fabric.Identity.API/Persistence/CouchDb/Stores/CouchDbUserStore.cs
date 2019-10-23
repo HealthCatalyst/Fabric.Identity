@@ -55,6 +55,11 @@ namespace Fabric.Identity.API.Persistence.CouchDb.Stores
                 $"updated user: {user.SubjectId} with claims: {JsonConvert.SerializeObject(user.Claims?.Select(c => new {c.Type, c.Value}))}");
         }
 
+        public Task<IEnumerable<User>> SearchUsersAsync(string searchText, string searchType)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public Task UpdateUserAsync(User user)
         {
             throw new System.NotImplementedException();

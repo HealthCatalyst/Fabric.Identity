@@ -115,10 +115,11 @@
             public const string Azure = "AzureActiveDirectory";
         }
 
-        public static class SearchIdenityProviders
+        public static class SearchIdentityProviders
         {
             public const string ActiveDirectory = "Windows";
             public const string AzureActiveDirectory = "AzureActiveDirectory";
+            public const string IdentityDatabase = "Identity";
 
             public static readonly string[] ValidIdentityProviders = { ActiveDirectory, AzureActiveDirectory };
         }
@@ -126,6 +127,12 @@
         public static class AuthenticationExceptionMessages
         {
             public const string ArgumentNullExceptionMessage = "The object name '{0}' cannot be null.";
+        }
+
+        public static class SearchTypes
+        {
+            public const string Exact = "exact";
+            public const string Wildcard = "wildcard";
         }
     }
 }

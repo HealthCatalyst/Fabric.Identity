@@ -193,7 +193,7 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(FabricIdentityConstants.PublicClaimTypes.UserPrincipalName, HttpContext.User.Identity.Name));
 
-                    var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(HttpContext.User.Identity.Name);
+                    var externalUser = await _externalIdentityProviderService.FindUserBySubjectIdAsync(HttpContext.User.Identity.Name);
                     if (externalUser != null)
                     {
                         if (externalUser.FirstName != null)

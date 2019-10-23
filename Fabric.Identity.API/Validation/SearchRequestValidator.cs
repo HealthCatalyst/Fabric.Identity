@@ -23,10 +23,10 @@ namespace Fabric.IdentityProviderSearchService.Validators
             RuleSet(FabricIdentityConstants.ValidationRuleSets.PrincipalIdentityProviderSearch, () =>
                 RuleFor(request => request.IdentityProvider)
                     .Must(identityProvider =>
-                        FabricIdentityConstants.SearchIdenityProviders.ValidIdentityProviders.Contains(identityProvider,
+                        FabricIdentityConstants.SearchIdentityProviders.ValidIdentityProviders.Contains(identityProvider,
                             StringComparer.OrdinalIgnoreCase))
                     .When(request => !string.IsNullOrWhiteSpace(request.IdentityProvider))
-                    .WithMessage($"Please specify a valid IdentityProvider. Valid identity providers include the following: {string.Join(", ", FabricIdentityConstants.SearchIdenityProviders.ValidIdentityProviders)}"));
+                    .WithMessage($"Please specify a valid IdentityProvider. Valid identity providers include the following: {string.Join(", ", FabricIdentityConstants.SearchIdentityProviders.ValidIdentityProviders)}"));
 
             RuleSet(FabricIdentityConstants.ValidationRuleSets.PrincipalGroupSearch, () =>
                 RuleFor(request => request.GroupName)
