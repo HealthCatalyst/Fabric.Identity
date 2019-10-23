@@ -23,12 +23,12 @@ namespace Fabric.Identity.API.Services
             _logger = logger;
             _policyProvider = policyProvider;
         }
-        public Task<ExternalUser> FindUserBySubjectId(string subjectId)
+        public Task<FabricPrincipal> FindUserBySubjectIdAsync(string subjectId)
         {
             if (!subjectId.Contains(@"\"))
             {
                 _logger.Information("subjectId '{subjectId}' was not in the correct format. Expected DOMAIN\\username.", subjectId);
-                return Task.FromResult(new ExternalUser());
+                return Task.FromResult(new FabricPrincipal());
             }
             _logger.Debug("Searching LDAP for '{subjectId}'.", subjectId);
             var subjectIdParts = subjectId.Split('\\');
@@ -38,16 +38,16 @@ namespace Fabric.Identity.API.Services
             return Task.FromResult(users.FirstOrDefault());
         }
 
-        public ICollection<ExternalUser> SearchUsers(string searchText)
+        public ICollection<FabricPrincipal> SearchUsers(string searchText)
         {
             var ldapQuery = $"(&(objectClass=user)(objectCategory=person)(|(sAMAccountName={searchText}*)(givenName={searchText}*)(sn={searchText}*)))";
             return SearchLdapSafe(ldapQuery);
         }
 
-        private ICollection<ExternalUser> SearchLdapSafe(string ldapQuery)
+        private ICollection<FabricPrincipal> SearchLdapSafe(string ldapQuery)
         {
             //use a circuit breaker here so we don't consistently try to hit a down/unreachable service
-            var users = new List<ExternalUser>();
+            var users = new List<FabricPrincipal>();
             try
             {
                 users = _policyProvider.LdapErrorPolicy.Execute(() => SearchLdap(ldapQuery)).ToList();
@@ -65,9 +65,9 @@ namespace Fabric.Identity.API.Services
             return users;
         }
 
-        private ICollection<ExternalUser> SearchLdap(string ldapQuery)
+        private ICollection<FabricPrincipal> SearchLdap(string ldapQuery)
         {
-            var users = new List<ExternalUser>();
+            var users = new List<FabricPrincipal>();
             using (var ldapConnection = _ldapConnectionProvider.GetConnection())
             {
                 if (ldapConnection == null)
@@ -84,7 +84,7 @@ namespace Fabric.Identity.API.Services
                         var next = results.next();
                         _logger.Debug("Found entry with DN: {DN}", next.DN);
                         var attributeSet = next.getAttributeSet();
-                        var user = new ExternalUser
+                        var user = new FabricPrincipal
                         {
                             LastName = attributeSet.getAttribute("SN") == null
                                 ? string.Empty
