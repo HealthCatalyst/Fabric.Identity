@@ -4,7 +4,7 @@ using Fabric.Identity.API;
 using Fabric.Identity.API.Models;
 using FluentValidation;
 
-namespace Fabric.IdentityProviderSearchService.Validators
+namespace Fabric.Identity.API.Validation
 {
     public class SearchRequestValidator : AbstractValidator<PrincipalSearchRequest>
     {

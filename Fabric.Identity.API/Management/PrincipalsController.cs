@@ -7,7 +7,6 @@ using AutoMapper;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Validation;
-using Fabric.IdentityProviderSearchService.Validators;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
