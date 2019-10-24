@@ -18,9 +18,10 @@ namespace Fabric.Identity.API.Services.Azure
         private IDictionary<string, AzureClientApplicationSettings> _settings;
         private IStringLocalizer<AzureActiveDirectoryClientCredentialsService> _localizer;
 
-        public AzureActiveDirectoryClientCredentialsService(AzureActiveDirectoryClientSettings azureClientSettings,
+        public AzureActiveDirectoryClientCredentialsService(IAppConfiguration appSettings,
             HttpClient client, IStringLocalizer<AzureActiveDirectoryClientCredentialsService> localizer)
         {
+            var azureClientSettings = appSettings.AzureActiveDirectoryClientSettings;
             this._settings = AzureClientApplicationSettings.CreateDictionary(azureClientSettings);
             this._authority = azureClientSettings.Authority;
             this._tokenEndpoint = azureClientSettings.TokenEndpoint;
@@ -48,7 +49,7 @@ namespace Fabric.Identity.API.Services.Azure
                 return response;
             }
 
-            string exceptionMessage = _localizer["Could not retrieve Azure access Token"];
+            string exceptionMessage = _localizer["AzureAccessTokenRetrievalFailure"];
             throw new AzureActiveDirectoryException(exceptionMessage);
         }
     }
