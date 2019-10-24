@@ -21,7 +21,6 @@ namespace Fabric.Identity.API.Infrastructure
         {
             _correlationToken = correlationToken;
             _subject = subject;
-            //_tokenClient = new TokenClient(tokenUrl, clientId, secret);
             _httpClient = new HttpClient();
             _tokenUrl = tokenUrl;
             _clientId = clientId;

@@ -28,8 +28,6 @@ namespace Fabric.Identity.API.Validation
                 .SetValidator(new ScopeValidator())
                 .WithMessage("Please specify at least one Scope for this Api Resource");
 
-            //.SetCollectionValidator(new ScopeValidator())
-
             RuleFor(apiResource => apiResource.UserClaims)
                 .NotNull()
                 .WithMessage("Please specify at least one User Claim for this Api Resource");

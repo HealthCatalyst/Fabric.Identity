@@ -21,7 +21,7 @@ namespace Fabric.Identity.API.Services
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _appConfiguration = appConfiguration ?? throw new ArgumentNullException(nameof(appConfiguration));
             _authenticationSchemeProvider = authenticationSchemeProvider ??
-                                            throw new ArgumentNullException(nameof(httpContextAccessor));
+                                            throw new ArgumentNullException(nameof(authenticationSchemeProvider));
         }
 
         public async Task<ICollection<ExternalProvider>> GetConfiguredIdentityProviders()
