@@ -225,10 +225,14 @@ namespace Fabric.Identity.IntegrationTests
                     .AddSingleton(hostingOptions)
                     .AddSingleton(ConnectionStrings));
 
-            builder.UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .UseUrls(IdentityServerUrl);
+            builder.ConfigureAppConfiguration((hostContext, config) =>
+                {
+                    config.AddDockerSecrets(typeof(IAppConfiguration));
+                    config.SetBasePath(Directory.GetCurrentDirectory());
+                })
+                .UseUrls(IdentityServerUrl)
+                .ConfigureKestrel((context, options) =>
+                {
 
                 })
                 .UseSerilog()
