@@ -19,25 +19,12 @@ namespace Fabric.Identity.API.Documentation
 
         public void Apply(Operation operation, OperationFilterContext context)
         {
-            List<string> policies = new List<string>();
+            var authAttributes = context.MethodInfo.DeclaringType.GetCustomAttributes(true)
+                .Union(context.MethodInfo.GetCustomAttributes(true))
+                .OfType<AuthorizeAttribute>();
 
-            if (context.ApiDescription.ActionDescriptor is
-                Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controller)
-            {
-                policies.AddRange(controller.ControllerTypeInfo
-                    .GetCustomAttributes(true)
-                    .OfType<AuthorizeAttribute>()
-                    .Select(attr => attr.Policy));
-            }
-
-            if (context.ApiDescription.TryGetMethodInfo(out var methodInfo))
-            {
-                policies.AddRange(methodInfo.GetCustomAttributes(true)
-                    .OfType<AuthorizeAttribute>()
-                    .Select(attr => attr.Policy));
-            }
-
-            var requiredClaimTypes = policies
+            var requiredClaimTypes = authAttributes
+                .Select(attr => attr.Policy)
                 .Select(x => authorizationOptions.Value.GetPolicy(x))
                 .SelectMany(x => x.Requirements)               
                 .OfType<IHaveAuthorizationClaimType>()
