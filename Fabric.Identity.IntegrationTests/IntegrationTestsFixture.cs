@@ -77,7 +77,7 @@ namespace Fabric.Identity.IntegrationTests
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
-            IdentityTestServer = CreateTestServer(storageProvider, (builder) => {});
+            IdentityTestServer = CreateTestServer(storageProvider, null);
             _apiTestServer = CreateTestServer(storageProvider, RegisterRegistrationServices);
             _httpClientTaskCompletionSource = new TaskCompletionSource<HttpClient>();
             _ = SetupHttpClient();
@@ -228,7 +228,7 @@ namespace Fabric.Identity.IntegrationTests
                 
             );
 
-            apiBuilder.AddServices(customizeWebHost);
+            customizeWebHost?.Invoke(apiBuilder);
 
             apiBuilder
                 .ConfigureAppConfiguration((hostContext, config) =>
