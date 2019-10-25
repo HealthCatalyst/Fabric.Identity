@@ -507,8 +507,8 @@ namespace Fabric.Identity.IntegrationTests
             if (disposing)
             {
                 // free managed resources
-                HttpClient.Wait();
-                HttpClient.Result.Dispose();
+                //HttpClient.Wait();
+                //HttpClient.Result.Dispose();
                 
                 IdentityTestServer.Dispose();
                 _apiTestServer.Dispose();
