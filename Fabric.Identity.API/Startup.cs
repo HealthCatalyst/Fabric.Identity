@@ -37,7 +37,6 @@ using Serilog.Core;
 using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using ILogger = Serilog.ILogger;
 using LogFactory = Fabric.Identity.API.Logging.LogFactory;
 

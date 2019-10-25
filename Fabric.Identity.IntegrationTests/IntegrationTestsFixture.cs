@@ -77,8 +77,8 @@ namespace Fabric.Identity.IntegrationTests
 
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
-            IdentityTestServer = CreateIdentityTestServer(storageProvider);
-            _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
+            IdentityTestServer = CreateTestServer(storageProvider, (builder) => {});
+            _apiTestServer = CreateTestServer(storageProvider, RegisterRegistrationServices);
             _httpClientTaskCompletionSource = new TaskCompletionSource<HttpClient>();
             _ = SetupHttpClient();
         }
@@ -189,7 +189,7 @@ namespace Fabric.Identity.IntegrationTests
 
         public Task<HttpClient> HttpClient => _httpClientTaskCompletionSource.Task;
 
-        private TestServer CreateIdentityTestServer(string storageProvider)
+        private TestServer CreateTestServer(string storageProvider, Action<IWebHostBuilder> customizeWebHost)
         {
             var loggerConfiguration = new LoggerConfiguration();
 
@@ -209,68 +209,7 @@ namespace Fabric.Identity.IntegrationTests
 
             Log.Logger = loggerConfiguration.CreateLogger();
 
-            var hostingOptions = new HostingOptions
-            {
-                UseIis = false,
-                UseTestUsers = true,
-                StorageProvider = storageProvider
-            };
-
-            var builder = WebHost.CreateDefaultBuilder();
-
-            builder.ConfigureServices(c =>
-                c.AddSingleton(LdapSettings)
-                    .AddSingleton(Log.Logger)
-                    .AddSingleton(CouchDbSettings)
-                    .AddSingleton(hostingOptions)
-                    .AddSingleton(ConnectionStrings));
-
-            builder.ConfigureAppConfiguration((hostContext, config) =>
-                {
-                    config.AddDockerSecrets(typeof(IAppConfiguration));
-                    config.SetBasePath(Directory.GetCurrentDirectory());
-                })
-                .UseUrls(IdentityServerUrl)
-                .ConfigureKestrel((context, options) =>
-                {
-
-                })
-                .UseSerilog()
-                .UseStartup<Startup>();
-
-            return new TestServer(builder);
-        }
-
-        private TestServer CreateRegistrationApiTestServer(string storageProvider)
-        {
-            var loggerConfiguration = new LoggerConfiguration();
-
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .AddEnvironmentVariables()
-                .AddDockerSecrets(typeof(IAppConfiguration))
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .Build();
-
-            var certificateService = IdentityConfigurationProvider.MakeCertificateService();
-            var decryptionService = new DecryptionService(certificateService);
-            var appConfig = new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
-
-            LogFactory.ConfigureTraceLogger(loggerConfiguration, appConfig.ApplicationInsights);
-
-            Log.Logger = loggerConfiguration.CreateLogger();
-
-            // I don't think we use this anymore
-            var options = new IdentityServerAuthenticationOptions
-            {
-                Authority = IdentityServerUrl,
-                ApiName = RegistrationApiName,
-                RequireHttpsMetadata = false,
-                JwtBackChannelHandler = IdentityTestServer.CreateHandler(),
-                IntrospectionBackChannelHandler = IdentityTestServer.CreateHandler(),
-                IntrospectionDiscoveryHandler = IdentityTestServer.CreateHandler()
-            };
+            
 
             var hostingOptions = new HostingOptions
             {
@@ -282,16 +221,14 @@ namespace Fabric.Identity.IntegrationTests
             var apiBuilder = WebHost.CreateDefaultBuilder();
 
             apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
-                .AddSingleton(options)
                 .AddSingleton(Log.Logger)
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
-                .AddSingleton<IPostConfigureOptions<JwtBearerOptions>>(new PostConfigureOptions<JwtBearerOptions>("Bearer", jwtOpts =>
-                {
-                    jwtOpts.BackchannelHttpHandler = new SuppressExecutionContextHandler(IdentityTestServer.CreateHandler());
-                }))
+                
             );
+
+            apiBuilder.AddServices(customizeWebHost);
 
             apiBuilder
                 .ConfigureAppConfiguration((hostContext, config) =>
@@ -308,6 +245,25 @@ namespace Fabric.Identity.IntegrationTests
                 .UseStartup<Startup>();
 
             return new TestServer(apiBuilder);
+        }
+
+        private void RegisterRegistrationServices(IWebHostBuilder builder)
+        {
+            var options = new IdentityServerAuthenticationOptions
+            {
+                Authority = IdentityServerUrl,
+                ApiName = RegistrationApiName,
+                RequireHttpsMetadata = false,
+                JwtBackChannelHandler = IdentityTestServer.CreateHandler(),
+                IntrospectionBackChannelHandler = IdentityTestServer.CreateHandler(),
+                IntrospectionDiscoveryHandler = IdentityTestServer.CreateHandler()
+            };
+
+            builder.ConfigureServices(c => c.AddSingleton(options)
+                .AddSingleton<IPostConfigureOptions<JwtBearerOptions>>(new PostConfigureOptions<JwtBearerOptions>("Bearer", jwtOpts =>
+                {
+                    jwtOpts.BackchannelHttpHandler = new SuppressExecutionContextHandler(IdentityTestServer.CreateHandler());
+                })));
         }
 
         protected async Task SetupHttpClient()
