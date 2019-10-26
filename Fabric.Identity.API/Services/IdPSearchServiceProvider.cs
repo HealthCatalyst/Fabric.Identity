@@ -34,7 +34,7 @@ namespace Fabric.Identity.API.Services
             _httpRequestMessageFactory = httpRequestMessageFactory;
         }
 
-        public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
+        public async Task<FabricPrincipal> FindUserBySubjectIdAsync(string subjectId)
         {
             if (!_appConfig.IdentityProviderSearchSettings.IsEnabled)
             {
@@ -42,7 +42,7 @@ namespace Fabric.Identity.API.Services
                 return null;
             }
 
-            ExternalUser user = null;
+            FabricPrincipal user = null;
 
             try
             {
@@ -58,7 +58,7 @@ namespace Fabric.Identity.API.Services
             return user;
         }
 
-        private async Task<ExternalUser> SearchForUser(string subjectId)
+        private async Task<FabricPrincipal> SearchForUser(string subjectId)
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             if (string.IsNullOrEmpty(settings.Authority))
@@ -120,7 +120,7 @@ namespace Fabric.Identity.API.Services
 
                 var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
 
-                return new ExternalUser
+                return new FabricPrincipal
                 {
                     FirstName = result.FirstName,
                     LastName = result.LastName,
@@ -143,7 +143,7 @@ namespace Fabric.Identity.API.Services
             }
         }
 
-        public ICollection<ExternalUser> SearchUsers(string searchText)
+        public ICollection<FabricPrincipal> SearchUsers(string searchText)
         {
             throw new NotImplementedException();
         }
