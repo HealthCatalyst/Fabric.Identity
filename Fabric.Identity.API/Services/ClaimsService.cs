@@ -175,7 +175,7 @@ namespace Fabric.Identity.API.Services
             return additionalClaims.ToArray();
         }
 
-        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateInfo info)
+        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateResult info)
         {
             //if the external provider issued an id_token, we'll keep it for signout
             AuthenticationProperties props = null;
