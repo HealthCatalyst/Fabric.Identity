@@ -44,6 +44,11 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
             _documentDbService.UpdateDocument(GetUserDocumentId(user.SubjectId, user.ProviderName), user);
         }
 
+        public Task<IEnumerable<User>> SearchUsersAsync(string searchText, string searchType)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public Task UpdateUserAsync(User user)
         {
             throw new System.NotImplementedException();

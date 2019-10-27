@@ -11,6 +11,7 @@ namespace Fabric.Identity.API.Persistence
         Task<IEnumerable<User>> GetUsersBySubjectIdAsync(IEnumerable<string> subjectIds);
         Task<User> AddUserAsync(User user);
         void UpdateUser(User user);
+        Task<IEnumerable<User>> SearchUsersAsync(string searchText, string searchType);
 
         Task UpdateUserAsync(User user);
     }

@@ -71,7 +71,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             return apiResource?.ToModel();
         }
 
-        public async Task<Resources> GetAllResources()
+        public async Task<Resources> GetAllResourcesAsync()
         {
             var identity = IdentityDbContext.IdentityResources
                 .Where(i => !i.IsDeleted)

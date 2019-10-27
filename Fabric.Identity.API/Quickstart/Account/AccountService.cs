@@ -52,7 +52,7 @@ namespace IdentityServer4.Quickstart.UI
                 };
             }
 
-            var providers = _identityProviderConfigurationService.GetConfiguredIdentityProviders();
+            var providers = await _identityProviderConfigurationService.GetConfiguredIdentityProviders();
 
             var allowLocal = true;
             if (context?.ClientId != null)
@@ -91,7 +91,7 @@ namespace IdentityServer4.Quickstart.UI
         {
             var vm = new LogoutViewModel { LogoutId = logoutId, ShowLogoutPrompt = AccountOptions.ShowLogoutPrompt };
 
-            var user = await _httpContextAccessor.HttpContext.GetIdentityServerUserAsync();
+            var user = _httpContextAccessor.HttpContext.User;
             if (user == null || user.Identity.IsAuthenticated == false)
             {
                 // if the user is not authenticated, then just show logged out page
@@ -126,7 +126,7 @@ namespace IdentityServer4.Quickstart.UI
                 LogoutId = logoutId
             };
 
-            var user = await _httpContextAccessor.HttpContext.GetIdentityServerUserAsync();
+            var user = _httpContextAccessor.HttpContext.User;
             if (user != null)
             {
                 var idp = user.FindFirst(JwtClaimTypes.IdentityProvider)?.Value;

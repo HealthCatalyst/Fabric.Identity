@@ -3,6 +3,7 @@
 
 
 using System.Collections.Generic;
+using System.Net.Http;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -31,13 +32,13 @@ namespace IdentityServer4.Quickstart.UI
         {
             var model = new IdentityStatusModel();
             var discoPolicy = new DiscoveryPolicy { ValidateIssuerName = false, RequireHttps = false };
-            using (var discoClient =
-                new DiscoveryClient(_appConfiguration.IdentityServerConfidentialClientSettings.Authority)
-                {
-                    Policy = discoPolicy
-                })
+            using (var discoClient = new HttpClient())
             {
-                var discoveryDocument = await discoClient.GetAsync();
+                var discoveryDocument = await discoClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
+                {
+                    Address = _appConfiguration.IdentityServerConfidentialClientSettings.Authority,
+                    Policy = discoPolicy
+                });
                 model.ScopesSupported = discoveryDocument?.ScopesSupported ?? new List<string>();
                 model.GrantsSupported = discoveryDocument?.GrantTypesSupported ?? new List<string>();
             }
