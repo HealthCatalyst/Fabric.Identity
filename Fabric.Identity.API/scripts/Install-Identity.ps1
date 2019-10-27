@@ -66,7 +66,7 @@ if($useAzure -eq $true) {
 # Setup connection strings and dependences
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
-Install-DotNetCoreIfNeeded -version "2.2.7" -downloadUrl "https://download.visualstudio.microsoft.com/download/pr/51c29196-43b3-47d6-a393-d0df24081ac1/8b8d720b3cd63d88a2fd69115ab713c5/dotnet-hosting-2.2.7-win.exe"
+Install-DotNetCoreIfNeeded -version "2.2.7.0" -downloadUrl "https://download.visualstudio.microsoft.com/download/pr/51c29196-43b3-47d6-a393-d0df24081ac1/8b8d720b3cd63d88a2fd69115ab713c5/dotnet-hosting-2.2.7-win.exe"
 $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet -installConfigPath $configStore.Path -scope $installSettingsScope
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
 $sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonInstallSettings.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
