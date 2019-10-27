@@ -19,14 +19,12 @@ namespace Fabric.Identity.API.Documentation
 
         public void Apply(Operation operation, OperationFilterContext context)
         {
-            var controllerPolicies = context.ApiDescription.ControllerAttributes()
-                .OfType<AuthorizeAttribute>()
-                .Select(attr => attr.Policy);
-            var actionPolicies = context.ApiDescription.ActionAttributes()
-                .OfType<AuthorizeAttribute>()
-                .Select(attr => attr.Policy);
-            var policies = controllerPolicies.Union(actionPolicies).Distinct();
-            var requiredClaimTypes = policies
+            var authAttributes = context.MethodInfo.DeclaringType.GetCustomAttributes(true)
+                .Union(context.MethodInfo.GetCustomAttributes(true))
+                .OfType<AuthorizeAttribute>();
+
+            var requiredClaimTypes = authAttributes
+                .Select(attr => attr.Policy)
                 .Select(x => authorizationOptions.Value.GetPolicy(x))
                 .SelectMany(x => x.Requirements)               
                 .OfType<IHaveAuthorizationClaimType>()

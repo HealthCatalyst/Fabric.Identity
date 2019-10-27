@@ -41,7 +41,7 @@ namespace Fabric.Identity.API.Services
                 var user = await _userStore.FindBySubjectIdAsync(context.Subject.GetSubjectId());
                 if (user != null)
                 {
-                    context.AddRequestedClaims(user.Claims);
+                    Fabric.Identity.API.Extensions.ProfileDataRequestContextExtensions.AddRequestedClaims(context, user.Claims);
                 }
             }
 

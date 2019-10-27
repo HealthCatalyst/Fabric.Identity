@@ -10,7 +10,6 @@ using Fabric.Identity.UnitTests.Helpers;
 using Fabric.Identity.UnitTests.Mocks;
 using IdentityModel;
 using IdentityServer4.Models;
-using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Xunit;
 using Fabric.Identity.API.Exceptions;
@@ -71,7 +70,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(excResult);
                 Assert.IsType<ArgumentNullException>(excResult);
-                Assert.True(excResult.Message.Contains("The object name 'user' cannot be null."));
+                Assert.Contains("The object name 'user' cannot be null.", excResult.Message);
             }
 
             [Fact]
@@ -91,7 +90,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(excResult);
                 Assert.IsType<ArgumentNullException>(excResult);
-                Assert.True(excResult.Message.Contains("The object name 'claimInformation' cannot be null."));
+                Assert.Contains("The object name 'claimInformation' cannot be null.", excResult.Message);
             }
 
             [Fact]
@@ -104,7 +103,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(expectedSubjectId, result);                
+                Assert.Equal(expectedSubjectId, result);
             }
 
             [Fact]
@@ -119,10 +118,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(expectedSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
 
-                Assert.Equal<string>(expectedSubjectId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -138,10 +137,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(expectedSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
 
-                Assert.Equal<string>(expectedSubjectId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -156,10 +155,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(expectedSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
 
-                Assert.Equal<string>(expectedSubjectId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedSubjectId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -174,10 +173,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(claimSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
 
-                Assert.Equal<string>(claimSubjectId, result);
-                Assert.NotEqual<string>(expectedSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
+                Assert.NotEqual(expectedSubjectId, result);
             }
 
             [Fact]
@@ -192,10 +191,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveSubjectId(claimResult, user);
 
-                Assert.Equal<string>(claimSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
 
-                Assert.Equal<string>(claimSubjectId, result);
-                Assert.NotEqual<string>(expectedSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
+                Assert.NotEqual(expectedSubjectId, result);
             }
         }
 
@@ -229,7 +228,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(excResult);
                 Assert.IsType<ArgumentNullException>(excResult);
-                Assert.True(excResult.Message.Contains("The object name 'claimInformation' cannot be null."));
+                Assert.Contains("The object name 'claimInformation' cannot be null.", excResult.Message);
             }
 
             [Fact]
@@ -242,7 +241,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(expectedUserId, result);
+                Assert.Equal(expectedUserId, result);
             }
 
             [Fact]
@@ -261,10 +260,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(expectedUserId, result);
+                Assert.Equal(expectedUserId, result);
 
-                Assert.Equal<string>(expectedUserId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedUserId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -283,10 +282,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(expectedUserId, result);
+                Assert.Equal(expectedUserId, result);
 
-                Assert.Equal<string>(expectedUserId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedUserId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -305,10 +304,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(expectedUserId, result);
+                Assert.Equal(expectedUserId, result);
 
-                Assert.Equal<string>(expectedUserId, result);
-                Assert.NotEqual<string>(claimSubjectId, result);
+                Assert.Equal(expectedUserId, result);
+                Assert.NotEqual(claimSubjectId, result);
             }
 
             [Fact]
@@ -327,10 +326,10 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(claimSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
 
-                Assert.Equal<string>(claimSubjectId, result);
-                Assert.NotEqual<string>(expectedUserId, result);
+                Assert.Equal(claimSubjectId, result);
+                Assert.NotEqual(expectedUserId, result);
             }
 
             [Fact]
@@ -349,15 +348,15 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = ClaimsService.GetEffectiveUserId(claimResult);
 
-                Assert.Equal<string>(claimSubjectId, result);
-                Assert.Equal<string>(claimSubjectId, result);
-                Assert.NotEqual<string>(expectedUserId, result);
+                Assert.Equal(claimSubjectId, result);
+                Assert.Equal(claimSubjectId, result);
+                Assert.NotEqual(expectedUserId, result);
             }
         }
 
         public class GenerateClaimsForIdentityTests : ClaimsServiceTests
         {
-            private AuthenticateInfo authenticateInfo;
+            private AuthenticateResult authenticateInfo;
             private AuthorizationRequest authorizationRequest;
 
             public GenerateClaimsForIdentityTests() :
@@ -384,7 +383,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(excResult);
                 Assert.IsType<ArgumentNullException>(excResult);
-                Assert.True(excResult.Message.Contains("The object name 'info' cannot be null."));
+                Assert.Contains("The object name 'info' cannot be null.", excResult.Message);
             }
             
             [Fact]
@@ -436,7 +435,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(expectedException);
                 Assert.IsType<InvalidIssuerException>(expectedException);
-                Assert.Equal<string>(
+                Assert.Equal(
                     String.Format(CultureInfo.CurrentCulture, 
                         ExceptionMessageResources.ForbiddenIssuerMessageUser, 
                         expectedInvalidIssuer), 
@@ -468,7 +467,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(expectedException);
                 Assert.IsType<MissingIssuerClaimException>(expectedException);
-                Assert.Equal<string>(
+                Assert.Equal(
                     ExceptionMessageResources.MissingIssuerClaimMessage,
                     expectedException.Message);
             }
@@ -480,7 +479,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
 
-                Assert.False(result.Claims.Any(x => x.Type == JwtClaimTypes.Subject));
+                Assert.DoesNotContain(result.Claims, x => x.Type == JwtClaimTypes.Subject);
             }
 
             [Fact]
@@ -490,7 +489,7 @@ namespace Fabric.Identity.UnitTests.Services
 
                 var result = await ClaimsService.GenerateClaimsForIdentity(authenticateInfo, authorizationRequest);
                 
-                Assert.False(result.Claims.Any(x => x.Type == ClaimTypes.NameIdentifier));
+                Assert.DoesNotContain(result.Claims, x => x.Type == ClaimTypes.NameIdentifier);
             }
 
             [Fact]
@@ -512,19 +511,19 @@ namespace Fabric.Identity.UnitTests.Services
 
                 Assert.NotNull(expectedException);
                 Assert.IsType<MissingUserClaimException>(expectedException);
-                Assert.Equal<string>(
+                Assert.Equal(
                     ExceptionMessageResources.MissingUserClaimMessage,
                     expectedException.Message);
             }
 
-            private void AssertClaimsResult(AuthenticateInfo info, AuthorizationRequest context, ClaimsResult result)
+            private void AssertClaimsResult(AuthenticateResult info, AuthorizationRequest context, ClaimsResult result)
             {
-                Assert.Equal<string>(context.ClientId, result.ClientId);
-                Assert.Equal<string>(info.Properties.Items["scheme"], result.Provider);
-                Assert.Equal<string>(info.Properties.Items.FirstOrDefault(i => i.Key == "scheme").Value, result.SchemeItem);
+                Assert.Equal(context.ClientId, result.ClientId);
+                Assert.Equal(info.Properties.Items["scheme"], result.Provider);
+                Assert.Equal(info.Properties.Items.FirstOrDefault(i => i.Key == "scheme").Value, result.SchemeItem);
                 var expectedUserId = info?.Principal.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Subject);
-                Assert.Equal<string>(expectedUserId.Value, result.UserId);
-                Assert.Equal<Claim>(expectedUserId, result.UserIdClaim);
+                Assert.Equal(expectedUserId.Value, result.UserId);
+                Assert.Equal(expectedUserId, result.UserIdClaim);
 
                 var expectedClaims = info?.Principal.Claims.ToArray();
                 // we remove one because user Id claim should be removed
@@ -534,31 +533,33 @@ namespace Fabric.Identity.UnitTests.Services
                 AssertAuthenticationProperties(info, result);
             }
 
-            private void AssertAuthenticationProperties(AuthenticateInfo info, ClaimsResult result)
+            private void AssertAuthenticationProperties(AuthenticateResult info, ClaimsResult result)
             {
-                Assert.Equal<string>(info.Properties.GetTokenValue("id_token"), result.AuthenticationProperties.GetTokenValue("id_token"));
+                Assert.Equal(info.Properties.GetTokenValue("id_token"), result.AuthenticationProperties.GetTokenValue("id_token"));
             }
 
             private void AssertAdditionalClaims(IEnumerable<Claim> claims, ClaimsResult result)
             {
-                Assert.Equal<Claim>(claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId), result.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId));
-                Assert.Equal<string>(claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId).Value, result.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId).Value);
+                Assert.Equal(claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId), result.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId));
+                Assert.Equal(claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId).Value, result.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId).Value);
 
-                Assert.Equal<int>(claims.Where(x => x.Type == "groups").Count(), result.Claims.Where(x => x.Type == "groups").Count());
+                Assert.Equal(claims.Where(x => x.Type == "groups").Count(), result.Claims.Where(x => x.Type == "groups").Count());
             }
 
-            public AuthenticateInfo GenerateAuthenticateInfo(string issuer = null, bool hasIssuer = true, bool hasSubjectUserIdClaim = true, bool hasNameIdentifierClaim = true)
+            public AuthenticateResult GenerateAuthenticateInfo(string issuer = null, bool hasIssuer = true, bool hasSubjectUserIdClaim = true, bool hasNameIdentifierClaim = true)
             {
                 var dict = new Dictionary<string, string>();
-                dict.Add("scheme", $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}");
+                var authenticationScheme = $"{TestHelper.GenerateRandomString()}:{TestHelper.GenerateRandomString()}";
+                dict.Add("scheme", authenticationScheme);
+
                 var props = new AuthenticationProperties(dict);
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = TestHelper.GenerateRandomString() } });
 
-                return new AuthenticateInfo()
-                {
-                    Principal = new TestPrincipal(GenerateClaims(issuer, hasIssuer, hasSubjectUserIdClaim, hasNameIdentifierClaim).ToArray()),
-                    Properties = props
-                };
+                var principal =
+                    new TestPrincipal(GenerateClaims(issuer, hasIssuer, hasSubjectUserIdClaim, hasNameIdentifierClaim)
+                        .ToArray());
+
+                return AuthenticateResult.Success(new AuthenticationTicket(principal, props, authenticationScheme));
             }
 
             public IEnumerable<Claim> GenerateClaims(string issuer, bool hasIssuer, bool hasSubjectUserIdClaim, bool hasNameIdentifierClaim)

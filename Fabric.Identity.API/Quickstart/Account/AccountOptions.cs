@@ -21,7 +21,9 @@ namespace IdentityServer4.Quickstart.UI
         public static bool WindowsAuthenticationEnabled = true;
         public static bool IncludeWindowsGroups = true;
         // specify the Windows authentication schemes you want to use for authentication
-        public static readonly string[] WindowsAuthenticationSchemes = new string[] { "Negotiate", "NTLM" };
+        // In aspnetcore 2.2 the GetAllSchemesAsync method doesn't return NTLM or Negotiate
+        // for windows authentication, the only one returned now is Windows.
+        public static readonly string WindowsAuthenticationSchemes = "Windows";
         public static readonly string WindowsAuthenticationProviderName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
         public static readonly string WindowsAuthenticationDisplayName = FabricIdentityConstants.FabricExternalIdentityProviderTypes.Windows;
 

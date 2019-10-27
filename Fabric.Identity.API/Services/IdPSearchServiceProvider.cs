@@ -9,7 +9,6 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Models;
 using Fabric.Identity.API.Extensions;
-using Fabric.Platform.Http;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityModel.Client;
 using Newtonsoft.Json;
@@ -35,7 +34,7 @@ namespace Fabric.Identity.API.Services
             _httpRequestMessageFactory = httpRequestMessageFactory;
         }
 
-        public async Task<ExternalUser> FindUserBySubjectId(string subjectId)
+        public async Task<FabricPrincipal> FindUserBySubjectIdAsync(string subjectId)
         {
             if (!_appConfig.IdentityProviderSearchSettings.IsEnabled)
             {
@@ -43,7 +42,7 @@ namespace Fabric.Identity.API.Services
                 return null;
             }
 
-            ExternalUser user = null;
+            FabricPrincipal user = null;
 
             try
             {
@@ -59,7 +58,7 @@ namespace Fabric.Identity.API.Services
             return user;
         }
 
-        private async Task<ExternalUser> SearchForUser(string subjectId)
+        private async Task<FabricPrincipal> SearchForUser(string subjectId)
         {
             var settings = _appConfig.IdentityServerConfidentialClientSettings;
             if (string.IsNullOrEmpty(settings.Authority))
@@ -73,8 +72,16 @@ namespace Fabric.Identity.API.Services
             var tokenUriAddress = $"{authority}connect/token";
             _logger.Information($"Getting access token for ClientId: {FabricIdentityConstants.FabricIdentityClient} at {tokenUriAddress}");
 
-            var tokenClient = new TokenClient(tokenUriAddress, FabricIdentityConstants.FabricIdentityClient, settings.ClientSecret);
-            var accessTokenResponse = await tokenClient.RequestClientCredentialsAsync("fabric/idprovider.searchusers");
+            var client = new HttpClient();
+            var tokenRequest = new ClientCredentialsTokenRequest
+            {
+                Address = tokenUriAddress,
+                ClientId = FabricIdentityConstants.FabricIdentityClient,
+                ClientSecret = settings.ClientSecret,
+                Scope = "fabric/idprovider.searchusers"
+            };
+
+            var accessTokenResponse = await client.RequestClientCredentialsTokenAsync(tokenRequest);
             if (accessTokenResponse.IsError)
             {
                 _logger.Error(
@@ -113,7 +120,7 @@ namespace Fabric.Identity.API.Services
 
                 var result = JsonConvert.DeserializeObject<UserSearchResponse>(responseContent);
 
-                return new ExternalUser
+                return new FabricPrincipal
                 {
                     FirstName = result.FirstName,
                     LastName = result.LastName,
@@ -136,7 +143,7 @@ namespace Fabric.Identity.API.Services
             }
         }
 
-        public ICollection<ExternalUser> SearchUsers(string searchText)
+        public ICollection<FabricPrincipal> SearchUsers(string searchText)
         {
             throw new NotImplementedException();
         }

@@ -21,14 +21,15 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             new IdentityServer4.Models.IdentityResource
             {
                 Name = Rand.Next().ToString(),
-                DisplayName = "Test Identity Resource",
+                DisplayName = Rand.Next().ToString(),
                 UserClaims = new List<string>() { Rand.Next().ToString() },
             };
 
         private async Task<HttpResponseMessage> CreateNewIdentityResource(IdentityServer4.Models.IdentityResource identityResource)
         {
             var stringContent = new StringContent(JsonConvert.SerializeObject(identityResource), Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync("/api/identityresource", stringContent);
+            var httpClient = await HttpClient;
+            var response = await httpClient.PostAsync("/api/identityresource", stringContent);
             return response;
         }
 
@@ -46,7 +47,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         [Fact]
         public async Task TestDeleteIdentityResource_NotFound()
         {
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/identityresource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -61,11 +63,12 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             response = await CreateNewIdentityResource(identityResource);
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
+            var httpClient = await HttpClient;
+            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
                 $"/api/identityresource/{identityResource.Name}"));
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-            response = await HttpClient.SendAsync(
+            response = await httpClient.SendAsync(
                 new HttpRequestMessage(new HttpMethod("GET"), $"/api/identityresource/{identityResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 

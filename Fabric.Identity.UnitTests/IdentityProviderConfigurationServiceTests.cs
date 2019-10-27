@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Authentication;
 using Moq;
 using Xunit;
 
@@ -11,36 +13,26 @@ namespace Fabric.Identity.UnitTests
     public class IdentityProviderConfigurationServiceTests
     {
         [Fact]
-        public void GetConfiguredIdentityProviders_ReturnsIdentityProviders()
+        public async Task GetConfiguredIdentityProviders_ReturnsIdentityProvidersAsync()
         {
-            var expectedProviders = new List<AuthenticationDescription>
+            var expectedProviders = new List<AuthenticationScheme>
             {
-                new AuthenticationDescription
-                {
-                    AuthenticationScheme = "OpenId Connect",
-                    DisplayName = "Azure Active Directory"
-                },
-                new AuthenticationDescription
-                {
-                    AuthenticationScheme = "Windows",
-                    DisplayName = "Windows"
-                }
+                new AuthenticationScheme("OpenID Connect", "Azure Active Directory", typeof(JwtBearerHandler)),
+                new AuthenticationScheme("Windows", "Windows", typeof(JwtBearerHandler))
             };
 
-            var authenticationManagerMock = new Mock<AuthenticationManager>();
-            authenticationManagerMock.Setup(mock => mock.GetAuthenticationSchemes())
-                .Returns(expectedProviders);
-
             var httpContextMock = new Mock<HttpContext>();
-            httpContextMock.Setup(mock => mock.Authentication).Returns(authenticationManagerMock.Object);
 
             var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
             httpContextAccessorMock.Setup(mock => mock.HttpContext).Returns(httpContextMock.Object);
 
-            var appConfig = new AppConfiguration {WindowsAuthenticationEnabled = true};
+            var authenticationSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
+            authenticationSchemeProviderMock.Setup(mock => mock.GetAllSchemesAsync()).ReturnsAsync(expectedProviders);
 
-            var identityProviderConfigurationService = new IdentityProviderConfigurationService(httpContextAccessorMock.Object, appConfig);
-            var providers = identityProviderConfigurationService.GetConfiguredIdentityProviders();
+            var appConfig = new AppConfiguration { WindowsAuthenticationEnabled = true };
+
+            var identityProviderConfigurationService = new IdentityProviderConfigurationService(httpContextAccessorMock.Object, authenticationSchemeProviderMock.Object, appConfig);
+            var providers = await identityProviderConfigurationService.GetConfiguredIdentityProviders();
             Assert.NotNull(providers);
             Assert.Equal(expectedProviders.Count, providers.Count);
         }

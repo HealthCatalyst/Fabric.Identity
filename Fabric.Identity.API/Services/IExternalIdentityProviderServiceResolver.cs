@@ -1,4 +1,6 @@
-﻿namespace Fabric.Identity.API.Services
+﻿using System.Collections.Generic;
+
+namespace Fabric.Identity.API.Services
 {
     public interface IExternalIdentityProviderServiceResolver
     {

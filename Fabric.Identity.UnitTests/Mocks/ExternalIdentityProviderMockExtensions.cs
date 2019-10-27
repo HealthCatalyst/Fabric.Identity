@@ -12,8 +12,8 @@ namespace Fabric.Identity.UnitTests.Mocks
         public static Mock<IExternalIdentityProviderService> SetupFindUserBySubjectId(
             this Mock<IExternalIdentityProviderService> mock, string subjectId)
         {
-            mock.Setup(m => m.FindUserBySubjectId(subjectId))
-                .ReturnsAsync(() => new ExternalUser());
+            mock.Setup(m => m.FindUserBySubjectIdAsync(subjectId))
+                .ReturnsAsync(() => new FabricPrincipal());
 
             return mock;
         }

@@ -19,11 +19,12 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         [Fact]
         public async Task IdentityProvidersController_Get_ReturnsProviders()
         {
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"),
                 $"{_identityProvidersBaseUrl}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var externalProviders = JsonConvert.DeserializeObject<List<ExternalProviderApiModel>>(await response.Content.ReadAsStringAsync());
-            Assert.Equal(1, externalProviders.Count);
+            Assert.Single(externalProviders);
 
         }
     }

@@ -1,5 +1,5 @@
 # Fabric.Identity.API
-A .Net Core 1.1 service that provides centralized authentication and authorization for health care applications and apis that want to participate in the Fabric ecosystem.
+A .Net Core 2.2 service that provides centralized authentication and authorization for health care applications and apis that want to participate in the Fabric ecosystem.
 
 # Building and running
 The Fabric Identity API depends on having the latest version of DOS installed properly as a prerequisite to running Fabric Identity API.
@@ -15,14 +15,17 @@ The Fabric Identity API depends on having the latest version of DOS installed pr
 - The `IdentityServerConfidentialClientSettings.ClientID` doesn't seem to be used when debugging and is just a placeholder
 - Update the `Identity` database `ClientSecrets` table `Value` column. Look for `fabric-identity-client` ClientId, in Clients table.
   Using the Client Id find the correct row and `ClientSecrets.Value` to update. Uncomment and copy the following code, then run in powershell. Copy the returned secret value. Use a sql update script or right-click and edit the `ClientSecrets` table and paste in the secret value.
-    <!--$fabricInstallerSecret = "secret"
-    #$fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
-    Write-Host "New Installer secret: $fabricInstallerSecret"
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
-    #Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
-    $fabricInstallerSecret
-    $hashedSecret-->
+
+```
+$fabricInstallerSecret = "secret"
+#$fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
+Write-Host "New Installer secret: $fabricInstallerSecret"
+$sha = [System.Security.Cryptography.SHA256]::Create()
+$hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
+#Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+$fabricInstallerSecret
+$hashedSecret
+```
 
 - In the `Metadata` database (EDWAdmin) `CatalystAdmin.DiscoveryServiceBASE` table, change the `ServiceUrl` for ServiceNM `IdentityService` to be `http://localhost/IdentityDev`
 - In VS 2017 ensure the startup project is `Fabric.Identity.API` and the debug profile is set to `IIS`.

@@ -20,7 +20,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.SqlServer
 
         public override async Task UsersController_Search_ReturnsUsers()
         {
-            Assert.True(true);
+            await Task.Delay(1);
         }
     }
 }
