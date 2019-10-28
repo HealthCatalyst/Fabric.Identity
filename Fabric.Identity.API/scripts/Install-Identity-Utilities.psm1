@@ -469,9 +469,29 @@ function Unlock-ConfigurationSections(){
     $manager.CommitChanges()
 }
 
+function Remove-IdentityViewsFolder {
+    param (
+        [string] $path
+    )
+
+    if (Test-Path -Path $path -PathType Container) {
+        Write-DosMessage -Level Information -Message "Deleting contents and folder: $path."
+        # Clean subfolders
+        Get-ChildItem $path -Recurse | Remove-Item -Recurse
+        # Clean Folder
+        Remove-Item $path    
+    }
+    elseif (Test-Path -Path $path -PathType Leaf) {
+        Write-DosMessage -Level Information -Message "Deleting file: $path."
+        # Clean Item
+        Remove-Item $path
+    }
+}
+
 function Publish-Application([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage, [string] $assembly){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
     New-LogsDirectoryForApp $appDirectory $iisUser.UserName
+    Remove-IdentityViewsFolder -path "$appDirectory\Views"
 
     if(!(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $iisUser.UserName)){
         New-AppPool $appName $iisUser.UserName $iisUser.Credential
