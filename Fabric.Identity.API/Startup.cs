@@ -117,6 +117,7 @@ namespace Fabric.Identity.API
                 .AddSingleton<PolicyProvider>()
                 .AddTransient<IHealthCheckerService, HealthCheckerService>()
                 .AddTransient<ICorsPolicyProvider, DefaultCorsPolicyProvider>()
+                .AddLocalization(opts => { opts.ResourcesPath = "Resources"; })
                 .AddFluentValidations();
 
             var mapperConfig = new MapperConfiguration(cfg =>
