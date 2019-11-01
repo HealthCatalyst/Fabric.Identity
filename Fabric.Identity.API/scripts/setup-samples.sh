@@ -56,7 +56,7 @@ echo ""
 
 #register identity client
 echo "registering Fabric.Identity as a client"
-identityclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-identity-client\", \"clientName\": \"Fabric Identity Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/idprovider.searchusers\"]}" $identitybaseurl/api/client)
+identityclientresponse=$(curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $accesstoken" -d "{ \"clientId\": \"fabric-identity-client\", \"clientName\": \"Fabric Identity Client\", \"requireConsent\": false, \"allowedGrantTypes\": [\"client_credentials\"], \"allowedScopes\": [\"fabric/identity.searchusers\"]}" $identitybaseurl/api/client)
 echo $identityclientresponse
 identityclientsecret=$(echo $identityclientresponse | grep -oP '(?<="clientSecret":")[^"]*')
 echo ""

@@ -648,7 +648,7 @@ function Add-IdentityClientRegistration([string] $identityServerUrl, [string] $a
         ClientName = "Fabric Identity Client"; 
         RequireConsent = $false;
         AllowedGrantTypes = @("client_credentials"); 
-        AllowedScopes = @("fabric/idprovider.searchusers");
+        AllowedScopes = @("fabric/identity.searchusers");
     }
     $jsonBody = ConvertTo-Json $body
 
