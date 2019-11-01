@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using AutoMapper;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Documentation;
 using Fabric.Identity.API.EventSinks;
@@ -105,6 +106,7 @@ namespace Fabric.Identity.API
                 .AddSingleton(Log.Logger)
                 .AddIdentityServer(_appConfig, _certificateService, Log.Logger, hostingOptions, connectionStrings)
                 .AddAuthorizationServices()
+                .AddPrincipalSearchServices(_appConfig)
                 .AddScoped<IUserResolverService, UserResolverService>()
                 .AddSingleton<ISerializationSettings, SerializationSettings>()
                 .AddSingleton<ILdapConnectionProvider, LdapConnectionProvider>()
@@ -115,7 +117,16 @@ namespace Fabric.Identity.API
                 .AddSingleton<PolicyProvider>()
                 .AddTransient<IHealthCheckerService, HealthCheckerService>()
                 .AddTransient<ICorsPolicyProvider, DefaultCorsPolicyProvider>()
+                .AddLocalization(opts => { opts.ResourcesPath = "Resources"; })
                 .AddFluentValidations();
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new MapperProfile());
+            });
+            IMapper mapper = mapperConfig.CreateMapper();
+            services.AddSingleton(mapper);
+
 
             // filter settings
             var filterSettings = _appConfig.FilterSettings ??
