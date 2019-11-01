@@ -135,7 +135,7 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         public async Task SearchPrincipals_FindUser_Succeeds_Async()
         {
             var subjectIdQuery = "subjectId=testing\\patrick.jones";
-            var endpoint = $"{_principalsBaseUrl}/search?{subjectIdQuery}";
+            var endpoint = $"{_principalsBaseUrl}/user?{subjectIdQuery}";
 
             var httpClient = await HttpClient;
             var searchResult = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), endpoint));
