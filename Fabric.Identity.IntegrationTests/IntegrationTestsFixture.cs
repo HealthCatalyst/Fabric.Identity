@@ -130,7 +130,7 @@ namespace Fabric.Identity.IntegrationTests
         {
             get
             {
-                if (ADProxy == null)
+                if (_adProxy == null)
                 {
                     _adProxy = new Mock<IActiveDirectoryProxy>()
                         .SetupActiveDirectoryProxy(new ActiveDirectoryDataHelper().GetPrincipals()).Object;
@@ -144,7 +144,7 @@ namespace Fabric.Identity.IntegrationTests
         {
             get
             {
-                if(GraphApi == null)
+                if(_graphApi == null)
                 {
                     _graphApi = new Mock<IMicrosoftGraphApi>()
                         .SetupAzureDirectoryGraphUsers(new ActiveDirectoryDataHelper().GetMicrosoftGraphUsers())
