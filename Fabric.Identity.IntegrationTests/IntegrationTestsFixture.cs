@@ -16,6 +16,7 @@ using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Services.Azure;
 using Fabric.Identity.IntegrationTests.ServiceTests;
 using Fabric.Platform.Shared.Configuration.Docker;
 using IdentityModel;
@@ -56,10 +57,12 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
         private static IConnectionStrings _connectionStrings;
-        
+
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
         private static IDocumentDbService _dbService;
+        private static IActiveDirectoryProxy _adProxy;
+        private static IMicrosoftGraphApi _graphApi;
         private readonly TestServer _apiTestServer;
         protected readonly TestServer IdentityTestServer;
 
@@ -120,6 +123,37 @@ namespace Fabric.Identity.IntegrationTests
                 };
                 Console.WriteLine($"Connection String for tests: {_connectionStrings.IdentityDatabase}");
                 return _connectionStrings;
+            }
+        }
+
+        private static IActiveDirectoryProxy ADProxy
+        {
+            get
+            {
+                if (ADProxy == null)
+                {
+                    _adProxy = new Mock<IActiveDirectoryProxy>()
+                        .SetupActiveDirectoryProxy(new ActiveDirectoryDataHelper().GetPrincipals()).Object;
+                }
+
+                return _adProxy;
+            }
+        }
+
+        private static IMicrosoftGraphApi GraphApi
+        {
+            get
+            {
+                if(GraphApi == null)
+                {
+                    _graphApi = new Mock<IMicrosoftGraphApi>()
+                        .SetupAzureDirectoryGraphUsers(new ActiveDirectoryDataHelper().GetMicrosoftGraphUsers())
+                        .SetupAzureDirectoryGraphUser(new ActiveDirectoryDataHelper().GetMicrosoftGraphUser("testingAzure\\james rocket", "james rocket", "1"))
+                        .SetupAzureDirectoryGraphGroups(new ActiveDirectoryDataHelper().GetMicrosoftGraphGroups())
+                        .Object;
+                }
+
+                return _graphApi;
             }
         }
 
@@ -225,7 +259,8 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(CouchDbSettings)
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
-                
+                .AddSingleton(GraphApi)
+                .AddSingleton(ADProxy)                
             );
 
             customizeWebHost?.Invoke(apiBuilder);
