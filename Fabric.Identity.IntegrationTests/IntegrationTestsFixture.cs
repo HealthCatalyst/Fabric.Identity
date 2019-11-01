@@ -262,6 +262,7 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(GraphApi)
                 .AddSingleton(ADProxy)
                 .AddTransient<IExternalIdentityProviderSearchService, ActiveDirectoryProviderService>()
+                .AddTransient<IExternalIdentityProviderSearchService, AzureDirectoryProviderService>()
             );
 
             customizeWebHost?.Invoke(apiBuilder);

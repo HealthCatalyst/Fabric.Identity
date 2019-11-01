@@ -10,7 +10,7 @@ using Fabric.Identity.API.Models;
 using static Fabric.Identity.API.FabricIdentityEnums;
 using static Fabric.Identity.API.FabricIdentityConstants;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ServiceTests
 {
     public class AzureDirectoryProviderServiceUserTests
     {

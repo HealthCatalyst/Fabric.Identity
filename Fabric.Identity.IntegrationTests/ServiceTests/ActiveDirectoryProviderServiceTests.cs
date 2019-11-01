@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 using static Fabric.Identity.API.FabricIdentityEnums;
 
-namespace Fabric.Identity.IntegrationTests
+namespace Fabric.Identity.IntegrationTests.ServiceTests
 {
     public class ActiveDirectoryProviderServiceTests
     {
