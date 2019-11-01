@@ -46,7 +46,8 @@ namespace Fabric.Identity.API.Persistence.InMemory.Stores
 
         public Task<IEnumerable<User>> SearchUsersAsync(string searchText, string searchType)
         {
-            throw new System.NotImplementedException();
+            //throw new System.NotImplementedException();
+            return Task.Run<IEnumerable<User>>(() => { return new List<User>(); });
         }
 
         public Task UpdateUserAsync(User user)

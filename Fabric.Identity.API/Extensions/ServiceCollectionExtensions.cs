@@ -133,7 +133,7 @@ namespace Fabric.Identity.API.Extensions
 
         public static IServiceCollection AddPrincipalSearchServices(this IServiceCollection serviceCollection, IAppConfiguration appConfig)
         {
-            serviceCollection.AddSingleton<IActiveDirectoryProxy, ActiveDirectoryProxy>();
+            serviceCollection.TryAddSingleton<IActiveDirectoryProxy, ActiveDirectoryProxy>();
 
             serviceCollection.AddTransient<IExternalIdentityProviderSearchService, IdentityUserPrincipalSearchService>();
 
@@ -148,7 +148,7 @@ namespace Fabric.Identity.API.Extensions
             }
 
             serviceCollection.AddTransient<IPrincipalSearchService, PrincipalSearchService>();
-            serviceCollection.AddSingleton<IMicrosoftGraphApi, MicrosoftGraphApi>();
+            serviceCollection.TryAddSingleton<IMicrosoftGraphApi, MicrosoftGraphApi>();
             serviceCollection
                 .AddSingleton<AzureActiveDirectoryClientCredentialsService, AzureActiveDirectoryClientCredentialsService>();
 

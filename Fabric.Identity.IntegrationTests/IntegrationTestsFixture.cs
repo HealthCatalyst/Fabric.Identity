@@ -260,7 +260,8 @@ namespace Fabric.Identity.IntegrationTests
                 .AddSingleton(hostingOptions)
                 .AddSingleton(ConnectionStrings)
                 .AddSingleton(GraphApi)
-                .AddSingleton(ADProxy)                
+                .AddSingleton(ADProxy)
+                .AddTransient<IExternalIdentityProviderSearchService, ActiveDirectoryProviderService>()
             );
 
             customizeWebHost?.Invoke(apiBuilder);
