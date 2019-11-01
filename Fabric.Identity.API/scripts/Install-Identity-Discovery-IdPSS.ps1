@@ -2,17 +2,6 @@
 #Requires -Version 5.1
 #Requires -Modules PowerShellGet, PackageManagement
 
-# Import Dos Install Utilities
-$minVersion = [System.Version]::new(1, 0, 279 , 0)
-try {
-  Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minVersion -ErrorAction Stop
-}
-catch {
-  Write-Host "Installing DosInstallUtilities from Powershell Gallery"
-  Install-Module DosInstallUtilities -Scope CurrentUser -MinimumVersion $minVersion -Force
-}
-Import-Module -Name DosInstallUtilities -MinimumVersion $minVersion -Force
-
 param(
   [PSCredential] $credential,
   [PSCredential] $discoveryServiceCredential,
@@ -35,6 +24,17 @@ param(
 )
 $targetFilePath = "$PSScriptRoot\Install-Identity-Utilities.psm1"
 Import-Module -Name $targetFilePath -Force
+
+# Import Dos Install Utilities
+$minVersion = [System.Version]::new(1, 0, 279 , 0)
+try {
+  Get-InstalledModule -Name DosInstallUtilities -MinimumVersion $minVersion -ErrorAction Stop
+}
+catch {
+  Write-Host "Installing DosInstallUtilities from Powershell Gallery"
+  Install-Module DosInstallUtilities -Scope CurrentUser -MinimumVersion $minVersion -Force
+}
+Import-Module -Name DosInstallUtilities -MinimumVersion $minVersion -Force
 
 # Import Fabric Install Utilities
 $fabricInstallUtilities = ".\Fabric-Install-Utilities.psm1"
