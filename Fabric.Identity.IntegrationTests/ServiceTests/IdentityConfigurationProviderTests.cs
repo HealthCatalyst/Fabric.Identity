@@ -40,6 +40,8 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
             Assert.Equal(clientSecret, appConfig.AzureActiveDirectorySettings.ClientSecret);
             Assert.Equal("InMemory", appConfig.HostingOptions.StorageProvider);
             Assert.Equal("HQCATALYST", appConfig.FilterSettings.GroupFilterSettings.Prefixes[0]);
+            Assert.Equal(clientSecret, appConfig.AzureActiveDirectoryClientSettings.ClientAppSettings[0].ClientSecret);
+            Assert.Equal(clientSecret, appConfig.AzureActiveDirectoryClientSettings.ClientAppSettings[1].ClientSecret);
         }
 
         private RSA GetPrivateKey()
@@ -86,6 +88,26 @@ namespace Fabric.Identity.IntegrationTests.ServiceTests
                     GroupFilterSettings = new GroupFilterSettings
                     {
                         Prefixes = new [] {"HQCATALYST"}
+                    }
+                },
+                AzureActiveDirectoryClientSettings = new AzureActiveDirectoryClientSettings
+                {
+                    ClientAppSettings = new AzureClientApplicationSettings[]
+                    {
+                        new AzureClientApplicationSettings
+                        {
+                            ClientSecret = EncryptString(privateKey, clientSecret),
+                            ClientId = "test-client-id",
+                            TenantId = "test-tenant-id",
+                            Scopes = new string[] { "https://graph.microsoft.com/.default" }
+                        },
+                        new AzureClientApplicationSettings
+                        {
+                            ClientSecret = EncryptString(privateKey, clientSecret),
+                            ClientId = "test-client-id2",
+                            TenantId = "test-tenant-id2",
+                            Scopes = new string[] { "https://graph.microsoft.com/.default" }
+                        }
                     }
                 }
             };
