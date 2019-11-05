@@ -46,6 +46,12 @@ $commonInstallSettings = Get-DosConfigValues -ConfigStore $configStore -Scope $c
 
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
 
+
+$userDomain = $commonInstallSettings.Domain
+if([string]::IsNullOrEmpty($userDomain)) {
+    $userDomain = Get-CurrentUserDomain -quiet $quiet
+}
+
 # Check for useAzure setting
 $useAzure = $installSettings.useAzureAD
 if($null -eq $useAzure) {
@@ -140,7 +146,8 @@ Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDi
 -applicationEndpoint $identityServiceUrl `
 -identityDbConnStr $identityDatabase.DbConnectionString`
 -discoveryServiceUrl $discoveryServiceUrl `
--noDiscoveryService $noDiscoveryService
+-noDiscoveryService $noDiscoveryService `
+-domain $userDomain
 
 $accessToken = ""
 
