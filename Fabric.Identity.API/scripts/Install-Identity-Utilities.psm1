@@ -543,14 +543,18 @@ function Add-DatabaseSecurity([string] $userName, [string] $role, [string] $conn
     Write-DosMessage -Level "Information" -Message "Database security applied successfully"
 }
 
-function Set-IdentityEnvironmentVariables([string] $appDirectory, `
-    [string] $primarySigningCertificateThumbprint, `
-    [string] $encryptionCertificateThumbprint, `
-    [string] $appInsightsInstrumentationKey, `
-    [string] $applicationEndpoint, `
-    [string] $identityDbConnStr, `
-    [string] $discoveryServiceUrl, `
-    [bool] $noDiscoveryService){
+function Set-IdentityEnvironmentVariables {
+    param(
+        [string] $appDirectory,
+        [string] $primarySigningCertificateThumbprint,
+        [string] $encryptionCertificateThumbprint,
+        [string] $appInsightsInstrumentationKey,
+        [string] $applicationEndpoint,
+        [string] $identityDbConnStr,
+        [string] $discoveryServiceUrl,
+        [bool] $noDiscoveryService,
+        [string] $domain
+    )
     $environmentVariables = @{"HostingOptions__StorageProvider" = "SqlServer"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 
     if ($primarySigningCertificateThumbprint){
@@ -578,6 +582,10 @@ function Set-IdentityEnvironmentVariables([string] $appDirectory, `
         $environmentVariables.Add("UseDiscoveryService", "true")
     }else{
         $environmentVariables.Add("UseDiscoveryService", "false")
+    }
+
+    if($domain) {
+        $environmentVariables.Add("DomainName", "$domain")
     }
 
     Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
