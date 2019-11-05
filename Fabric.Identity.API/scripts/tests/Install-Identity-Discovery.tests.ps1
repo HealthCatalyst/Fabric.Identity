@@ -13,9 +13,9 @@ $Global:localInstallConfigPath = "$PSScriptRoot\install.config"
 $Global:localAzureConfigPath = "$PSScriptRoot\azuresettings.config"
 $Global:scriptParams
 
-Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSettings' -Tag 'Integration'{
+Describe 'Running Install-Identity-Discovery that calls Migrate-AADSettings' -Tag 'Integration'{
       # Arrange
-      # For the Invoke-Pester Install-Identity-Discovery-IdPSS to work, the referenced modules
+      # For the Invoke-Pester Install-Identity-Discovery to work, the referenced modules
       # need to be located in the same folder where the test script is called.
       # Copy once before and remove after the tests have all run
        
@@ -69,7 +69,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
         It 'Should Successfully run the migration'{
             # Act
             Set-Location -Path $PSScriptRoot
-            ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+            ..\Install-Identity-Discovery.ps1 @scriptParams
 
             # Assert
             $completingWordsToFind = "Completed the Migration of AAD Settings"
@@ -101,7 +101,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           
           # Act
           Set-Location -Path $PSScriptRoot
-          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+          ..\Install-Identity-Discovery.ps1 @scriptParams
           
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
@@ -134,7 +134,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
 
           # Act
           Set-Location -Path $PSScriptRoot
-          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+          ..\Install-Identity-Discovery.ps1 @scriptParams
          
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"
@@ -161,7 +161,7 @@ Describe 'Running Install-Identity-Discovery-IdPSS that calls Migrate-AADSetting
           $Global:scriptParams = @{azureConfigPath = $localAzureConfigPath; installConfigPath = $localInstallConfigPath; migrationInstallConfigPath = $installConfigPath; migrationAzureConfigPath = $azureConfigPath; quiet = $true; test = $true}
           
           Set-Location -Path $PSScriptRoot
-          ..\Install-Identity-Discovery-IdPSS.ps1 @scriptParams
+          ..\Install-Identity-Discovery.ps1 @scriptParams
                    
           # Assert
           $completingWordsToFind = "Completed the Migration of AAD Settings"

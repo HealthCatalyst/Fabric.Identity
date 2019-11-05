@@ -107,10 +107,6 @@ if (!$test) {
   .\Install-Identity.ps1 -credential $credential -configStore $configStore -azureConfigStore $azureConfigStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
   Write-DosMessage -Level "Information" -Message "Fabric.Identity has been installed."
 
-  # Call the Idpss powershell script
-  .\Install-IdentityProviderSearchService.ps1 -credential $credential -configStore $configStore -azureConfigStore $azureConfigStore -noDiscoveryService:$noDiscoveryService -quiet:$quiet
-  Write-DosMessage -Level "Information" -Message "Fabric.Identity Provider Search Service has been installed."
-
   .\Install-Discovery.ps1 -credential $discoveryServiceCredential -configStore $configStore -quiet:$quiet
   Write-DosMessage -Level "Information" -Message "Discovery has been installed."
 
