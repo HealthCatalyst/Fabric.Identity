@@ -2083,15 +2083,28 @@ function New-IdentityEncryptionCertificate {
         [string] $certStoreLocation = "Cert:\LocalMachine\My",
         [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
     )
-    $cert = New-SelfSignedCertificate `
-        -Type Custom `
-        -KeySpec None `
-        -Subject $subject `
-        -KeyUsage DataEncipherment `
-        -KeyAlgorithm RSA `
-        -KeyLength 2048 `
-        -CertStoreLocation $certStoreLocation `
-        -FriendlyName $friendlyName
+
+    $OSVersion = (get-itemproperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name ProductName).ProductName
+    If($OSVersion -match "Windows Server 2012")
+    {
+        $cert = New-SelfSignedCertificate `
+            -DnsName $subject `
+            -CertStoreLocation $certStoreLocation 
+
+        $cert.FriendlyName = $friendlyName
+    }
+    Else
+    {
+        $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -KeySpec None `
+            -Subject $subject `
+            -KeyUsage DataEncipherment `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -CertStoreLocation $certStoreLocation `
+            -FriendlyName $friendlyName
+    }
 
     return $cert
 }
