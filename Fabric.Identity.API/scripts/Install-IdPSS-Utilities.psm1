@@ -315,7 +315,7 @@ function Register-Identity {
     )
 
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
-    $secretName = $installSettings.variable.value
+    $secretName = $installSettings.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
@@ -372,7 +372,7 @@ function Register-IdPSS {
         [string] $configAppName = "Identity Service Search"
     )
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
-    $secretName = $installSettings.variable.value
+    $secretName = $installSettings.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     # IdentityProviderSearchService registration
