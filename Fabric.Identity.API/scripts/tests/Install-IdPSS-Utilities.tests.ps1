@@ -401,8 +401,8 @@ Describe "IdPSS Integration Tests"{
             # Arrange 
             # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
             
-            $Global:testAzureFile = "testAzure.config"
-            $Global:testAzureFileLoc = "$PSScriptRoot\testAzure.config"
+            $Global:testAzureFile = "testAzureAfterMigration.config"
+            $Global:testAzureFileLoc = "$PSScriptRoot\testAzureAfterMigration.config"
             $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
             $doesAzureFileExist = Test-Path $azureConfigPath
             if (!$doesAzureFileExist)
@@ -420,16 +420,23 @@ Describe "IdPSS Integration Tests"{
         } 
         Context 'Register Identity With Azure SecretName should work : PBI 195930'{
             InModuleScope Install-IdPSS-Utilities{
-                It 'Should successfully register the identity'{
+                It 'Should successfully register Identity'{
                     $mockApp = @{
                         AppId = "AppId"
                         ObjectId = "ObjectId"
                     }
                     $mockSecret = "AzureSecret"
+                    $mockTenants = @(
+                    @{
+                        name = "name1"
+                        alias = "alias1"
+                    })
 
                     Mock -CommandName Write-Host {}
                     Mock -CommandName Connect-AzureADTenant {}
                     Mock -CommandName Get-GraphiApiUserDirectoryReadPermissions{}
+                    Mock -CommandName Get-IdentityClaimsIssuer { return $mockTenants }
+                    Mock -CommandName Get-TenantSettingsFromInstallConfig { return $mockTenants }
                     Mock -CommandName New-FabricAzureADApplication { return $mockApp}
                     Mock -CommandName Get-FabricAzureADSecret { return $mockSecret}
                     Mock -CommandName Disconnect-AzureAD {}
@@ -444,16 +451,23 @@ Describe "IdPSS Integration Tests"{
         }
         Context 'Register IdPSS With Azure SecretName should work : PBI 195930'{
             InModuleScope Install-IdPSS-Utilities{
-                It 'Should successfully register the identity'{
+                It 'Should successfully register IdPSS'{
                     $mockApp = @{
                         AppId = "AppId"
                         ObjectId = "ObjectId"
                     }
                     $mockSecret = "AzureSecret"
+                    $mockTenants = @(
+                    @{
+                        name = "name1"
+                        alias = "alias1"
+                    })
                     
                     Mock -CommandName Write-Host {}
                     Mock -CommandName Connect-AzureADTenant {}
                     Mock -CommandName Get-GraphApiDirectoryReadPermissions {}
+                    Mock -CommandName Get-IdentityClaimsIssuer { return $mockTenants }
+                    Mock -CommandName Get-TenantSettingsFromInstallConfig { return $mockTenants }
                     Mock -CommandName New-FabricAzureADApplication { return $mockApp}
                     Mock -CommandName Get-FabricAzureADSecret { return $mockSecret}
                     Mock -CommandName Disconnect-AzureAD {}
