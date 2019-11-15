@@ -395,5 +395,92 @@ Describe 'IdPSS Unit Tests' {
         }
     }
 }
+Describe "IdPSS Integration Tests"{
+    Describe 'Register-Identity' -Tag 'Integration'{
+        BeforeEach{
+            # Arrange 
+            # Add to the powershell TestDrive which cleans up after each context, leaving the tests folder configs unchanged
+            
+            $Global:testAzureFile = "testAzureAfterMigration.config"
+            $Global:testAzureFileLoc = "$PSScriptRoot\testAzureAfterMigration.config"
+            $Global:azureConfigPath = "$($TestDrive)\$($testAzureFile)"
+            $doesAzureFileExist = Test-Path $azureConfigPath
+            if (!$doesAzureFileExist)
+            {
+                Get-Content "$testAzureFileLoc" | Out-File $azureConfigPath
+            }
+        }
+        AfterEach{
+            # test file will exist within the same context, so it needs to be blown away
+            $doesAzureFileExist = Test-Path $azureConfigPath
+            if ($doesAzureFileExist)
+            {
+                Remove-Item $azureConfigPath
+            }
+        } 
+        Context 'Register Identity With Azure SecretName should work : PBI 195930'{
+            InModuleScope Install-IdPSS-Utilities{
+                It 'Should successfully register Identity'{
+                    $mockApp = @{
+                        AppId = "AppId"
+                        ObjectId = "ObjectId"
+                    }
+                    $mockSecret = "AzureSecret"
+                    $mockTenants = @(
+                    @{
+                        name = "name1"
+                        alias = "alias1"
+                    })
+
+                    Mock -CommandName Write-Host {}
+                    Mock -CommandName Connect-AzureADTenant {}
+                    Mock -CommandName Get-GraphiApiUserDirectoryReadPermissions{}
+                    Mock -CommandName Get-IdentityClaimsIssuer { return $mockTenants }
+                    Mock -CommandName Get-TenantSettingsFromInstallConfig { return $mockTenants }
+                    Mock -CommandName New-FabricAzureADApplication { return $mockApp}
+                    Mock -CommandName Get-FabricAzureADSecret { return $mockSecret}
+                    Mock -CommandName Disconnect-AzureAD {}
+                    Mock -CommandName Add-InstallationTenantSettings {}
+                    Mock -CommandName Start-Process {}
+
+                    # Act
+                    Register-Identity -appName "Test Name" -replyUrls @{} -configSection "identity" -azureConfigPath $azureConfigPath 
+                    
+                }
+            }
+        }
+        Context 'Register IdPSS With Azure SecretName should work : PBI 195930'{
+            InModuleScope Install-IdPSS-Utilities{
+                It 'Should successfully register IdPSS'{
+                    $mockApp = @{
+                        AppId = "AppId"
+                        ObjectId = "ObjectId"
+                    }
+                    $mockSecret = "AzureSecret"
+                    $mockTenants = @(
+                    @{
+                        name = "name1"
+                        alias = "alias1"
+                    })
+                    
+                    Mock -CommandName Write-Host {}
+                    Mock -CommandName Connect-AzureADTenant {}
+                    Mock -CommandName Get-GraphApiDirectoryReadPermissions {}
+                    Mock -CommandName Get-IdentityClaimsIssuer { return $mockTenants }
+                    Mock -CommandName Get-TenantSettingsFromInstallConfig { return $mockTenants }
+                    Mock -CommandName New-FabricAzureADApplication { return $mockApp}
+                    Mock -CommandName Get-FabricAzureADSecret { return $mockSecret}
+                    Mock -CommandName Disconnect-AzureAD {}
+                    Mock -CommandName Add-InstallationTenantSettings {}
+                    Mock -CommandName Start-Process {}
+
+                    # Act
+                    Register-IdPSS -appName "Test Name" -replyUrls @{} -tenants @{name="name";alias="alias"} -configSection "identity" -azureConfigPath $azureConfigPath 
+                    
+                }
+            }
+        }
+    }
+}
 
 Remove-Module Install-IdPSS-Utilities -Force
