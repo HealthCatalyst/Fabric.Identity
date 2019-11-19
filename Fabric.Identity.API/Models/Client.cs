@@ -44,7 +44,7 @@ namespace Fabric.Identity.API.Models
         ///     implicit | hybrid | authorization_code | client_credentials | password | delegation | delegation, client_credentials
         /// </summary>
         [Required]
-        public IEnumerable<string> AllowedGrantTypes { get; set; } = GrantTypes.Implicit;
+        public ICollection<string> AllowedGrantTypes { get; set; } = GrantTypes.Implicit;
 
         /// <summary>
         ///  Specifies whether a proof key is required for authorization code based token requests.

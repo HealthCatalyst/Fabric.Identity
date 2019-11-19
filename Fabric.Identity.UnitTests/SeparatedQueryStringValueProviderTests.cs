@@ -22,7 +22,7 @@ namespace Fabric.Identity.UnitTests
             return new QueryCollection(queryString);
         }
 
-        private static IEnumerable<object[]> GetQueryStringProviders()
+        public static IEnumerable<object[]> GetQueryStringProviders()
         {
             yield return new object[]
             {

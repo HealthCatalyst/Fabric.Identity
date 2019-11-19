@@ -4,7 +4,6 @@ using Fabric.Identity.API.Models;
 using IdentityModel;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -34,7 +33,7 @@ namespace Fabric.Identity.API.Services
         /// <param name="info">Authentication information</param>
         /// <param name="context">Authorization Request</param>
         /// <returns>Returns all the information into an object call ClaimsResult</returns>
-        public async Task<ClaimsResult> GenerateClaimsForIdentity(AuthenticateInfo info, AuthorizationRequest context)
+        public async Task<ClaimsResult> GenerateClaimsForIdentity(AuthenticateResult info, AuthorizationRequest context)
         {
             CheckWhetherArgumentIsNull(info, nameof(info));
             // NOTE: context may be null.  because of this, we are not going to 
@@ -104,7 +103,7 @@ namespace Fabric.Identity.API.Services
             claims.FirstOrDefault(x => x.Type == AzureActiveDirectoryJwtClaimTypes.OID || x.Type == AzureActiveDirectoryJwtClaimTypes.OID_Alternative)?
                             .Value;
 
-        private async Task<ClaimsResult> GenerateNewClaimsResult(AuthenticateInfo info, AuthorizationRequest context)
+        private async Task<ClaimsResult> GenerateNewClaimsResult(AuthenticateResult info, AuthorizationRequest context)
         {
             // provider and scheme look the same, but if you see the values
             //  FabricIdentityConstants.AuthenticationSchemes.Azure = "AzureActiveDirectory"
@@ -124,7 +123,7 @@ namespace Fabric.Identity.API.Services
 
             if (!string.IsNullOrEmpty(subjectId))
             {
-                var externalUser = await _externalIdentityProviderService.FindUserBySubjectId(subjectId);
+                var externalUser = await _externalIdentityProviderService.FindUserBySubjectIdAsync(subjectId);
                 if (externalUser != null)
                 {
                     if (externalUser.FirstName != null)
@@ -141,7 +140,7 @@ namespace Fabric.Identity.API.Services
                     {
                         claims.Add(new Claim(JwtClaimTypes.Email, externalUser.Email));
                     }
-                }
+                 }
             }
 
             return new ClaimsResult
@@ -176,14 +175,14 @@ namespace Fabric.Identity.API.Services
             return additionalClaims.ToArray();
         }
 
-        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateInfo info)
+        private AuthenticationProperties GenerateAuthenticationProperties(AuthenticateResult info)
         {
             //if the external provider issued an id_token, we'll keep it for signout
             AuthenticationProperties props = null;
             var id_token = info.Properties.GetTokenValue("id_token");
             if (id_token != null)
             {
-                props = new AuthenticationProperties();
+                props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties();
                 props.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
             }
 

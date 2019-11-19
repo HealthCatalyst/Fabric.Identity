@@ -250,25 +250,57 @@ function Confirm-Credentials([PSCredential] $credential){
 function Add-PermissionToPrivateKey([string] $iisUser, [System.Security.Cryptography.X509Certificates.X509Certificate2] $signingCert, [string] $permission){
     try{
         $allowRule = New-Object security.accesscontrol.filesystemaccessrule $iisUser, $permission, allow
-        $keyFolder = "c:\programdata\microsoft\crypto\rsa\machinekeys"
+        $cspKeyFolder = "$env:ProgramData\microsoft\crypto\rsa\machinekeys"
+        $cngKeyFolder = "$env:ProgramData\microsoft\crypto\Keys"
 
-        $keyname = $signingCert.privatekey.cspkeycontainerinfo.uniquekeycontainername
-        $keyPath = [io.path]::combine($keyFolder, $keyname)
+        $privateKey = Get-IdentityRSAPrivateKey -certificate $signingCert
+        $keyname = $privateKey.Key.UniqueName
 
-        if ([io.file]::exists($keyPath))
-        {        
-            $acl = Get-Acl $keyPath
-            $acl.AddAccessRule($allowRule)
-            Set-Acl $keyPath $acl -ErrorAction Stop
-            Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
-        }else{
-            Write-DosMessage -Level "Error" -Message "No key file was found at '$($keyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
-            throw
+        $cspKeyPath = [io.path]::combine($cspKeyFolder, $keyname)
+        $cngKeyPath = [io.path]::combine($cngKeyFolder, $keyname)
+
+        if ([io.file]::exists($cspKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CSP store location: $cspKeyPath"
+            $keyPath = $cspKeyPath
+        } elseif ([io.file]::exists($cngKeyPath)) {
+            Write-DosMessage -Level "Information" -Message "Key was found in the CNG store location: $cngKeyPath"
+            $keyPath = $cngKeyPath
+        } else{
+            Write-DosMessage -Level "Fatal" -Message "No key file was found at '$($cspKeyPath)' or '$($cngKeyPath)' for '$($signingCert)'. Ensure a valid signing certificate was provided"
         }
+
+        $acl = Get-Acl $keyPath
+        $acl.AddAccessRule($allowRule)
+        Set-Acl $keyPath $acl -ErrorAction Stop
+        Write-DosMessage -Level "Information" -Message "The permission '$($permission)' was successfully added to the private key for user '$($iisUser)'"
     }catch{
-        Write-DosMessage -Level "Error" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
-        throw
+        Write-DosMessage -Level "Fatal" -Message "There was an error adding the '$($permission)' permission for the user '$($iisUser)' to the private key. Ensure you selected a certificate that you have read access on the private key. Error $($_.Exception.Message)."
     }
+}
+
+function Get-IdentityRSAPrivateKey {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    try {
+        $privateKey = Get-IdentityRSAPrivateKeyNetWrapper -certificate $certificate
+    }
+    catch {
+        $exception = $_.Exception
+        Write-DosMessage -Level "Error" -Message "Could not get the RSA private key for the provided certificate. Certificate thumbprint: $($certificate.Thumbprint)"
+        throw $exception
+    }
+
+    return $privateKey
+}
+
+function Get-IdentityRSAPrivateKeyNetWrapper {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate
+    )
+
+    return [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($certificate)
 }
 
 function Get-AppInsightsKey([string] $appInsightsInstrumentationKey, [string] $installConfigPath, [string] $scope, [bool] $quiet){
@@ -437,9 +469,29 @@ function Unlock-ConfigurationSections(){
     $manager.CommitChanges()
 }
 
+function Remove-IdentityFolder {
+    param (
+        [string] $path
+    )
+
+    if (Test-Path -Path $path -PathType Container) {
+        Write-DosMessage -Level Information -Message "Deleting contents and folder: $path."
+        # Clean subfolders
+        Get-ChildItem $path -Recurse | Remove-Item -Recurse
+        # Clean Folder
+        Remove-Item $path
+    }
+    elseif (Test-Path -Path $path -PathType Leaf) {
+        Write-DosMessage -Level Information -Message "Deleting file: $path."
+        # Clean Item
+        Remove-Item $path
+    }
+}
+
 function Publish-Application([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage, [string] $assembly){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
     New-LogsDirectoryForApp $appDirectory $iisUser.UserName
+    Remove-IdentityFolder -path "$appDirectory\Views"
 
     if(!(Test-AppPoolExistsAndRunsAsUser -appPoolName $appName -userName $iisUser.UserName)){
         New-AppPool $appName $iisUser.UserName $iisUser.Credential
@@ -491,14 +543,18 @@ function Add-DatabaseSecurity([string] $userName, [string] $role, [string] $conn
     Write-DosMessage -Level "Information" -Message "Database security applied successfully"
 }
 
-function Set-IdentityEnvironmentVariables([string] $appDirectory, `
-    [string] $primarySigningCertificateThumbprint, `
-    [string] $encryptionCertificateThumbprint, `
-    [string] $appInsightsInstrumentationKey, `
-    [string] $applicationEndpoint, `
-    [string] $identityDbConnStr, `
-    [string] $discoveryServiceUrl, `
-    [bool] $noDiscoveryService){
+function Set-IdentityEnvironmentVariables {
+    param(
+        [string] $appDirectory,
+        [string] $primarySigningCertificateThumbprint,
+        [string] $encryptionCertificateThumbprint,
+        [string] $appInsightsInstrumentationKey,
+        [string] $applicationEndpoint,
+        [string] $identityDbConnStr,
+        [string] $discoveryServiceUrl,
+        [bool] $noDiscoveryService,
+        [string] $domain
+    )
     $environmentVariables = @{"HostingOptions__StorageProvider" = "SqlServer"; "HostingOptions__UseTestUsers" = "false"; "AllowLocalLogin" = "false"}
 
     if ($primarySigningCertificateThumbprint){
@@ -526,6 +582,10 @@ function Set-IdentityEnvironmentVariables([string] $appDirectory, `
         $environmentVariables.Add("UseDiscoveryService", "true")
     }else{
         $environmentVariables.Add("UseDiscoveryService", "false")
+    }
+
+    if($domain) {
+        $environmentVariables.Add("DomainName", "$domain")
     }
 
     Set-EnvironmentVariables $appDirectory $environmentVariables | Out-Null
@@ -596,7 +656,7 @@ function Add-IdentityClientRegistration([string] $identityServerUrl, [string] $a
         ClientName = "Fabric Identity Client"; 
         RequireConsent = $false;
         AllowedGrantTypes = @("client_credentials"); 
-        AllowedScopes = @("fabric/idprovider.searchusers");
+        AllowedScopes = @("fabric/identity.searchusers");
     }
     $jsonBody = ConvertTo-Json $body
 
@@ -978,6 +1038,54 @@ function Add-InstallationTenantSettings {
     $installationConfig.Save("$installConfigPath") | Out-Null
 }
 
+function Get-IdentityServiceIdPSSAzureSettings {
+    param(
+        [HashTable[]] $clientSettings,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCert,
+        [string] $azureSettingsConfigPath,
+        [string] $appName
+    )
+    $appSettings = @{}
+    if($null -eq $clientSettings -or $clientSettings.Count -eq 0) {
+        Write-DosMessage -Level "Warning" -Message "Could not validate Azure settings, continuing without setting Azure AD. Verify Azure settings are correct in the registered applications config section: $azureSettingsConfigPath"
+        return $appSettings
+    }
+
+    # Set Azure Settings
+    $defaultScope = "https://graph.microsoft.com/.default"
+    $appSettings.Add("AzureActiveDirectoryClientSettings__Authority", "https://login.microsoftonline.com/") # Taken care of already?
+    $appSettings.Add("AzureActiveDirectoryClientSettings__TokenEndpoint", "/oauth2/v2.0/token")
+
+    foreach($setting in $clientSettings) {
+        $index = $clientSettings.IndexOf($setting)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientId", $setting.clientId)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__TenantId", $setting.tenantId)
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__TenantAlias", $setting.tenantAlias)
+
+        # Currently only a single default scope is expected
+        $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__Scopes__0", $defaultScope)
+
+        $secret = $setting.clientSecret
+        if($secret -is [string] -and !$secret.StartsWith("!!enc!!:")){
+            $encryptedSecret = Get-EncryptedString $encryptionCert $secret
+            # Encrypt secret in install.config if not encrypted
+            Add-InstallationTenantSettings -configSection "identity" `
+                -tenantId $setting.tenantId `
+                -tenantAlias $setting.tenantAlias `
+                -clientSecret $encryptedSecret `
+                -clientId $setting.clientId `
+                -installConfigPath $azureSettingsConfigPath `
+                -appName $appName
+
+            $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientSecret", $encryptedSecret)
+        }
+        else{
+            $appSettings.Add("AzureActiveDirectoryClientSettings__ClientAppSettings__$index`__ClientSecret", $secret)
+        }
+    }
+
+    return $appSettings
+}
 
 function Set-IdentityEnvironmentAzureVariables {
     param (
@@ -991,9 +1099,18 @@ function Set-IdentityEnvironmentAzureVariables {
 
     if($useAzure -eq $true)
     {
+        $identitySearchAppName = "Identity Service Search"
         $scope = "identity"
         # Alter Identity web.config for azure
         $clientSettings = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service"
+        $idPSSClientSettings = @() # Force into array
+        $idpssClientSettingsResult = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Service Search"
+        if($null -eq $idpssClientSettingsResult) {
+            Write-DosMessage -Level "Warning" -Message "Could not find Identity Service Search azure settings in the azuresettings.config file.  Falling back to Identity Provider Search Service settings."
+            $idpssClientSettingsResult = Get-ClientSettingsFromInstallConfig -installConfigPath $installConfigPath -appName "Identity Provider Search Service"
+            $identitySearchAppName = "Identity Provider Search Service" # Fall back to update correct azure settings
+        }
+        $idPSSClientSettings += $idpssClientSettingsResult
         $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "allowedTenants"
@@ -1001,6 +1118,15 @@ function Set-IdentityEnvironmentAzureVariables {
         $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $installConfigPath `
             -scope $scope `
             -setting "claimsIssuerTenant"
+
+        $idpssAzureSettings = Get-IdentityServiceIdPSSAzureSettings `
+            -clientSettings $idPSSClientSettings `
+            -encryptionCert $encryptionCert `
+            -azureSettingsConfigPath $installConfigPath `
+            -appName $appName
+
+        # Add all idpss settings into environment variable variable
+        $environmentVariables += $idpssAzureSettings
 
         # Validate values are populated: clientSettings, allowedTenants, claimsIssuer
         if($null -eq $clientSettings -or $null -eq $allowedTenants -or $null -eq $claimsIssuer) {
@@ -1950,7 +2076,151 @@ function Remove-FilePermissions
   $removePermissionsAcl.RemoveAccessRule($accessRule)
   $removePermissionsAcl | Set-Acl $filePath
 }
-    
+
+function New-IdentityEncryptionCertificate {
+    param(
+        [string] $subject = "$env:computername.$((Get-WmiObject Win32_ComputerSystem).Domain.tolower())",
+        [string] $certStoreLocation = "Cert:\LocalMachine\My",
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
+    )
+
+    $OSVersion = (get-itemproperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name ProductName).ProductName
+    If($OSVersion -match "Windows Server 2012")
+    {
+        $cert = New-SelfSignedCertificate `
+            -DnsName $subject `
+            -CertStoreLocation $certStoreLocation 
+
+        $cert.FriendlyName = $friendlyName
+    }
+    Else
+    {
+        $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -KeySpec None `
+            -Subject $subject `
+            -KeyUsage DataEncipherment `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -CertStoreLocation $certStoreLocation `
+            -FriendlyName $friendlyName
+    }
+
+    return $cert
+}
+
+function Test-IdentityEncryptionCertificateValid {
+    param(
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $encryptionCertificate
+    )
+    $today = Get-Date
+    return $encryptionCertificate.NotAfter -gt $today
+}
+
+function Remove-IdentityEncryptionCertificate {
+    param(
+        [string] $encryptionCertificateThumbprint,
+        [string] $friendlyName = "Fabric Identity Signing Encryption Certificate"
+    )
+
+    try {
+        $cert = Get-Certificate $encryptionCertificateThumbprint
+    }
+    catch [System.Management.Automation.ItemNotFoundException] {
+        Write-DosMessage -Level "Information" -Message "Certificate with thumbprint '$encryptionCertificateThumbprint' was not found."
+        return
+    }
+
+    if($null -ne $cert -and $null -ne $cert.FriendlyName -and $cert.FriendlyName.Contains("$friendlyName")) {
+        Write-DosMessage -Level "Information" -Message "Removing Identity encryption certificate"
+        $cert | Remove-Item
+    }
+}
+
+function Invoke-ResetFabricInstallerSecret {
+    param (
+        [Parameter(Mandatory=$true)] 
+        [string] $identityDbConnectionString,
+        [string] $fabricInstallerSecret
+    )
+
+    Write-DosMessage -Level "Information" -Message "Resetting Fabric-Installer secret"
+    if ([string]::IsNullOrEmpty($fabricInstallerSecret)) {
+        $fabricInstallerSecret = [System.Convert]::ToBase64String([guid]::NewGuid().ToByteArray()).Substring(0,16)
+    }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashedSecret = [System.Convert]::ToBase64String($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fabricInstallerSecret)))
+    $query = "DECLARE @ClientID int;
+              
+              SELECT @ClientID = Id FROM Clients WHERE ClientId = 'fabric-installer';
+
+              UPDATE ClientSecrets
+              SET Value = @value
+              WHERE ClientId = @ClientID"
+    Invoke-Sql -connectionString $identityDbConnectionString -sql $query -parameters @{value=$hashedSecret} | Out-Null
+    return $fabricInstallerSecret
+}
+
+function Get-IdentityEncryptionCertificate {
+    param (
+        [HashTable] $installSettings,
+        [string] $configStorePath,
+        [switch] $validate
+    )
+
+    try {
+        if([string]::IsNullOrWhitespace($installSettings.encryptionCertificateThumbprint)) {
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+        else {
+            $encryptionCertificate = Get-Certificate -certificateThumbprint $installSettings.encryptionCertificateThumbprint
+        }
+    }
+    catch {
+        Write-DosMessage -Level "Information" -Message "Error locating the provided certificate '$($encryptionCertificate.Thumbprint)'. Removing the certificate and generating a new certificate."
+        Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+        $encryptionCertificate = New-IdentityEncryptionCertificate
+    }
+
+    # Create new cert if current is expired/expiring soon
+    if ($validate) {
+        $certIsValid = Test-IdentityEncryptionCertificateValid -encryptionCertificate $encryptionCertificate
+        if ($certIsValid -eq $false) {
+            Write-DosMessage -Level "Information" -Message "The provided certificate '$($encryptionCertificate.Thumbprint)' is expired. Removing the certificate and generating a new certificate."
+            Remove-IdentityEncryptionCertificate -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint
+            $encryptionCertificate = New-IdentityEncryptionCertificate
+        }
+    }
+
+    # update install.config
+    # Assumes both encryption and signing cert are the same certificate
+    Add-InstallationSetting "common" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "encryptionCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+    Add-InstallationSetting "identity" "primarySigningCertificateThumbprint" $encryptionCertificate.Thumbprint $configStorePath | Out-Null
+
+    return $encryptionCertificate
+}
+
+function Get-IdentityFabricInstallerSecret {
+    param (
+        [string] $fabricInstallerSecret,
+        [string] $encryptionCertificateThumbprint,
+        [string] $identityDbConnectionString
+    )
+
+    if ($fabricInstallerSecret.StartsWith("!!enc!!:")) {
+        $secretNoEnc = $fabricInstallerSecret -replace "!!enc!!:"
+        $fabricInstallerSecret = Unprotect-DosInstallerSecret -CertificateThumprint $encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+    }
+
+    # Create new secret if one does not exist, or was unable to decrypt
+    if ([string]::IsNullOrWhitespace($fabricInstallerSecret)) {
+        # create new secret if no secret or unable to decrypt
+        $fabricInstallerSecret = Invoke-ResetFabricInstallerSecret -identityDbConnectionString $identityDbConnectionString
+    }
+
+    return $fabricInstallerSecret
+}
 
 Export-ModuleMember Get-FullyQualifiedInstallationZipFile
 Export-ModuleMember Install-DotNetCoreIfNeeded
@@ -2000,3 +2270,9 @@ Export-ModuleMember Test-XMLFile
 Export-ModuleMember Get-FilePermissions
 Export-ModuleMember Deny-FilePermissions
 Export-ModuleMember Remove-FilePermissions
+Export-ModuleMember New-IdentityEncryptionCertificate
+Export-ModuleMember Test-IdentityEncryptionCertificateValid
+Export-ModuleMember Remove-IdentityEncryptionCertificate
+Export-ModuleMember Invoke-ResetFabricInstallerSecret
+Export-ModuleMember Get-IdentityEncryptionCertificate
+Export-ModuleMember Get-IdentityFabricInstallerSecret

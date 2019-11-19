@@ -37,11 +37,20 @@ if(!(Test-IsRunAsAdministrator))
 $ErrorActionPreference = "Stop"
 Write-DosMessage -Level "Information" -Message "Using install.config: $($configStore.Path)"
 $installSettingsScope = "identity"
-$installSettings = Get-InstallationSettings $installSettingsScope -installConfigPath $configStore.Path
+
+$installSettings = Get-DosConfigValues -ConfigStore $configStore -Scope $installSettingsScope
 
 $commonSettingsScope = "common"
-$commonInstallSettings = Get-InstallationSettings $commonSettingsScope -installConfigPath $configStore.Path
+
+$commonInstallSettings = Get-DosConfigValues -ConfigStore $configStore -Scope $commonSettingsScope
+
 Set-LoggingConfiguration -commonConfig $commonInstallSettings
+
+
+$userDomain = $commonInstallSettings.Domain
+if([string]::IsNullOrEmpty($userDomain)) {
+    $userDomain = Get-CurrentUserDomain -quiet $quiet
+}
 
 # Check for useAzure setting
 $useAzure = $installSettings.useAzureAD
@@ -63,15 +72,33 @@ if($useAzure -eq $true) {
 # Setup connection strings and dependences
 $currentDirectory = $PSScriptRoot
 $zipPackage = Get-FullyQualifiedInstallationZipFile -zipPackage $installSettings.zipPackage -workingDirectory $currentDirectory
-Install-DotNetCoreIfNeeded -version "1.1.30503.82" -downloadUrl "https://go.microsoft.com/fwlink/?linkid=848766"
+Install-DotNetCoreIfNeeded -version "2.2.7.0" -downloadUrl "https://download.visualstudio.microsoft.com/download/pr/51c29196-43b3-47d6-a393-d0df24081ac1/8b8d720b3cd63d88a2fd69115ab713c5/dotnet-hosting-2.2.7-win.exe"
 $selectedSite = Get-IISWebSiteForInstall -selectedSiteName $installSettings.siteName -quiet $quiet -installConfigPath $configStore.Path -scope $installSettingsScope
-$selectedCerts = Get-Certificates -primarySigningCertificateThumbprint $installSettings.primarySigningCertificateThumbprint -encryptionCertificateThumbprint $installSettings.encryptionCertificateThumbprint -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
-$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
-Add-PermissionToPrivateKey $iisUser.UserName $selectedCerts.SigningCertificate read
 $appInsightsKey = Get-AppInsightsKey -appInsightsInstrumentationKey $installSettings.appInsightsInstrumentationKey -installConfigPath $configStore.Path -scope $installSettingsScope -quiet $quiet
-$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $installSettings.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+$sqlServerAddress = Get-SqlServerAddress -sqlServerAddress $commonInstallSettings.sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 $identityDatabase = Get-IdentityDatabaseConnectionString -identityDbName $installSettings.identityDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
 $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $commonInstallSettings.metadataDbName -sqlServerAddress $sqlServerAddress -installConfigPath $configStore.Path -quiet $quiet
+
+# Secret/certificate logic
+$encryptionCertificate = Get-IdentityEncryptionCertificate `
+    -installSettings $commonInstallSettings `
+    -configStorePath $configStore.Path
+
+$fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
+    -fabricInstallerSecret $commonInstallSettings.fabricInstallerSecret `
+    -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
+    -identityDbConnectionString $identityDatabase.DbConnectionString
+
+# Call second time to clean up if cert is invalid
+# This allows for decrypting with old certificate if it is expired
+$encryptionCertificate = Get-IdentityEncryptionCertificate `
+    -installSettings $commonInstallSettings `
+    -configStorePath $configStore.Path `
+    -validate
+
+# Wait until potentially creating new certificate to add permissions to private key
+$iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
+Add-PermissionToPrivateKey $iisUser.UserName $encryptionCertificate read
 
 if(!$noDiscoveryService){
     $discoveryServiceUrl = Get-DiscoveryServiceUrl -discoveryServiceUrl $commonInstallSettings.discoveryService -installConfigPath $configStore.Path -quiet $quiet
@@ -113,30 +140,31 @@ if(!$noDiscoveryService){
 }
 
 Set-IdentityEnvironmentVariables -appDirectory $installApplication.applicationDirectory `
--primarySigningCertificateThumbprint $selectedCerts.SigningCertificate.Thumbprint `
--encryptionCertificateThumbprint $selectedCerts.EncryptionCertificate.Thumbprint `
+-primarySigningCertificateThumbprint $encryptionCertificate.Thumbprint `
+-encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
 -appInsightsInstrumentationKey $appInsightsKey `
 -applicationEndpoint $identityServiceUrl `
 -identityDbConnStr $identityDatabase.DbConnectionString`
 -discoveryServiceUrl $discoveryServiceUrl `
--noDiscoveryService $noDiscoveryService
+-noDiscoveryService $noDiscoveryService `
+-domain $userDomain
 
 $accessToken = ""
 
 if(Test-RegistrationComplete $identityServiceUrl) {
-    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $installSettings.fabricInstallerSecret
+    $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $fabricInstallerSecret
 }
 
 $registrationApiSecret = Add-RegistrationApiRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
-$fabricInstallerSecret = Add-InstallerClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken -fabricInstallerSecret $installSettings.fabricInstallerSecret
-Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $selectedCerts.SigningCertificate $configStore.Path
+$fabricInstallerSecret = Add-InstallerClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken -fabricInstallerSecret $fabricInstallerSecret
+Add-SecureInstallationSetting "common" "fabricInstallerSecret" $fabricInstallerSecret $encryptionCertificate $configStore.Path
 
 if (!$accessToken){
     $accessToken = Get-AccessToken -authUrl $identityServiceUrl -clientId "fabric-installer" -scope "fabric/identity.manageresources" -secret $fabricInstallerSecret
 }
 
 $identityClientSecret = Add-IdentityClientRegistration -identityServerUrl $identityServiceUrl -accessToken $accessToken
-Add-SecureIdentityEnvironmentVariables -encryptionCert $selectedCerts.SigningCertificate `
+Add-SecureIdentityEnvironmentVariables -encryptionCert $encryptionCertificate `
     -identityClientSecret $identityClientSecret `
     -registrationApiSecret $registrationApiSecret `
     -appDirectory $installApplication.applicationDirectory
@@ -151,7 +179,7 @@ Set-IdentityEnvironmentAzureVariables -appConfig $installApplication.application
     -useAzure $useAzure `
     -useWindows $useWindows `
     -installConfigPath $azureConfigStore.Path `
-    -encryptionCert $selectedCerts.SigningCertificate
+    -encryptionCert $encryptionCertificate
 
 Set-IdentityUri -identityUri $identityServiceUrl `
     -connString $metadataDatabase.DbConnectionString

@@ -32,7 +32,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         {
             var stringContent = new StringContent(JsonConvert.SerializeObject(testApiResource), Encoding.UTF8,
                 "application/json");
-            var response = await HttpClient.PostAsync("/api/ApiResource", stringContent);
+            var httpClient = await HttpClient;
+            var response = await httpClient.PostAsync("/api/ApiResource", stringContent);
             return response;
         }
         
@@ -71,7 +72,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = await HttpClient.SendAsync(
+            var httpClient = await HttpClient;
+            response = await httpClient.SendAsync(
                 new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -95,7 +97,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             var name = resource.Name;
             var password = resource.ApiSecret;
 
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("POST"),
+            var httpClient = await HttpClient;
+            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("POST"),
                 $"/api/ApiResource/{testApiResource.Name}/resetPassword"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -118,11 +121,12 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
             response = await CreateNewResource(testApiResource);
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
+            var httpClient = await HttpClient;
+            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"),
                 $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-            response = await HttpClient.SendAsync(
+            response = await httpClient.SendAsync(
                 new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{testApiResource.Name}"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
@@ -134,7 +138,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
         [Fact]
         public async Task TestDeleteApiResource_NotFound()
         {
-            var response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/resource-that-does-not-exist"));
+            var httpClient = await HttpClient;
+            var response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("DELETE"), $"/api/ApiResource/resource-that-does-not-exist"));
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -151,19 +156,20 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 
             var stringContent = new StringContent(JsonConvert.SerializeObject(updatedApiResource), Encoding.UTF8,
                 "application/json");
-            response = await HttpClient.PutAsync($"/api/ApiResource/{updatedApiResource.Name}", stringContent);
+            var httpClient = await HttpClient;
+            response = await httpClient.PutAsync($"/api/ApiResource/{updatedApiResource.Name}", stringContent);
             
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
             // Fetch it => confirm it's persisted
-            response = await HttpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{updatedApiResource.Name}"));
+            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), $"/api/ApiResource/{updatedApiResource.Name}"));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var content = await response.Content.ReadAsStringAsync();
             var getApiResource = (ApiResource)JsonConvert.DeserializeObject(content, typeof(ApiResource));
 
             // Must not return password
-            Assert.Equal(null, getApiResource.ApiSecret);
+            Assert.Null(getApiResource.ApiSecret);
             // Confirm payload
             Assert.Equal(updatedApiResource.Name, getApiResource.Name);
             Assert.Equal(updatedApiResource.DisplayName, getApiResource.DisplayName);
@@ -180,7 +186,8 @@ namespace Fabric.Identity.IntegrationTests.ControllerTests.InMemory
 
             var stringContent = new StringContent(JsonConvert.SerializeObject(updatedApiResource), Encoding.UTF8,
                 "application/json");
-            response = await HttpClient.PutAsync($"/api/ApiResource/{testApiResource.Name}", stringContent);
+            var httpClient = await HttpClient;
+            response = await httpClient.PutAsync($"/api/ApiResource/{testApiResource.Name}", stringContent);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }

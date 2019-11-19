@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using FluentValidation;
 using FluentValidation.Results;
@@ -33,20 +34,10 @@ namespace Fabric.Identity.API.Management
 
         protected virtual IActionResult ValidateAndExecute(T model, Func<IActionResult> successFunctor, string ruleSet)
         {
-            // FluentValidation cannot handle null models.
-            if (model == null)
+            IActionResult result;
+            if (!TryValidateModel(model, ruleSet, out result))
             {
-                Logger.Information($"Input \"{typeof(T)}\" is nonexistent or malformed.");
-                return CreateFailureResponse($"Input \"{typeof(T)}\" is nonexistent or malformed.",
-                    HttpStatusCode.BadRequest);
-            }
-
-            var validationResults = Validator.Validate(model, ruleSet: ruleSet);
-
-            if (!validationResults.IsValid)
-            {
-                Logger.Information($"Validation failed for model: {model}. ValidationResults: {validationResults}.");
-                return CreateValidationFailureResponse(validationResults);
+                return result;
             }
 
             // Validation passed.
@@ -63,6 +54,33 @@ namespace Fabric.Identity.API.Management
         protected virtual IActionResult ValidateAndExecute(T model, Func<IActionResult> successFunctor)
         {
             return ValidateAndExecute(model, successFunctor, FabricIdentityConstants.ValidationRuleSets.Default);
+        }
+
+        protected virtual async Task<IActionResult> ValidateAndExecuteAsync(T model,
+            Func<Task<IActionResult>> successFunctor, string ruleSet)
+        {
+            IActionResult result;
+            if (!TryValidateModel(model, ruleSet, out result))
+            {
+                return result;
+            }
+
+            // Validation passed.
+            try
+            {
+                return await successFunctor();
+            }
+            catch (Exception e)
+            {
+                return CreateFailureResponse(e.Message, HttpStatusCode.BadRequest);
+            }
+        }
+
+        protected virtual async Task<IActionResult> ValidateAndExecuteAsync(T model,
+            Func<Task<IActionResult>> successFunctor)
+        {
+            return await ValidateAndExecuteAsync(model, successFunctor,
+                FabricIdentityConstants.ValidationRuleSets.Default);
         }
 
         protected IActionResult CreateValidationFailureResponse(ValidationResult validationResult)
@@ -89,6 +107,30 @@ namespace Fabric.Identity.API.Management
                 case HttpStatusCode.BadRequest: return BadRequest(error);
                 default: return Json(error);
             }
+        }
+
+        private bool TryValidateModel(T model, string ruleSet, out IActionResult result)
+        {
+            result = null;
+            // FluentValidation cannot handle null models.
+            if (model == null)
+            {
+                Logger.Information($"Input \"{typeof(T)}\" is nonexistent or malformed.");
+                result = CreateFailureResponse($"Input \"{typeof(T)}\" is nonexistent or malformed.",
+                    HttpStatusCode.BadRequest);
+                return false;
+            }
+
+            var validationResults = Validator.Validate(model, ruleSet: ruleSet);
+
+            if (!validationResults.IsValid)
+            {
+                Logger.Information($"Validation failed for model: {model}. ValidationResults: {validationResults}.");
+                result = CreateValidationFailureResponse(validationResults);
+                return false;
+            }
+
+            return true;
         }
     }
 }

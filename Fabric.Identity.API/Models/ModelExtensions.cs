@@ -58,8 +58,10 @@ namespace Fabric.Identity.API.Models
                     PostLogoutRedirectUris = client.PostLogoutRedirectUris,
                     EnableLocalLogin = client.EnableLocalLogin,
                     IdentityProviderRestrictions = client.IdentityProviderRestrictions,
-                    LogoutUri = client.LogoutUri,
-                    LogoutSessionRequired = client.LogoutSessionRequired,
+                    FrontChannelLogoutUri = client.LogoutUri,
+                    BackChannelLogoutUri = client.LogoutUri,
+                    FrontChannelLogoutSessionRequired = client.LogoutSessionRequired,
+                    BackChannelLogoutSessionRequired = client.LogoutSessionRequired,
 
                     // Token
                     IdentityTokenLifetime = client.IdentityTokenLifetime,
@@ -76,7 +78,7 @@ namespace Fabric.Identity.API.Models
                     Claims = client.Claims,
                     AlwaysSendClientClaims = client.AlwaysSendClientClaims,
                     AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
-                    PrefixClientClaims = client.PrefixClientClaims,
+                    ClientClaimsPrefix = client.PrefixClientClaims ? "client_" : null,
 
                     // Consent
                     RequireConsent = client.RequireConsent,
@@ -120,8 +122,8 @@ namespace Fabric.Identity.API.Models
                 PostLogoutRedirectUris = client.PostLogoutRedirectUris,
                 EnableLocalLogin = client.EnableLocalLogin,
                 IdentityProviderRestrictions = client.IdentityProviderRestrictions,
-                LogoutUri = client.LogoutUri,
-                LogoutSessionRequired = client.LogoutSessionRequired,
+                LogoutUri = client.FrontChannelLogoutUri ?? client.BackChannelLogoutUri,
+                LogoutSessionRequired = client.FrontChannelLogoutSessionRequired,
 
                 // Token
                 IdentityTokenLifetime = client.IdentityTokenLifetime,
@@ -138,7 +140,7 @@ namespace Fabric.Identity.API.Models
                 Claims = client.Claims,
                 AlwaysSendClientClaims = client.AlwaysSendClientClaims,
                 AlwaysIncludeUserClaimsInIdToken = client.AlwaysIncludeUserClaimsInIdToken,
-                PrefixClientClaims = client.PrefixClientClaims,
+                PrefixClientClaims = !string.IsNullOrWhiteSpace(client.ClientClaimsPrefix),
 
                 // Consent
                 RequireConsent = client.RequireConsent,

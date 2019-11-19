@@ -136,7 +136,7 @@ namespace Fabric.Identity.UnitTests
 
             Assert.Equal(subjectId, newUser.SubjectId);
             Assert.Equal(userPrincipalName, newUser.Username);
-            Assert.Equal(1, nameClaims.Count);
+            Assert.Single(nameClaims);
             Assert.Equal(userDisplayName, nameClaims.Single().Value);
         }
 

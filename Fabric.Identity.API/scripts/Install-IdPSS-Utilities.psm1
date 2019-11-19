@@ -1,5 +1,5 @@
-$fabricInstallUtilities = ".\Install-Identity-Utilities.psm1"
-Import-Module -Name $fabricInstallUtilities -Force
+$targetFilePath = "$PSScriptRoot\Install-Identity-Utilities.psm1"
+Import-Module -Name $targetFilePath -Force
 
 # Import AzureAD
 $minVersion = [System.Version]::new(2, 0, 2 , 4)
@@ -19,6 +19,54 @@ else {
     Import-Module -Name $azureAD.FullName
 }
 
+function Get-GraphApiPermissionFromList() {
+    param(
+        [string] $permissionName,
+        [string] $type,
+        [Microsoft.Open.AzureAD.Model.ServicePrincipal] $servicePrincipal
+    )
+    if($type -eq "scope") {
+        $permission = $servicePrincipal.Oauth2Permissions | Where-Object {$_.Value -eq $permissionName}
+        if($null -eq $permission) {
+            Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
+        }
+    } elseif($type -eq "role") {        
+        $permission = $servicePrincipal.AppRoles | Where-Object {$_.Value -eq $permissionName}
+        if($null -eq $permission) {
+            Write-DosMessage -Level "Fatal" -Message "Was not able to find permissions $permissionName."
+        }
+    } else {
+        Write-DosMessage -Level "Fatal" -Message "Invalid type was passed: $type. Expected type of 'scope' or 'role'."
+    }
+    
+
+    return $permission
+}
+
+function Get-GraphiApiUserDirectoryReadPermissions() {
+    try {
+        $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
+    }
+    catch {
+        Write-DosMessage -Level "Error" -Message "Was not able to get the Microsoft Graph API service principal."
+        throw
+    }
+
+    # Get Permissions
+    $userReadPermission = Get-GraphApiPermissionFromList -permissionName "User.Read" -type "Scope" -servicePrincipal $aad
+    $directoryReadPermission = Get-GraphApiPermissionFromList -permissionName "Directory.Read.All" -type "Role" -servicePrincipal $aad
+
+    # Construct expected RequiredResourceAccess object
+    $userDirectoryReadRequiredResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
+    $userReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $userReadPermission.Id,"Scope"
+    $directoryReadResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $directoryReadPermission.Id,"Role"
+
+    $userDirectoryReadRequiredResourceAccess.ResourceAppId = $aad.AppId
+    $userDirectoryReadRequiredResourceAccess.ResourceAccess = $userReadResourceAccess,$directoryReadResourceAccess
+
+    return $userDirectoryReadRequiredResourceAccess
+}
+
 function Get-GraphApiDirectoryReadPermissions() {
     try {
         $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
@@ -29,11 +77,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     }
 
     $directoryReadName = "Directory.Read.All"
-    $directoryRead = $aad.AppRoles | Where-Object {$_.Value -eq $directoryReadName}
-    if($null -eq $directoryRead) {
-        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
-        throw
-    }
+    $directoryRead = Get-GraphApiPermissionFromList -permissionName $directoryReadName -type "Role" -servicePrincipal $aad
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
@@ -47,6 +91,7 @@ function Get-GraphApiDirectoryReadPermissions() {
     return $readAccess
 }
 
+
 function Get-GraphApiUserReadPermissions() {
     try {
         $aad = @((Get-AzureADServicePrincipal -Filter "ServicePrincipalNames eq 'https://graph.microsoft.com'"))[0]
@@ -56,18 +101,14 @@ function Get-GraphApiUserReadPermissions() {
         throw
     }
 
-    $directoryReadName = "User.Read"
-    $directoryRead = $aad.Oauth2Permissions | Where-Object {$_.Value -eq $directoryReadName}
-    if($null -eq $directoryRead) {
-        Write-DosMessage -Level "Error" -Message "Was not able to find permissions $directoryReadName."
-        throw
-    }
+    $userReadName = "User.Read"
+    $userRead = Get-GraphApiPermissionFromList -permissionName $userReadName -servicePrincipal $aad
 
     # Convert to proper resource...
     $readAccess = [Microsoft.Open.AzureAD.Model.RequiredResourceAccess]@{
         ResourceAppId = $aad.AppId;
         ResourceAccess = [Microsoft.Open.AzureAD.Model.ResourceAccess]@{
-            Id = $directoryRead.Id;
+            Id = $userRead.Id;
             Type = "Scope"
         }
     }
@@ -75,21 +116,20 @@ function Get-GraphApiUserReadPermissions() {
     return $readAccess
 }
 
-
 function New-FabricAzureADApplication() {
     param(
         [Parameter(Mandatory=$true)]
         [string] $appName,
         [Parameter(Mandatory=$true)]
         [Hashtable[]] $replyUrls,
-        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permission,
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $permissions,
         [bool] $isMultiTenant = $false
     )
     $groupMembershipClaims = 'SecurityGroup'
 
     $app = Get-AzureADApplication -Filter "DisplayName eq '$appName'" -Top 1
     if($null -eq $app) {
-        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permission -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+        $app = New-AzureADApplication -Oauth2AllowImplicitFlow $true -RequiredResourceAccess $permissions -DisplayName $appName -ReplyUrls $replyUrls.name -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
     else {
         # Do not overwrite, append to existing urls
@@ -99,10 +139,38 @@ function New-FabricAzureADApplication() {
             $existingUrls.Add($replyUrl)
         }
         $existingUrls = $existingUrls | Select-Object -Unique
-        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $permission -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
+
+        # Do not overwrite, append existing permissions
+        # Existing permissions might be an array of required resourceaccess
+        $combinedResources = Get-CombinedAzureADPermissions `
+            -existingRequiredResourceAccess $app.RequiredResourceAccess `
+            -newRequiredResourceAccess $permissions
+
+        Set-AzureADApplication -ObjectId $app.ObjectId -RequiredResourceAccess $combinedResources -Oauth2AllowImplicitFlow $true -ReplyUrls $existingUrls -AvailableToOtherTenants $isMultiTenant -GroupMembershipClaims $groupMembershipClaims
     }
 
     return $app
+}
+
+function Get-CombinedAzureADPermissions {
+    param (
+        [Parameter(Mandatory=$true)]
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess[]] $existingRequiredResourceAccess,
+        [Parameter(Mandatory=$true)]
+        [Microsoft.Open.AzureAD.Model.RequiredResourceAccess] $newRequiredResourceAccess
+    )
+    # Need to ignore values if already exists!
+    foreach($rra in $existingRequiredResourceAccess) {
+        # IF Match, then append to the list and exit
+        if($rra.ResourceAppId -eq $newRequiredResourceAccess.ResourceAppId) {
+            $rra.ResourceAccess += $newRequiredResourceAccess.ResourceAccess
+            $rra.ResourceAccess = $rra.ResourceAccess | Select-Object -Unique
+            return $existingRequiredResourceAccess
+        }
+    }
+
+    Write-DosMessage -Level "Information" -Message "Did not find any existing permissions to merge."
+    return $newRequiredResourceAccess
 }
 
 function Remove-AzureADClientSecret {
@@ -118,7 +186,7 @@ function Remove-AzureADClientSecret {
     [int]$retryCount = 0
 
     if ($filteredKeys.count -gt 0) {
-        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation
+        $deleteSecrets = Get-InstallIdPSSUtilsUserConfirmation -keyName $keyIdentifier
     }
 
     if($deleteSecrets) {
@@ -242,47 +310,51 @@ function Register-Identity {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $azureConfigPath
+        [string] $azureConfigPath,
+        [string] $configAppName = "Identity Service"
     )
+
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
     $secretName = $installSettings.value
     Confirm-InstallIdpSSUtilsSecretName -secretName $secretName
 
     $allowedTenantsText = "allowedTenants"
-    $claimsIssuerText = "claimsIssuerTenant"
+
+    $claimsIssuer = Get-IdentityClaimsIssuer -azureConfigPath $azureConfigPath -configSection $configSection
     $allowedTenants += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
         -scope $configSection `
         -setting $allowedTenantsText
 
-    $claimsIssuer += Get-TenantSettingsFromInstallConfig -installConfigPath $azureConfigPath `
-        -scope $configSection `
-        -setting $claimsIssuerText
     Confirm-Tenants -tenants $allowedTenants
     Confirm-Tenants -tenants $claimsIssuer
 
-   if($null -ne $claimsIssuer.name) {
-    Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
-    Connect-AzureADTenant -tenantId $claimsIssuer.name
+    # Register authentication portion as claims issuer
+    if($null -ne $claimsIssuer.name) {
+        Write-Host "Enter credentials for $appName specified tenant: $($claimsIssuer.name)"
+        Connect-AzureADTenant -tenantId $claimsIssuer.name
 
-    $permission = Get-GraphApiUserReadPermissions
-    $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission -isMultiTenant $true
-    $clientId = $app.AppId
-    $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
+        $userDirectoryReadPermissions = Get-GraphiApiUserDirectoryReadPermissions
+        $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permissions $userDirectoryReadPermissions -isMultiTenant $true
+        $clientId = $app.AppId
+        $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
-    Disconnect-AzureAD
+        Disconnect-AzureAD
 
-    Add-InstallationTenantSettings -configSection $configSection `
-    -tenantId $claimsIssuer.name `
-    -tenantAlias $claimsIssuer.alias `
-    -clientSecret $clientSecret `
-    -clientId $clientId `
-    -installConfigPath $azureConfigPath `
-    -appName $appName
-  }
-  else
-  {
-    Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
-  }
+        Add-InstallationTenantSettings -configSection $configSection `
+        -tenantId $claimsIssuer.name `
+        -tenantAlias $claimsIssuer.alias `
+        -clientSecret $clientSecret `
+        -clientId $clientId `
+        -installConfigPath $azureConfigPath `
+        -appName $configAppName
+
+        # Manual process, need to give consent this way for now
+        Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+    }
+    else
+    {
+        Write-DosMessage -Level "Information" -Message "No claims issuer tenant was found in the azuresettings.config."
+    }
 }
 
 function Register-IdPSS {
@@ -296,7 +368,8 @@ function Register-IdPSS {
         [Parameter(Mandatory=$true)]
         [string] $configSection,
         [Parameter(Mandatory=$true)]
-        [string] $azureConfigPath
+        [string] $azureConfigPath,
+        [string] $configAppName = "Identity Service Search"
     )
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
     $secretName = $installSettings.value
@@ -309,8 +382,8 @@ function Register-IdPSS {
       Connect-AzureADTenant -tenantId $tenant.name
 
       # Get read permissions
-      $permission = Get-GraphApiDirectoryReadPermissions
-      $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permission $permission
+      $permissions = Get-GraphApiDirectoryReadPermissions
+      $app = New-FabricAzureADApplication -appName $appName -replyUrls $replyUrls -permissions $permissions
       $clientId = $app.AppId
       $clientSecret = Get-FabricAzureADSecret -objectId $app.ObjectId -secretName $secretName
 
@@ -321,7 +394,7 @@ function Register-IdPSS {
           -clientSecret $clientSecret `
           -clientId $clientId `
           -installConfigPath $azureConfigPath `
-          -appName $appName
+          -appName $configAppName
 
       # Manual process, need to give consent this way for now
       Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
@@ -352,8 +425,11 @@ function Confirm-Tenants {
 }
 
 function Get-InstallIdPSSUtilsUserConfirmation {
-    Write-DosMessage -Level "Information" -Message "Found ${$filterKeys.count} duplicate secrets."
-    $deleteSecrets = Read-Host  "Delete duplicate secret(s)? [Y/N]"
+    param (
+        [string] $keyName
+    )
+    Write-DosMessage -Level "Information" -Message "Found duplicate secrets."
+    $deleteSecrets = Read-Host  "Delete duplicate secret(s) named: '$keyName'? [Y/N]"
     switch ($deleteSecrets) {
         Y {return $true}
         N {return $false}
@@ -373,7 +449,7 @@ function Get-XMLChildNode {
         [string] $childNodeAttributeSetting
     )
     # Validate XML
-    $xmlValidation = Test-XMLFile -xmlFilePath $installConfigPath
+    $xmlValidation = Test-XMLFile -Path $installConfigPath
     if($xmlValidation){
      $installationConfig = [xml](Get-Content $installConfigPath)
      $identityScope = $installationConfig.installation.settings.scope | Where-Object {$_.name -eq $configSection}
@@ -388,6 +464,49 @@ function Get-XMLChildNode {
     }
 }
 
+function Get-IdentityClaimsIssuer {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $azureConfigPath,
+        [Parameter(Mandatory=$true)]
+        [string] $configSection
+    )
+
+    $claimsIssuerSetting = "claimsIssuerTenant"
+    $claimsIssuer = @()
+    $claimsIssuer += Get-TenantSettingsFromInstallConfig `
+        -installConfigPath $azureConfigPath `
+        -scope $configSection `
+        -setting $claimsIssuerSetting
+
+    if($null -eq $claimsIssuer -or $claimsIssuer.Count -eq 0) {
+        Write-DosMessage -Level "Fatal" -Message "No claims issuer tenant was found in the azuresettings.config."
+    } 
+    else {
+        if($claimsIssuer.Count -gt 1) {
+            Write-DosMessage -Level "Fatal" -Message "Multiple claims issuer tenants were found in the azuresettings.config. Please provide only one claims issuer."
+        }
+        return $claimsIssuer[0]
+    }
+}
+
+function Remove-IdentityClaimsIssuerFromTenantsList {
+    param (
+        [Parameter(Mandatory=$true)]
+        [HashTable[]] $tenants,
+        [Parameter(Mandatory=$true)]
+        [string] $claimsIssuerName
+    )
+    [System.Collections.ArrayList]$tenantsList = $tenants
+    foreach($tenant in $tenantsList) {
+        if($tenant.Name -eq $claimsIssuerName) {
+            $tenantsList.Remove($tenant)
+            return $tenantsList.ToArray()
+        }
+    }
+    return $tenantsList.ToArray()
+}
+
 Export-ModuleMember Get-FabricAzureADSecret
 Export-ModuleMember Connect-AzureADTenant
 Export-ModuleMember New-FabricAzureADApplication
@@ -395,3 +514,7 @@ Export-ModuleMember Get-Tenants
 Export-ModuleMember Get-ReplyUrls
 Export-ModuleMember Register-Identity
 Export-ModuleMember Register-IdPSS
+Export-ModuleMember Get-IdentityClaimsIssuer
+Export-ModuleMember Remove-IdentityClaimsIssuerFromTenantsList
+Export-ModuleMember Get-GraphApiUserReadPermissions
+Export-ModuleMember Get-GraphApiDirectoryReadPermissions

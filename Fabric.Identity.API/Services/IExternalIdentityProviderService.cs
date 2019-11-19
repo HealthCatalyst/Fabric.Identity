@@ -6,7 +6,7 @@ namespace Fabric.Identity.API.Services
 {
     public interface IExternalIdentityProviderService
     {
-        Task<ExternalUser> FindUserBySubjectId(string subjectId);
-        ICollection<ExternalUser> SearchUsers(string searchText);
+        Task<FabricPrincipal> FindUserBySubjectIdAsync(string subjectId);
+        ICollection<FabricPrincipal> SearchUsers(string searchText);
     }
 }

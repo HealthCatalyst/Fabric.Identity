@@ -5,6 +5,7 @@ using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Services.Azure;
 using Fabric.Identity.API.Validation;
 using Fabric.Platform.Shared.Exceptions;
 using IdentityServer4.Services;
@@ -24,6 +25,7 @@ namespace Fabric.Identity.API.Extensions
             serviceCollection.AddTransient<IdentityResourceValidator, IdentityResourceValidator>();
             serviceCollection.AddTransient<ApiResourceValidator, ApiResourceValidator>();
             serviceCollection.AddTransient<UserApiModelValidator, UserApiModelValidator>();
+            serviceCollection.AddTransient<SearchRequestValidator, SearchRequestValidator>();
             serviceCollection.AddTransient<ExternalProviderApiModelValidator>();
         }
 
@@ -125,6 +127,34 @@ namespace Fabric.Identity.API.Extensions
                     FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim,
                     policy => policy.Requirements.Add(new SearchUserScopeRequirement()));
             });
+
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddPrincipalSearchServices(this IServiceCollection serviceCollection, IAppConfiguration appConfig)
+        {
+            serviceCollection.TryAddSingleton<IActiveDirectoryProxy, ActiveDirectoryProxy>();
+
+            serviceCollection.AddTransient<IExternalIdentityProviderSearchService, IdentityUserPrincipalSearchService>();
+
+            if (appConfig.AzureAuthenticationEnabled)
+            {
+                serviceCollection.AddTransient<IExternalIdentityProviderSearchService, AzureDirectoryProviderService>();
+            }
+
+            if (appConfig.WindowsAuthenticationEnabled)
+            {
+                serviceCollection.AddTransient<IExternalIdentityProviderSearchService, ActiveDirectoryProviderService>();
+            }
+
+            serviceCollection.AddTransient<IPrincipalSearchService, PrincipalSearchService>();
+            serviceCollection.TryAddSingleton<IMicrosoftGraphApi, MicrosoftGraphApi>();
+            serviceCollection
+                .AddSingleton<AzureActiveDirectoryClientCredentialsService, AzureActiveDirectoryClientCredentialsService>();
+
+            serviceCollection.AddSingleton<IAzureActiveDirectoryClientCredentialsService>(services =>
+                new AzureActiveDirectoryCacheService(services.GetService<IAppConfiguration>(),
+                    services.GetService<AzureActiveDirectoryClientCredentialsService>()));
 
             return serviceCollection;
         }

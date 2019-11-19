@@ -4,8 +4,10 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Fabric.Identity.API;
 using Fabric.Identity.API.Configuration;
+using Fabric.Identity.API.Logging;
 using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.CouchDb.Configuration;
 using Fabric.Identity.API.Persistence.CouchDb.Services;
@@ -14,15 +16,21 @@ using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.API.Services;
+using Fabric.Identity.API.Services.Azure;
 using Fabric.Identity.IntegrationTests.ServiceTests;
+using Fabric.Platform.Shared.Configuration.Docker;
 using IdentityModel;
 using IdentityModel.Client;
-using Microsoft.AspNetCore.Builder;
+using IdentityServer4.AccessTokenValidation;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using Serilog;
 using IS4 = IdentityServer4.Models;
@@ -49,10 +57,12 @@ namespace Fabric.Identity.IntegrationTests
         private static readonly IDocumentDbService InMemoryDocumentDbService = new InMemoryDocumentService();
         private static ICouchDbSettings _settings;
         private static IConnectionStrings _connectionStrings;
-        
+
         private static readonly LdapSettings LdapSettings = LdapTestHelper.GetLdapSettings();
 
         private static IDocumentDbService _dbService;
+        private static IActiveDirectoryProxy _adProxy;
+        private static IMicrosoftGraphApi _graphApi;
         private readonly TestServer _apiTestServer;
         protected readonly TestServer IdentityTestServer;
 
@@ -66,11 +76,14 @@ namespace Fabric.Identity.IntegrationTests
             AddTestEntitiesToSql(Client, api);
         }
 
+
+
         public IntegrationTestsFixture(string storageProvider = FabricIdentityConstants.StorageProviders.InMemory)
         {
-            IdentityTestServer = CreateIdentityTestServer(storageProvider);
-            _apiTestServer = CreateRegistrationApiTestServer(storageProvider);
-            HttpClient = GetHttpClient();
+            IdentityTestServer = CreateTestServer(storageProvider, null);
+            _apiTestServer = CreateTestServer(storageProvider, RegisterRegistrationServices);
+            _httpClientTaskCompletionSource = new TaskCompletionSource<HttpClient>();
+            _ = SetupHttpClient();
         }
 
         private static ICouchDbSettings CouchDbSettings => _settings ?? (_settings = new CouchDbSettings
@@ -110,6 +123,37 @@ namespace Fabric.Identity.IntegrationTests
                 };
                 Console.WriteLine($"Connection String for tests: {_connectionStrings.IdentityDatabase}");
                 return _connectionStrings;
+            }
+        }
+
+        private static IActiveDirectoryProxy ADProxy
+        {
+            get
+            {
+                if (_adProxy == null)
+                {
+                    _adProxy = new Mock<IActiveDirectoryProxy>()
+                        .SetupActiveDirectoryProxy(new ActiveDirectoryDataHelper().GetPrincipals()).Object;
+                }
+
+                return _adProxy;
+            }
+        }
+
+        private static IMicrosoftGraphApi GraphApi
+        {
+            get
+            {
+                if(_graphApi == null)
+                {
+                    _graphApi = new Mock<IMicrosoftGraphApi>()
+                        .SetupAzureDirectoryGraphUsers(new ActiveDirectoryDataHelper().GetMicrosoftGraphUsers())
+                        .SetupAzureDirectoryGraphUser(new ActiveDirectoryDataHelper().GetMicrosoftGraphUser("testingAzure\\james rocket", "james rocket", "1"))
+                        .SetupAzureDirectoryGraphGroups(new ActiveDirectoryDataHelper().GetMicrosoftGraphGroups())
+                        .Object;
+                }
+
+                return _graphApi;
             }
         }
 
@@ -175,10 +219,32 @@ namespace Fabric.Identity.IntegrationTests
             }
         }
 
-        public HttpClient HttpClient { get; }
+        private readonly TaskCompletionSource<HttpClient> _httpClientTaskCompletionSource;
 
-        private TestServer CreateIdentityTestServer(string storageProvider)
+        public Task<HttpClient> HttpClient => _httpClientTaskCompletionSource.Task;
+
+        private TestServer CreateTestServer(string storageProvider, Action<IWebHostBuilder> customizeWebHost)
         {
+            var loggerConfiguration = new LoggerConfiguration();
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
+                .AddDockerSecrets(typeof(IAppConfiguration))
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .Build();
+
+            var certificateService = IdentityConfigurationProvider.MakeCertificateService();
+            var decryptionService = new DecryptionService(certificateService);
+            var appConfig = new IdentityConfigurationProvider(configuration).GetAppConfiguration(decryptionService);
+
+            LogFactory.ConfigureTraceLogger(loggerConfiguration, appConfig.ApplicationInsights);
+
+            Log.Logger = loggerConfiguration.CreateLogger();
+
+            
+
             var hostingOptions = new HostingOptions
             {
                 UseIis = false,
@@ -186,23 +252,39 @@ namespace Fabric.Identity.IntegrationTests
                 StorageProvider = storageProvider
             };
 
-            var builder = new WebHostBuilder();
+            var apiBuilder = WebHost.CreateDefaultBuilder();
 
-            builder.ConfigureServices(c =>
-                c.AddSingleton(LdapSettings)
-                    .AddSingleton(CouchDbSettings)
-                    .AddSingleton(hostingOptions)
-                    .AddSingleton(ConnectionStrings));
+            apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
+                .AddSingleton(Log.Logger)
+                .AddSingleton(CouchDbSettings)
+                .AddSingleton(hostingOptions)
+                .AddSingleton(ConnectionStrings)
+                .AddSingleton(GraphApi)
+                .AddSingleton(ADProxy)
+                .AddTransient<IExternalIdentityProviderSearchService, ActiveDirectoryProviderService>()
+                .AddTransient<IExternalIdentityProviderSearchService, AzureDirectoryProviderService>()
+            );
 
-            builder.UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .UseUrls(IdentityServerUrl);
+            customizeWebHost?.Invoke(apiBuilder);
 
-            return new TestServer(builder);
+            apiBuilder
+                .ConfigureAppConfiguration((hostContext, config) =>
+                {
+                    config.AddDockerSecrets(typeof(IAppConfiguration));
+                    config.SetBasePath(Directory.GetCurrentDirectory());
+                })
+                .UseUrls(RegistrationApiServerUrl)
+                .ConfigureKestrel((context, kestrelOptions) =>
+                {
+
+                })
+                .UseSerilog()
+                .UseStartup<Startup>();
+
+            return new TestServer(apiBuilder);
         }
 
-        private TestServer CreateRegistrationApiTestServer(string storageProvider)
+        private void RegisterRegistrationServices(IWebHostBuilder builder)
         {
             var options = new IdentityServerAuthenticationOptions
             {
@@ -214,49 +296,34 @@ namespace Fabric.Identity.IntegrationTests
                 IntrospectionDiscoveryHandler = IdentityTestServer.CreateHandler()
             };
 
-            var hostingOptions = new HostingOptions
-            {
-                UseIis = false,
-                UseTestUsers = true,
-                StorageProvider = storageProvider
-            };
-
-            var apiBuilder = new WebHostBuilder();
-
-            apiBuilder.ConfigureServices(c => c.AddSingleton(LdapSettings)
-                .AddSingleton(options)
-                .AddSingleton(CouchDbSettings)
-                .AddSingleton(hostingOptions)
-                .AddSingleton(ConnectionStrings)
-            );
-
-            apiBuilder.UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .UseUrls(RegistrationApiServerUrl);
-
-            return new TestServer(apiBuilder);
+            builder.ConfigureServices(c => c.AddSingleton(options)
+                .AddSingleton<IPostConfigureOptions<JwtBearerOptions>>(new PostConfigureOptions<JwtBearerOptions>("Bearer", jwtOpts =>
+                {
+                    jwtOpts.BackchannelHttpHandler = new SuppressExecutionContextHandler(IdentityTestServer.CreateHandler());
+                })));
         }
 
-        protected HttpClient GetHttpClient()
+        protected async Task SetupHttpClient()
         {
             var httpClient = _apiTestServer.CreateClient();
-            httpClient.SetBearerToken(GetAccessToken(Client.ClientId, ClientSecret,
+            httpClient.SetBearerToken(await GetAccessToken(Client.ClientId, ClientSecret,
                 $"{FabricIdentityConstants.IdentityRegistrationScope} {FabricIdentityConstants.IdentityReadScope} {FabricIdentityConstants.IdentitySearchUsersScope}"));
             Console.WriteLine("**********************************Got token from token endpoint");
-            return httpClient;
+            _httpClientTaskCompletionSource.SetResult(httpClient);
         }
 
-        protected string GetAccessToken(string clientId, string clientSecret, string scope = null)
+        protected async Task<string> GetAccessToken(string clientId, string clientSecret, string scope = null)
         {
-            var tokenClient =
-                new TokenClient(TokenEndpoint, clientId,
-                    IdentityTestServer.CreateHandler())
+            var tokenRequest = new ClientCredentialsTokenRequest
                 {
-                    ClientSecret = clientSecret
+                    Address = TokenEndpoint,
+                    ClientId = clientId,
+                    ClientSecret = clientSecret,
+                    Scope = scope
                 };
-            var tokenResponse = tokenClient
-                .RequestClientCredentialsAsync(scope).Result;
+
+            var httpClient = new HttpClient(IdentityTestServer.CreateHandler());
+            var tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(tokenRequest);
             if (tokenResponse.IsError)
             {
                 throw new InvalidOperationException(tokenResponse.Error);
@@ -433,7 +500,6 @@ namespace Fabric.Identity.IntegrationTests
             if (disposing)
             {
                 // free managed resources
-                HttpClient.Dispose();
                 IdentityTestServer.Dispose();
                 _apiTestServer.Dispose();
             }

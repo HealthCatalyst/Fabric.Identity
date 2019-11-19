@@ -17,11 +17,11 @@ namespace Fabric.Identity.API.Infrastructure
         private readonly PolicyBuilder _idPSearchServicePolicyBuilder = Policy.Handle<HttpRequestException>()
             .Or<TaskCanceledException>();
 
-        public readonly RetryPolicy IdPSearchServiceRetryPolicy;
-        public readonly CircuitBreakerPolicy IdPSearchServiceErrorPolicy;
+        public readonly AsyncRetryPolicy IdPSearchServiceRetryPolicy;
+        public readonly AsyncCircuitBreakerPolicy IdPSearchServiceErrorPolicy;
             
 
-        public readonly PolicyWrap IdPSearchServicePolicy;
+        public readonly AsyncPolicyWrap IdPSearchServicePolicy;
 
         public PolicyProvider()
         {

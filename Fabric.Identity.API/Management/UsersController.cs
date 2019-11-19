@@ -12,14 +12,14 @@ using Fabric.Identity.API.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Fabric.Identity.API.Management
 {
     /// <summary>
     /// Find Users registered in Identity.
     /// </summary>
-    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim, ActiveAuthenticationSchemes = "Bearer")]
+    [Authorize(Policy = FabricIdentityConstants.AuthorizationPolicyNames.SearchUsersScopeClaim, AuthenticationSchemes = "Bearer")]
     [ApiVersion("1.0")]
     [Route("api/users")]
     [Route("api/v{version:apiVersion}/users")]
@@ -46,9 +46,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="userIds">The user ids for the users requested in the format 'subjectid:provider'</param>
         /// <returns></returns>
         [HttpGet]
-        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
-        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
+        [SwaggerResponse((int)HttpStatusCode.OK, "Success", typeof(List<UserApiModel>))]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse((int)HttpStatusCode.NotFound, "The specified client id could not be found", typeof(Error))]
         public async Task<IActionResult> Get(string clientId, [CommaSeparated] IEnumerable<string> userIds)
         {
             return await ProcessSearchRequest(clientId, userIds).ConfigureAwait(false);
@@ -60,9 +60,9 @@ namespace Fabric.Identity.API.Management
         /// <param name="searchParameters">The <see cref="UserSearchParameter"/> containing the client id and user ids in the format 'subjectid:provider'</param>
         /// <returns></returns>
         [HttpPost]
-        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
-        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
-        [SwaggerResponse((int)HttpStatusCode.NotFound, typeof(Error), "The specified client id could not be found")]
+        [SwaggerResponse((int)HttpStatusCode.OK, "Success", typeof(List<UserApiModel>))]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, BadRequestErrorMsg, typeof(Error))]
+        [SwaggerResponse((int)HttpStatusCode.NotFound, "The specified client id could not be found", typeof(Error))]
         public async Task<IActionResult> Post([FromBody] UserSearchParameter searchParameters)
         {
             return await ProcessSearchRequest(searchParameters.ClientId, searchParameters.UserIds).ConfigureAwait(false);
@@ -75,8 +75,8 @@ namespace Fabric.Identity.API.Management
         /// <param name="identityProvider">The source identity provider to search within.</param>
         /// <returns></returns>
         [HttpGet("search")]
-        [SwaggerResponse((int)HttpStatusCode.OK, typeof(List<UserApiModel>), "Success")]
-        [SwaggerResponse((int)HttpStatusCode.BadRequest, typeof(Error), BadRequestErrorMsg)]
+        [SwaggerResponse((int)HttpStatusCode.OK, "Success", typeof(List<UserApiModel>))]
+        [SwaggerResponse((int)HttpStatusCode.BadRequest, BadRequestErrorMsg, typeof(Error))]
         public IActionResult Search(string searchText, string identityProvider)
         {
             try
