@@ -311,7 +311,8 @@ function Register-Identity {
         [string] $configSection,
         [Parameter(Mandatory=$true)]
         [string] $azureConfigPath,
-        [string] $configAppName = "Identity Service"
+        [string] $configAppName = "Identity Service",
+        [string] $identitySearchAppName = "Identity Service Search"
     )
 
     $installSettings = Get-XMLChildNode -installConfigPath $azureConfigPath -configSection $configSection -childNodeGetAttribute "name" -childNodeAttributeSetting "azureSecretName"
@@ -340,6 +341,7 @@ function Register-Identity {
 
         Disconnect-AzureAD
 
+        # Add Identity Service to AppRegistrations Section
         Add-InstallationTenantSettings -configSection $configSection `
         -tenantId $claimsIssuer.name `
         -tenantAlias $claimsIssuer.alias `
@@ -347,6 +349,15 @@ function Register-Identity {
         -clientId $clientId `
         -installConfigPath $azureConfigPath `
         -appName $configAppName
+
+        # Add Identity Service Search to AppRegistrations Section
+        Add-InstallationTenantSettings -configSection $configSection `
+        -tenantId $claimsIssuer.name `
+        -tenantAlias $claimsIssuer.alias `
+        -clientSecret $clientSecret `
+        -clientId $clientId `
+        -installConfigPath $azureConfigPath `
+        -appName $identitySearchAppName
 
         # Manual process, need to give consent this way for now
         Start-Process -FilePath  "https://login.microsoftonline.com/$($claimsIssuer.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
