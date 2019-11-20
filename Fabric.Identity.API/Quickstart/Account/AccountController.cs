@@ -47,7 +47,7 @@ namespace IdentityServer4.Quickstart.UI
         private readonly IEventService _events;
         private readonly IAppConfiguration _appConfiguration;
         private readonly ILogger _logger;
-        private readonly IExternalIdentityProviderService _externalIdentityProviderService;
+        private readonly IPrincipalSearchService _principalSearchService;
         private readonly IFabricClaimsService _claimsService;
         private readonly AccountService _accountService;
         private readonly UserLoginManager _userLoginManager;
@@ -64,7 +64,7 @@ namespace IdentityServer4.Quickstart.UI
             IAppConfiguration appConfiguration,
             IUserStore userStore,
             ILogger logger,
-            IExternalIdentityProviderService externalIdentityProviderService,
+            IPrincipalSearchService principalSearchService,
             IFabricClaimsService claimsService,
             AccountService accountService,
             GroupFilterService groupFilterService,
@@ -76,7 +76,7 @@ namespace IdentityServer4.Quickstart.UI
             _events = events;
             _appConfiguration = appConfiguration;
             _logger = logger;
-            _externalIdentityProviderService = externalIdentityProviderService;
+            _principalSearchService = principalSearchService;
             _accountService = accountService;
             _claimsService = claimsService;
             _groupFilterService = groupFilterService;
@@ -193,7 +193,7 @@ namespace IdentityServer4.Quickstart.UI
                     id.AddClaim(new Claim(JwtClaimTypes.Name, HttpContext.User.Identity.Name));
                     id.AddClaim(new Claim(FabricIdentityConstants.PublicClaimTypes.UserPrincipalName, HttpContext.User.Identity.Name));
 
-                    var externalUser = await _externalIdentityProviderService.FindUserBySubjectIdAsync(HttpContext.User.Identity.Name);
+                    var externalUser = await this._principalSearchService.FindUserBySubjectIdAsync(HttpContext.User.Identity.Name, null);
                     if (externalUser != null)
                     {
                         if (externalUser.FirstName != null)
