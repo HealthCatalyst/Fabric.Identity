@@ -153,6 +153,24 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+                options.Secure = CookieSecurePolicy.Always;
+
+                options.OnAppendCookie = cookie =>
+                {
+                    cookie.CookieOptions.SameSite = SameSiteMode.None;
+                    cookie.CookieOptions.Secure = true;
+                };
+
+                options.OnDeleteCookie = cookie =>
+                {
+                    cookie.CookieOptions.SameSite = SameSiteMode.None;
+                    cookie.CookieOptions.Secure = true;
+                };
+            });
+
             services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddJsonOptions(x =>
@@ -259,12 +277,7 @@ namespace Fabric.Identity.API
 
             app.UseSerilogRequestLogging();
 
-            app.UseCookiePolicy(new CookiePolicyOptions()
-            {
-                MinimumSameSitePolicy = SameSiteMode.None,
-                Secure = CookieSecurePolicy.Always,
-            });
-
+            app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseIdentityServer();
 
