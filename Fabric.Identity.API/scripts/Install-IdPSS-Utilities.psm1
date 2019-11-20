@@ -349,7 +349,7 @@ function Register-Identity {
         -appName $configAppName
 
         # Manual process, need to give consent this way for now
-        Start-Process -FilePath  "https://login.microsoftonline.com/$($tenant.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
+        Start-Process -FilePath  "https://login.microsoftonline.com/$($claimsIssuer.name)/oauth2/authorize?client_id=$clientId&response_type=code&state=12345&prompt=admin_consent"
     }
     else
     {
