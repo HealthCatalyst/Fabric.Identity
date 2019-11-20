@@ -44,13 +44,15 @@ if ($registerIdPSS)
 
 if ($registerIdentity)
 {
+    $identityAppName = "Identity Service"
+    $identitySearchAppName = "Identity Service Search"
     # Identity registration (authentication)
-    Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -azureConfigPath $azureConfigPath -configAppName "Identity Service"
+    Register-Identity -appName $appNameIdentity -replyUrls $replyUrls -configSection $installSettingsScope -azureConfigPath $azureConfigPath -configAppName $identityAppName -identitySearchAppName $identitySearchAppName
     # Filter out claimsIssuerTenant from tenants list so avoid double registration
-    $tenants = Remove-IdentityClaimsIssuerFromTenantsList -tenants $tenants -claimsIssuerName $claimsIssuer
+    $tenants = Remove-IdentityClaimsIssuerFromTenantsList -tenants $tenants -claimsIssuerName $claimsIssuer.Name
     # Identity registration (searching)
     if($null -ne $tenants) {
-        Register-IdPSS -appName $appNameIdentity -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath -configAppName "Identity Service Search"
+        Register-IdPSS -appName $appNameIdentity -replyUrls $replyUrls -tenants $tenants -configSection $installSettingsScope -azureConfigPath $azureConfigPath -configAppName $identitySearchAppName
     }
 }
 
