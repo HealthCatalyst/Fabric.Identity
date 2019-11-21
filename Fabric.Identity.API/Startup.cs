@@ -259,12 +259,6 @@ namespace Fabric.Identity.API
 
             app.UseSerilogRequestLogging();
 
-            app.UseCookiePolicy(new CookiePolicyOptions()
-            {
-                MinimumSameSitePolicy = SameSiteMode.None,
-                Secure = CookieSecurePolicy.Always,
-            });
-
             app.UseAuthentication();
             app.UseIdentityServer();
 
