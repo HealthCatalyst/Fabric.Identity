@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fabric.Identity.API.Models;
 using FluentValidation;
@@ -25,7 +26,16 @@ namespace Fabric.Identity.API.Management
         }
 
         public Func<string> GeneratePassword { get; set; } =
-            () => Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
+            () =>
+            {
+                var tempSecret = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
+
+                // Only allow letters and numbers
+                var regex = new Regex("(?:[^a-z0-9 ])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+                var secret = regex.Replace(tempSecret, "");
+
+                return secret;
+            };
 
         protected Secret GetNewSecret(string password)
         {
