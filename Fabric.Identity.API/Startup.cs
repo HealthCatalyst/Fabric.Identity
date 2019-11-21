@@ -21,6 +21,7 @@ using Fabric.Platform.Logging;
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
+using IdentityServer4;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
@@ -155,19 +156,30 @@ namespace Fabric.Identity.API
 
             services.Configure<CookiePolicyOptions>(options =>
             {
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-                options.Secure = CookieSecurePolicy.Always;
-
                 options.OnAppendCookie = cookie =>
                 {
-                    cookie.CookieOptions.SameSite = SameSiteMode.None;
-                    cookie.CookieOptions.Secure = true;
+                    var isIdentityServerCookie = cookie.CookieName.Equals(IdentityServerConstants.DefaultCheckSessionCookieName) 
+                        || cookie.CookieName.Equals(IdentityServerConstants.DefaultCookieAuthenticationScheme)
+                        || cookie.CookieName.Equals(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+
+                    if (isIdentityServerCookie)
+                    {
+                        cookie.CookieOptions.SameSite = SameSiteMode.None;
+                        cookie.CookieOptions.Secure = true;
+                    }
                 };
 
                 options.OnDeleteCookie = cookie =>
                 {
-                    cookie.CookieOptions.SameSite = SameSiteMode.None;
-                    cookie.CookieOptions.Secure = true;
+                    var isIdentityServerCookie = cookie.CookieName.Equals(IdentityServerConstants.DefaultCheckSessionCookieName)
+                        || cookie.CookieName.Equals(IdentityServerConstants.DefaultCookieAuthenticationScheme)
+                        || cookie.CookieName.Equals(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+
+                    if (isIdentityServerCookie)
+                    {
+                        cookie.CookieOptions.SameSite = SameSiteMode.None;
+                        cookie.CookieOptions.Secure = true;
+                    }
                 };
             });
 
