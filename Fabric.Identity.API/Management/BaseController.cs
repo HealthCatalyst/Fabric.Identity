@@ -31,7 +31,7 @@ namespace Fabric.Identity.API.Management
                 var tempSecret = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
 
                 // Only allow letters and numbers
-                var regex = new Regex("(?:[^a-z0-9 ]|(?<=['\"])s)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+                var regex = new Regex("(?:[^a-z0-9 ])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
                 var secret = regex.Replace(tempSecret, "");
 
                 return secret;
