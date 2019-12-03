@@ -18,6 +18,7 @@ using Fabric.Identity.API.Persistence;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
 using Fabric.Identity.API.Services;
 using Fabric.Platform.Logging;
+using IdentityServer4;
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
@@ -153,6 +154,35 @@ namespace Fabric.Identity.API
             services.AddTransient<IIdentityProviderConfigurationService, IdentityProviderConfigurationService>();
             services.AddTransient<AccountService>();
 
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.OnAppendCookie = cookie =>
+                {
+                    var isIdentityServerCookie = cookie.CookieName.Equals(IdentityServerConstants.DefaultCheckSessionCookieName)
+                        || cookie.CookieName.Equals(IdentityServerConstants.DefaultCookieAuthenticationScheme)
+                        || cookie.CookieName.Equals(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+
+                    if (isIdentityServerCookie && cookie.Context.Request.IsHttps)
+                    {
+                        cookie.CookieOptions.SameSite = SameSiteMode.None;
+                        cookie.CookieOptions.Secure = true;
+                    }
+                };
+
+                options.OnDeleteCookie = cookie =>
+                {
+                    var isIdentityServerCookie = cookie.CookieName.Equals(IdentityServerConstants.DefaultCheckSessionCookieName)
+                        || cookie.CookieName.Equals(IdentityServerConstants.DefaultCookieAuthenticationScheme)
+                        || cookie.CookieName.Equals(IdentityServerConstants.ExternalCookieAuthenticationScheme);
+
+                    if (isIdentityServerCookie && cookie.Context.Request.IsHttps)
+                    {
+                        cookie.CookieOptions.SameSite = SameSiteMode.None;
+                        cookie.CookieOptions.Secure = true;
+                    }
+                };
+            });
+
             services.AddMvc(options => { options.Conventions.Add(new CommaSeparatedQueryStringConvention()); })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
                 .AddJsonOptions(x =>
@@ -259,6 +289,7 @@ namespace Fabric.Identity.API
 
             app.UseSerilogRequestLogging();
 
+            app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseIdentityServer();
 
