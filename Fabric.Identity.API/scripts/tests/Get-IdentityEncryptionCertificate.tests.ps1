@@ -54,11 +54,11 @@ Import-Module $targetFilePath -Force
 
                 # Assert
                 $encCert | Should -eq $testCert
-                Assert-MockCalled Write-DosMessage -Times 0 -Scope 'It' -ParameterFilter {
+                                Assert-MockCalled Write-DosMessage -Times 0 -Scope 'It' -ParameterFilter {
                     $Level -eq "Information" `
                     -and $Message.StartsWith("Error locating the provided certificate")
                 }
-                Assert-MockCalled Test-IdentityEncryptionCertificateValid -Times 1 -Scope 'It'
+				Assert-MockCalled Test-IdentityEncryptionCertificateValid -Times 1 -Scope 'It'
                 Assert-MockCalled Write-DosMessage -Times 1 -Scope 'It' -ParameterFilter {
                     $Level -eq "Information" `
                     -and $Message.StartsWith("The provided certificate")
@@ -108,6 +108,65 @@ Import-Module $targetFilePath -Force
                     -and $Message.StartsWith("Error locating the provided certificate")
                 }
                 Assert-MockCalled Add-InstallationSetting -Times 3 -Scope 'It'
+            }
+        }
+        Context 'Possible Client Scenario' -Tag 'Integration' {
+            BeforeAll {
+                function Add-InstallationSetting {
+                    # Mock to overwrite actual implementation parameter checks
+                }
+
+                $testCert = New-Object -TypeName System.Security.Cryptography.X509Certificates.x509Certificate2
+                Mock -CommandName Add-InstallationSetting { }
+                Mock -CommandName Write-DosMessage { }
+            }
+            It 'Should replace certificate and installer secret, when certificate is expired' {
+                # Arrange
+                $certPath = "cert:\CurrentUser\My"
+                $newCert = New-SelfSignedCertificate -DnsName "Test Release Pipeline" -FriendlyName "TestCertForPester" -CertStoreLocation $certPath -Provider "Microsoft Strong Cryptographic Provider"
+
+                $fabricInstallerSecret = "!!enc!!:some secret"
+                $newSecret = "new secret"
+
+                $identityDbConnectionString = "some connection string"
+                $installSettings = @{encryptionCertificateThumbprint = "some thumbprint"}
+
+                Mock -CommandName Get-Certificate {  Mock -CommandName Get-Certificate { return $testCert } }
+                Mock -CommandName Test-IdentityEncryptionCertificateValid { return $false }
+                Mock -CommandName Remove-IdentityEncryptionCertificate { }
+                Mock -CommandName New-IdentityEncryptionCertificate { return $newCert }
+
+                Mock -CommandName  Unprotect-DosInstallerSecret { } # Simulates error occured
+                Mock -CommandName Invoke-ResetFabricInstallerSecret { return $newSecret }
+  
+                # Act
+                $encCert = Get-IdentityEncryptionCertificate `
+                -installSettings $installSettings `
+                -configStorePath $configStorePath `
+                -validate
+                
+                # Assert
+                $encCert | Should -eq $newCert
+                Assert-MockCalled Write-DosMessage -Times 1 -Scope 'It' -ParameterFilter {
+                    $Level -eq "Information" `
+                    -and $Message.StartsWith("The provided certificate")
+                }
+            
+                $decryptedSecret = Get-IdentityFabricInstallerSecret `
+                -fabricInstallerSecret $fabricInstallerSecret `
+                -encryptionCertificateThumbprint $encCert.Thumbprint `
+                -identityDbConnectionString $identityDbConnectionString
+
+                # Assert
+                $decryptedSecret | Should -eq $newSecret
+                Assert-MockCalled Add-InstallationSetting -Times 3 -Scope 'It'
+                Assert-MockCalled Unprotect-DosInstallerSecret -Times 1 -Scope 'It'
+                Assert-MockCalled Invoke-ResetFabricInstallerSecret -Times 1 -Scope 'It'
+                
+                Set-Location -Path $certPath
+                $encCert | Remove-Item
+
+                Set-Location $PSScriptRoot
             }
         }
     }

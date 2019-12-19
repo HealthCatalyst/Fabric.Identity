@@ -82,19 +82,14 @@ $metadataDatabase = Get-MetadataDatabaseConnectionString -metadataDbName $common
 # Secret/certificate logic
 $encryptionCertificate = Get-IdentityEncryptionCertificate `
     -installSettings $commonInstallSettings `
-    -configStorePath $configStore.Path
+    -configStorePath $configStore.Path `
+    -validate
 
 $fabricInstallerSecret = Get-IdentityFabricInstallerSecret `
     -fabricInstallerSecret $commonInstallSettings.fabricInstallerSecret `
     -encryptionCertificateThumbprint $encryptionCertificate.Thumbprint `
     -identityDbConnectionString $identityDatabase.DbConnectionString
 
-# Call second time to clean up if cert is invalid
-# This allows for decrypting with old certificate if it is expired
-$encryptionCertificate = Get-IdentityEncryptionCertificate `
-    -installSettings $commonInstallSettings `
-    -configStorePath $configStore.Path `
-    -validate
 
 # Wait until potentially creating new certificate to add permissions to private key
 $iisUser = Get-IISAppPoolUser -credential $credential -appName $installSettings.appName -storedIisUser $installSettings.iisUser -installConfigPath $configStore.Path -scope $installSettingsScope
