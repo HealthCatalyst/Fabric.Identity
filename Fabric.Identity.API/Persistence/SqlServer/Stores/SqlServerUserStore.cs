@@ -9,6 +9,9 @@ using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Services;
 using IdentityServer4.Services;
 using User = Fabric.Identity.API.Models.User;
+using IdentityServer4.Configuration;
+using IdentityServer4.Stores;
+using Microsoft.Extensions.Logging;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -17,7 +20,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public SqlServerUserStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService, serializationSettings)
+            ISerializationSettings serializationSettings,
+            IdentityServerOptions options,
+            IClientStore inner,
+            ICache<EntityModels.Client> cache,
+            ILogger<SqlServerClientStore> logger) : base(identityDbContext, eventService, userResolverService, serializationSettings, options,
+            inner,
+            cache,
+            logger)
         {
         }
 

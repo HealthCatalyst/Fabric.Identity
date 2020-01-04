@@ -4,6 +4,7 @@ using Fabric.Identity.API.Authorization;
 using Fabric.Identity.API.Configuration;
 using Fabric.Identity.API.Infrastructure;
 using Fabric.Identity.API.Persistence.SqlServer.Configuration;
+using Fabric.Identity.API.Persistence.SqlServer.Stores;
 using Fabric.Identity.API.Services;
 using Fabric.Identity.API.Services.Azure;
 using Fabric.Identity.API.Validation;
@@ -88,6 +89,9 @@ namespace Fabric.Identity.API.Extensions
 
             var identityServerBuilder = serviceCollection.AddIdentityServer(options =>
             {
+                options.Caching.ClientStoreExpiration = new TimeSpan(0, 5, 0);
+                options.Caching.ResourceStoreExpiration = new TimeSpan(0, 5, 0);
+                options.Caching.CorsExpiration = new TimeSpan(0, 5, 0);
                 options.Events.RaiseSuccessEvents = true;
                 options.Events.RaiseFailureEvents = true;
                 options.Events.RaiseErrorEvents = true;
@@ -97,7 +101,11 @@ namespace Fabric.Identity.API.Extensions
                 {
                     options.Discovery.CustomEntries.Add("discovery_uri", appConfiguration.DiscoveryServiceEndpoint);
                 }
-            });
+            })
+            .AddInMemoryCaching()
+            .AddClientStoreCache<SqlServerClientStore>()
+            .AddResourceStoreCache<SqlServerResourceStore>()
+            .AddCorsPolicyCache<CorsPolicyService>();
 
             new IdentityServerInitializationService(
                 identityServerBuilder,

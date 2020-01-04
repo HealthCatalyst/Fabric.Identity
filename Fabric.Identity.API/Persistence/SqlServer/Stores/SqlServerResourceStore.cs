@@ -11,6 +11,8 @@ using Fabric.Identity.API.Services;
 using IdentityServer4.Services;
 using IdentityResource = IdentityServer4.Models.IdentityResource;
 using ApiResource = IdentityServer4.Models.ApiResource;
+using IdentityServer4.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
@@ -19,7 +21,14 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
         public SqlServerResourceStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService, serializationSettings)
+            ISerializationSettings serializationSettings,
+            IdentityServerOptions options,
+            IClientStore inner,
+            ICache<EntityModels.Client> cache,
+            ILogger<SqlServerResourceStore> logger) : base(identityDbContext, eventService, userResolverService, serializationSettings, options,
+            inner,
+            cache,
+            logger)
         {
         }
 

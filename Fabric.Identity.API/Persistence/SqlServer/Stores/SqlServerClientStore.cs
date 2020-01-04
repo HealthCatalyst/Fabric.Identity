@@ -6,38 +6,57 @@ using Fabric.Identity.API.Events;
 using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Persistence.SqlServer.Services;
 using Fabric.Identity.API.Services;
+using IdentityServer4.Configuration;
+using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
+using IdentityServer4.Stores;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
     public class SqlServerClientStore : SqlServerBaseStore, IClientManagementStore
     {
+        readonly IdentityServerOptions options;
+        readonly IClientStore inner;
+        readonly ICache<Client> cache;
+        readonly ILogger logger;
+
         public SqlServerClientStore(IIdentityDbContext identityDbContext,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService,
-            serializationSettings)
+            ISerializationSettings serializationSettings,
+            IdentityServerOptions options,
+            IClientStore inner, 
+            ICache<EntityModels.Client> cache,
+            ILogger<SqlServerClientStore> logger) : base(identityDbContext, eventService, userResolverService,
+            serializationSettings, options, inner, cache, logger)
         {
         }
 
-        public Task<Client> FindClientByIdAsync(string clientId)
+        public async Task<Client> FindClientByIdAsync(string clientId)
         {
-            var client = IdentityDbContext.Clients
-                .Include(x => x.ClientGrantTypes)
-                .Include(x => x.ClientRedirectUris)
-                .Include(x => x.ClientPostLogoutRedirectUris)
-                .Include(x => x.ClientScopes)
-                .Include(x => x.ClientSecrets)
-                .Include(x => x.ClientClaims)
-                .Include(x => x.ClientIdpRestrictions)
-                .Include(x => x.ClientCorsOrigins)
-                .Where(c => !c.IsDeleted)
-                .FirstOrDefault(x => x.ClientId == clientId);
-            var clientEntity = client?.ToModel();
+            var clientEntity = await cache.GetAsync(clientId, options.Caching.ClientStoreExpiration,
+                () => inner.FindClientByIdAsync(clientId), logger);
 
-            return Task.FromResult(clientEntity);
+            if (clientEntity is null)
+            {
+                var client1 = IdentityDbContext.Clients
+                    .Include(x => x.ClientGrantTypes)
+                    .Include(x => x.ClientRedirectUris)
+                    .Include(x => x.ClientPostLogoutRedirectUris)
+                    .Include(x => x.ClientScopes)
+                    .Include(x => x.ClientSecrets)
+                    .Include(x => x.ClientClaims)
+                    .Include(x => x.ClientIdpRestrictions)
+                    .Include(x => x.ClientCorsOrigins)
+                    .Where(c => !c.IsDeleted)
+                    .FirstOrDefault(x => x.ClientId == clientId);
+                clientEntity = client1?.ToModel();
+            }
+
+            return await Task.FromResult(clientEntity);
         }
 
         public IEnumerable<Client> GetAllClients()

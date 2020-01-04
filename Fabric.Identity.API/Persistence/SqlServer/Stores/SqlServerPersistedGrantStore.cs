@@ -9,21 +9,33 @@ using Fabric.Identity.API.Persistence.SqlServer.Mappers;
 using Fabric.Identity.API.Services;
 using IdentityServer4.Events;
 using IdentityServer4.Services;
-using Serilog;
+using Microsoft.Extensions.Logging;
+using IdentityServer4.Configuration;
+using IdentityServer4.Stores;
 
 namespace Fabric.Identity.API.Persistence.SqlServer.Stores
 {
     public class SqlServerPersistedGrantStore : SqlServerBaseStore, IPersistedGrantStore
     {
         private readonly ILogger _logger;
+        protected IdentityServerOptions Options;
+        protected IClientStore Inner;
+        protected ICache<Client> Cache;
 
         public SqlServerPersistedGrantStore(IIdentityDbContext identityDbContext,
-            ILogger logger,
             IEventService eventService,
             IUserResolverService userResolverService,
-            ISerializationSettings serializationSettings) : base(identityDbContext, eventService, userResolverService, serializationSettings)
+            ISerializationSettings serializationSettings,
+            IdentityServerOptions options,
+            IClientStore inner,
+            ICache<Client> cache,
+            ILogger<SqlServerPersistedGrantStore> logger) : base(identityDbContext, eventService, userResolverService,
+            serializationSettings, options, inner, cache, logger)
         {
+            Options = options;
             _logger = logger;
+            Inner = inner;
+            Cache = cache;
         }
 
         public Task<IEnumerable<IdentityServer4.Models.PersistedGrant>> GetAllAsync(string subjectId)
@@ -89,7 +101,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger.Warning("Exception removing persistedGrants from the database. Error: {message}", ex.Message);
+                _logger.LogWarning("Exception removing persistedGrants from the database. Error: {message}", ex.Message);
             }
         }
 
@@ -127,7 +139,7 @@ namespace Fabric.Identity.API.Persistence.SqlServer.Stores
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger.Warning("Exception updating {grantKey}. Error: {error}", grant.Key, ex.Message);
+                _logger.LogWarning("Exception updating {grantKey}. Error: {error}", grant.Key, ex.Message);
             }
         }
     }
