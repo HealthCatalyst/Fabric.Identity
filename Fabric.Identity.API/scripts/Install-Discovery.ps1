@@ -31,33 +31,24 @@ if([string]::IsNullOrEmpty($commonConfig.clientEnvironment))
   Write-DosMessage -Level "Error" -Message "It is required to have 'clientEnvironment' populated in install.config." -ErrorAction Stop
 }
 
+$identityServiceUrl = $commonConfig.identityService
+if([string]::IsNullOrEmpty($identityServiceUrl) -or !(Test-RegistrationComplete $identityServiceUrl))
+{
+    Write-DosMessage -Level "Error" -Message "IdentityService is not installed. With OAuth enabled, you need to install IdentityService first before proceeding." -ErrorAction Stop
+}
+
 $discoveryIisUser = Get-IISAppPoolUser -credential $credential -appName $discoveryConfig.appName -storedIisUser $discoveryConfig.iisUser -installConfigPath $configStore.Path -scope $discoverySettingsScope
 
 $discoveryStandalonePath = "$PSScriptRoot\Catalyst.DiscoveryService.zip"
 $discoveryInstallerPath = "$PSScriptRoot\..\WebDeployPackages\Catalyst.DiscoveryService.zip"
 $installPackagePath = Get-WebDeployPackagePath -standalonePath $discoveryStandalonePath -installerPath $discoveryInstallerPath
 
-$isOAuthEnabled = [string]::IsNullOrEmpty($discoveryConfig.enableOAuth) -ne $true -and $discoveryConfig.enableOAuth -eq "true"
 $registrationApiSecret = $null
-$authenticationType = "Windows"
+$authenticationType = "Windows", "Anonymous"
 
-if($isOAuthEnabled) 
-{
-    $identityServiceUrl = $commonConfig.identityService
-
-    if([string]::IsNullOrEmpty($identityServiceUrl) -or !(Test-RegistrationComplete $identityServiceUrl))
-	{
-		Write-DosMessage -Level "Error" -Message "IdentityService is not installed. With OAuth enabled, you need to install IdentityService first before proceeding." -ErrorAction Stop
-	}
-
-    $secretNoEnc = $commonConfig.fabricInstallerSecret -replace "!!enc!!:"
-
-    $decryptedSecret = Unprotect-DosInstallerSecret -CertificateThumprint $commonConfig.encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
-
-    $registrationApiSecret = Add-DiscoveryApiResourceRegistration -identityServiceUrl $commonConfig.identityService -fabricInstallerSecret $decryptedSecret
-
-    $authenticationType = $authenticationType, "Anonymous"
-}
+$secretNoEnc = $commonConfig.fabricInstallerSecret -replace "!!enc!!:"
+$decryptedSecret = Unprotect-DosInstallerSecret -CertificateThumprint $commonConfig.encryptionCertificateThumbprint -EncryptedInstallerSecretValue $secretNoEnc
+$registrationApiSecret = Add-DiscoveryApiResourceRegistration -identityServiceUrl $commonConfig.identityService -fabricInstallerSecret $decryptedSecret
 
 $webDeployParameters = Get-WebDeployParameters -discoveryConfig $discoveryConfig `
                    -commonConfig $commonConfig `
