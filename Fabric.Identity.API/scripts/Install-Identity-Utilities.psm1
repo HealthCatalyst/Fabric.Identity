@@ -488,6 +488,38 @@ function Remove-IdentityFolder {
     }
 }
 
+function Publish-V1WebApplication {
+    [cmdletbinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $IdentityConfig,
+        [System.Object] $Site,
+        [hashtable] $AppPoolCredential,
+        [Parameter(Mandatory=$true)]
+        [string[]] $AuthenticationType,
+        [Parameter(Mandatory=$true)]
+        [string] $ZipPackage,
+        [string] $Assembly
+    )
+
+    $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($Site.physicalPath), $IdentityConfig.appName)
+    New-LogsDirectoryForApp $appDirectory $AppPoolCredential.UserName
+    Remove-IdentityFolder -path "$appDirectory\Views"
+    
+    Publish-DosWebApplication -WebAppPackagePath $ZipPackage `
+                              -AppName $IdentityConfig.appName `
+                              -AppPoolName $IdentityConfig.appPoolName `
+                              -AppPoolCredential $AppPoolCredential.Credential `
+                              -AuthenticationType $AuthenticationType `
+                              -ErrorAction Stop
+
+    Set-AppPoolSettings $IdentityConfig.appPoolName
+
+    Set-Location $PSScriptRoot
+    $version = Get-InstalledVersion -appDirectory $appDirectory -assemblyPath $assembly
+    return @{applicationDirectory = $appDirectory; version = $version }
+}
+
 function Publish-Application([System.Object] $site, [string] $appName, [hashtable] $iisUser, [string] $zipPackage, [string] $assembly){
     $appDirectory = [io.path]::combine([System.Environment]::ExpandEnvironmentVariables($site.physicalPath), $appName)
     New-LogsDirectoryForApp $appDirectory $iisUser.UserName
@@ -502,6 +534,36 @@ function Publish-Application([System.Object] $site, [string] $appName, [hashtabl
     Set-Location $PSScriptRoot
     $version = Get-InstalledVersion -appDirectory $appDirectory -assemblyPath $assembly
     return @{applicationDirectory = $appDirectory; version = $version }
+}
+
+function Set-AppPoolSettings($appPoolName){
+    $poolpath = "IIS:\AppPools\$appPoolName"
+    try {
+        $appPool = Get-Item -Path $poolpath -ErrorAction Stop
+    } Catch {
+        Write-DosMessage -Level "Fatal" -Message "Failed to get application pool. Exception: $($_.Exception)"
+        Break
+    }
+
+    Write-DosMessage -Level "Information" -Message "Configuring AppPool $appPoolName."
+
+    if (!($appPool.startMode -eq "alwaysrunning")) {
+        Write-DosMessage -Level "Verbose" -Message "startmode was not set to alwaysrunning, setting to alwaysrunning"
+        $appPool.startMode = "alwaysrunning"
+    }
+    if (!($appPool.processmodel.idletimeout -eq [TimeSpan]::FromMinutes(0))) {
+        $appPool.processmodel.idletimeout = [TimeSpan]::FromMinutes(0)
+    }
+    if (!($appPool.processmodel.idletimeoutaction -eq "suspend")) {
+        Write-DosMessage -Level "Verbose" -Message "idletimeoutaction was not set to suspend, setting to suspend"
+        $appPool.processmodel.idletimeoutaction = "suspend"
+    }
+    try {
+        $appPool | Set-Item -Verbose -ErrorAction Stop
+    } catch {
+        Write-DosMessage -Level "Fatal" -Message "Failed to set application pool settings. Exception: $($_.Exception)"
+        Break
+    }
 }
 
 function Get-InstalledVersion([string] $appDirectory, [string] $assemblyPath){
@@ -1555,38 +1617,39 @@ function New-LogsDirectoryForApp($appDirectory, $iisUser){
     if(!(Test-Path $logDirectory)) {
         Write-Console "Creating application log directory: $logDirectory."
         mkdir $logDirectory | Out-Null
-        Write-Console "Setting Write and Read access for $iisUser on $logDirectory."
-        $acl = Get-Acl $logDirectory
-        $writeAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
-        $readAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Read", "ContainerInherit,ObjectInherit", "None", "Allow")
-
-        try {			
-            $acl.AddAccessRule($writeAccessRule)
-        } catch [System.InvalidOperationException]
-        {
-            # Attempt to fix parent identity directory before log directory
-            RepairAclCanonicalOrder(Get-Acl $appDirectory)
-            RepairAclCanonicalOrder($acl)
-            $acl.AddAccessRule($writeAccessRule)
-        }
-        
-        try {
-            $acl.AddAccessRule($readAccessRule)
-        } catch [System.InvalidOperationException]
-        {
-            RepairAclCanonicalOrder($acl)
-            $acl.AddAccessRule($readAccessRule)
-        }
-        
-        try {
-            Set-Acl -Path $logDirectory $acl
-        } catch [System.InvalidOperationException]
-        {
-            RepairAclCanonicalOrder($acl)
-            Set-Acl -Path $logDirectory $acl
-        }
     }else{
         Write-Console "Log directory: $logDirectory exists"
+    }
+
+    Write-Console "Setting Write and Read access for $iisUser on $logDirectory."
+    $acl = Get-Acl $logDirectory
+    $writeAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
+    $readAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($iisUser, "Read", "ContainerInherit,ObjectInherit", "None", "Allow")
+
+    try {			
+        $acl.AddAccessRule($writeAccessRule)
+    } catch [System.InvalidOperationException]
+    {
+        # Attempt to fix parent identity directory before log directory
+        RepairAclCanonicalOrder(Get-Acl $appDirectory)
+        RepairAclCanonicalOrder($acl)
+        $acl.AddAccessRule($writeAccessRule)
+    }
+    
+    try {
+        $acl.AddAccessRule($readAccessRule)
+    } catch [System.InvalidOperationException]
+    {
+        RepairAclCanonicalOrder($acl)
+        $acl.AddAccessRule($readAccessRule)
+    }
+    
+    try {
+        Set-Acl -Path $logDirectory $acl
+    } catch [System.InvalidOperationException]
+    {
+        RepairAclCanonicalOrder($acl)
+        Set-Acl -Path $logDirectory $acl
     }
 }
 
@@ -1689,6 +1752,17 @@ function Confirm-DiscoveryConfig{
     Confirm-SettingIsNotNull -settingName "discovery.appName" -settingValue $discoveryConfig.appName
     Confirm-SettingIsNotNull -settingName "discovery.appPoolName" -settingValue $discoveryConfig.appPoolName
     Confirm-SettingIsNotNull -settingName "discovery.siteName" -settingValue $discoveryConfig.siteName
+}
+
+function Confirm-IdentityConfig {
+    param(
+        [Parameter(Mandatory=$true)]
+        [Hashtable] $identityConfig
+    )
+
+    Confirm-SettingIsNotNull -settingName "identity.appName" -settingValue $identityConfig.appName
+    Confirm-SettingIsNotNull -settingName "identity.appPoolName" -settingValue $identityConfig.appPoolName
+    Confirm-SettingIsNotNull -settingName "identity.identityDbName" -settingValue $identityConfig.identityDbName
 }
 
 function Add-DiscoveryApiResourceRegistration{
@@ -2260,6 +2334,7 @@ Export-ModuleMember Get-WebDeployPackagePath
 Export-ModuleMember Get-IdpssWebDeployParameters
 Export-ModuleMember New-LogsDirectoryForApp
 Export-ModuleMember Confirm-SettingIsNotNull
+Export-MOduleMember Confirm-IdentityConfig
 Export-ModuleMember Get-CurrentUserDomain
 Export-ModuleMember Get-WebServerDomain
 Export-ModuleMember Get-WebDeployParameters
@@ -2276,3 +2351,5 @@ Export-ModuleMember Remove-IdentityEncryptionCertificate
 Export-ModuleMember Invoke-ResetFabricInstallerSecret
 Export-ModuleMember Get-IdentityEncryptionCertificate
 Export-ModuleMember Get-IdentityFabricInstallerSecret
+Export-ModuleMember Set-AppPoolSettings
+Export-ModuleMember Publish-V1WebApplication
